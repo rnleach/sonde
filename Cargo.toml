@@ -1,0 +1,11 @@
+[package]
+name = "sonde"
+version = "0.0.1"
+authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
+
+[dependencies]
+cairo-rs = "0.2.0"
+
+[dependencies.gtk]
+version = "0.2.0"
+features = ["v3_10"]
