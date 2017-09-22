@@ -7,7 +7,7 @@ extern crate error_chain;
 // GUI crates
 extern crate gtk;
 use gtk::prelude::*;
-use gtk::{ Window, WindowType, DrawingArea, WidgetExt, GridExt };
+use gtk::{Window, WindowType, DrawingArea, WidgetExt};
 
 extern crate cairo;
 use cairo::Context;
@@ -21,6 +21,9 @@ extern crate sonde_data;
 // Errors
 mod errors;
 use errors::*;
+
+// Support modules
+mod main_window;
 
 fn main() {
 
@@ -69,24 +72,22 @@ fn run() -> Result<()> {
     index_area.set_hexpand(true);
     index_area.set_vexpand(true);
 
+    let index_area2 = DrawingArea::new();
+    // TODO: Function to draw index area 2
+    // TODO: Data type to hold the index area 2
+    index_area2.connect_draw(draw_index);
+    index_area2.set_hexpand(true);
+    index_area2.set_vexpand(true);
+
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    // TODO: function to set up and layout main window
-    // TODO: Add menu bar
-    // TODO: layout drawing areas
-    let grid = gtk::Grid::new();
-    grid.attach(&sounding_area, 0, 0, 2, 3);
-    grid.attach(&hodo_area, 2, 0, 1, 1);
-    grid.attach(&index_area, 2, 1, 1, 2);
-    window.add(&grid);
-    //window.add(&hodo_area);
-    window.set_title("Sonde");
-    window.set_default_size(650, 650);
-    window.show_all();
-    window.connect_delete_event(|_,_| {
-        gtk::main_quit();
-        Inhibit(false)
-    });
+    main_window::layout(
+        &window,
+        &sounding_area,
+        &hodo_area,
+        &index_area,
+        &index_area2,
+    );
 
     // Initialize the main loop.
     gtk::main();
@@ -94,15 +95,14 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn draw_sounding(sounding_area: &DrawingArea, cr: &Context) -> Inhibit 
-{
+fn draw_sounding(sounding_area: &DrawingArea, cr: &Context) -> Inhibit {
     // Draw some text to mark this area.
-    cr.set_source_rgb( 0.0, 0.0, 0.0);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.select_font_face("Sans", FontSlant::Normal, FontWeight::Normal);
     cr.set_font_size(40.0);
     cr.move_to(10.0, 50.0);
     cr.show_text("Sounding Goes Here");
-    
+
     // Draw a red border
     let alloc = sounding_area.get_allocation();
     cr.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
@@ -113,15 +113,14 @@ fn draw_sounding(sounding_area: &DrawingArea, cr: &Context) -> Inhibit
     Inhibit(false)
 }
 
-fn draw_hodo(hodo_area: &DrawingArea, cr: &Context) -> Inhibit 
-{
+fn draw_hodo(hodo_area: &DrawingArea, cr: &Context) -> Inhibit {
     // Draw some text to mark this area.
-    cr.set_source_rgb( 0.0, 0.0, 0.0);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.select_font_face("Sans", FontSlant::Normal, FontWeight::Normal);
     cr.set_font_size(40.0);
     cr.move_to(10.0, 50.0);
     cr.show_text("Hodograph Goes Here");
-    
+
     // Draw a green border
     let alloc = hodo_area.get_allocation();
     cr.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
@@ -132,15 +131,14 @@ fn draw_hodo(hodo_area: &DrawingArea, cr: &Context) -> Inhibit
     Inhibit(false)
 }
 
-fn draw_index(index_area: &DrawingArea, cr: &Context) -> Inhibit 
-{
+fn draw_index(index_area: &DrawingArea, cr: &Context) -> Inhibit {
     // Draw some text to mark this area.
-    cr.set_source_rgb( 0.0, 0.0, 0.0);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.select_font_face("Sans", FontSlant::Normal, FontWeight::Normal);
     cr.set_font_size(40.0);
     cr.move_to(10.0, 50.0);
-    cr.show_text("Hodograph Goes Here");
-    
+    cr.show_text("Index Data Goes Here");
+
     // Draw a blue border
     let alloc = index_area.get_allocation();
     cr.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
