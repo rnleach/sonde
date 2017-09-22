@@ -1,6 +1,8 @@
-// Library with non-gui related code
-extern crate sonde;
-use sonde::errors::*;
+// `error_chain! can recurse deeply
+#![recursion_limit = "1024"]
+
+#[macro_use]
+extern crate error_chain;
 
 // GUI crates
 extern crate gtk;
@@ -10,6 +12,15 @@ use gtk::{ Window, WindowType, DrawingArea, WidgetExt, GridExt };
 extern crate cairo;
 use cairo::Context;
 use cairo::enums::{FontSlant, FontWeight};
+
+extern crate glib;
+
+// Library with non-gui related code
+extern crate sonde_data;
+
+// Errors
+mod errors;
+use errors::*;
 
 fn main() {
 

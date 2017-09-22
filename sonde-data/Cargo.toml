@@ -1,0 +1,8 @@
+[package]
+name = "sonde-data"
+version = "0.0.1"
+authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
+
+[dependencies]
+error-chain = "0.11.0"
+

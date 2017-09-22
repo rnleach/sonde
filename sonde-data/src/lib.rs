@@ -4,8 +4,6 @@
 #[macro_use]
 extern crate error_chain;
 
-extern crate glib;
-
 pub mod errors;
 
 #[cfg(test)]
