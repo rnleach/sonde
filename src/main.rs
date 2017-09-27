@@ -11,7 +11,8 @@ extern crate gtk;
 use gtk::{Window, WindowType, DrawingArea};
 
 // Library with non-gui related code
-extern crate sonde_data;
+extern crate sounding_base;
+extern crate sounding_bufkit;
 
 // Errors
 mod errors;
