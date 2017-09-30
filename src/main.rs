@@ -8,7 +8,7 @@ extern crate error_chain;
 extern crate cairo;
 extern crate glib;
 extern crate gtk;
-use gtk::{Window, WindowType, DrawingArea};
+use gtk::{Window, WindowType};
 
 // Library with non-gui related code
 extern crate sounding_base;
@@ -19,6 +19,7 @@ mod errors;
 use errors::*;
 
 // Support modules
+mod sonde_widgets;
 mod main_window;
 mod sounding;
 mod hodograph;
@@ -48,28 +49,22 @@ fn run() -> Result<()> {
     // Set up Gtk+
     gtk::init().chain_err(|| "Error intializing Gtk+3")?;
 
+    // Create widgets
+    let widgets = sonde_widgets::SondeWidgets::new();
+
     // Create drawing area for the sounding
-    let sounding_area = DrawingArea::new();
-    sounding::set_up_sounding_area(&sounding_area);
+    sounding::set_up_sounding_area(&widgets.get_sounding_area());
 
     // Create drawing area for the hodograph
-    let hodo_area = DrawingArea::new();
-    hodograph::set_up_hodograph_area(&hodo_area);
+    hodograph::set_up_hodograph_area(&widgets.get_hodograph_area());
 
     // Create drawing areas for reporting sounding index values.
-    let index_area1 = DrawingArea::new();
-    let index_area2 = DrawingArea::new();
-    index_areas::set_up_index_areas(&index_area1, &index_area2);
+    let (ia1, ia2 ) = widgets.get_index_areas();
+    index_areas::set_up_index_areas(&ia1, &ia2);
 
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    main_window::layout(
-        &window,
-        &sounding_area,
-        &hodo_area,
-        &index_area1,
-        &index_area2,
-    );
+    main_window::layout( window.clone(), widgets.clone());
 
     // Initialize the main loop.
     gtk::main();
