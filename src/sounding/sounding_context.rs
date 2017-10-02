@@ -13,8 +13,13 @@ pub struct SoundingContext {
     pub zoom_factor: f32, // Multiply by this after translating
     pub translate_x: f32, // subtract this from x before converting to screen coords.
     pub translate_y: f32, // subtract this from y before converting to screen coords.
+
+    // device coordinates
     pub device_height: i32,
     pub device_width: i32,
+
+    // state of input
+    pub left_button_press_start: DeviceCoords,
 }
 
 impl SoundingContext {
@@ -36,6 +41,7 @@ impl SoundingContext {
             translate_y: 0.0,
             device_height: 100,
             device_width: 100,
+            left_button_press_start: (0.0, 0.0),
         }))
     }
 

@@ -1,7 +1,7 @@
 //! Event callbacks.
 
 use cairo::{Context, Matrix};
-use gdk::{EventScroll, ScrollDirection};
+use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use super::{config, sounding_context, utility};
@@ -121,6 +121,42 @@ pub fn scroll_event(
     sc.translate_y = pos.1 - old_zoom / sc.zoom_factor * (pos.1 - sc.translate_y);
 
     sounding_area.queue_draw();
+
+    Inhibit(true)
+}
+
+/// Handles button press events
+pub fn button_press_event(
+    sounding_area: &DrawingArea,
+    event: &EventButton,
+    sc: &sounding_context::SoundingContextPointer,
+) -> Inhibit {
+
+    println!("Press");
+
+    Inhibit(true)
+}
+
+/// Handles button release events
+pub fn button_release_event(
+    sounding_area: &DrawingArea,
+    event: &EventButton,
+    sc: &sounding_context::SoundingContextPointer,
+) -> Inhibit {
+
+    println!("Release");
+
+    Inhibit(true)
+}
+
+/// Handles motion events
+pub fn mouse_motion_event(
+    sounding_area: &DrawingArea,
+    event: &EventMotion,
+    sc: &sounding_context::SoundingContextPointer,
+) -> Inhibit {
+
+    println!("At: {:?}", event.get_position());
 
     Inhibit(true)
 }
