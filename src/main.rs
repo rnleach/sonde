@@ -6,6 +6,7 @@ extern crate error_chain;
 
 // GUI crates
 extern crate cairo;
+extern crate gdk;
 extern crate glib;
 extern crate gtk;
 use gtk::{Window, WindowType};
