@@ -57,7 +57,7 @@ fn run() -> Result<()> {
     let widgets = sonde_widgets::SondeWidgets::new();
 
     // Create drawing area for the sounding
-    let sounding_context = sounding::create_sounding_context();
+    let sounding_context = sounding::sounding_context::SoundingContext::create_sounding_context();
     sounding::set_up_sounding_area(&widgets.get_sounding_area(), sounding_context.clone());
 
     // Create drawing area for the hodograph

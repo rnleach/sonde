@@ -7,7 +7,7 @@ use sounding_base::Sounding;
 
 use errors::*;
 use sonde_widgets::SondeWidgets;
-use sounding::{XYCoords, SoundingContext};
+use sounding::{XYCoords, sounding_context};
 
 pub type DataContextPointer = Rc<RefCell<DataContext>>;
 
@@ -49,7 +49,7 @@ impl DataContext {
                 }
             })
             {
-                let (x, y) = SoundingContext::convert_tp_to_xy(pair);
+                let (x, y) = sounding_context::SoundingContext::convert_tp_to_xy(pair);
                 if x < self.lower_left.0 {
                     self.lower_left.0 = x;
                 }
@@ -104,5 +104,10 @@ impl DataContext {
         }
 
         self.widgets.draw_all();
+    }
+
+    /// Get the sounding to draw.
+    pub fn get_sounding_for_display(&self) -> &Sounding {
+        &self.list[self.currently_displayed]
     }
 }
