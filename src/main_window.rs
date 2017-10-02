@@ -2,9 +2,9 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{Window, WidgetExt, GridExt};
 
-use ::sonde_widgets::SondeWidgets;
+use sonde_widgets::SondeWidgets;
 
-pub fn layout( window: Window, widgets: SondeWidgets ) {
+pub fn layout(window: Window, widgets: SondeWidgets) {
 
     // TODO: Add menu bar
 

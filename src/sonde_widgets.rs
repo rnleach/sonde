@@ -1,7 +1,7 @@
 //! This module is for a container to hold all of the widgets in the application that may need to
 //! be referenced later and in many parts of the program.
 
-use ::gtk::{DrawingArea, WidgetExt};
+use gtk::{DrawingArea, WidgetExt};
 
 #[derive(Clone)]
 pub struct SondeWidgets {
@@ -12,7 +12,6 @@ pub struct SondeWidgets {
 }
 
 impl SondeWidgets {
-
     pub fn new() -> SondeWidgets {
         SondeWidgets {
             sounding_area: DrawingArea::new(),
