@@ -91,7 +91,7 @@ pub fn scroll_event(
 ) -> Inhibit {
 
     const DELTA_SCALE: f32 = 1.05;
-    const MIN_ZOOM: f32 = 0.75;
+    const MIN_ZOOM: f32 = 1.0;
     const MAX_ZOOM: f32 = 10.0;
 
     let mut sc = sc.borrow_mut();
@@ -120,6 +120,15 @@ pub fn scroll_event(
     sc.translate_x = pos.0 - old_zoom / sc.zoom_factor * (pos.0 - sc.translate_x);
     sc.translate_y = pos.1 - old_zoom / sc.zoom_factor * (pos.1 - sc.translate_y);
 
+    if sc.translate_x < 0.0 { sc.translate_x = 0.0; }
+    if sc.translate_y < 0.0 { sc.translate_y = 0.0; }
+
+    let max = sc.convert_device_to_xy((sc.device_width as f64, 0.0));
+    let max = (1.0 - max.0, 1.0 - max.1);
+
+    if sc.translate_x > max.0 { sc.translate_x = max.0; }
+    if sc.translate_y > max.1 { sc.translate_y = max.1; }
+
     sounding_area.queue_draw();
 
     Inhibit(true)
@@ -127,25 +136,31 @@ pub fn scroll_event(
 
 /// Handles button press events
 pub fn button_press_event(
-    sounding_area: &DrawingArea,
+    _sounding_area: &DrawingArea,
     event: &EventButton,
     sc: &sounding_context::SoundingContextPointer,
 ) -> Inhibit {
 
-    println!("Press");
+    if event.get_button() == 1 {
+        let mut sc = sc.borrow_mut();
+        sc.left_button_press_start = event.get_position();
+        sc.left_button_pressed = true;
+    }
 
     Inhibit(true)
 }
 
 /// Handles button release events
 pub fn button_release_event(
-    sounding_area: &DrawingArea,
+    _sounding_area: &DrawingArea,
     event: &EventButton,
     sc: &sounding_context::SoundingContextPointer,
 ) -> Inhibit {
-
-    println!("Release");
-
+    if event.get_button() == 1 {
+        let mut sc = sc.borrow_mut();
+        sc.left_button_press_start = (0.0, 0.0);
+        sc.left_button_pressed = false;
+    }
     Inhibit(true)
 }
 
@@ -156,7 +171,29 @@ pub fn mouse_motion_event(
     sc: &sounding_context::SoundingContextPointer,
 ) -> Inhibit {
 
-    println!("At: {:?}", event.get_position());
+    let mut sc = sc.borrow_mut();
+    if sc.left_button_pressed {
+        let old_position = sc.convert_device_to_xy(sc.left_button_press_start);
+        sc.left_button_press_start = event.get_position();
+        let new_position = sc.convert_device_to_xy(sc.left_button_press_start);
+        let delta = (
+            new_position.0 - old_position.0,
+            new_position.1 - old_position.1,
+        );
+        sc.translate_x -= delta.0;
+        sc.translate_y -= delta.1;
+
+        if sc.translate_x < 0.0 { sc.translate_x = 0.0; }
+        if sc.translate_y < 0.0 { sc.translate_y = 0.0; }
+
+        let max = sc.convert_device_to_xy((sc.device_width as f64, 0.0));
+        let max = (1.0 - max.0, 1.0 - max.1);
+
+        if sc.translate_x > max.0 { sc.translate_x = max.0; }
+        if sc.translate_y > max.1 { sc.translate_y = max.1; }
+
+        sounding_area.queue_draw();
+    }
 
     Inhibit(true)
 }

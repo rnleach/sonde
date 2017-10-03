@@ -20,6 +20,7 @@ pub struct SoundingContext {
 
     // state of input
     pub left_button_press_start: DeviceCoords,
+    pub left_button_pressed: bool,
 }
 
 impl SoundingContext {
@@ -42,6 +43,7 @@ impl SoundingContext {
             device_height: 100,
             device_width: 100,
             left_button_press_start: (0.0, 0.0),
+            left_button_pressed: false,
         }))
     }
 
