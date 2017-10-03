@@ -54,23 +54,29 @@ impl SoundingContext {
 
         let y = (f32::log10(SoundingContext::MAXP) - f32::log10(coords.1)) /
             (f32::log10(SoundingContext::MAXP) - f32::log10(SoundingContext::MINP));
-        // let y = f32::log10(-(coords.1 - SoundingContext::MAXP) + 0.00001) /
-        //     f32::log10(-(SoundingContext::MINP - SoundingContext::MAXP) + 0.00001);
+
         let x = (coords.0 - SoundingContext::MINT) /
             (SoundingContext::MAXT - SoundingContext::MINT);
+
         // do the skew
         let x = x + y;
         (x, y)
     }
 
+    /// Convert device to screen coords
+    #[inline]
+    pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = ::std::cmp::min(self.device_height, self.device_width) as f64;
+        (
+            coords.0 / scale_factor,
+            -(coords.1 / scale_factor) + self.device_height as f64 / scale_factor,
+        )
+    }
+
     /// Convert device coords to (x,y) coords
     #[inline]
     pub fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
-        let screen_coords = (
-            coords.0 / self.device_height as f64,
-            -(coords.1 / self.device_height as f64) + 1.0,
-        );
-
+        let screen_coords = self.convert_device_to_screen(coords);
         self.convert_screen_to_xy(screen_coords)
     }
 
@@ -122,5 +128,39 @@ impl SoundingContext {
     #[inline]
     pub fn fit_to(&mut self, lower_left: XYCoords, upper_right: XYCoords) {
         unimplemented!();
+    }
+
+    /// Center the skew-t in the view if zoomed out, and if zoomed in don't let it view beyond the
+    /// edges of the skew-t.
+    pub fn bound_view(&mut self) {
+
+        let bounds = (self.device_width as f64, self.device_height as f64);
+        let lower_right = self.convert_device_to_xy(bounds);
+        let upper_left = self.convert_device_to_xy((0.0, 0.0));
+        let width = lower_right.0 - upper_left.0;
+        let height = upper_left.1 - lower_right.1;
+
+        if width <= 1.0 {
+            if self.translate_x < 0.0 {
+                self.translate_x = 0.0;
+            }
+            let max_x = 1.0 - width;
+            if self.translate_x > max_x {
+                self.translate_x = max_x;
+            }
+        } else {
+            self.translate_x = -(width - 1.0) / 2.0;
+        }
+        if height < 1.0 {
+            if self.translate_y < 0.0 {
+                self.translate_y = 0.0;
+            }
+            let max_y = 1.0 - height;
+            if self.translate_y > max_y {
+                self.translate_y = max_y;
+            }
+        } else {
+            self.translate_y = -(height - 1.0) / 2.0;
+        }
     }
 }

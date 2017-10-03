@@ -19,24 +19,38 @@ pub fn draw_sounding(
     let alloc = sounding_area.get_allocation();
     sc.device_width = alloc.width;
     sc.device_height = alloc.height;
-    let aspect_ratio = sc.device_width as f64 / sc.device_height as f64;
+    let scale_factor = ::std::cmp::min(sc.device_height, sc.device_width) as f64;
 
-    // Make coordinates x: 0 -> aspect_ratio and y: 0 -> 1.0
-    cr.scale(sc.device_height as f64, sc.device_height as f64);
-    // Set origin at lower right.
+    // Draw black backgound
+    cr.rectangle(0.0, 0.0, sc.device_width as f64, sc.device_height as f64);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.fill();
+
+    // Set the scale factor
+    cr.scale(scale_factor, scale_factor);
+    // Set origin at lower left.
     cr.transform(Matrix {
         xx: 1.0,
         yx: 0.0,
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: 1.0,
+        y0: sc.device_height as f64 / scale_factor,
     });
 
-    // Draw black backgound
-    cr.rectangle(0.0, 0.0, aspect_ratio, 1.0);
-    cr.set_source_rgb(0.0, 0.0, 0.0);
-    cr.fill();
+    // Update the translation to center or bound the graph
+    sc.bound_view();
+
+    // Clip the drawing area
+    let upper_right_xy = sc.convert_xy_to_screen((1.0, 1.0));
+    let lower_left_xy = sc.convert_xy_to_screen((0.0, 0.0));
+    cr.rectangle(
+        lower_left_xy.0,
+        lower_left_xy.1,
+        upper_right_xy.0 - lower_left_xy.0,
+        upper_right_xy.1 - lower_left_xy.1,
+    );
+    cr.clip();
 
     // Draw isentrops
     for theta in &config::ISENTROPS {
@@ -120,15 +134,6 @@ pub fn scroll_event(
     sc.translate_x = pos.0 - old_zoom / sc.zoom_factor * (pos.0 - sc.translate_x);
     sc.translate_y = pos.1 - old_zoom / sc.zoom_factor * (pos.1 - sc.translate_y);
 
-    if sc.translate_x < 0.0 { sc.translate_x = 0.0; }
-    if sc.translate_y < 0.0 { sc.translate_y = 0.0; }
-
-    let max = sc.convert_device_to_xy((sc.device_width as f64, 0.0));
-    let max = (1.0 - max.0, 1.0 - max.1);
-
-    if sc.translate_x > max.0 { sc.translate_x = max.0; }
-    if sc.translate_y > max.1 { sc.translate_y = max.1; }
-
     sounding_area.queue_draw();
 
     Inhibit(true)
@@ -182,15 +187,6 @@ pub fn mouse_motion_event(
         );
         sc.translate_x -= delta.0;
         sc.translate_y -= delta.1;
-
-        if sc.translate_x < 0.0 { sc.translate_x = 0.0; }
-        if sc.translate_y < 0.0 { sc.translate_y = 0.0; }
-
-        let max = sc.convert_device_to_xy((sc.device_width as f64, 0.0));
-        let max = (1.0 - max.0, 1.0 - max.1);
-
-        if sc.translate_x > max.0 { sc.translate_x = max.0; }
-        if sc.translate_y > max.1 { sc.translate_y = max.1; }
 
         sounding_area.queue_draw();
     }
