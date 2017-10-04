@@ -1,10 +1,12 @@
 //! Event callbacks.
 
-use cairo::{Context, Matrix};
+use cairo::Context;
 use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
-use super::{config, sounding_context, utility};
+use super::sounding_context;
+
+mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_sounding(
@@ -15,84 +17,10 @@ pub fn draw_sounding(
 
     let mut sc = sc.borrow_mut();
 
-    // Get the dimensions of the DrawingArea
-    let alloc = sounding_area.get_allocation();
-    sc.device_width = alloc.width;
-    sc.device_height = alloc.height;
-    let scale_factor = ::std::cmp::min(sc.device_height, sc.device_width) as f64;
+    drawing::prepare_to_draw(sounding_area, cr, &mut sc);
 
-    // Draw black backgound
-    cr.rectangle(0.0, 0.0, sc.device_width as f64, sc.device_height as f64);
-    cr.set_source_rgb(0.0, 0.0, 0.0);
-    cr.fill();
-
-    // Set the scale factor
-    cr.scale(scale_factor, scale_factor);
-    // Set origin at lower left.
-    cr.transform(Matrix {
-        xx: 1.0,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0,
-        x0: 0.0,
-        y0: sc.device_height as f64 / scale_factor,
-    });
-
-    // Update the translation to center or bound the graph
-    sc.bound_view();
-
-    // Clip the drawing area
-    let upper_right_xy = sc.convert_xy_to_screen((1.0, 1.0));
-    let lower_left_xy = sc.convert_xy_to_screen((0.0, 0.0));
-    cr.rectangle(
-        lower_left_xy.0,
-        lower_left_xy.1,
-        upper_right_xy.0 - lower_left_xy.0,
-        upper_right_xy.1 - lower_left_xy.1,
-    );
-    cr.clip();
-
-    // Draw isentrops
-    for theta in &config::ISENTROPS {
-        utility::plot_curve_from_points(
-            cr,
-            &sc,
-            1.0,
-            (0.6, 0.6, 0.0, 0.5),
-            utility::generate_isentrop(*theta),
-        );
-    }
-
-    // Draw blue lines below freezing
-    let mut end_points: Vec<_> = config::COLD_ISOTHERMS
-        .into_iter()
-        .map(|t| {
-            ((*t, sounding_context::SoundingContext::MAXP), (
-                *t,
-                sounding_context::SoundingContext::MINP,
-            ))
-        })
-        .collect();
-    utility::plot_straight_lines(cr, &sc, 1.0, (0.0, 0.0, 1.0, 0.5), &end_points);
-
-    // Draw red lines above freezing
-    end_points = config::WARM_ISOTHERMS
-        .into_iter()
-        .map(|t| {
-            ((*t, sounding_context::SoundingContext::MAXP), (
-                *t,
-                sounding_context::SoundingContext::MINP,
-            ))
-        })
-        .collect();
-    utility::plot_straight_lines(cr, &sc, 1.0, (1.0, 0.0, 0.0, 0.5), &end_points);
-
-    // Draw pressure lines
-    end_points = config::ISOBARS
-        .into_iter()
-        .map(|p| ((-150.0, *p), (60.0, *p)))
-        .collect();
-    utility::plot_straight_lines(cr, &sc, 1.0, (1.0, 1.0, 1.0, 0.5), &end_points);
+    // Draw isentrops, isotherms, isobars, ...
+    drawing::draw_background_lines(&cr, &sc);
 
     Inhibit(false)
 }
@@ -146,6 +74,7 @@ pub fn button_press_event(
     sc: &sounding_context::SoundingContextPointer,
 ) -> Inhibit {
 
+    // Left mouse button
     if event.get_button() == 1 {
         let mut sc = sc.borrow_mut();
         sc.left_button_press_start = event.get_position();

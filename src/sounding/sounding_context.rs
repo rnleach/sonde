@@ -1,10 +1,11 @@
 //! Sounding context to store `sounding_area` state between calls.
+#![allow(dead_code)] // For now.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use super::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
-/// Smart pointer so that this type can be easily shared as global state.
+/// Smart pointer so that SoundingContext can be easily shared as global, mutable state.
 pub type SoundingContextPointer = Rc<RefCell<SoundingContext>>;
 
 /// Stores state of the sounding view between function, method, and callback calls.
@@ -14,26 +15,16 @@ pub struct SoundingContext {
     pub translate_x: f32, // subtract this from x before converting to screen coords.
     pub translate_y: f32, // subtract this from y before converting to screen coords.
 
-    // device coordinates
+    // device dimensions
     pub device_height: i32,
     pub device_width: i32,
 
-    // state of input
+    // state of input for left button press and panning.
     pub left_button_press_start: DeviceCoords,
     pub left_button_pressed: bool,
 }
 
 impl SoundingContext {
-    // Constants for defining a standard x-y coordinate system
-    /// Maximum pressure plotted on skew-t (bottom edge)
-    pub const MAXP: f32 = 1050.0; // mb
-    /// Minimum pressure plotted on skew-t (top edge)
-    pub const MINP: f32 = 90.0; // mb
-    /// Coldest temperature plotted at max pressure, on the bottom edge.
-    pub const MINT: f32 = -46.5; // C - at MAXP
-    /// Warmest temperature plotted at max pressure, on the bottom edge.
-    pub const MAXT: f32 = 50.5; // C - at MAXP
-
     /// Used during program initialization to create the SoundingContext and smart pointer.
     pub fn create_sounding_context() -> SoundingContextPointer {
         Rc::new(RefCell::new(SoundingContext {
@@ -47,16 +38,22 @@ impl SoundingContext {
         }))
     }
 
+    /// A scale factor to use when converting from XY to Screen Coordinates.
+    #[inline]
+    pub fn scale_factor(&self) -> f64 {
+        ::std::cmp::min(self.device_height, self.device_width) as f64
+    }
+
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
     #[inline]
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
+        use super::config;
         use std::f32;
 
-        let y = (f32::log10(SoundingContext::MAXP) - f32::log10(coords.1)) /
-            (f32::log10(SoundingContext::MAXP) - f32::log10(SoundingContext::MINP));
+        let y = (f32::log10(config::MAXP) - f32::log10(coords.1)) /
+            (f32::log10(config::MAXP) - f32::log10(config::MINP));
 
-        let x = (coords.0 - SoundingContext::MINT) /
-            (SoundingContext::MAXT - SoundingContext::MINT);
+        let x = (coords.0 - config::MINT) / (config::MAXT - config::MINT);
 
         // do the skew
         let x = x + y;
@@ -66,9 +63,10 @@ impl SoundingContext {
     /// Convert device to screen coords
     #[inline]
     pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = ::std::cmp::min(self.device_height, self.device_width) as f64;
+        let scale_factor = self.scale_factor();
         (
             coords.0 / scale_factor,
+            // Flip y coordinate vertically and translate so origin is upper left corner.
             -(coords.1 / scale_factor) + self.device_height as f64 / scale_factor,
         )
     }
@@ -80,16 +78,28 @@ impl SoundingContext {
         self.convert_screen_to_xy(screen_coords)
     }
 
-    /// TODO: implement Conversion from  (x,y) coords to temperature and pressure.
+    /// Conversion from  (x,y) coords to temperature and pressure.
     #[inline]
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
-        unimplemented!();
+        use super::config;
+        use std::f32;
+
+        // undo the skew
+        let x = coords.0 - coords.1;
+        let y = coords.1;
+
+        let t = x * (config::MAXT - config::MINT) + config::MINT;
+        let p = 10.0f32.powf(
+            f32::log10(config::MAXP) -
+                y * (f32::log10(config::MAXP) - f32::log10(config::MINP)),
+        );
+
+        (t, p)
     }
 
     /// Conversion from (x,y) coords to screen coords
     #[inline]
     pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-        // Screen coords go 0 -> 1 up the y axis and 0 -> aspect_ratio right along the x axis.
 
         // Apply translation first
         let x = coords.0 - self.translate_x;
@@ -118,15 +128,17 @@ impl SoundingContext {
         self.convert_xy_to_screen(xy)
     }
 
-    /// TODO: implement Conversion from screen coordinates to temperature, pressure.
+    /// Conversion from screen coordinates to temperature, pressure.
     #[inline]
     pub fn convert_screen_to_tp(&self, coords: ScreenCoords) -> TPCoords {
-        unimplemented!();
+        let xy = self.convert_screen_to_xy(coords);
+        SoundingContext::convert_xy_to_tp(xy)
     }
 
     /// TODO: implement Fit to the given x-y max coords.
     #[inline]
-    pub fn fit_to(&mut self, lower_left: XYCoords, upper_right: XYCoords) {
+    pub fn fit_to(&mut self, _lower_left: XYCoords, _upper_right: XYCoords) {
+        // Set zoom-factor and x-y translate to fit the sounding in the view nicely
         unimplemented!();
     }
 
