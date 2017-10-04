@@ -1,4 +1,5 @@
-#![allow(dead_code)]
+//! Globally shareable sounding data.
+#![allow(dead_code)] // for now.
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -9,6 +10,7 @@ use errors::*;
 use sonde_widgets::SondeWidgets;
 use sounding::{XYCoords, sounding_context};
 
+/// Smart pointer for globally shareable data
 pub type DataContextPointer = Rc<RefCell<DataContext>>;
 
 pub struct DataContext {
