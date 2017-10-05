@@ -48,8 +48,6 @@ fn main() {
 
 fn run() -> Result<()> {
 
-    // TODO: Make data type to manage currently loaded soundings
-
     // Set up Gtk+
     gtk::init().chain_err(|| "Error intializing Gtk+3")?;
 
@@ -76,7 +74,7 @@ fn run() -> Result<()> {
 
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    main_window::layout(window.clone(), widgets.clone());
+    main_window::layout(window.clone(), widgets.clone(), data_context.clone());
 
     // Initialize the main loop.
     gtk::main();
