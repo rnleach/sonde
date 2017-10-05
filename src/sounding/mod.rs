@@ -4,7 +4,7 @@ use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MA
           POINTER_MOTION_HINT_MASK, KEY_RELEASE_MASK};
 use gtk::{DrawingArea, WidgetExt};
 
-mod callbacks;
+mod sounding_callbacks;
 mod config;
 pub mod sounding_context;
 
@@ -35,29 +35,29 @@ pub fn set_up_sounding_area(
     sounding_area.set_vexpand(true);
 
     let sc = sounding_context.clone();
-    sounding_area.connect_draw(move |da, cr| callbacks::draw_sounding(da, cr, &sc));
+    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &sc));
 
     let sc = sounding_context.clone();
-    sounding_area.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &sc));
+    sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &sc));
 
     let sc = sounding_context.clone();
     sounding_area.connect_button_press_event(move |da, ev| {
-        callbacks::button_press_event(da, ev, &sc)
+        sounding_callbacks::button_press_event(da, ev, &sc)
     });
 
     let sc = sounding_context.clone();
     sounding_area.connect_button_release_event(move |da, ev| {
-        callbacks::button_release_event(da, ev, &sc)
+        sounding_callbacks::button_release_event(da, ev, &sc)
     });
 
     let sc = sounding_context.clone();
     sounding_area.connect_motion_notify_event(move |da, ev| {
-        callbacks::mouse_motion_event(da, ev, &sc)
+        sounding_callbacks::mouse_motion_event(da, ev, &sc)
     });
 
     let dc = data_context.clone();
     sounding_area.connect_key_release_event(move |da, ev| {
-        callbacks::key_release_event(da, ev, &dc)
+        sounding_callbacks::key_release_event(da, ev, &dc)
     });
     sounding_area.set_can_focus(true);
 
