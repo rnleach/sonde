@@ -1,10 +1,11 @@
 //! Event callbacks.
 
 use cairo::Context;
-use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection, EventKey, keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use super::sounding_context;
+use super::super::data_context;
 
 mod drawing;
 
@@ -79,9 +80,10 @@ pub fn button_press_event(
         let mut sc = sc.borrow_mut();
         sc.left_button_press_start = event.get_position();
         sc.left_button_pressed = true;
+        Inhibit(true)
+    } else {
+        Inhibit(false)
     }
-
-    Inhibit(true)
 }
 
 /// Handles button release events
@@ -94,8 +96,10 @@ pub fn button_release_event(
         let mut sc = sc.borrow_mut();
         sc.left_button_press_start = (0.0, 0.0);
         sc.left_button_pressed = false;
+        Inhibit(true)
+    } else {
+        Inhibit(false)
     }
-    Inhibit(true)
 }
 
 /// Handles motion events
@@ -118,7 +122,32 @@ pub fn mouse_motion_event(
         sc.translate_y -= delta.1;
 
         sounding_area.queue_draw();
+        Inhibit(true)
+    } else {
+
+        Inhibit(false)
+    }
+}
+
+/// Handles key-release events, display next or previous sounding in a series.
+pub fn key_release_event(
+    _sounding_area: &DrawingArea,
+    event: &EventKey,
+    dc: &data_context::DataContextPointer,
+) -> Inhibit {
+
+    let keyval = event.get_keyval();
+    if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+        let mut dc = dc.borrow_mut();
+        dc.display_next();
+        Inhibit(true)
+    } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+        let mut dc = dc.borrow_mut();
+        dc.display_previous();
+        Inhibit(true)
+    } else {
+        Inhibit(false)
     }
 
-    Inhibit(true)
+
 }

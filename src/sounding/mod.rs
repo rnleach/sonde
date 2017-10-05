@@ -1,12 +1,14 @@
 //! Module holds the code for drawing the skew-t plot.
 
 use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
-          POINTER_MOTION_HINT_MASK};
+          POINTER_MOTION_HINT_MASK, KEY_RELEASE_MASK};
 use gtk::{DrawingArea, WidgetExt};
 
 mod callbacks;
 mod config;
 pub mod sounding_context;
+
+use super::data_context;
 
 /// Temperature-Pressure coordinates.
 /// Origin lower left. (Temperature, Pressure)
@@ -25,6 +27,7 @@ pub type DeviceCoords = (f64, f64);
 pub fn set_up_sounding_area(
     sounding_area: &DrawingArea,
     sounding_context: sounding_context::SoundingContextPointer,
+    data_context: data_context::DataContextPointer,
 ) {
 
     // Layout
@@ -52,8 +55,17 @@ pub fn set_up_sounding_area(
         callbacks::mouse_motion_event(da, ev, &sc)
     });
 
-    sounding_area.add_events((SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK |
-         POINTER_MOTION_HINT_MASK | POINTER_MOTION_MASK)
-        .bits() as i32);
+    let dc = data_context.clone();
+    sounding_area.connect_key_release_event(move |da, ev| {
+        callbacks::key_release_event(da, ev, &dc)
+    });
+    sounding_area.set_can_focus(true);
+
+    sounding_area.add_events(
+        (SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_HINT_MASK |
+             POINTER_MOTION_MASK |
+             KEY_RELEASE_MASK)
+            .bits() as i32,
+    );
 
 }
