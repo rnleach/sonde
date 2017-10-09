@@ -27,9 +27,9 @@ pub fn draw_sounding(
     drawing::draw_background_lines(&cr, &sc);
 
     // Draw temperature profiles
-    drawing::draw_temperature_profile(DryBulb, &cr, &sc, &dc);
     drawing::draw_temperature_profile(WetBulb, &cr, &sc, &dc);
     drawing::draw_temperature_profile(DewPoint, &cr, &sc, &dc);
+    drawing::draw_temperature_profile(DryBulb, &cr, &sc, &dc);
 
     Inhibit(false)
 }
