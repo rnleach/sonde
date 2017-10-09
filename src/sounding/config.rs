@@ -29,6 +29,19 @@ pub const ISOBAR_RGBA: (f64, f64, f64, f64) = (1.0, 1.0, 1.0, 0.5);
 /// Color used for isentrops
 pub const ISENTROP_RGBA: (f64, f64, f64, f64) = (0.6, 0.6, 0.0, 0.5);
 
+/// Color used for temperature plot
+pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (1.0, 0.0, 0.0, 1.0);
+/// Line width for Temperature Plot
+pub const TEMPERATURE_LINE_WIDTH: f64 = 2.0;
+/// Color used for dew point plot
+pub const DEW_POINT_RGBA: (f64, f64, f64, f64) = (0.0, 1.0, 0.0, 1.0);
+/// Line width for Dew point Plot
+pub const DEW_POINT_LINE_WIDTH: f64 = 2.0;
+/// Color used for wet bulb plot
+pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 1.0, 1.0, 1.0);
+/// Line width for Dew point Plot
+pub const WET_BULB_LINE_WIDTH: f64 = 1.0;
+
 
 /// Isotherms to plot on the chart, freezing and below.
 pub const COLD_ISOTHERMS: [f32; 19] = [

@@ -14,14 +14,25 @@ pub fn draw_sounding(
     sounding_area: &DrawingArea,
     cr: &Context,
     sc: &sounding_context::SoundingContextPointer,
+    dc: &data_context::DataContextPointer,
 ) -> Inhibit {
 
     let mut sc = sc.borrow_mut();
+    let dc = dc.borrow();
 
     drawing::prepare_to_draw(sounding_area, cr, &mut sc);
 
     // Draw isentrops, isotherms, isobars, ...
     drawing::draw_background_lines(&cr, &sc);
+
+    // Draw temperature profile
+    drawing::draw_temperature_profile(&cr, &sc, &dc);
+
+    // Draw wet bulb profile
+    drawing::draw_wet_bulb_profile(&cr, &sc, &dc);
+
+    // Draw dew point profile
+    drawing::draw_dew_point_profile(&cr, &sc, &dc);
 
     Inhibit(false)
 }

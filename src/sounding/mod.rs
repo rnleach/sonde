@@ -5,7 +5,7 @@ use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MA
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
-mod config;
+pub mod config;
 pub mod sounding_context;
 
 use super::data_context;
@@ -35,7 +35,10 @@ pub fn set_up_sounding_area(
     sounding_area.set_vexpand(true);
 
     let sc = sounding_context.clone();
-    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &sc));
+    let dc = data_context.clone();
+    sounding_area.connect_draw(move |da, cr| {
+        sounding_callbacks::draw_sounding(da, cr, &sc, &dc)
+    });
 
     let sc = sounding_context.clone();
     sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &sc));

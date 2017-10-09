@@ -35,6 +35,7 @@ impl DataContext {
 
     /// Load data from a source.
     pub fn load_data(&mut self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
+        use sounding::config;
 
         self.list = src.into_iter().collect();
         self.currently_displayed = 0;
@@ -45,7 +46,7 @@ impl DataContext {
         for snd in &self.list {
             for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
                 if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
-                    Some((t, p))
+                    if p < config::MINP { None } else { Some((t, p)) }
                 } else {
                     None
                 }
@@ -71,10 +72,34 @@ impl DataContext {
             // if let Some(p) = snd.station_pres.as_option() {
 
             // }
+
+            for pair in snd.pressure.iter().zip(&snd.dew_point).filter_map(|p| {
+                if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                    if p < config::MINP { None } else { Some((t, p)) }
+                } else {
+                    None
+                }
+            })
+            {
+                let (x, y) = sounding_context::SoundingContext::convert_tp_to_xy(pair);
+                if x < self.lower_left.0 {
+                    self.lower_left.0 = x;
+                }
+                if y < self.lower_left.1 {
+                    self.lower_left.1 = y;
+                }
+                if x > self.upper_right.0 {
+                    self.upper_right.0 = x;
+                }
+                if y > self.upper_right.1 {
+                    self.upper_right.1 = y;
+                }
+            }
         }
 
         self.widgets.draw_all();
-        unimplemented!();
+
+        Ok(())
     }
 
     /// Is there any data to plot?
@@ -109,7 +134,21 @@ impl DataContext {
     }
 
     /// Get the sounding to draw.
-    pub fn get_sounding_for_display(&self) -> &Sounding {
-        &self.list[self.currently_displayed]
+    pub fn get_sounding_for_display(&self) -> Option<&Sounding> {
+        if self.plottable() {
+            Some(&self.list[self.currently_displayed])
+        } else {
+            None
+        }
+    }
+
+    /// Get the lower left
+    pub fn get_lower_left(&self) -> XYCoords {
+        self.lower_left
+    }
+
+    /// Get the upper right XY coordinate
+    pub fn get_upper_right(&self) -> XYCoords {
+        self.upper_right
     }
 }

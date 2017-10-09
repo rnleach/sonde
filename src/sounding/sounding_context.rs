@@ -135,11 +135,24 @@ impl SoundingContext {
         SoundingContext::convert_xy_to_tp(xy)
     }
 
-    /// TODO: implement Fit to the given x-y max coords.
+    /// Fit to the given x-y max coords.
     #[inline]
-    pub fn fit_to(&mut self, _lower_left: XYCoords, _upper_right: XYCoords) {
-        // Set zoom-factor and x-y translate to fit the sounding in the view nicely
-        unimplemented!();
+    pub fn fit_to(&mut self, lower_left: XYCoords, upper_right: XYCoords) {
+        use std::f32;
+
+        self.translate_x = lower_left.0;
+        self.translate_y = lower_left.1;
+
+        let width = upper_right.0 - lower_left.0;
+        let height = upper_right.1 - lower_left.1;
+
+        let width_scale = 1.0 / width;
+        let height_scale = 1.0 / height;
+
+        // println!("lower_left: {:?}, upper_right: {:?}, width_scale: {}, height_scale: {}",
+        // lower_left, upper_right, width_scale, height_scale);
+
+        self.zoom_factor = f32::min(width_scale, height_scale);
     }
 
     /// Center the skew-t in the view if zoomed out, and if zoomed in don't let it view beyond the

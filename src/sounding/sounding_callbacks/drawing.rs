@@ -5,6 +5,7 @@ use gtk::{DrawingArea, WidgetExt};
 
 use super::super::sounding_context::SoundingContext;
 use super::super::{config, TPCoords};
+use data_context::DataContext;
 
 // Prepare the drawing area with transforms, fill in the background, do the clipping
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut SoundingContext) {
@@ -105,6 +106,99 @@ pub fn draw_background_lines(cr: &Context, sc: &SoundingContext) {
     );
 }
 
+// Draw the temperature
+#[inline]
+pub fn draw_temperature_profile(cr: &Context, sc: &SoundingContext, dc: &DataContext) {
+
+    if let Some(sndg) = dc.get_sounding_for_display() {
+
+        let temp_data = &sndg.temperature;
+        let pres_data = &sndg.pressure;
+
+        let profile_data: Vec<_> = pres_data
+            .iter()
+            .zip(temp_data.iter())
+            .filter_map(|val_pair| if let (Some(p), Some(t)) =
+                (val_pair.0.as_option(), val_pair.1.as_option())
+            {
+                Some((t, p))
+            } else {
+                None
+            })
+            .collect();
+
+        plot_curve_from_points(
+            cr,
+            &sc,
+            config::TEMPERATURE_LINE_WIDTH,
+            config::TEMPERATURE_RGBA,
+            profile_data,
+        );
+    }
+}
+
+// Draw the dew point
+#[inline]
+pub fn draw_dew_point_profile(cr: &Context, sc: &SoundingContext, dc: &DataContext) {
+
+    if let Some(sndg) = dc.get_sounding_for_display() {
+
+        let dew_point_data = &sndg.dew_point;
+        let pres_data = &sndg.pressure;
+
+        let profile_data: Vec<_> = pres_data
+            .iter()
+            .zip(dew_point_data.iter())
+            .filter_map(|val_pair| if let (Some(p), Some(t)) =
+                (val_pair.0.as_option(), val_pair.1.as_option())
+            {
+                Some((t, p))
+            } else {
+                None
+            })
+            .collect();
+
+        plot_curve_from_points(
+            cr,
+            &sc,
+            config::DEW_POINT_LINE_WIDTH,
+            config::DEW_POINT_RGBA,
+            profile_data,
+        );
+    }
+}
+
+// Draw the wet bulb
+#[inline]
+pub fn draw_wet_bulb_profile(cr: &Context, sc: &SoundingContext, dc: &DataContext) {
+
+    if let Some(sndg) = dc.get_sounding_for_display() {
+
+        let wet_bulb_data = &sndg.wet_bulb;
+        let pres_data = &sndg.pressure;
+
+        let profile_data: Vec<_> = pres_data
+            .iter()
+            .zip(wet_bulb_data.iter())
+            .filter_map(|val_pair| if let (Some(p), Some(t)) =
+                (val_pair.0.as_option(), val_pair.1.as_option())
+            {
+                Some((t, p))
+            } else {
+                None
+            })
+            .collect();
+
+        plot_curve_from_points(
+            cr,
+            &sc,
+            config::WET_BULB_LINE_WIDTH,
+            config::WET_BULB_RGBA,
+            profile_data,
+        );
+    }
+}
+
 /// Draw a straight line on the graph.
 #[inline]
 pub fn plot_straight_lines(
@@ -133,6 +227,7 @@ pub fn plot_curve_from_points(
     rgba: (f64, f64, f64, f64),
     points: Vec<TPCoords>,
 ) {
+
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
 

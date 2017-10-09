@@ -4,13 +4,19 @@ use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu};
 
 use sonde_widgets::SondeWidgets;
 use super::data_context::DataContextPointer;
+use super::sounding::sounding_context::SoundingContextPointer;
 
 mod menu_callbacks;
 
-pub fn layout(window: Window, widgets: SondeWidgets, data_context: DataContextPointer) {
+pub fn layout(
+    window: Window,
+    widgets: SondeWidgets,
+    data_context: DataContextPointer,
+    sounding_context: SoundingContextPointer,
+) {
 
     // Build the menu bar
-    let menu_bar = build_menu_bar(&data_context);
+    let menu_bar = build_menu_bar(&data_context, &window, &sounding_context);
 
     // Layout the drawing areas
     let drawing_areas = layout_drawing_areas(&widgets);
@@ -25,7 +31,7 @@ pub fn layout(window: Window, widgets: SondeWidgets, data_context: DataContextPo
 
 }
 
-fn build_menu_bar(dc: &DataContextPointer) -> MenuBar {
+fn build_menu_bar(dc: &DataContextPointer, win: &Window, sc: &SoundingContextPointer) -> MenuBar {
 
     //
     // The file menu.
@@ -34,7 +40,11 @@ fn build_menu_bar(dc: &DataContextPointer) -> MenuBar {
     // The open item
     let open_item = MenuItem::new_with_label("Open");
     let dc1 = dc.clone();
-    open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &dc1));
+    let win1 = win.clone();
+    let sc1 = sc.clone();
+    open_item.connect_activate(move |mi| {
+        menu_callbacks::open_callback(mi, &dc1, &win1, &sc1)
+    });
 
     // The quit item
     let quit_item = MenuItem::new_with_label("Quit");

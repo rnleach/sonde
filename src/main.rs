@@ -74,7 +74,12 @@ fn run() -> Result<()> {
 
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    main_window::layout(window.clone(), widgets.clone(), data_context.clone());
+    main_window::layout(
+        window.clone(),
+        widgets.clone(),
+        data_context.clone(),
+        sounding_context.clone(),
+    );
 
     // Initialize the main loop.
     gtk::main();
