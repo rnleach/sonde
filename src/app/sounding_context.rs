@@ -1,9 +1,9 @@
 //! Sounding context to store `sounding_area` state between calls.
-#![allow(dead_code)] // For now.
+#![allow(dead_code)] // for now
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use super::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
+use gui::sounding::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
 /// Smart pointer so that SoundingContext can be easily shared as global, mutable state.
 pub type SoundingContextPointer = Rc<RefCell<SoundingContext>>;

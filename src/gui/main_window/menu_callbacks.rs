@@ -6,8 +6,8 @@ use gtk::{DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, File
 
 use sounding_bufkit::BufkitFile;
 
-use data_context::DataContextPointer;
-use sounding::sounding_context::SoundingContextPointer;
+use app::data_context::DataContextPointer;
+use app::sounding_context::SoundingContextPointer;
 use errors::*;
 
 pub fn open_callback(

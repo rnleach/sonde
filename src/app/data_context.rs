@@ -7,8 +7,9 @@ use std::cell::RefCell;
 use sounding_base::Sounding;
 
 use errors::*;
-use sonde_widgets::SondeWidgets;
-use sounding::{XYCoords, sounding_context};
+use gui::sonde_widgets::SondeWidgets;
+use gui::sounding::XYCoords;
+use app;
 
 /// Smart pointer for globally shareable data
 pub type DataContextPointer = Rc<RefCell<DataContext>>;
@@ -52,7 +53,7 @@ impl DataContext {
                 }
             })
             {
-                let (x, y) = sounding_context::SoundingContext::convert_tp_to_xy(pair);
+                let (x, y) = app::sounding_context::SoundingContext::convert_tp_to_xy(pair);
                 if x < self.lower_left.0 {
                     self.lower_left.0 = x;
                 }
@@ -81,7 +82,7 @@ impl DataContext {
                 }
             })
             {
-                let (x, y) = sounding_context::SoundingContext::convert_tp_to_xy(pair);
+                let (x, y) = app::sounding_context::SoundingContext::convert_tp_to_xy(pair);
                 if x < self.lower_left.0 {
                     self.lower_left.0 = x;
                 }

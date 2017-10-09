@@ -4,8 +4,8 @@ use cairo::Context;
 use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection, EventKey, keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
-use super::sounding_context;
-use super::super::data_context;
+use app::sounding_context;
+use app::data_context;
 
 mod drawing;
 

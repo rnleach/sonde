@@ -2,9 +2,9 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu};
 
-use sonde_widgets::SondeWidgets;
-use super::data_context::DataContextPointer;
-use super::sounding::sounding_context::SoundingContextPointer;
+use gui::sonde_widgets::SondeWidgets;
+use app::data_context::DataContextPointer;
+use app::sounding_context::SoundingContextPointer;
 
 mod menu_callbacks;
 

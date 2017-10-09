@@ -5,9 +5,8 @@ use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MA
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
-pub mod sounding_context;
 
-use super::data_context;
+use app;
 
 /// Temperature-Pressure coordinates.
 /// Origin lower left. (Temperature, Pressure)
@@ -25,8 +24,8 @@ pub type DeviceCoords = (f64, f64);
 /// Initialize the drawing area and connect signal handlers.
 pub fn set_up_sounding_area(
     sounding_area: &DrawingArea,
-    sounding_context: sounding_context::SoundingContextPointer,
-    data_context: data_context::DataContextPointer,
+    sounding_context: app::sounding_context::SoundingContextPointer,
+    data_context: app::data_context::DataContextPointer,
 ) {
 
     // Layout

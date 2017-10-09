@@ -4,9 +4,9 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
 use config;
-use data_context::DataContext;
-use sounding::sounding_context::SoundingContext;
-use sounding::TPCoords;
+use app::data_context::DataContext;
+use app::sounding_context::SoundingContext;
+use gui::sounding::TPCoords;
 
 // Prepare the drawing area with transforms, fill in the background, do the clipping
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut SoundingContext) {

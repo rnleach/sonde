@@ -19,18 +19,14 @@ extern crate sounding_bufkit;
 mod errors;
 use errors::*;
 
-// Support modules for GUI
-mod sonde_widgets;
-mod main_window;
-mod sounding;
-mod hodograph;
-mod index_areas;
-
-// Support modules for managing data
-mod data_context;
+// Module for maintaining application state
+mod app;
 
 // Module for configuring application
 mod config;
+
+// GUI module
+mod gui;
 
 fn main() {
 
@@ -55,29 +51,29 @@ fn run() -> Result<()> {
     gtk::init().chain_err(|| "Error intializing Gtk+3")?;
 
     // Create widgets
-    let widgets = sonde_widgets::SondeWidgets::new();
+    let widgets = gui::sonde_widgets::SondeWidgets::new();
 
     // Set up data context
-    let data_context = data_context::DataContext::new(widgets.clone());
+    let data_context = app::data_context::DataContext::new(widgets.clone());
 
     // Create drawing area for the sounding
-    let sounding_context = sounding::sounding_context::SoundingContext::create_sounding_context();
-    sounding::set_up_sounding_area(
+    let sounding_context = app::sounding_context::SoundingContext::create_sounding_context();
+    gui::sounding::set_up_sounding_area(
         &widgets.get_sounding_area(),
         sounding_context.clone(),
         data_context.clone(),
     );
 
     // Create drawing area for the hodograph
-    hodograph::set_up_hodograph_area(&widgets.get_hodograph_area());
+    gui::hodograph::set_up_hodograph_area(&widgets.get_hodograph_area());
 
     // Create drawing areas for reporting sounding index values.
     let (ia1, ia2) = widgets.get_index_areas();
-    index_areas::set_up_index_areas(&ia1, &ia2);
+    gui::index_areas::set_up_index_areas(&ia1, &ia2);
 
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    main_window::layout(
+    gui::main_window::layout(
         window.clone(),
         widgets.clone(),
         data_context.clone(),
