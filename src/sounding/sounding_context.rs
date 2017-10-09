@@ -47,7 +47,7 @@ impl SoundingContext {
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
     #[inline]
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
-        use super::config;
+        use config;
         use std::f32;
 
         let y = (f32::log10(config::MAXP) - f32::log10(coords.1)) /
@@ -81,7 +81,7 @@ impl SoundingContext {
     /// Conversion from  (x,y) coords to temperature and pressure.
     #[inline]
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
-        use super::config;
+        use config;
         use std::f32;
 
         // undo the skew

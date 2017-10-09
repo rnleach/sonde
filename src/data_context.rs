@@ -35,7 +35,7 @@ impl DataContext {
 
     /// Load data from a source.
     pub fn load_data(&mut self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
-        use sounding::config;
+        use config;
 
         self.list = src.into_iter().collect();
         self.currently_displayed = 0;

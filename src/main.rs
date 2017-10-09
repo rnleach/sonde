@@ -29,6 +29,9 @@ mod index_areas;
 // Support modules for managing data
 mod data_context;
 
+// Module for configuring application
+mod config;
+
 fn main() {
 
     if let Err(ref e) = run() {

@@ -3,9 +3,10 @@
 use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
-use super::super::sounding_context::SoundingContext;
-use super::super::{config, TPCoords};
+use config;
 use data_context::DataContext;
+use sounding::sounding_context::SoundingContext;
+use sounding::TPCoords;
 
 // Prepare the drawing area with transforms, fill in the background, do the clipping
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut SoundingContext) {
@@ -245,7 +246,7 @@ pub fn plot_curve_from_points(
 /// Generate a list of Temperature, Pressure points along an isentrope.
 pub fn generate_isentrop(theta: f32) -> Vec<TPCoords> {
     use std::f32;
-    use super::super::config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
+    use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
     const P0: f32 = 1000.0; // For calcuating theta
 
     let mut result = vec![];

@@ -5,7 +5,6 @@ use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MA
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
-pub mod config;
 pub mod sounding_context;
 
 use super::data_context;
