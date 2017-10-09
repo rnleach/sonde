@@ -16,6 +16,7 @@ pub fn draw_sounding(
     sc: &sounding_context::SoundingContextPointer,
     dc: &data_context::DataContextPointer,
 ) -> Inhibit {
+    use self::drawing::TemperatureType::{DryBulb, WetBulb, DewPoint};
 
     let mut sc = sc.borrow_mut();
     let dc = dc.borrow();
@@ -25,14 +26,10 @@ pub fn draw_sounding(
     // Draw isentrops, isotherms, isobars, ...
     drawing::draw_background_lines(&cr, &sc);
 
-    // Draw temperature profile
-    drawing::draw_temperature_profile(&cr, &sc, &dc);
-
-    // Draw wet bulb profile
-    drawing::draw_wet_bulb_profile(&cr, &sc, &dc);
-
-    // Draw dew point profile
-    drawing::draw_dew_point_profile(&cr, &sc, &dc);
+    // Draw temperature profiles
+    drawing::draw_temperature_profile(DryBulb, &cr, &sc, &dc);
+    drawing::draw_temperature_profile(WetBulb, &cr, &sc, &dc);
+    drawing::draw_temperature_profile(DewPoint, &cr, &sc, &dc);
 
     Inhibit(false)
 }

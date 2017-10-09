@@ -4,7 +4,7 @@
 /// Maximum pressure plotted on skew-t (bottom edge)
 pub const MAXP: f32 = 1050.0; // mb
 /// Minimum pressure plotted on skew-t (top edge)
-pub const MINP: f32 = 90.0; // mb
+pub const MINP: f32 = 99.0; // mb
 /// Coldest temperature plotted at max pressure, on the bottom edge.
 pub const MINT: f32 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
