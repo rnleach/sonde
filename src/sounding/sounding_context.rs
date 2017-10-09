@@ -153,6 +153,8 @@ impl SoundingContext {
         // lower_left, upper_right, width_scale, height_scale);
 
         self.zoom_factor = f32::min(width_scale, height_scale);
+
+        self.bound_view();
     }
 
     /// Center the skew-t in the view if zoomed out, and if zoomed in don't let it view beyond the
