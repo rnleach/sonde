@@ -41,7 +41,8 @@ pub struct AppContext {
 impl AppContext {
     /// Create a new instance of AppContext and return a smart pointer to it.
     ///
-    /// TODO: add example code that also sets the widgets.
+    /// Note: It is important at a later time to call set_widgets, otherwise nothing will ever be
+    /// drawn on the GUI.
     pub fn new() -> AppContextPointer {
         Rc::new(RefCell::new(AppContext {
             // Data state
