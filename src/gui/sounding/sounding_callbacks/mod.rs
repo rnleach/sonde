@@ -4,8 +4,7 @@ use cairo::Context;
 use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection, EventKey, keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
-use app::sounding_context;
-use app::data_context;
+use app;
 
 mod drawing;
 
@@ -13,23 +12,21 @@ mod drawing;
 pub fn draw_sounding(
     sounding_area: &DrawingArea,
     cr: &Context,
-    sc: &sounding_context::SoundingContextPointer,
-    dc: &data_context::DataContextPointer,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
     use self::drawing::TemperatureType::{DryBulb, WetBulb, DewPoint};
 
-    let mut sc = sc.borrow_mut();
-    let dc = dc.borrow();
+    let mut ac = ac.borrow_mut();
 
-    drawing::prepare_to_draw(sounding_area, cr, &mut sc);
+    drawing::prepare_to_draw(sounding_area, cr, &mut ac);
 
     // Draw isentrops, isotherms, isobars, ...
-    drawing::draw_background_lines(&cr, &sc);
+    drawing::draw_background_lines(&cr, &ac);
 
     // Draw temperature profiles
-    drawing::draw_temperature_profile(WetBulb, &cr, &sc, &dc);
-    drawing::draw_temperature_profile(DewPoint, &cr, &sc, &dc);
-    drawing::draw_temperature_profile(DryBulb, &cr, &sc, &dc);
+    drawing::draw_temperature_profile(WetBulb, &cr, &ac);
+    drawing::draw_temperature_profile(DewPoint, &cr, &ac);
+    drawing::draw_temperature_profile(DryBulb, &cr, &ac);
 
     Inhibit(false)
 }
@@ -38,38 +35,38 @@ pub fn draw_sounding(
 pub fn scroll_event(
     sounding_area: &DrawingArea,
     event: &EventScroll,
-    sc: &sounding_context::SoundingContextPointer,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
 
     const DELTA_SCALE: f32 = 1.05;
     const MIN_ZOOM: f32 = 1.0;
     const MAX_ZOOM: f32 = 10.0;
 
-    let mut sc = sc.borrow_mut();
+    let mut ac = ac.borrow_mut();
 
-    let pos = sc.convert_device_to_xy(event.get_position());
+    let pos = ac.convert_device_to_xy(event.get_position());
     let dir = event.get_direction();
 
-    let old_zoom = sc.zoom_factor;
+    let old_zoom = ac.zoom_factor;
 
     match dir {
         ScrollDirection::Up => {
-            sc.zoom_factor *= DELTA_SCALE;
+            ac.zoom_factor *= DELTA_SCALE;
         }
         ScrollDirection::Down => {
-            sc.zoom_factor /= DELTA_SCALE;
+            ac.zoom_factor /= DELTA_SCALE;
         }
         _ => {}
     }
 
-    if sc.zoom_factor < MIN_ZOOM {
-        sc.zoom_factor = MIN_ZOOM;
-    } else if sc.zoom_factor > MAX_ZOOM {
-        sc.zoom_factor = MAX_ZOOM;
+    if ac.zoom_factor < MIN_ZOOM {
+        ac.zoom_factor = MIN_ZOOM;
+    } else if ac.zoom_factor > MAX_ZOOM {
+        ac.zoom_factor = MAX_ZOOM;
     }
 
-    sc.translate_x = pos.0 - old_zoom / sc.zoom_factor * (pos.0 - sc.translate_x);
-    sc.translate_y = pos.1 - old_zoom / sc.zoom_factor * (pos.1 - sc.translate_y);
+    ac.translate_x = pos.0 - old_zoom / ac.zoom_factor * (pos.0 - ac.translate_x);
+    ac.translate_y = pos.1 - old_zoom / ac.zoom_factor * (pos.1 - ac.translate_y);
 
     sounding_area.queue_draw();
 
@@ -80,14 +77,14 @@ pub fn scroll_event(
 pub fn button_press_event(
     _sounding_area: &DrawingArea,
     event: &EventButton,
-    sc: &sounding_context::SoundingContextPointer,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
 
     // Left mouse button
     if event.get_button() == 1 {
-        let mut sc = sc.borrow_mut();
-        sc.left_button_press_start = event.get_position();
-        sc.left_button_pressed = true;
+        let mut ac = ac.borrow_mut();
+        ac.left_button_press_start = event.get_position();
+        ac.left_button_pressed = true;
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -98,12 +95,12 @@ pub fn button_press_event(
 pub fn button_release_event(
     _sounding_area: &DrawingArea,
     event: &EventButton,
-    sc: &sounding_context::SoundingContextPointer,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
     if event.get_button() == 1 {
-        let mut sc = sc.borrow_mut();
-        sc.left_button_press_start = (0.0, 0.0);
-        sc.left_button_pressed = false;
+        let mut ac = ac.borrow_mut();
+        ac.left_button_press_start = (0.0, 0.0);
+        ac.left_button_pressed = false;
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -114,20 +111,20 @@ pub fn button_release_event(
 pub fn mouse_motion_event(
     sounding_area: &DrawingArea,
     event: &EventMotion,
-    sc: &sounding_context::SoundingContextPointer,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
 
-    let mut sc = sc.borrow_mut();
-    if sc.left_button_pressed {
-        let old_position = sc.convert_device_to_xy(sc.left_button_press_start);
-        sc.left_button_press_start = event.get_position();
-        let new_position = sc.convert_device_to_xy(sc.left_button_press_start);
+    let mut ac = ac.borrow_mut();
+    if ac.left_button_pressed {
+        let old_position = ac.convert_device_to_xy(ac.left_button_press_start);
+        ac.left_button_press_start = event.get_position();
+        let new_position = ac.convert_device_to_xy(ac.left_button_press_start);
         let delta = (
             new_position.0 - old_position.0,
             new_position.1 - old_position.1,
         );
-        sc.translate_x -= delta.0;
-        sc.translate_y -= delta.1;
+        ac.translate_x -= delta.0;
+        ac.translate_y -= delta.1;
 
         sounding_area.queue_draw();
         Inhibit(true)
@@ -141,7 +138,7 @@ pub fn mouse_motion_event(
 pub fn key_release_event(
     _sounding_area: &DrawingArea,
     event: &EventKey,
-    dc: &data_context::DataContextPointer,
+    dc: &app::AppContextPointer,
 ) -> Inhibit {
 
     let keyval = event.get_keyval();

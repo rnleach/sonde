@@ -4,12 +4,11 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
 use config;
-use app::data_context::DataContext;
-use app::sounding_context::SoundingContext;
+use app::AppContext;
 use gui::sounding::TPCoords;
 
 // Prepare the drawing area with transforms, fill in the background, do the clipping
-pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut SoundingContext) {
+pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut AppContext) {
     // Get the dimensions of the DrawingArea
     let alloc = sounding_area.get_allocation();
     sc.device_width = alloc.width;
@@ -53,14 +52,14 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, sc: &mut Sound
 }
 
 // Draw isentrops, isotherms, isobars, ...
-pub fn draw_background_lines(cr: &Context, sc: &SoundingContext) {
+pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draws background lines from the bottom up.
 
     // Draw isentrops
     for theta in &config::ISENTROPS {
         plot_curve_from_points(
             cr,
-            &sc,
+            &ac,
             config::BACKGROUND_LINE_WIDTH,
             config::ISENTROP_RGBA,
             generate_isentrop(*theta),
@@ -74,7 +73,7 @@ pub fn draw_background_lines(cr: &Context, sc: &SoundingContext) {
         .collect();
     plot_straight_lines(
         cr,
-        &sc,
+        &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::COLD_ISOTHERM_RGBA,
         &end_points,
@@ -87,7 +86,7 @@ pub fn draw_background_lines(cr: &Context, sc: &SoundingContext) {
         .collect();
     plot_straight_lines(
         cr,
-        &sc,
+        &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::WARM_ISOTHERM_RGBA,
         &end_points,
@@ -100,7 +99,7 @@ pub fn draw_background_lines(cr: &Context, sc: &SoundingContext) {
         .collect();
     plot_straight_lines(
         cr,
-        &sc,
+        &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::ISOBAR_RGBA,
         &end_points,
@@ -115,14 +114,9 @@ pub enum TemperatureType {
 
 // Draw the temperature profile
 #[inline]
-pub fn draw_temperature_profile(
-    t_type: TemperatureType,
-    cr: &Context,
-    sc: &SoundingContext,
-    dc: &DataContext,
-) {
+pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppContext) {
 
-    if let Some(sndg) = dc.get_sounding_for_display() {
+    if let Some(sndg) = ac.get_sounding_for_display() {
 
         let pres_data = &sndg.pressure;
         let temp_data = match t_type {
@@ -155,7 +149,7 @@ pub fn draw_temperature_profile(
             })
             .collect();
 
-        plot_curve_from_points(cr, &sc, line_width, line_rgba, profile_data);
+        plot_curve_from_points(cr, &ac, line_width, line_rgba, profile_data);
     }
 }
 
@@ -163,7 +157,7 @@ pub fn draw_temperature_profile(
 #[inline]
 pub fn plot_straight_lines(
     cr: &Context,
-    sc: &SoundingContext,
+    ac: &AppContext,
     line_width_pixels: f64,
     rgba: (f64, f64, f64, f64),
     end_points: &[(TPCoords, TPCoords)],
@@ -171,8 +165,8 @@ pub fn plot_straight_lines(
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
     for &(start, end) in end_points {
-        let start = sc.convert_tp_to_screen(start);
-        let end = sc.convert_tp_to_screen(end);
+        let start = ac.convert_tp_to_screen(start);
+        let end = ac.convert_tp_to_screen(end);
         cr.move_to(start.0, start.1);
         cr.line_to(end.0, end.1);
     }
@@ -182,7 +176,7 @@ pub fn plot_straight_lines(
 /// Draw a curve connecting a list of points.
 pub fn plot_curve_from_points(
     cr: &Context,
-    sc: &SoundingContext,
+    ac: &AppContext,
     line_width_pixels: f64,
     rgba: (f64, f64, f64, f64),
     points: Vec<TPCoords>,
@@ -192,10 +186,10 @@ pub fn plot_curve_from_points(
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
 
     let mut iter = points.into_iter();
-    let start = sc.convert_tp_to_screen(iter.by_ref().next().unwrap());
+    let start = ac.convert_tp_to_screen(iter.by_ref().next().unwrap());
     cr.move_to(start.0, start.1);
     for end in iter {
-        let end = sc.convert_tp_to_screen(end);
+        let end = ac.convert_tp_to_screen(end);
         cr.line_to(end.0, end.1);
     }
 

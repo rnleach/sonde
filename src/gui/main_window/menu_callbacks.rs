@@ -6,16 +6,10 @@ use gtk::{DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, File
 
 use sounding_bufkit::BufkitFile;
 
-use app::data_context::DataContextPointer;
-use app::sounding_context::SoundingContextPointer;
+use app::AppContextPointer;
 use errors::*;
 
-pub fn open_callback(
-    _mi: &MenuItem,
-    dc: &DataContextPointer,
-    win: &Window,
-    sc: &SoundingContextPointer,
-) {
+pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
 
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
@@ -34,10 +28,9 @@ pub fn open_callback(
     if dialog.run() == ResponseType::Ok.into() {
 
         if let Some(filename) = dialog.get_filename() {
-            if load_file(&filename, dc).is_ok() {
-                let mut sc = sc.borrow_mut();
-                let dc = dc.borrow();
-                sc.fit_to(dc.get_lower_left(), dc.get_upper_right());
+            if load_file(&filename, ac).is_ok() {
+                let mut ac = ac.borrow_mut();
+                ac.fit_to_data();
             } else {
                 // TODO: Show error dialog
             }
@@ -52,15 +45,15 @@ pub fn open_callback(
     dialog.destroy();
 }
 
-fn load_file(path: &PathBuf, dc: &DataContextPointer) -> Result<()> {
-    let mut dc = dc.borrow_mut();
+fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
+    let mut ac = ac.borrow_mut();
 
     let file = BufkitFile::load(path).chain_err(|| {
         format!("Error loading file {:?}", path)
     })?;
     let data = file.data()?;
 
-    dc.load_data(&mut data.into_iter())?;
+    ac.load_data(&mut data.into_iter())?;
 
     Ok(())
 }

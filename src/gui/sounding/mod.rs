@@ -22,43 +22,36 @@ pub type ScreenCoords = (f64, f64);
 pub type DeviceCoords = (f64, f64);
 
 /// Initialize the drawing area and connect signal handlers.
-pub fn set_up_sounding_area(
-    sounding_area: &DrawingArea,
-    sounding_context: app::sounding_context::SoundingContextPointer,
-    data_context: app::data_context::DataContextPointer,
-) {
+pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppContextPointer) {
 
     // Layout
     sounding_area.set_hexpand(true);
     sounding_area.set_vexpand(true);
 
-    let sc = sounding_context.clone();
-    let dc = data_context.clone();
-    sounding_area.connect_draw(move |da, cr| {
-        sounding_callbacks::draw_sounding(da, cr, &sc, &dc)
-    });
+    let ac = app_context.clone();
+    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &ac));
 
-    let sc = sounding_context.clone();
-    sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &sc));
+    let ac = app_context.clone();
+    sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));
 
-    let sc = sounding_context.clone();
+    let ac = app_context.clone();
     sounding_area.connect_button_press_event(move |da, ev| {
-        sounding_callbacks::button_press_event(da, ev, &sc)
+        sounding_callbacks::button_press_event(da, ev, &ac)
     });
 
-    let sc = sounding_context.clone();
+    let ac = app_context.clone();
     sounding_area.connect_button_release_event(move |da, ev| {
-        sounding_callbacks::button_release_event(da, ev, &sc)
+        sounding_callbacks::button_release_event(da, ev, &ac)
     });
 
-    let sc = sounding_context.clone();
+    let ac = app_context.clone();
     sounding_area.connect_motion_notify_event(move |da, ev| {
-        sounding_callbacks::mouse_motion_event(da, ev, &sc)
+        sounding_callbacks::mouse_motion_event(da, ev, &ac)
     });
 
-    let dc = data_context.clone();
+    let ac = app_context.clone();
     sounding_area.connect_key_release_event(move |da, ev| {
-        sounding_callbacks::key_release_event(da, ev, &dc)
+        sounding_callbacks::key_release_event(da, ev, &ac)
     });
     sounding_area.set_can_focus(true);
 

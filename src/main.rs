@@ -54,15 +54,14 @@ fn run() -> Result<()> {
     let widgets = gui::sonde_widgets::SondeWidgets::new();
 
     // Set up data context
-    let data_context = app::data_context::DataContext::new(widgets.clone());
+    let app_context = app::AppContext::new();
+    {
+        let mut app = app_context.borrow_mut();
+        app.set_widgets(widgets.clone());
+    }
 
     // Create drawing area for the sounding
-    let sounding_context = app::sounding_context::SoundingContext::create_sounding_context();
-    gui::sounding::set_up_sounding_area(
-        &widgets.get_sounding_area(),
-        sounding_context.clone(),
-        data_context.clone(),
-    );
+    gui::sounding::set_up_sounding_area(&widgets.get_sounding_area(), app_context.clone());
 
     // Create drawing area for the hodograph
     gui::hodograph::set_up_hodograph_area(&widgets.get_hodograph_area());
@@ -73,12 +72,7 @@ fn run() -> Result<()> {
 
     // create top level window
     let window = Window::new(WindowType::Toplevel);
-    gui::main_window::layout(
-        window.clone(),
-        widgets.clone(),
-        data_context.clone(),
-        sounding_context.clone(),
-    );
+    gui::main_window::layout(window.clone(), widgets.clone(), app_context.clone());
 
     // Initialize the main loop.
     gtk::main();

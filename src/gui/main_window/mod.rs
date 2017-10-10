@@ -3,20 +3,14 @@ use gtk::prelude::*;
 use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu};
 
 use gui::sonde_widgets::SondeWidgets;
-use app::data_context::DataContextPointer;
-use app::sounding_context::SoundingContextPointer;
+use app::AppContextPointer;
 
 mod menu_callbacks;
 
-pub fn layout(
-    window: Window,
-    widgets: SondeWidgets,
-    data_context: DataContextPointer,
-    sounding_context: SoundingContextPointer,
-) {
+pub fn layout(window: Window, widgets: SondeWidgets, app_context: AppContextPointer) {
 
     // Build the menu bar
-    let menu_bar = build_menu_bar(&data_context, &window, &sounding_context);
+    let menu_bar = build_menu_bar(&app_context, &window);
 
     // Layout the drawing areas
     let drawing_areas = layout_drawing_areas(&widgets);
@@ -31,7 +25,7 @@ pub fn layout(
 
 }
 
-fn build_menu_bar(dc: &DataContextPointer, win: &Window, sc: &SoundingContextPointer) -> MenuBar {
+fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 
     //
     // The file menu.
@@ -39,12 +33,9 @@ fn build_menu_bar(dc: &DataContextPointer, win: &Window, sc: &SoundingContextPoi
 
     // The open item
     let open_item = MenuItem::new_with_label("Open");
-    let dc1 = dc.clone();
     let win1 = win.clone();
-    let sc1 = sc.clone();
-    open_item.connect_activate(move |mi| {
-        menu_callbacks::open_callback(mi, &dc1, &win1, &sc1)
-    });
+    let ac1 = ac.clone();
+    open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
     // The quit item
     let quit_item = MenuItem::new_with_label("Quit");
