@@ -1,5 +1,6 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
+#![allow(dead_code)] // For now.
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -7,7 +8,7 @@ use std::cell::RefCell;
 use sounding_base::Sounding;
 
 use errors::*;
-use gui::sonde_widgets::SondeWidgets;
+use gui::Gui;
 use gui::sounding::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
 /// Smart pointer for globally shareable data
@@ -22,7 +23,7 @@ pub struct AppContext {
     upper_right: XYCoords,
 
     currently_displayed: usize,
-    widgets: Option<SondeWidgets>,
+    widgets: Option<Gui>,
 
     // Standard x-y coords
     pub zoom_factor: f32, // Multiply by this after translating
@@ -41,7 +42,7 @@ pub struct AppContext {
 impl AppContext {
     /// Create a new instance of AppContext and return a smart pointer to it.
     ///
-    /// Note: It is important at a later time to call set_widgets, otherwise nothing will ever be
+    /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
     /// drawn on the GUI.
     pub fn new() -> AppContextPointer {
         Rc::new(RefCell::new(AppContext {
@@ -63,7 +64,7 @@ impl AppContext {
         }))
     }
 
-    pub fn set_widgets(&mut self, widgets: SondeWidgets) {
+    pub fn set_gui(&mut self, widgets: Gui) {
         self.widgets = Some(widgets);
     }
 

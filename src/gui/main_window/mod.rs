@@ -2,18 +2,20 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu};
 
-use gui::sonde_widgets::SondeWidgets;
+use gui::Gui;
 use app::AppContextPointer;
 
 mod menu_callbacks;
 
-pub fn layout(window: Window, widgets: SondeWidgets, app_context: AppContextPointer) {
+pub fn layout(gui: Gui, app_context: AppContextPointer) {
+
+    let window = gui.get_window();
 
     // Build the menu bar
     let menu_bar = build_menu_bar(&app_context, &window);
 
     // Layout the drawing areas
-    let drawing_areas = layout_drawing_areas(&widgets);
+    let drawing_areas = layout_drawing_areas(&gui);
 
     // Layout everything else
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -62,12 +64,12 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     menu_bar
 }
 
-fn layout_drawing_areas(widgets: &SondeWidgets) -> gtk::Grid {
+fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
 
     let grid = gtk::Grid::new();
-    grid.attach(&widgets.get_sounding_area(), 0, 0, 2, 3);
-    grid.attach(&widgets.get_hodograph_area(), 2, 0, 1, 1);
-    let (ia1, ia2) = widgets.get_index_areas();
+    grid.attach(&gui.get_sounding_area(), 0, 0, 2, 3);
+    grid.attach(&gui.get_hodograph_area(), 2, 0, 1, 1);
+    let (ia1, ia2) = gui.get_index_areas();
     grid.attach(&ia1, 2, 1, 1, 2);
     grid.attach(&ia2, 0, 3, 3, 1);
 
