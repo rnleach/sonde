@@ -280,6 +280,15 @@ impl AppContext {
         Self::convert_xy_to_tp(xy)
     }
 
+    /// Get a bounding box in screen coords
+    #[inline]
+    pub fn bounding_box_in_screen_coords(&self) -> (ScreenCoords, ScreenCoords) {
+        let lower_left = self.convert_device_to_screen((0.0, self.device_height as f64));
+        let upper_right = self.convert_device_to_screen((self.device_width as f64, 0.0));
+
+        (lower_left, upper_right)
+    }
+
     /// Fit to the given x-y max coords.
     #[inline]
     pub fn fit_to_data(&mut self) {
