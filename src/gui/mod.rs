@@ -11,8 +11,8 @@ use gtk::{DrawingArea, WidgetExt, Window, WindowType};
 use app::AppContextPointer;
 
 /// Aggregation of the GUI components need for later reference.
-/// 
-/// Note: This is cloneable because Gtk+ Gui objects are cheap to clone, and just increment a 
+///
+/// Note: This is cloneable because Gtk+ Gui objects are cheap to clone, and just increment a
 /// reference count in the gtk-rs library. So cloning this after it is initialized does not copy
 /// the GUI, but instead gives a duplicate of the references to the objects.
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl Gui {
 
         sounding::set_up_sounding_area(&gui.get_sounding_area(), acp.clone());
         hodograph::set_up_hodograph_area(&gui.get_hodograph_area());
-        
+
         let (ia1, ia2) = gui.get_index_areas();
         index_areas::set_up_index_areas(&ia1, &ia2);
 
@@ -70,4 +70,3 @@ impl Gui {
         self.index_area2.queue_draw();
     }
 }
-

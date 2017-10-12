@@ -108,46 +108,113 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
 
 // Label the pressure, temperatures, etc lines.
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
-    // TODO: Checks to make sure labels don't overlap each other
 
+    // Get min/max screen coordinate values
     let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
-    let (screen_x_min, screen_y_min) = lower_left_screen;
+    let (mut screen_x_min, _screen_y_min) = lower_left_screen;
     let (screen_x_max, screen_y_max) = upper_right_screen;
-    let (_, mut screen_max_p ) = ac.convert_screen_to_tp((0.0, 0.0));
-    if screen_max_p > config::MAXP { screen_max_p = config::MAXP; }
 
+    // Get coordinates to keep labels from flowing off the chart.
+    let (xmin, _ymin) = ac.convert_xy_to_screen((0.0, 0.0));
+    let (_, mut screen_max_p) = ac.convert_screen_to_tp((0.0, 0.0));
+    if screen_max_p > config::MAXP {
+        screen_max_p = config::MAXP;
+    }
+    if xmin > screen_x_min {
+        screen_x_min = xmin;
+    }
+
+    // Configure the font. TODO: move to config.
     let font_face = FontFace::toy_create("Courier", FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
-    const FONT_SIZE: f64 = 0.025f64;
+    const FONT_SIZE: f64 = 0.025; // TODO: move to config with value in points and calculate here
+
+    // Flip the y-coordinate so it displays the font right side up
     cr.set_font_matrix(Matrix {
-            xx: 1.0 * FONT_SIZE,
-            yx: 0.0,
-            xy: 0.0,
-            yy: -1.0 * FONT_SIZE, // Reflect it to be right side up!
-            x0: 0.0,
-            y0: 0.0,
-        });
+        xx: 1.0 * FONT_SIZE,
+        yx: 0.0,
+        xy: 0.0,
+        yy: -1.0 * FONT_SIZE, // Reflect it to be right side up!
+        x0: 0.0,
+        y0: 0.0,
+    });
 
     // Label isobars
+    let mut max_p_label_right_edge: f64 = 0.0; // Used for checking overlap later with T
+    let mut last_label_y = ::std::f64::MIN; // Used for checking overlap between pressure labels
     let mut rgba = config::ISOBAR_RGBA;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     for &p in config::ISOBARS.into_iter() {
+        // Make the label text
         let label = format!("{}", p);
-        let (_,mut screen_y) = ac.convert_tp_to_screen((0.0,p));
-        screen_y += 0.005 * screen_y_max;
+
+        // Calculate position of lower left edge for label
+        let (_, mut screen_y) = ac.convert_tp_to_screen((0.0, p));
+        screen_y += 0.005 * screen_y_max; // Lift off the pressure line slightly
+
+        // Check for vertical overlap.
+        let label_extents = cr.text_extents(&label);
+        let label_width = label_extents.width;
+        let label_height = label_extents.height;
+        if screen_y < label_height + last_label_y {
+            continue;
+        }
+        last_label_y = screen_y;
+
+        // Update right edge for checking with T later.
+        if label_width > max_p_label_right_edge {
+            max_p_label_right_edge = label_width;
+        }
+
+        // Draw the label
         cr.move_to(screen_x_min + 0.01 * screen_x_max, screen_y);
         cr.show_text(&label);
     }
+    // This is width, add position of left edge to get right edge
+    max_p_label_right_edge += screen_x_min + 0.01 * screen_x_max;
 
-    // Label isotherms
-    // rgba = config::COLD_ISOTHERM_RGBA;
-    // TODO: Split warm and cold isotherms
-    // TODO: make sure t-labels don't overlap pressure labels
-    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
-    for &t in config::COLD_ISOTHERMS.into_iter().chain(config::WARM_ISOTHERMS.into_iter()) {
+    // Label cold isotherms
+    rgba = config::COLD_ISOTHERM_RGBA;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+    for &t in config::COLD_ISOTHERMS.into_iter() {
+        // Make the label text
         let label = format!("{}", t);
-        let (screen_x,mut screen_y) = ac.convert_tp_to_screen((t,screen_max_p));
+
+        // Calculate position for lower left edge of label
+        let (screen_x, mut screen_y) = ac.convert_tp_to_screen((t, screen_max_p));
         screen_y += 0.008 * screen_y_max;
+
+        // Check for overlap with pressure labels
+        if screen_x < max_p_label_right_edge {
+            continue;
+        }
+
+        // TODO: Check for overlap with other T labels
+
+        // Draw the label
+        cr.move_to(screen_x, screen_y);
+        cr.show_text(&label);
+    }
+
+    // Label warm isotherms
+    rgba = config::WARM_ISOTHERM_RGBA;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+    for &t in config::WARM_ISOTHERMS.into_iter() {
+        // Make the label text
+        let label = format!("{}", t);
+
+        // Calculate position for lower left edge of label
+        let (screen_x, mut screen_y) = ac.convert_tp_to_screen((t, screen_max_p));
+        screen_y += 0.008 * screen_y_max;
+
+        // Check for overlap with pressure labels
+        if screen_x < max_p_label_right_edge {
+            continue;
+        }
+
+        // TODO: Check for overlap with other T labels
+
+        // Draw the label
         cr.move_to(screen_x, screen_y);
         cr.show_text(&label);
     }
