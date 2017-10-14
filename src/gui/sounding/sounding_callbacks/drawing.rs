@@ -66,8 +66,29 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
         );
     }
 
+    // Draw mixing ratio lines
+    let mut end_points: Vec<_> = config::ISO_MIXING_RATIO
+        .into_iter()
+        .map(|mw| {
+            (
+                (temperatures_from_p_and_mw(config::MAXP, *mw), config::MAXP),
+                (
+                    temperatures_from_p_and_mw(config::ISO_MIXING_RATIO_TOP_P, *mw),
+                    config::ISO_MIXING_RATIO_TOP_P,
+                ),
+            )
+        })
+        .collect();
+    plot_straight_dashed_lines(
+        cr,
+        &ac,
+        config::BACKGROUND_LINE_WIDTH,
+        config::ISO_MIXING_RATIO_RGBA,
+        &end_points,
+    );
+
     // Draw freezing and below isotherms
-    let mut end_points: Vec<_> = config::COLD_ISOTHERMS
+    end_points = config::COLD_ISOTHERMS
         .into_iter()
         .map(|t| ((*t, config::MAXP), (*t, config::MINP)))
         .collect();
@@ -311,6 +332,20 @@ pub fn plot_straight_lines(
     cr.stroke();
 }
 
+/// Draw a straight line on the graph.
+#[inline]
+pub fn plot_straight_dashed_lines(
+    cr: &Context,
+    ac: &AppContext,
+    line_width_pixels: f64,
+    rgba: (f64, f64, f64, f64),
+    end_points: &[(TPCoords, TPCoords)],
+) {
+    cr.set_dash(&[0.02], 0.0);
+    plot_straight_lines(cr, ac, line_width_pixels, rgba, end_points);
+    cr.set_dash(&[], 0.0);
+}
+
 /// Draw a curve connecting a list of points.
 pub fn plot_curve_from_points(
     cr: &Context,
@@ -350,4 +385,13 @@ pub fn generate_isentrop(theta: f32) -> Vec<TPCoords> {
     }
 
     result
+}
+
+/// Given a mixing ratio and pressure, calculate the temperature. The p is in hPa and the mw is in
+/// g/kg.
+pub fn temperatures_from_p_and_mw(p: f32, mw: f32) -> f32 {
+    use std::f32;
+
+    let z = mw * p / 6.11 / 621.97 / (1.0 + mw / 621.97);
+    237.5 * f32::log10(z) / (7.5 - f32::log10(z))
 }

@@ -14,6 +14,8 @@ pub const MAXT: f32 = 50.5; // C - at MAXP
 pub const ISENTROPS_TOP_P: f32 = 300.0;
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 30;
+/// Hightest elevation pressure level to draw iso mixing ratio up to
+pub const ISO_MIXING_RATIO_TOP_P: f32 = 300.0;
 
 /// Line width in pixels for skew-t background lines.
 pub const BACKGROUND_LINE_WIDTH: f64 = 1.0;
@@ -28,6 +30,8 @@ pub const WARM_ISOTHERM_RGBA: (f64, f64, f64, f64) = (1.0, 0.0, 0.0, 0.5);
 pub const ISOBAR_RGBA: (f64, f64, f64, f64) = (1.0, 1.0, 1.0, 0.5);
 /// Color used for isentrops
 pub const ISENTROP_RGBA: (f64, f64, f64, f64) = (0.6, 0.6, 0.0, 0.5);
+/// Color used for isopleths of mixing ration
+pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) = (0.0, 0.6, 0.0, 0.5);
 
 /// Color used for temperature plot
 pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (1.0, 0.0, 0.0, 1.0);
@@ -114,4 +118,41 @@ pub const ISENTROPS: [f32; 17] = [
     370.0,
     380.0,
     390.0,
+];
+
+/// Isopleths of mixing ratio
+pub const ISO_MIXING_RATIO: [f32; 32] = [
+    0.1,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.0,
+    8.0,
+    10.0,
+    12.0,
+    14.0,
+    16.0,
+    18.0,
+    20.0,
+    24.0,
+    28.0,
+    32.0,
+    36.0,
+    40.0,
+    44.0,
+    48.0,
+    52.0,
+    56.0,
+    60.0,
+    68.0,
+//    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
