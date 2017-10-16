@@ -156,3 +156,91 @@ pub const ISO_MIXING_RATIO: [f32; 32] = [
     68.0,
 //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
+
+/* ------------------------------------------------------------------------------------------------
+Values below this line are automatically calculated based on the configuration values above and
+should not be altered.
+------------------------------------------------------------------------------------------------ */
+use gui::sounding::TPCoords;
+
+lazy_static! {
+
+    /// Compute points for background isotherms only once
+    pub static ref COLD_ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
+        COLD_ISOTHERMS
+        .into_iter()
+        .map(|t| ((*t, MAXP), (*t, MINP)))
+        .collect()
+    };
+
+    /// Compute points for background isotherms only once
+    pub static ref WARM_ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
+        WARM_ISOTHERMS
+        .into_iter()
+        .map(|t| ((*t, MAXP), (*t, MINP)))
+        .collect()
+    };
+
+    /// Compute points for background isobars only once
+    pub static ref ISOBAR_PNTS: Vec<(TPCoords, TPCoords)> = {
+        ISOBARS
+            .into_iter()
+            .map(|p| ((-150.0, *p), (60.0, *p)))
+            .collect()
+    };
+
+    /// Compute points for background isentrops only once
+    pub static ref ISENTROP_PNTS: Vec<Vec<TPCoords>> = {
+        ISENTROPS
+        .into_iter()
+        .map(|theta| generate_isentrop(*theta))
+        .collect()
+    };
+
+    /// Compute points for background mixing ratio only once
+    pub static ref ISO_MIXING_RATIO_PNTS: Vec<(TPCoords, TPCoords)> = {
+        ISO_MIXING_RATIO
+        .into_iter()
+        .map(|mw| {
+            (
+                (temperatures_from_p_and_mw(MAXP, *mw), MAXP),
+                (
+                    temperatures_from_p_and_mw(ISO_MIXING_RATIO_TOP_P, *mw),
+                    ISO_MIXING_RATIO_TOP_P,
+                ),
+            )
+        })
+        .collect()
+    };
+}
+
+/* ------------------------------------------------------------------------------------------------
+Utility functions for calculating points.
+------------------------------------------------------------------------------------------------ */
+// FIXME: Move these to their own module, maybe even met calculations crate?
+/// Generate a list of Temperature, Pressure points along an isentrope.
+pub fn generate_isentrop(theta: f32) -> Vec<TPCoords> {
+    use std::f32;
+    use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
+    const P0: f32 = 1000.0; // For calcuating theta
+
+    let mut result = vec![];
+
+    let mut p = MAXP;
+    while p >= ISENTROPS_TOP_P {
+        let t = theta * f32::powf(P0 / p, -0.286) - 273.15;
+        result.push((t, p));
+        p += (ISENTROPS_TOP_P - MAXP) / (POINTS_PER_ISENTROP as f32);
+    }
+
+    result
+}
+
+/// Given a mixing ratio and pressure, calculate the temperature. The p is in hPa and the mw is in
+/// g/kg.
+pub fn temperatures_from_p_and_mw(p: f32, mw: f32) -> f32 {
+    use std::f32;
+
+    let z = mw * p / 6.11 / 621.97 / (1.0 + mw / 621.97);
+    237.5 * f32::log10(z) / (7.5 - f32::log10(z))
+}

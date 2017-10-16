@@ -56,74 +56,50 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draws background lines from the bottom up.
 
     // Draw isentrops
-    for theta in &config::ISENTROPS {
+    for pnts in config::ISENTROP_PNTS.iter() {
         plot_curve_from_points(
             cr,
             &ac,
             config::BACKGROUND_LINE_WIDTH,
             config::ISENTROP_RGBA,
-            generate_isentrop(*theta),
+            pnts,
         );
     }
 
     // Draw mixing ratio lines
-    let mut end_points: Vec<_> = config::ISO_MIXING_RATIO
-        .into_iter()
-        .map(|mw| {
-            (
-                (temperatures_from_p_and_mw(config::MAXP, *mw), config::MAXP),
-                (
-                    temperatures_from_p_and_mw(config::ISO_MIXING_RATIO_TOP_P, *mw),
-                    config::ISO_MIXING_RATIO_TOP_P,
-                ),
-            )
-        })
-        .collect();
     plot_straight_dashed_lines(
         cr,
         &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::ISO_MIXING_RATIO_RGBA,
-        &end_points,
+        &config::ISO_MIXING_RATIO_PNTS,
     );
 
     // Draw freezing and below isotherms
-    end_points = config::COLD_ISOTHERMS
-        .into_iter()
-        .map(|t| ((*t, config::MAXP), (*t, config::MINP)))
-        .collect();
     plot_straight_lines(
         cr,
         &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::COLD_ISOTHERM_RGBA,
-        &end_points,
+        &config::COLD_ISOTHERM_PNTS,
     );
 
     // Draw above freezing isotherms
-    end_points = config::WARM_ISOTHERMS
-        .into_iter()
-        .map(|t| ((*t, config::MAXP), (*t, config::MINP)))
-        .collect();
     plot_straight_lines(
         cr,
         &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::WARM_ISOTHERM_RGBA,
-        &end_points,
+        &config::WARM_ISOTHERM_PNTS,
     );
 
     // Draw isobars
-    end_points = config::ISOBARS
-        .into_iter()
-        .map(|p| ((-150.0, *p), (60.0, *p)))
-        .collect();
     plot_straight_lines(
         cr,
         &ac,
         config::BACKGROUND_LINE_WIDTH,
         config::ISOBAR_RGBA,
-        &end_points,
+        &config::ISOBAR_PNTS,
     );
 }
 
@@ -308,7 +284,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
             })
             .collect();
 
-        plot_curve_from_points(cr, &ac, line_width, line_rgba, profile_data);
+        plot_curve_from_points(cr, &ac, line_width, line_rgba, &profile_data);
     }
 }
 
@@ -352,46 +328,19 @@ pub fn plot_curve_from_points(
     ac: &AppContext,
     line_width_pixels: f64,
     rgba: (f64, f64, f64, f64),
-    points: Vec<TPCoords>,
+    points: &[TPCoords],
 ) {
 
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
 
-    let mut iter = points.into_iter();
-    let start = ac.convert_tp_to_screen(iter.by_ref().next().unwrap());
+    let mut iter = points.iter();
+    let start = ac.convert_tp_to_screen(*iter.by_ref().next().unwrap());
     cr.move_to(start.0, start.1);
     for end in iter {
-        let end = ac.convert_tp_to_screen(end);
+        let end = ac.convert_tp_to_screen(*end);
         cr.line_to(end.0, end.1);
     }
 
     cr.stroke();
-}
-
-/// Generate a list of Temperature, Pressure points along an isentrope.
-pub fn generate_isentrop(theta: f32) -> Vec<TPCoords> {
-    use std::f32;
-    use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
-    const P0: f32 = 1000.0; // For calcuating theta
-
-    let mut result = vec![];
-
-    let mut p = MAXP;
-    while p >= ISENTROPS_TOP_P {
-        let t = theta * f32::powf(P0 / p, -0.286) - 273.15;
-        result.push((t, p));
-        p += (ISENTROPS_TOP_P - MAXP) / (POINTS_PER_ISENTROP as f32);
-    }
-
-    result
-}
-
-/// Given a mixing ratio and pressure, calculate the temperature. The p is in hPa and the mw is in
-/// g/kg.
-pub fn temperatures_from_p_and_mw(p: f32, mw: f32) -> f32 {
-    use std::f32;
-
-    let z = mw * p / 6.11 / 621.97 / (1.0 + mw / 621.97);
-    237.5 * f32::log10(z) / (7.5 - f32::log10(z))
 }
