@@ -29,6 +29,9 @@ mod config;
 // GUI module
 mod gui;
 
+// meteorological formulas
+mod formula;
+
 fn main() {
 
     if let Err(ref e) = run() {

@@ -203,9 +203,9 @@ lazy_static! {
         .into_iter()
         .map(|mw| {
             (
-                (temperatures_from_p_and_mw(MAXP, *mw), MAXP),
+                (::formula::temperature_from_p_and_saturated_mw(MAXP, *mw), MAXP),
                 (
-                    temperatures_from_p_and_mw(ISO_MIXING_RATIO_TOP_P, *mw),
+                    ::formula::temperature_from_p_and_saturated_mw(ISO_MIXING_RATIO_TOP_P, *mw),
                     ISO_MIXING_RATIO_TOP_P,
                 ),
             )
@@ -214,33 +214,19 @@ lazy_static! {
     };
 }
 
-/* ------------------------------------------------------------------------------------------------
-Utility functions for calculating points.
------------------------------------------------------------------------------------------------- */
-// FIXME: Move these to their own module, maybe even met calculations crate?
 /// Generate a list of Temperature, Pressure points along an isentrope.
 pub fn generate_isentrop(theta: f32) -> Vec<TPCoords> {
     use std::f32;
     use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
-    const P0: f32 = 1000.0; // For calcuating theta
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t = theta * f32::powf(P0 / p, -0.286) - 273.15;
+        let t = ::formula::temperature_c_from_theta(theta, p);
         result.push((t, p));
         p += (ISENTROPS_TOP_P - MAXP) / (POINTS_PER_ISENTROP as f32);
     }
 
     result
-}
-
-/// Given a mixing ratio and pressure, calculate the temperature. The p is in hPa and the mw is in
-/// g/kg.
-pub fn temperatures_from_p_and_mw(p: f32, mw: f32) -> f32 {
-    use std::f32;
-
-    let z = mw * p / 6.11 / 621.97 / (1.0 + mw / 621.97);
-    237.5 * f32::log10(z) / (7.5 - f32::log10(z))
 }
