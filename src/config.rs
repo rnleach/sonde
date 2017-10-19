@@ -161,7 +161,7 @@ pub const ISO_MIXING_RATIO: [f32; 32] = [
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
 ------------------------------------------------------------------------------------------------ */
-use gui::sounding::TPCoords;
+use coords::TPCoords;
 
 lazy_static! {
 

@@ -9,7 +9,7 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use gui::sounding::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;

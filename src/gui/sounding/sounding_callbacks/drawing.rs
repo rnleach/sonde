@@ -5,7 +5,7 @@ use gtk::{DrawingArea, WidgetExt};
 
 use config;
 use app::AppContext;
-use gui::sounding::TPCoords;
+use coords::TPCoords;
 
 // Prepare the drawing area with transforms, fill in the background, do the clipping
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
