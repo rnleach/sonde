@@ -21,6 +21,7 @@ pub fn draw_sounding(
     drawing::prepare_to_draw(sounding_area, cr, &mut ac);
 
     // Draw isentrops, isotherms, isobars, ...
+    drawing::draw_background_fill(&cr, &ac);
     drawing::draw_background_lines(&cr, &ac);
     drawing::draw_background_labels(&cr, &ac);
 
