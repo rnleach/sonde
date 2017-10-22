@@ -33,15 +33,15 @@ pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) = (0.090196078, 0.05098039
 pub const ISO_THETA_E_RGBA: (f64, f64, f64, f64) = (0.333333333, 0.662745098, 0.278431373, 1.0);
 
 /// Color used for temperature plot
-pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (1.0, 0.0, 0.0, 1.0);
+pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
 /// Line width for Temperature Plot
 pub const TEMPERATURE_LINE_WIDTH: f64 = 2.0;
 /// Color used for dew point plot
-pub const DEW_POINT_RGBA: (f64, f64, f64, f64) = (0.0, 1.0, 0.0, 1.0);
+pub const DEW_POINT_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
 /// Line width for Dew point Plot
 pub const DEW_POINT_LINE_WIDTH: f64 = 2.0;
 /// Color used for wet bulb plot
-pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 1.0, 1.0, 1.0);
+pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
 /// Line width for Dew point Plot
 pub const WET_BULB_LINE_WIDTH: f64 = 1.0;
 
