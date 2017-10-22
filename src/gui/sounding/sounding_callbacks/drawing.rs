@@ -53,18 +53,19 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
 
 // Draw background fills and patterns
 pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
+
+    const MAXP: f64 = config::MAXP as f64;
+    const MINP: f64 = config::MINP as f64;
+
     // Banding for temperatures.
     let rgb = config::BACKGROUND_BAND_RGB;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-
     let mut start_line = -160i32;
     while start_line < 100 {
         let t1 = start_line as f64;
         let t2 = t1 + 10.0;
-        let p1 = config::MAXP as f64;
-        let p2 = config::MINP as f64;
 
-        let mut coords = [(t1,p1),(t1,p2),(t2,p2),(t2, p1)];
+        let mut coords = [(t1, MAXP),(t1, MINP),(t2, MINP),(t2, MAXP)];
         for coord in coords.iter_mut() {
             let f32_coord = (coord.0 as f32, coord.1 as f32);
             *coord = ac.convert_tp_to_screen(f32_coord);
@@ -78,6 +79,36 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
 
         start_line += 20;
     }
+
+    // Hail growth zone
+    let rgb = config::HAIL_ZONE_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let mut coords = [(-10.0, MAXP),(-10.0, MINP),(-30.0, MINP),(-30.0, MAXP)];
+    for coord in coords.iter_mut() {
+        let f32_coord = (coord.0 as f32, coord.1 as f32);
+        *coord = ac.convert_tp_to_screen(f32_coord);
+    }
+    cr.move_to(coords[0].0, coords[0].1);
+    for i in 1..4 {
+        cr.line_to(coords[i].0, coords[i].1);
+    }
+    cr.close_path();
+    cr.fill();
+
+    // Dendritic snow growth zone
+    let rgb = config::DENDRTITIC_ZONE_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let mut coords = [(-12.0, MAXP),(-12.0, MINP),(-18.0, MINP),(-18.0, MAXP)];
+    for coord in coords.iter_mut() {
+        let f32_coord = (coord.0 as f32, coord.1 as f32);
+        *coord = ac.convert_tp_to_screen(f32_coord);
+    }
+    cr.move_to(coords[0].0, coords[0].1);
+    for i in 1..4 {
+        cr.line_to(coords[i].0, coords[i].1);
+    }
+    cr.close_path();
+    cr.fill();
 }
 
 // Draw isentrops, isotherms, isobars, ...

@@ -17,6 +17,10 @@ pub const BACKGROUND_LINE_WIDTH: f64 = 1.0;
 pub const BACKGROUND_RGB: (f64, f64, f64) = (1.0, 1.0, 1.0);
 //// Background banding color
 pub const BACKGROUND_BAND_RGB: (f64, f64, f64) = (0.933333333, 0.964705882, 0.917647059);
+/// Color used to fill the dendritic snow growth zone
+pub const DENDRTITIC_ZONE_RGB: (f64, f64, f64) = (0.0, 0.466666667, 0.780392157);
+/// Color used to fill the hail growth zone
+pub const HAIL_ZONE_RGB: (f64, f64, f64) = (0.0, 0.803921569, 0.803921569);
 /// Color used for isotherms
 pub const ISOTHERM_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
 /// Color used for isobars

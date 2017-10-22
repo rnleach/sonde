@@ -68,10 +68,10 @@ fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
 
     let grid = gtk::Grid::new();
     grid.attach(&gui.get_sounding_area(), 0, 0, 2, 3);
-    grid.attach(&gui.get_hodograph_area(), 2, 0, 1, 1);
-    let (ia1, ia2) = gui.get_index_areas();
-    grid.attach(&ia1, 2, 1, 1, 2);
-    grid.attach(&ia2, 0, 3, 3, 1);
+    // grid.attach(&gui.get_hodograph_area(), 2, 0, 1, 1);
+    // let (ia1, ia2) = gui.get_index_areas();
+    // grid.attach(&ia1, 2, 1, 1, 2);
+    // grid.attach(&ia2, 0, 3, 3, 1);
 
     grid
 }
