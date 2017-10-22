@@ -16,6 +16,7 @@ pub type AppContextPointer = Rc<RefCell<AppContext>>;
 
 /// Holds the application state. This is a singleton (not enforced) that is shared globally.
 pub struct AppContext {
+    source_name: Option<String>,
     list: Vec<Sounding>,
     // Lower left and  upper right corners of the bounding box that bounds all the soundings in
     // the list.
@@ -47,6 +48,7 @@ impl AppContext {
     pub fn new() -> AppContextPointer {
         Rc::new(RefCell::new(AppContext {
             // Data state
+            source_name: None,
             list: vec![],
             lower_left: (0.0, 0.0),
             upper_right: (1.0, 1.0),
@@ -73,6 +75,7 @@ impl AppContext {
 
         self.list = src.into_iter().collect();
         self.currently_displayed = 0;
+        self.source_name = None;
 
         self.lower_left = (0.45, 0.45);
         self.upper_right = (0.55, 0.55);
@@ -342,6 +345,19 @@ impl AppContext {
             }
         } else {
             self.translate_y = -(height - 1.0) / 2.0;
+        }
+    }
+
+    /// Set the source name
+    pub fn set_source_name(&mut self, new_name: Option<String>) {
+        self.source_name = new_name;
+    }
+
+    /// Get the source name
+    pub fn get_source_name(&self) -> Option<String> {
+        match self.source_name {
+            Some(ref name) => Some(name.clone()),
+            None => None,
         }
     }
 }

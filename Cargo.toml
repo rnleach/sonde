@@ -12,3 +12,4 @@ glib = "0.3.1"
 gtk = { version = "0.2.0", features = ["v3_10"] }
 gdk = "0.6.0"
 lazy_static = "0.2"
+chrono = "0.3"

@@ -65,7 +65,7 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
         let t1 = start_line as f64;
         let t2 = t1 + 10.0;
 
-        let mut coords = [(t1, MAXP),(t1, MINP),(t2, MINP),(t2, MAXP)];
+        let mut coords = [(t1, MAXP), (t1, MINP), (t2, MINP), (t2, MAXP)];
         for coord in coords.iter_mut() {
             let f32_coord = (coord.0 as f32, coord.1 as f32);
             *coord = ac.convert_tp_to_screen(f32_coord);
@@ -83,7 +83,7 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
     // Hail growth zone
     let rgb = config::HAIL_ZONE_RGB;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-    let mut coords = [(-10.0, MAXP),(-10.0, MINP),(-30.0, MINP),(-30.0, MAXP)];
+    let mut coords = [(-10.0, MAXP), (-10.0, MINP), (-30.0, MINP), (-30.0, MAXP)];
     for coord in coords.iter_mut() {
         let f32_coord = (coord.0 as f32, coord.1 as f32);
         *coord = ac.convert_tp_to_screen(f32_coord);
@@ -98,7 +98,7 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
     // Dendritic snow growth zone
     let rgb = config::DENDRTITIC_ZONE_RGB;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-    let mut coords = [(-12.0, MAXP),(-12.0, MINP),(-18.0, MINP),(-18.0, MAXP)];
+    let mut coords = [(-12.0, MAXP), (-12.0, MINP), (-18.0, MINP), (-18.0, MAXP)];
     for coord in coords.iter_mut() {
         let f32_coord = (coord.0 as f32, coord.1 as f32);
         *coord = ac.convert_tp_to_screen(f32_coord);
@@ -266,6 +266,160 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
         // Draw the label
         cr.move_to(screen_x, screen_y);
         cr.show_text(&label);
+    }
+}
+
+// Add a description box
+pub fn draw_legend_box(cr: &Context, ac: &AppContext) {
+    if !ac.plottable() {
+        return;
+    }
+
+    let upper_left = ac.convert_device_to_screen((5.0, 5.0));
+
+    // Build the label strings
+    let source_name: Option<String> = ac.get_source_name();
+    let mut valid_time: Option<String> = None;
+    let mut location: Option<String> = None;
+    if let Some(snd) = ac.get_sounding_for_display() {
+        // Build the valid time part
+        if let Some(vt) = snd.valid_time {
+            use chrono::{Datelike, Timelike};
+            valid_time = Some(format!(
+                "Valid: {:02}/{:02}/{:04} {:02}Z",
+                vt.month(),
+                vt.day(),
+                vt.year(),
+                vt.hour()
+            ));
+        }
+
+        // Build location part.
+        if snd.lat.as_option().is_some() || snd.lon.as_option().is_some() ||
+            snd.elevation.as_option().is_some()
+        {
+            location = Some("".to_owned());
+            if let Some(ref mut loc) = location {
+                if let Some(lat) = snd.lat.as_option() {
+                    loc.push_str(&format!("{:.2}", lat));
+                }
+                if let Some(lon) = snd.lon.as_option() {
+                    loc.push_str(&format!(", {:.2}", lon));
+                }
+                if let Some(el) = snd.elevation.as_option() {
+                    loc.push_str(&format!(", {:.0}m ({:.0}ft)", el, el * 3.28084));
+                }
+            }
+        }
+    }
+
+    // Set the font, size, and weight
+    let font_face = FontFace::toy_create("Courier New", FontSlant::Normal, FontWeight::Bold);
+    cr.set_font_face(font_face);
+    const FONT_SIZE: f64 = 0.031;
+    const PADDING: f64 = 0.006;
+    // FIXME: move to config with value in points and calculate here. This may have to wait for
+    // PangoCairo to be stabilized.
+
+    // Flip the y-coordinate so it displays the font right side up
+    cr.set_font_matrix(Matrix {
+        xx: 1.0 * FONT_SIZE,
+        yx: 0.0,
+        xy: 0.0,
+        yy: -1.0 * FONT_SIZE, // Reflect it to be right side up!
+        x0: 0.0,
+        y0: 0.0,
+    });
+
+    let font_extents = cr.font_extents();
+
+    // Calculate width and height of the box
+    let mut box_width: f64 = 0.0;
+    let mut box_height: f64 = 0.0;
+    if let Some(ref src) = source_name {
+        let extents = cr.text_extents(src);
+        if extents.width > box_width {
+            box_width = extents.width;
+        }
+        box_height += extents.height;
+    }
+    if let Some(ref vt) = valid_time {
+        let extents = cr.text_extents(vt);
+        if extents.width > box_width {
+            box_width = extents.width;
+        }
+        box_height += extents.height;
+        // Add line spacing if previous line was there.
+        if source_name.is_some() {
+            box_height += font_extents.height - extents.height;
+        }
+    }
+    if let Some(ref loc) = location {
+        let extents = cr.text_extents(loc);
+        if extents.width > box_width {
+            box_width = extents.width;
+        }
+        box_height += extents.height;
+        // Add line spacing if previous line was there.
+        if valid_time.is_some() {
+            box_height += font_extents.height - extents.height;
+        }
+    }
+    // Add room for the last line's descent
+    box_height += font_extents.descent;
+    // Add padding last
+    box_height += 2.0 * PADDING;
+    box_width += 2.0 * PADDING;
+
+    // Make the rectangle
+    cr.rectangle(
+        upper_left.0,
+        upper_left.1 - box_height,
+        box_width,
+        box_height,
+    );
+    let rgb = config::ISOBAR_RGBA;
+    cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+    cr.stroke_preserve();
+    let rgb = config::BACKGROUND_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    cr.fill();
+
+    // Draw the text
+    let rgb = config::ISOBAR_RGBA;
+    cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+    let mut num_lines_drawn = 0;
+    cr.move_to(
+        upper_left.0 + PADDING,
+        upper_left.1 - PADDING - font_extents.ascent,
+    );
+    if let Some(src) = source_name {
+        cr.show_text(&src);
+        num_lines_drawn += 1;
+        cr.move_to(
+            upper_left.0 + PADDING,
+            upper_left.1 - PADDING - font_extents.ascent -
+                num_lines_drawn as f64 * font_extents.height,
+        );
+    }
+    if let Some(vt) = valid_time {
+        cr.show_text(&vt);
+        num_lines_drawn += 1;
+        cr.move_to(
+            upper_left.0 + PADDING,
+            upper_left.1 - PADDING - font_extents.ascent -
+                num_lines_drawn as f64 * font_extents.height,
+        );
+    }
+    if let Some(loc) = location {
+        cr.show_text(&loc);
+        num_lines_drawn += 1;
+        cr.move_to(
+            upper_left.0 + PADDING,
+            upper_left.1 - PADDING - font_extents.ascent -
+                num_lines_drawn as f64 * font_extents.height,
+        );
     }
 }
 

@@ -28,7 +28,8 @@ pub const ISOBAR_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.15686
 /// Color used for isentrops
 pub const ISENTROP_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
 /// Color used for isopleths of mixing ration
-pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) = (0.090196078, 0.050980392, 0.360784314, 1.0);
+pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) =
+    (0.090196078, 0.050980392, 0.360784314, 1.0);
 /// Color used for isopleths of theta-e
 pub const ISO_THETA_E_RGBA: (f64, f64, f64, f64) = (0.333333333, 0.662745098, 0.278431373, 1.0);
 

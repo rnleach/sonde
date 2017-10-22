@@ -30,6 +30,9 @@ pub fn draw_sounding(
     drawing::draw_temperature_profile(DewPoint, &cr, &ac);
     drawing::draw_temperature_profile(DryBulb, &cr, &ac);
 
+    // Draw Legend box
+    drawing::draw_legend_box(&cr, &ac);
+
     Inhibit(false)
 }
 

@@ -17,12 +17,12 @@ pub fn temperature_c_from_theta(theta_kelvin: f32, pressure_hpa: f32) -> f32 {
 /// Get the vapor pressure of water as a function of temperature in hPa
 pub fn vapor_pressure_water(temperature_c: f32) -> f32 {
     use std::f32;
-    
+
     6.11 * f32::powf(10.0, 7.5 * temperature_c / (237.3 + temperature_c))
 }
 
 /// Get the mixing ratio in g/kg.
-pub fn mixing_ratio( temperature_c: f32, pressure_hpa: f32) -> f32 {
+pub fn mixing_ratio(temperature_c: f32, pressure_hpa: f32) -> f32 {
     let vp = vapor_pressure_water(temperature_c);
     621.97 * (vp / (pressure_hpa - vp))
 }
@@ -42,5 +42,5 @@ pub fn theta_e_saturated_kelvin(pressure_hpa: f32, temperature_c: f32) -> f32 {
     let theta = theta_kelvin(pressure_hpa, temperature_c);
     let mw = mixing_ratio(temperature_c, pressure_hpa) / 1000.0; // divide by 1000 to get kg/kg
 
-    theta * f32::exp(2.6897e6 * mw / 1005.7 /(temperature_c + 273.15))
+    theta * f32::exp(2.6897e6 * mw / 1005.7 / (temperature_c + 273.15))
 }
