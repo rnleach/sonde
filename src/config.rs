@@ -17,10 +17,8 @@ pub const BACKGROUND_LINE_WIDTH: f64 = 1.0;
 pub const BACKGROUND_RGB: (f64, f64, f64) = (1.0, 1.0, 1.0);
 //// Background banding color
 pub const BACKGROUND_BAND_RGB: (f64, f64, f64) = (0.933333333, 0.964705882, 0.917647059);
-/// Color used for cold isotherms
-pub const COLD_ISOTHERM_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
-/// Color used for warm isotherms
-pub const WARM_ISOTHERM_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
+/// Color used for isotherms
+pub const ISOTHERM_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
 /// Color used for isobars
 pub const ISOBAR_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
 /// Color used for isentrops
@@ -43,8 +41,8 @@ pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 1.0, 1.0, 1.0);
 /// Line width for Dew point Plot
 pub const WET_BULB_LINE_WIDTH: f64 = 1.0;
 
-/// Isotherms to plot on the chart, freezing and below.
-pub const COLD_ISOTHERMS: [f32; 19] = [
+/// Isotherms to label on the chart.
+pub const ISOTHERMS: [f32; 31] = [
     -150.0,
     -140.0,
     -130.0,
@@ -64,10 +62,6 @@ pub const COLD_ISOTHERMS: [f32; 19] = [
     -10.0,
     -5.0,
     0.0,
-];
-
-/// Isotherms to plot on the chart, above freezing.
-pub const WARM_ISOTHERMS: [f32; 12] = [
     5.0,
     10.0,
     15.0,

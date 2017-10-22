@@ -115,22 +115,13 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
         &config::ISO_MIXING_RATIO_PNTS,
     );
 
-    // Draw freezing and below isotherms
+    // Draw isotherms
     plot_straight_lines(
         cr,
         &ac,
         config::BACKGROUND_LINE_WIDTH,
-        config::COLD_ISOTHERM_RGBA,
-        &config::COLD_ISOTHERM_PNTS,
-    );
-
-    // Draw above freezing isotherms
-    plot_straight_lines(
-        cr,
-        &ac,
-        config::BACKGROUND_LINE_WIDTH,
-        config::WARM_ISOTHERM_RGBA,
-        &config::WARM_ISOTHERM_PNTS,
+        config::ISOTHERM_RGBA,
+        &config::ISOTHERM_PNTS,
     );
 
     // Draw isobars
@@ -211,11 +202,11 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
     // This is width, add position of left edge to get right edge
     max_p_label_right_edge += screen_x_min + 0.01 * screen_x_max;
 
-    // Label cold isotherms
-    rgba = config::COLD_ISOTHERM_RGBA;
+    // Label isotherms
+    rgba = config::ISOTHERM_RGBA;
     let (mut last_label_x_max, mut last_label_x_min) = (0.0, 0.0);
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
-    for &t in config::COLD_ISOTHERMS.into_iter() {
+    for &t in config::ISOTHERMS.into_iter() {
         // Make the label text
         let label = format!("{}", t);
 
@@ -240,40 +231,6 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
 
         last_label_x_min = x_min - 0.008 * screen_x_max;
         last_label_x_max = x_max + 0.008 * screen_x_max;
-
-        // Draw the label
-        cr.move_to(screen_x, screen_y);
-        cr.show_text(&label);
-    }
-
-    // Label warm isotherms
-    rgba = config::WARM_ISOTHERM_RGBA;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
-    for &t in config::WARM_ISOTHERMS.into_iter() {
-        // Make the label text
-        let label = format!("{}", t);
-
-        // Calculate position for lower left edge of label
-        let (mut screen_x, mut screen_y) = ac.convert_tp_to_screen((t, screen_max_p));
-        screen_y += 0.01 * screen_y_max;
-        screen_x += 0.01 * screen_y_max;
-
-        // Check for overlap with pressure labels
-        if screen_x < max_p_label_right_edge {
-            continue;
-        }
-
-        // Check for overlap with other T labels
-        let extents_width = cr.text_extents(&label).width;
-        let (x_min, x_max) = (screen_x, screen_x + extents_width);
-        if (x_min > last_label_x_min && x_min < last_label_x_max) ||
-            (x_max > last_label_x_min && x_max < last_label_x_max)
-        {
-            continue;
-        }
-
-        last_label_x_min = x_min - 0.01 * screen_x_max;
-        last_label_x_max = x_max + 0.01 * screen_x_max;
 
         // Draw the label
         cr.move_to(screen_x, screen_y);

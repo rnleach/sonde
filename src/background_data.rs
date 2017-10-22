@@ -15,7 +15,7 @@ lazy_static! {
         v
     };
 
-    pub static ref COLD_ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
+    pub static ref ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
         let mut v: Vec<(TPCoords, TPCoords)> = vec![];
         v.push(((-150.0,1050.0),(-150.0,99.0)));
         v.push(((-140.0,1050.0),(-140.0,99.0)));
@@ -36,11 +36,6 @@ lazy_static! {
         v.push(((-10.0,1050.0),(-10.0,99.0)));
         v.push(((-5.0,1050.0),(-5.0,99.0)));
         v.push(((0.0,1050.0),(0.0,99.0)));
-        v
-    };
-
-    pub static ref WARM_ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
-        let mut v: Vec<(TPCoords, TPCoords)> = vec![];
         v.push(((5.0,1050.0),(5.0,99.0)));
         v.push(((10.0,1050.0),(10.0,99.0)));
         v.push(((15.0,1050.0),(15.0,99.0)));
