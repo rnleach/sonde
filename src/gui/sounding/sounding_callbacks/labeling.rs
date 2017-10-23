@@ -6,12 +6,6 @@ use coords::ScreenCoords;
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
-//
-// TODO: Labeling is clunky. Rewrite this module to make a list of labels and rectangles. If a 
-// rectangle overlaps another label, it does not get added to the list. Make high priority labels
-// first. Fill the rectangles with the background color and then draw the labels.
-//
-
 // Set up the font matrix, and set the font, etc.
 pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
 
@@ -45,131 +39,218 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
 
 // Label the pressure, temperatures, etc lines.
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
-
-    let (screen_x_min, screen_x_max, screen_max_p, screen_y_max) = calculate_label_boundaries(ac);
-
-    // Used for checking overlap later with T
-    let max_p_label_right_edge: f64 =
-        label_isobars(cr, ac, screen_x_min, screen_x_max, screen_y_max);
-
-    label_isotherms(
-        cr,
-        ac,
-        screen_x_max,
-        screen_y_max,
-        screen_max_p,
-        max_p_label_right_edge,
-    );
+    let labels = collect_labels(cr, ac);
+    draw_labels(cr, labels);
 }
 
-fn calculate_label_boundaries(ac: &AppContext) -> (f64, f64, f64, f64) {
+// FIXME: Move this somewhere else in GUI? Seems more useful than just here.
+#[derive(Clone, Copy)]
+struct ScreenRect {
+    lower_left: ScreenCoords,
+    upper_right: ScreenCoords,
+}
 
-    // Get min/max screen coordinate values
-    let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
-    let (mut screen_x_min, _screen_y_min) = lower_left_screen;
-    let (screen_x_max, screen_y_max) = upper_right_screen;
+impl ScreenRect {
+    fn overlaps(&self, other: &ScreenRect) -> bool {
+        let (xmin_s, ymin_s) = self.lower_left;
+        let (xmax_s, ymax_s) = self.upper_right;
+        let (xmin_o, ymin_o) = other.lower_left;
+        let (xmax_o, ymax_o) = other.upper_right;
 
-    // Get coordinates to keep labels from flowing off the chart.
-    let (xmin, _ymin) = ac.convert_xy_to_screen((0.0, 0.0));
-    let (_, mut screen_max_p) = ac.convert_screen_to_tp((0.0, 0.0));
-    if screen_max_p > config::MAXP {
-        screen_max_p = config::MAXP;
+        if xmin_s > xmax_o {
+            return false;
+        }
+        if xmax_s < xmin_o {
+            return false;
+        }
+        if ymin_s > ymax_o {
+            return false;
+        }
+        if ymax_s < ymin_o {
+            return false;
+        }
+
+        true
     }
+
+    fn inside(&self, big_rect: &ScreenRect) -> bool {
+        let (xmin_s, ymin_s) = self.lower_left;
+        let (xmax_s, ymax_s) = self.upper_right;
+        let (xmin_o, ymin_o) = big_rect.lower_left;
+        let (xmax_o, ymax_o) = big_rect.upper_right;
+
+        if xmin_s < xmin_o {
+            return false;
+        }
+        if xmax_s > xmax_o {
+            return false;
+        }
+        if ymin_s < ymin_o {
+            return false;
+        }
+        if ymax_s > ymax_o {
+            return false;
+        }
+
+        true
+    }
+
+    fn width(&self) -> f64 {
+        self.upper_right.0 - self.lower_left.0
+    }
+
+    fn height(&self) -> f64 {
+        self.upper_right.1 - self.lower_left.1
+    }
+}
+
+fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
+
+    let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
+    let (mut screen_x_min, mut screen_y_min) = lower_left_screen;
+    let (mut screen_x_max, mut screen_y_max) = upper_right_screen;
+
+    // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
+    let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
+    let (xmax, ymax) = ac.convert_xy_to_screen((1.0, 1.0));
+
     if xmin > screen_x_min {
         screen_x_min = xmin;
     }
+    if xmax < screen_x_max {
+        screen_x_max = xmax;
+    }
+    if ymax < screen_y_max {
+        screen_y_max = ymax;
+    }
+    if ymin > screen_y_min {
+        screen_y_min = ymin;
+    }
 
-    (screen_x_min, screen_x_max, screen_max_p, screen_y_max)
+    // Add some padding to keep away from the window edge
+    screen_x_max -= config::DEFAULT_PADDING;
+    screen_y_max -= config::DEFAULT_PADDING;
+    screen_x_min += config::DEFAULT_PADDING;
+    screen_y_min += config::DEFAULT_PADDING;
+
+    ScreenRect {
+        lower_left: (screen_x_min, screen_y_min),
+        upper_right: (screen_x_max, screen_y_max),
+    }
 }
 
-fn label_isobars(
-    cr: &Context,
-    ac: &AppContext,
-    screen_x_min: f64,
-    screen_x_max: f64,
-    screen_y_max: f64,
-) -> f64 {
+fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
+    let mut labels = vec![];
 
-    // Setup label colors
-    let rgba = config::ISOBAR_RGBA;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
-
-    // For checking label overlap.
-    let mut max_p_label_right_edge: f64 = 0.0; // Used for checking overlap later with T
-    let mut last_label_y = ::std::f64::MIN; // Used for checking overlap between pressure labels
+    let screen_edges = calculate_plot_edges(ac);
+    #[allow(unused_variables)]
+    let ScreenRect {
+        lower_left,
+        upper_right,
+    } = screen_edges;
 
     for &p in config::ISOBARS.into_iter() {
-        // Make the label text
+
         let label = format!("{}", p);
 
-        // Calculate position of lower left edge for label
-        let (_, mut screen_y) = ac.convert_tp_to_screen((0.0, p));
-        screen_y += 0.005 * screen_y_max; // Lift off the pressure line slightly
+        let extents = cr.text_extents(&label);
 
-        // Check for vertical overlap.
-        let label_extents = cr.text_extents(&label);
-        let (label_width, label_height) = (label_extents.width, label_extents.height);
-        if screen_y < label_height + last_label_y {
-            continue;
-        }
-        last_label_y = screen_y;
+        let (_, screen_y) = ac.convert_tp_to_screen((0.0, p));
+        let screen_y = screen_y - extents.height / 2.0;
 
-        // Update right edge for checking with T later.
-        if label_width > max_p_label_right_edge {
-            max_p_label_right_edge = label_width;
-        }
+        let label_lower_left = (lower_left.0, screen_y);
+        let label_upper_right = (lower_left.0 + extents.width, screen_y + extents.height);
 
-        // Draw the label
-        cr.move_to(screen_x_min + 0.01 * screen_x_max, screen_y);
-        cr.show_text(&label);
+        let pair = (
+            label,
+            ScreenRect {
+                lower_left: label_lower_left,
+                upper_right: label_upper_right,
+            },
+        );
+
+        check_overlap_then_add(&mut labels, &screen_edges, pair);
     }
-    // This is width, add position of left edge to get right edge
-    max_p_label_right_edge += screen_x_min + 0.01 * screen_x_max;
 
-    // Use this to make sure temperatures don't overlap
-    max_p_label_right_edge
-}
-
-fn label_isotherms(
-    cr: &Context,
-    ac: &AppContext,
-    screen_x_max: f64,
-    screen_y_max: f64,
-    screen_max_p: f64,
-    max_p_label_right_edge: f64,
-) {
-    // Label isotherms
-    let rgba = config::ISOTHERM_RGBA;
-    let (mut last_label_x_max, mut last_label_x_min) = (0.0, 0.0);
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+    let (_, screen_max_p) = ac.convert_screen_to_tp(lower_left);
     for &t in config::ISOTHERMS.into_iter() {
-        // Make the label text
+
         let label = format!("{}", t);
 
-        // Calculate position for lower left edge of label
-        let (mut screen_x, mut screen_y) = ac.convert_tp_to_screen((t, screen_max_p));
-        screen_y += 0.008 * screen_y_max;
-        screen_x += 0.008 * screen_y_max;
+        let extents = cr.text_extents(&label);
 
-        // Check for overlap with pressure labels
-        if screen_x < max_p_label_right_edge {
-            continue;
+        let (mut xpos, mut ypos) = ac.convert_tp_to_screen((t, screen_max_p));
+        xpos -= extents.width / 2.0; // Center
+        ypos -= extents.height / 2.0; // Center
+        ypos += extents.height; // Move up off bottom axis.
+        xpos += extents.height; // Move right for 45 degree angle from move up
+
+        let label_lower_left = (xpos, ypos);
+        let label_upper_right = (xpos + extents.width, ypos + extents.height);
+
+        let pair = (
+            label,
+            ScreenRect {
+                lower_left: label_lower_left,
+                upper_right: label_upper_right,
+            },
+        );
+        check_overlap_then_add(&mut labels, &screen_edges, pair);
+    }
+
+    labels
+}
+
+fn check_overlap_then_add(
+    vector: &mut Vec<(String, ScreenRect)>,
+    plot_edges: &ScreenRect,
+    label_pair: (String, ScreenRect),
+) {
+
+    // Make sure itis on screen
+    if !label_pair.1.inside(plot_edges) {
+        return;
+    }
+
+    // Check for overlap
+    for &(_, ref rect) in vector.iter() {
+        if label_pair.1.overlaps(&rect) {
+            return;
         }
+    }
 
-        // Check for overlap with other T labels
-        let extents_width = cr.text_extents(&label).width;
-        let (x_min, x_max) = (screen_x, screen_x + extents_width);
-        if (x_min > last_label_x_min && x_min < last_label_x_max) ||
-            (x_max > last_label_x_min && x_max < last_label_x_max)
-        {
-            continue;
-        }
+    vector.push(label_pair);
+}
 
-        last_label_x_min = x_min - 0.008 * screen_x_max;
-        last_label_x_max = x_max + 0.008 * screen_x_max;
+fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
 
-        // Draw the label
-        cr.move_to(screen_x, screen_y);
+    // FIXME: Move to config, and use when checking overlaps?
+    const PADDING_PIXELS: f64 = 3.0;
+    let (padding, _) = cr.device_to_user_distance(PADDING_PIXELS, PADDING_PIXELS);
+
+    for (label, rect) in labels {
+        // FIXME: Handle this by using better destructuring and an underscore
+        #[allow(unused_variables)]
+        let ScreenRect {
+            lower_left,
+            upper_right,
+        } = rect;
+
+        let rgb = config::BACKGROUND_RGB;
+        cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+        cr.rectangle(
+            lower_left.0 - padding,
+            lower_left.1 - padding,
+            rect.width() + 2.0 * padding,
+            rect.height() + 2.0 * padding,
+        );
+        cr.fill();
+
+        // Setup label colors
+        // FIXME: Better way of handling color
+        let rgba = config::ISOBAR_RGBA;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+        cr.move_to(lower_left.0, lower_left.1);
         cr.show_text(&label);
     }
 }
@@ -186,20 +267,22 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
     if ymax - upper_left.0 < upper_left.1 {
         upper_left.1 = ymax - upper_left.0;
     }
-    
+
     if xmin + upper_left.0 > upper_left.0 {
         upper_left.0 = xmin + upper_left.0;
     }
 
     let font_extents = cr.font_extents();
 
-    let (source_name, valid_time, location) = build_label_strings(ac);
+    let (source_name, valid_time, location) = build_legend_strings(ac);
 
+    // FIXME: Use ScreenRect
     let (box_width, box_height) =
         calculate_legend_box_size(cr, &font_extents, &source_name, &valid_time, &location);
 
     draw_legend_rectangle(cr, &upper_left, box_width, box_height);
 
+    // FIXME: Use ScreenRect
     draw_legend_text(
         cr,
         &upper_left,
@@ -208,10 +291,9 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         &valid_time,
         &location,
     );
-
 }
 
-fn build_label_strings(ac: &AppContext) -> (Option<String>, Option<String>, Option<String>) {
+fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Option<String>) {
 
     let source_name: Option<String> = ac.get_source_name();
     let mut valid_time: Option<String> = None;
@@ -304,6 +386,7 @@ fn calculate_legend_box_size(
     (box_width, box_height)
 }
 
+// FIXME: Use ScreenRect
 fn draw_legend_rectangle(cr: &Context, upper_left: &ScreenCoords, width: f64, height: f64) {
     cr.rectangle(upper_left.0, upper_left.1 - height, width, height);
 
