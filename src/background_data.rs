@@ -121,6 +121,7 @@ lazy_static! {
         vv.push((-112.52487969,285.0));
         vv.push((-117.26385956,256.7));
         vv.push((-122.39259246,228.3));
+        vv.push((-127.99820369,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((-29.77756842,1050.0));
@@ -153,6 +154,7 @@ lazy_static! {
         vv.push((-105.54117880,285.0));
         vv.push((-110.48620128,256.7));
         vv.push((-115.83792257,228.3));
+        vv.push((-121.68725602,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((-19.63705044,1050.0));
@@ -185,6 +187,7 @@ lazy_static! {
         vv.push((-98.55747792,285.0));
         vv.push((-103.70854299,256.7));
         vv.push((-109.28325267,228.3));
+        vv.push((-115.37630835,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((-9.49653245,1050.0));
@@ -217,6 +220,7 @@ lazy_static! {
         vv.push((-91.57377704,285.0));
         vv.push((-96.93088471,256.7));
         vv.push((-102.72858278,228.3));
+        vv.push((-109.06536069,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((0.64398553,1050.0));
@@ -249,6 +253,7 @@ lazy_static! {
         vv.push((-84.59007615,285.0));
         vv.push((-90.15322643,256.7));
         vv.push((-96.17391289,228.3));
+        vv.push((-102.75441302,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((10.78450351,1050.0));
@@ -281,6 +286,7 @@ lazy_static! {
         vv.push((-77.60637527,285.0));
         vv.push((-83.37556815,256.7));
         vv.push((-89.61924299,228.3));
+        vv.push((-96.44346536,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((20.92502149,1050.0));
@@ -313,6 +319,7 @@ lazy_static! {
         vv.push((-70.62267439,285.0));
         vv.push((-76.59790987,256.7));
         vv.push((-83.06457310,228.3));
+        vv.push((-90.13251769,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((31.06553948,1050.0));
@@ -345,6 +352,7 @@ lazy_static! {
         vv.push((-63.63897350,285.0));
         vv.push((-69.82025159,256.7));
         vv.push((-76.50990321,228.3));
+        vv.push((-83.82157002,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((41.20605746,1050.0));
@@ -377,6 +385,7 @@ lazy_static! {
         vv.push((-56.65527262,285.0));
         vv.push((-63.04259331,256.7));
         vv.push((-69.95523331,228.3));
+        vv.push((-77.51062236,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((51.34657544,1050.0));
@@ -409,6 +418,7 @@ lazy_static! {
         vv.push((-49.67157174,285.0));
         vv.push((-56.26493503,256.7));
         vv.push((-63.40056342,228.3));
+        vv.push((-71.19967469,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((61.48709342,1050.0));
@@ -441,6 +451,7 @@ lazy_static! {
         vv.push((-42.68787085,285.0));
         vv.push((-49.48727675,256.7));
         vv.push((-56.84589353,228.3));
+        vv.push((-64.88872703,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((71.62761141,1050.0));
@@ -473,6 +484,7 @@ lazy_static! {
         vv.push((-35.70416997,285.0));
         vv.push((-42.70961847,256.7));
         vv.push((-50.29122363,228.3));
+        vv.push((-58.57777936,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((81.76812939,1050.0));
@@ -505,6 +517,7 @@ lazy_static! {
         vv.push((-28.72046909,285.0));
         vv.push((-35.93196019,256.7));
         vv.push((-43.73655374,228.3));
+        vv.push((-52.26683170,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((91.90864737,1050.0));
@@ -537,6 +550,7 @@ lazy_static! {
         vv.push((-21.73676820,285.0));
         vv.push((-29.15430191,256.7));
         vv.push((-37.18188385,228.3));
+        vv.push((-45.95588403,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((102.04916535,1050.0));
@@ -569,6 +583,7 @@ lazy_static! {
         vv.push((-14.75306732,285.0));
         vv.push((-22.37664363,256.7));
         vv.push((-30.62721396,228.3));
+        vv.push((-39.64493636,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((112.18968334,1050.0));
@@ -601,6 +616,7 @@ lazy_static! {
         vv.push((-7.76936644,285.0));
         vv.push((-15.59898535,256.7));
         vv.push((-24.07254406,228.3));
+        vv.push((-33.33398870,200.0));
         v.push(vv);
         let mut vv: Vec<TPCoords> = vec![];
         vv.push((122.33020132,1050.0));
@@ -633,6 +649,7 @@ lazy_static! {
         vv.push((-0.78566555,285.0));
         vv.push((-8.82132707,256.7));
         vv.push((-17.51787417,228.3));
+        vv.push((-27.02304103,200.0));
         v.push(vv);
         v
     };
