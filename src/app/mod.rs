@@ -27,9 +27,9 @@ pub struct AppContext {
     widgets: Option<Gui>,
 
     // Standard x-y coords
-    pub zoom_factor: f32, // Multiply by this after translating
-    pub translate_x: f32, // subtract this from x before converting to screen coords.
-    pub translate_y: f32, // subtract this from y before converting to screen coords.
+    pub zoom_factor: f64, // Multiply by this after translating
+    pub translate_x: f64, // subtract this from x before converting to screen coords.
+    pub translate_y: f64, // subtract this from y before converting to screen coords.
 
     // device dimensions
     pub device_height: i32,
@@ -196,10 +196,10 @@ impl AppContext {
     #[inline]
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
         use config;
-        use std::f32;
+        use std::f64;
 
-        let y = (f32::log10(config::MAXP) - f32::log10(coords.1)) /
-            (f32::log10(config::MAXP) - f32::log10(config::MINP));
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.1)) /
+            (f64::log10(config::MAXP) - f64::log10(config::MINP));
 
         let x = (coords.0 - config::MINT) / (config::MAXT - config::MINT);
 
@@ -230,16 +230,16 @@ impl AppContext {
     #[inline]
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
         use config;
-        use std::f32;
+        use std::f64;
 
         // undo the skew
         let x = coords.0 - coords.1;
         let y = coords.1;
 
         let t = x * (config::MAXT - config::MINT) + config::MINT;
-        let p = 10.0f32.powf(
-            f32::log10(config::MAXP) -
-                y * (f32::log10(config::MAXP) - f32::log10(config::MINP)),
+        let p = 10.0f64.powf(
+            f64::log10(config::MAXP) -
+                y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
         );
 
         (t, p)
@@ -264,8 +264,8 @@ impl AppContext {
     pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Screen coords go 0 -> 1 down the y axis and 0 -> aspect_ratio right along the x axis.
 
-        let x = coords.0 as f32 / self.zoom_factor + self.translate_x;
-        let y = coords.1 as f32 / self.zoom_factor + self.translate_y;
+        let x = coords.0 as f64 / self.zoom_factor + self.translate_x;
+        let y = coords.1 as f64 / self.zoom_factor + self.translate_y;
         (x, y)
     }
 
@@ -295,7 +295,7 @@ impl AppContext {
     /// Fit to the given x-y max coords.
     #[inline]
     pub fn fit_to_data(&mut self) {
-        use std::f32;
+        use std::f64;
 
         self.translate_x = self.lower_left.0;
         self.translate_y = self.lower_left.1;
@@ -309,7 +309,7 @@ impl AppContext {
         // println!("lower_left: {:?}, upper_right: {:?}, width_scale: {}, height_scale: {}",
         // lower_left, upper_right, width_scale, height_scale);
 
-        self.zoom_factor = f32::min(width_scale, height_scale);
+        self.zoom_factor = f64::min(width_scale, height_scale);
 
         self.bound_view();
     }

@@ -67,8 +67,8 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
 
         let mut coords = [(t1, MAXP), (t1, MINP), (t2, MINP), (t2, MAXP)];
         for coord in coords.iter_mut() {
-            let f32_coord = (coord.0 as f32, coord.1 as f32);
-            *coord = ac.convert_tp_to_screen(f32_coord);
+            let f64_coord = (coord.0 as f64, coord.1 as f64);
+            *coord = ac.convert_tp_to_screen(f64_coord);
         }
         cr.move_to(coords[0].0, coords[0].1);
         for i in 1..4 {
@@ -85,8 +85,8 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     let mut coords = [(-10.0, MAXP), (-10.0, MINP), (-30.0, MINP), (-30.0, MAXP)];
     for coord in coords.iter_mut() {
-        let f32_coord = (coord.0 as f32, coord.1 as f32);
-        *coord = ac.convert_tp_to_screen(f32_coord);
+        let f64_coord = (coord.0 as f64, coord.1 as f64);
+        *coord = ac.convert_tp_to_screen(f64_coord);
     }
     cr.move_to(coords[0].0, coords[0].1);
     for i in 1..4 {
@@ -100,8 +100,8 @@ pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     let mut coords = [(-12.0, MAXP), (-12.0, MINP), (-18.0, MINP), (-18.0, MAXP)];
     for coord in coords.iter_mut() {
-        let f32_coord = (coord.0 as f32, coord.1 as f32);
-        *coord = ac.convert_tp_to_screen(f32_coord);
+        let f64_coord = (coord.0 as f64, coord.1 as f64);
+        *coord = ac.convert_tp_to_screen(f64_coord);
     }
     cr.move_to(coords[0].0, coords[0].1);
     for i in 1..4 {

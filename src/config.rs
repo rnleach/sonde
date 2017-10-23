@@ -9,13 +9,13 @@ pub const DEFAULT_PADDING: f64 = 0.01;
 
 // Constants for defining a standard x-y coordinate system
 /// Maximum pressure plotted on skew-t (bottom edge)
-pub const MAXP: f32 = 1050.0; // mb
+pub const MAXP: f64 = 1050.0; // mb
 /// Minimum pressure plotted on skew-t (top edge)
-pub const MINP: f32 = 99.0; // mb
+pub const MINP: f64 = 99.0; // mb
 /// Coldest temperature plotted at max pressure, on the bottom edge.
-pub const MINT: f32 = -46.5; // C - at MAXP
+pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
-pub const MAXT: f32 = 50.5; // C - at MAXP
+pub const MAXT: f64 = 50.5; // C - at MAXP
 
 /// Line width in pixels for skew-t background lines.
 pub const BACKGROUND_LINE_WIDTH: f64 = 1.0;
@@ -54,7 +54,7 @@ pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
 pub const WET_BULB_LINE_WIDTH: f64 = 1.0;
 
 /// Isotherms to label on the chart.
-pub const ISOTHERMS: [f32; 31] = [
+pub const ISOTHERMS: [f64; 31] = [
     -150.0,
     -140.0,
     -130.0,
@@ -89,7 +89,7 @@ pub const ISOTHERMS: [f32; 31] = [
 ];
 
 /// Isobars to plot on the chart background.
-pub const ISOBARS: [f32; 9] = [
+pub const ISOBARS: [f64; 9] = [
     1050.0,
     1000.0,
     925.0,

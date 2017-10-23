@@ -45,9 +45,9 @@ pub fn scroll_event(
     ac: &app::AppContextPointer,
 ) -> Inhibit {
 
-    const DELTA_SCALE: f32 = 1.05;
-    const MIN_ZOOM: f32 = 1.0;
-    const MAX_ZOOM: f32 = 10.0;
+    const DELTA_SCALE: f64 = 1.05;
+    const MIN_ZOOM: f64 = 1.0;
+    const MAX_ZOOM: f64 = 10.0;
 
     let mut ac = ac.borrow_mut();
 

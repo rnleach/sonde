@@ -4,12 +4,12 @@ version = "0.0.1"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
-sounding-base = "^0.0.7"
-sounding-bufkit = "^0.0.5"
+sounding-base = "^0.0.8"
+sounding-bufkit = "^0.0.6"
 error-chain = "0.11.0"
 cairo-rs = "0.2.0"
 glib = "0.3.1"
 gtk = { version = "0.2.0", features = ["v3_10"] }
 gdk = "0.6.0"
 lazy_static = "0.2"
-chrono = "0.3"
+chrono = "0.4"
