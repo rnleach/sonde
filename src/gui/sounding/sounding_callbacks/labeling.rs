@@ -180,7 +180,17 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    let upper_left = ac.convert_device_to_screen((5.0, 5.0));
+    let mut upper_left = ac.convert_device_to_screen((5.0, 5.0));
+    // Make sure we stay on the x-y coords domain
+    let (xmin, ymax) = ac.convert_xy_to_screen((0.0, 1.0));
+    if ymax - upper_left.0 < upper_left.1 {
+        upper_left.1 = ymax - upper_left.0;
+    }
+    
+    if xmin + upper_left.0 > upper_left.0 {
+        upper_left.0 = xmin + upper_left.0;
+    }
+
     let font_extents = cr.font_extents();
 
     let (source_name, valid_time, location) = build_label_strings(ac);
