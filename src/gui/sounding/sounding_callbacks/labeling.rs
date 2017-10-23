@@ -6,6 +6,12 @@ use coords::ScreenCoords;
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
+//
+// TODO: Labeling is clunky. Rewrite this module to make a list of labels and rectangles. If a 
+// rectangle overlaps another label, it does not get added to the list. Make high priority labels
+// first. Fill the rectangles with the background color and then draw the labels.
+//
+
 // Set up the font matrix, and set the font, etc.
 pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
 
@@ -40,6 +46,24 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
 // Label the pressure, temperatures, etc lines.
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
 
+    let (screen_x_min, screen_x_max, screen_max_p, screen_y_max) = calculate_label_boundaries(ac);
+
+    // Used for checking overlap later with T
+    let max_p_label_right_edge: f64 =
+        label_isobars(cr, ac, screen_x_min, screen_x_max, screen_y_max);
+
+    label_isotherms(
+        cr,
+        ac,
+        screen_x_max,
+        screen_y_max,
+        screen_max_p,
+        max_p_label_right_edge,
+    );
+}
+
+fn calculate_label_boundaries(ac: &AppContext) -> (f64, f64, f64, f64) {
+
     // Get min/max screen coordinate values
     let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
     let (mut screen_x_min, _screen_y_min) = lower_left_screen;
@@ -55,11 +79,25 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
         screen_x_min = xmin;
     }
 
-    // Label isobars
+    (screen_x_min, screen_x_max, screen_max_p, screen_y_max)
+}
+
+fn label_isobars(
+    cr: &Context,
+    ac: &AppContext,
+    screen_x_min: f64,
+    screen_x_max: f64,
+    screen_y_max: f64,
+) -> f64 {
+
+    // Setup label colors
+    let rgba = config::ISOBAR_RGBA;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+
+    // For checking label overlap.
     let mut max_p_label_right_edge: f64 = 0.0; // Used for checking overlap later with T
     let mut last_label_y = ::std::f64::MIN; // Used for checking overlap between pressure labels
-    let mut rgba = config::ISOBAR_RGBA;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+
     for &p in config::ISOBARS.into_iter() {
         // Make the label text
         let label = format!("{}", p);
@@ -88,8 +126,20 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
     // This is width, add position of left edge to get right edge
     max_p_label_right_edge += screen_x_min + 0.01 * screen_x_max;
 
+    // Use this to make sure temperatures don't overlap
+    max_p_label_right_edge
+}
+
+fn label_isotherms(
+    cr: &Context,
+    ac: &AppContext,
+    screen_x_max: f64,
+    screen_y_max: f64,
+    screen_max_p: f64,
+    max_p_label_right_edge: f64,
+) {
     // Label isotherms
-    rgba = config::ISOTHERM_RGBA;
+    let rgba = config::ISOTHERM_RGBA;
     let (mut last_label_x_max, mut last_label_x_min) = (0.0, 0.0);
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
     for &t in config::ISOTHERMS.into_iter() {
