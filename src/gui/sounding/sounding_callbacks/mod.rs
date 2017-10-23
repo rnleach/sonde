@@ -7,6 +7,7 @@ use gtk::{DrawingArea, Inhibit, WidgetExt};
 use app;
 
 mod drawing;
+mod labeling;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_sounding(
@@ -23,15 +24,16 @@ pub fn draw_sounding(
     // Draw isentrops, isotherms, isobars, ...
     drawing::draw_background_fill(&cr, &ac);
     drawing::draw_background_lines(&cr, &ac);
-    drawing::draw_background_labels(&cr, &ac);
 
     // Draw temperature profiles
     drawing::draw_temperature_profile(WetBulb, &cr, &ac);
     drawing::draw_temperature_profile(DewPoint, &cr, &ac);
     drawing::draw_temperature_profile(DryBulb, &cr, &ac);
 
-    // Draw Legend box
-    drawing::draw_legend_box(&cr, &ac);
+    // Draw labels and legend
+    labeling::prepare_to_label(&cr, &ac);
+    labeling::draw_background_labels(&cr, &ac);
+    labeling::draw_legend(&cr, &ac);
 
     Inhibit(false)
 }

@@ -360,4 +360,20 @@ impl AppContext {
             None => None,
         }
     }
+
+    /// Get the screen resolution in dpi
+    pub fn get_dpi(&self) -> Option<f64> {
+        use gtk::WidgetExt;
+        use gdk::ScreenExt;
+
+        match self.widgets {
+            None => None,
+            Some(ref gui) => {
+                match gui.get_sounding_area().get_screen() {
+                    None => None,
+                    Some(ref screen) => Some(screen.get_resolution()),
+                }
+            }
+        }
+    }
 }

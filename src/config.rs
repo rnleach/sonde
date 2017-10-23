@@ -1,5 +1,12 @@
 //! Keep configuration data in this module.
 
+/// Font face
+pub static FONT_NAME: &'static str = "Courier New";
+/// Font size, legend, pressure, temperature lines
+pub const LARGE_FONT_SIZE: f64 = 12.0;
+/// Default padding in text boxes
+pub const DEFAULT_PADDING: f64 = 0.01;
+
 // Constants for defining a standard x-y coordinate system
 /// Maximum pressure plotted on skew-t (bottom edge)
 pub const MAXP: f32 = 1050.0; // mb
