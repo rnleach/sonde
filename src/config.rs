@@ -1,11 +1,17 @@
 //! Keep configuration data in this module.
 
+// TODO: Organize this better
+
 /// Font face
 pub static FONT_NAME: &'static str = "Courier New";
 /// Font size, legend, pressure, temperature lines
 pub const LARGE_FONT_SIZE: f64 = 12.0;
-/// Default padding in text boxes
-pub const DEFAULT_PADDING: f64 = 0.01;
+/// Default padding in text boxes and the plot edge for text. In pixels.
+pub const EDGE_PADDING: f64 = 5.0;
+///  Default padding for labels and their background in pixels
+pub const LABEL_PADDING: f64 = 3.0;
+/// Label coloring
+pub const LABEL_RGB: (f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745);
 
 // Constants for defining a standard x-y coordinate system
 /// Maximum pressure plotted on skew-t (bottom edge)

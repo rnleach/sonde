@@ -102,51 +102,22 @@ impl ScreenRect {
     fn height(&self) -> f64 {
         self.upper_right.1 - self.lower_left.1
     }
-}
 
-fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
-
-    let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
-    let (mut screen_x_min, mut screen_y_min) = lower_left_screen;
-    let (mut screen_x_max, mut screen_y_max) = upper_right_screen;
-
-    // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
-    let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
-    let (xmax, ymax) = ac.convert_xy_to_screen((1.0, 1.0));
-
-    if xmin > screen_x_min {
-        screen_x_min = xmin;
-    }
-    if xmax < screen_x_max {
-        screen_x_max = xmax;
-    }
-    if ymax < screen_y_max {
-        screen_y_max = ymax;
-    }
-    if ymin > screen_y_min {
-        screen_y_min = ymin;
-    }
-
-    // Add some padding to keep away from the window edge
-    screen_x_max -= config::DEFAULT_PADDING;
-    screen_y_max -= config::DEFAULT_PADDING;
-    screen_x_min += config::DEFAULT_PADDING;
-    screen_y_min += config::DEFAULT_PADDING;
-
-    ScreenRect {
-        lower_left: (screen_x_min, screen_y_min),
-        upper_right: (screen_x_max, screen_y_max),
+    fn add_padding(&self, padding: f64) -> ScreenRect {
+        ScreenRect {
+            lower_left: (self.lower_left.0 - padding, self.lower_left.1 - padding),
+            upper_right: (self.upper_right.0 + padding, self.upper_right.1 + padding),
+        }
     }
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     let mut labels = vec![];
 
-    let screen_edges = calculate_plot_edges(ac);
-    #[allow(unused_variables)]
+    let screen_edges = calculate_plot_edges(cr, ac);
     let ScreenRect {
         lower_left,
-        upper_right,
+        upper_right: _,
     } = screen_edges;
 
     for &p in config::ISOBARS.into_iter() {
@@ -169,7 +140,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
             },
         );
 
-        check_overlap_then_add(&mut labels, &screen_edges, pair);
+        check_overlap_then_add(cr, &mut labels, &screen_edges, pair);
     }
 
     let (_, screen_max_p) = ac.convert_screen_to_tp(lower_left);
@@ -195,48 +166,23 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                 upper_right: label_upper_right,
             },
         );
-        check_overlap_then_add(&mut labels, &screen_edges, pair);
+        check_overlap_then_add(cr, &mut labels, &screen_edges, pair);
     }
 
     labels
 }
 
-fn check_overlap_then_add(
-    vector: &mut Vec<(String, ScreenRect)>,
-    plot_edges: &ScreenRect,
-    label_pair: (String, ScreenRect),
-) {
-
-    // Make sure itis on screen
-    if !label_pair.1.inside(plot_edges) {
-        return;
-    }
-
-    // Check for overlap
-    for &(_, ref rect) in vector.iter() {
-        if label_pair.1.overlaps(&rect) {
-            return;
-        }
-    }
-
-    vector.push(label_pair);
-}
-
 fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
 
-    // FIXME: Move to config, and use when checking overlaps?
-    const PADDING_PIXELS: f64 = 3.0;
-    let (padding, _) = cr.device_to_user_distance(PADDING_PIXELS, PADDING_PIXELS);
+    let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
 
     for (label, rect) in labels {
-        // FIXME: Handle this by using better destructuring and an underscore
-        #[allow(unused_variables)]
         let ScreenRect {
             lower_left,
-            upper_right,
+            upper_right: _,
         } = rect;
 
-        let rgb = config::BACKGROUND_RGB;
+        let mut rgb = config::BACKGROUND_RGB;
         cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
         cr.rectangle(
             lower_left.0 - padding,
@@ -247,12 +193,73 @@ fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
         cr.fill();
 
         // Setup label colors
-        // FIXME: Better way of handling color
-        let rgba = config::ISOBAR_RGBA;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, 1.0);
+        rgb = config::LABEL_RGB;
+        cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
         cr.move_to(lower_left.0, lower_left.1);
         cr.show_text(&label);
     }
+}
+
+fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
+
+    let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
+    let (mut screen_x_min, mut screen_y_min) = lower_left_screen;
+    let (mut screen_x_max, mut screen_y_max) = upper_right_screen;
+
+    // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
+    let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
+    let (xmax, ymax) = ac.convert_xy_to_screen((1.0, 1.0));
+
+    if xmin > screen_x_min {
+        screen_x_min = xmin;
+    }
+    if xmax < screen_x_max {
+        screen_x_max = xmax;
+    }
+    if ymax < screen_y_max {
+        screen_y_max = ymax;
+    }
+    if ymin > screen_y_min {
+        screen_y_min = ymin;
+    }
+
+    // Add some padding to keep away from the window edge
+    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    screen_x_max -= padding;
+    screen_y_max -= padding;
+    screen_x_min += padding;
+    screen_y_min += padding;
+
+    ScreenRect {
+        lower_left: (screen_x_min, screen_y_min),
+        upper_right: (screen_x_max, screen_y_max),
+    }
+}
+
+fn check_overlap_then_add(
+    cr: &Context,
+    vector: &mut Vec<(String, ScreenRect)>,
+    plot_edges: &ScreenRect,
+    label_pair: (String, ScreenRect),
+) {
+    let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
+    let padded_rect = label_pair.1.add_padding(padding);
+
+    // Make sure it is on screen - but don't add padding to this check cause the screen already
+    // has padding.
+    if !label_pair.1.inside(plot_edges) {
+        return;
+    }
+
+    // Check for overlap
+
+    for &(_, ref rect) in vector.iter() {
+        if padded_rect.overlaps(&rect) {
+            return;
+        }
+    }
+
+    vector.push(label_pair);
 }
 
 // Add a description box
@@ -276,13 +283,16 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 
     let (source_name, valid_time, location) = build_legend_strings(ac);
 
-    // FIXME: Use ScreenRect
     let (box_width, box_height) =
         calculate_legend_box_size(cr, &font_extents, &source_name, &valid_time, &location);
 
-    draw_legend_rectangle(cr, &upper_left, box_width, box_height);
+    let legend_rect = ScreenRect {
+        lower_left: (upper_left.0, upper_left.1 - box_height),
+        upper_right: (upper_left.0 + box_width, upper_left.1),
+    };
 
-    // FIXME: Use ScreenRect
+    draw_legend_rectangle(cr, &legend_rect);
+
     draw_legend_text(
         cr,
         &upper_left,
@@ -380,15 +390,25 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
-    box_height += 2.0 * config::DEFAULT_PADDING;
-    box_width += 2.0 * config::DEFAULT_PADDING;
+    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    box_height += 2.0 * padding;
+    box_width += 2.0 * padding;
 
     (box_width, box_height)
 }
 
-// FIXME: Use ScreenRect
-fn draw_legend_rectangle(cr: &Context, upper_left: &ScreenCoords, width: f64, height: f64) {
-    cr.rectangle(upper_left.0, upper_left.1 - height, width, height);
+fn draw_legend_rectangle(cr: &Context, screen_rect: &ScreenRect) {
+    let ScreenRect {
+        lower_left,
+        upper_right: _,
+    } = *screen_rect;
+
+    cr.rectangle(
+        lower_left.0,
+        lower_left.1,
+        screen_rect.width(),
+        screen_rect.height(),
+    );
 
     let rgb = config::ISOBAR_RGBA;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
@@ -410,21 +430,23 @@ fn draw_legend_text(
     let rgb = config::ISOBAR_RGBA;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
+    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+
     // Remember how many lines we have drawn so far for setting position of the next line.
     let mut num_lines_drawn = 0;
 
     // Get into the initial position
     cr.move_to(
-        upper_left.0 + config::DEFAULT_PADDING,
-        upper_left.1 - config::DEFAULT_PADDING - font_extents.ascent,
+        upper_left.0 + padding,
+        upper_left.1 - padding - font_extents.ascent,
     );
 
     if let &Some(ref src) = source_name {
         cr.show_text(src);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + config::DEFAULT_PADDING,
-            upper_left.1 - config::DEFAULT_PADDING - font_extents.ascent -
+            upper_left.0 + padding,
+            upper_left.1 - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }
@@ -432,8 +454,8 @@ fn draw_legend_text(
         cr.show_text(vt);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + config::DEFAULT_PADDING,
-            upper_left.1 - config::DEFAULT_PADDING - font_extents.ascent -
+            upper_left.0 + padding,
+            upper_left.1 - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }
@@ -441,8 +463,8 @@ fn draw_legend_text(
         cr.show_text(loc);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + config::DEFAULT_PADDING,
-            upper_left.1 - config::DEFAULT_PADDING - font_extents.ascent -
+            upper_left.0 + padding,
+            upper_left.1 - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }
