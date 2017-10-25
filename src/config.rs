@@ -2,6 +2,14 @@
 
 // TODO: Organize this better
 
+// Layout and borders
+/// Main window border width in pixels.
+pub const BORDER_WIDTH: u32 = 3;
+/// Main window initial width
+pub const WINDOW_WIDTH: i32 = 650;
+/// Main window initial height
+pub const WINDOW_HEIGHT: i32 = 650;
+
 /// Font face
 pub static FONT_NAME: &'static str = "Courier New";
 /// Font size, legend, pressure, temperature lines

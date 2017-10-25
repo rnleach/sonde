@@ -1,9 +1,12 @@
+use glib;
+
 use gtk;
 use gtk::prelude::*;
-use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu};
+use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu, ContainerExt};
 
-use gui::Gui;
 use app::AppContextPointer;
+use config;
+use gui::Gui;
 
 mod menu_callbacks;
 
@@ -67,11 +70,11 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
 
     let grid = gtk::Grid::new();
-    grid.attach(&gui.get_sounding_area(), 0, 0, 2, 3);
-    // grid.attach(&gui.get_hodograph_area(), 2, 0, 1, 1);
-    // let (ia1, ia2) = gui.get_index_areas();
-    // grid.attach(&ia1, 2, 1, 1, 2);
-    // grid.attach(&ia2, 0, 3, 3, 1);
+    grid.attach(&add_border_frame(&gui.get_sounding_area()), 0, 0, 2, 3);
+    grid.attach(&add_border_frame(&gui.get_hodograph_area()), 2, 0, 1, 1);
+    let (ia1, ia2) = gui.get_index_areas();
+    grid.attach(&add_border_frame(&ia1), 2, 1, 1, 2);
+    grid.attach(&add_border_frame(&ia2), 0, 3, 3, 1);
 
     grid
 }
@@ -79,10 +82,19 @@ fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
 fn configure_main_window(window: &Window) {
     // Set up window title, size, etc
     window.set_title("Sonde");
-    window.set_default_size(650, 650);
+    window.set_default_size(config::WINDOW_WIDTH, config::WINDOW_HEIGHT);
+    window.set_decorated(true);
     window.show_all();
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
         Inhibit(false)
     });
+}
+
+fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
+    let f = gtk::Frame::new(None);
+    f.add(widget);
+    f.set_border_width(config::BORDER_WIDTH);
+
+    f
 }
