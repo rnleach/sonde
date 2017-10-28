@@ -6,7 +6,7 @@
 /// Main window border width in pixels.
 pub const BORDER_WIDTH: u32 = 3;
 /// Main window initial width
-pub const WINDOW_WIDTH: i32 = 650;
+pub const WINDOW_WIDTH: i32 = 850;
 /// Main window initial height
 pub const WINDOW_HEIGHT: i32 = 650;
 

@@ -4,19 +4,12 @@ use gtk::{DrawingArea, WidgetExt};
 use cairo::Context;
 use cairo::enums::{FontSlant, FontWeight};
 
-pub fn set_up_index_areas(index_area1: &DrawingArea, index_area2: &DrawingArea) {
+pub fn set_up_index_area(index_area: &DrawingArea) {
 
-    // configure index area 1
-    index_area1.set_hexpand(true);
-    index_area1.set_vexpand(true);
+    index_area.set_hexpand(true);
+    index_area.set_vexpand(true);
 
-    index_area1.connect_draw(draw_index);
-
-    // configure index area 2
-    index_area2.set_hexpand(true);
-    index_area2.set_vexpand(true);
-
-    index_area2.connect_draw(draw_index);
+    index_area.connect_draw(draw_index);
 }
 
 fn draw_index(index_area: &DrawingArea, cr: &Context) -> Inhibit {

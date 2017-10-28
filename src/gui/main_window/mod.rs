@@ -70,11 +70,10 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
 
     let grid = gtk::Grid::new();
-    grid.attach(&add_border_frame(&gui.get_sounding_area()), 0, 0, 2, 3);
-    // grid.attach(&add_border_frame(&gui.get_hodograph_area()), 2, 0, 1, 1);
-    // let (ia1, ia2) = gui.get_index_areas();
-    // grid.attach(&add_border_frame(&ia1), 2, 1, 1, 2);
-    // grid.attach(&add_border_frame(&ia2), 0, 3, 3, 1);
+    grid.attach(&add_border_frame(&gui.get_sounding_area()), 0, 0, 3, 8);
+    grid.attach(&add_border_frame(&gui.get_hodograph_area()), 3, 0, 1, 2);
+    grid.attach(&add_border_frame(&gui.get_index_area()), 3, 2, 1, 3);
+    grid.attach(&add_border_frame(&gui.get_control_area()), 3, 5, 1, 3);
 
     grid
 }
