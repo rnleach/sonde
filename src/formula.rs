@@ -44,3 +44,7 @@ pub fn theta_e_saturated_kelvin(pressure_hpa: f64, temperature_c: f64) -> f64 {
 
     theta * f64::exp(2.6897e6 * mw / 1005.7 / (temperature_c + 273.15))
 }
+
+pub fn celsius_to_f(temperature: f64) -> f64 {
+    1.8 * temperature + 32.0
+}

@@ -1,13 +1,15 @@
 //! Event callbacks.
 
 use cairo::Context;
-use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection, EventKey, keyval_from_name};
+use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
+          keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use app;
 
 mod drawing;
 mod labeling;
+mod sample_readout;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_sounding(
@@ -34,6 +36,9 @@ pub fn draw_sounding(
     labeling::prepare_to_label(&cr, &ac);
     labeling::draw_background_labels(&cr, &ac);
     labeling::draw_legend(&cr, &ac);
+
+    // Draw the active readout/sample.
+    sample_readout::draw_active_sample(&cr, &ac);
 
     Inhibit(false)
 }
@@ -90,7 +95,7 @@ pub fn button_press_event(
     // Left mouse button
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.left_button_press_start = event.get_position();
+        ac.last_cursor_position_skew_t = event.get_position();
         ac.left_button_pressed = true;
         Inhibit(true)
     } else {
@@ -106,12 +111,26 @@ pub fn button_release_event(
 ) -> Inhibit {
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.left_button_press_start = (0.0, 0.0);
+        ac.last_cursor_position_skew_t = (0.0, 0.0);
         ac.left_button_pressed = false;
         Inhibit(true)
     } else {
         Inhibit(false)
     }
+}
+
+/// Handles leave notify
+pub fn leave_event(
+    sounding_area: &DrawingArea,
+    _event: &EventCrossing,
+    ac: &app::AppContextPointer,
+) -> Inhibit {
+    let mut ac = ac.borrow_mut();
+
+    ac.last_cursor_position_skew_t = (0.0, 0.0);
+    sounding_area.queue_draw();
+
+    Inhibit(false)
 }
 
 /// Handles motion events
@@ -123,9 +142,9 @@ pub fn mouse_motion_event(
 
     let mut ac = ac.borrow_mut();
     if ac.left_button_pressed {
-        let old_position = ac.convert_device_to_xy(ac.left_button_press_start);
-        ac.left_button_press_start = event.get_position();
-        let new_position = ac.convert_device_to_xy(ac.left_button_press_start);
+        let old_position = ac.convert_device_to_xy(ac.last_cursor_position_skew_t);
+        ac.last_cursor_position_skew_t = event.get_position();
+        let new_position = ac.convert_device_to_xy(ac.last_cursor_position_skew_t);
         let delta = (
             new_position.0 - old_position.0,
             new_position.1 - old_position.1,
@@ -134,11 +153,11 @@ pub fn mouse_motion_event(
         ac.translate_y -= delta.1;
 
         sounding_area.queue_draw();
-        Inhibit(true)
-    } else {
-
-        Inhibit(false)
+    } else if ac.plottable() {
+        ac.last_cursor_position_skew_t = event.get_position();
+        sounding_area.queue_draw();
     }
+    Inhibit(false)
 }
 
 /// Handles key-release events, display next or previous sounding in a series.

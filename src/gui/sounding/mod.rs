@@ -1,7 +1,7 @@
 //! Module holds the code for drawing the skew-t plot.
 
 use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
-          POINTER_MOTION_HINT_MASK, KEY_RELEASE_MASK};
+          POINTER_MOTION_HINT_MASK, LEAVE_NOTIFY_MASK, KEY_RELEASE_MASK};
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
@@ -37,6 +37,11 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppCo
     });
 
     let ac = app_context.clone();
+    sounding_area.connect_leave_notify_event(move |da, ev| {
+        sounding_callbacks::leave_event(da, ev, &ac)
+    });
+
+    let ac = app_context.clone();
     sounding_area.connect_key_release_event(move |da, ev| {
         sounding_callbacks::key_release_event(da, ev, &ac)
     });
@@ -45,7 +50,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppCo
     sounding_area.add_events(
         (SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_HINT_MASK |
              POINTER_MOTION_MASK |
-             KEY_RELEASE_MASK)
+             LEAVE_NOTIFY_MASK | KEY_RELEASE_MASK)
             .bits() as i32,
     );
 

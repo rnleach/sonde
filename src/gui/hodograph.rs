@@ -4,8 +4,6 @@ use gtk::{DrawingArea, WidgetExt};
 use cairo::Context;
 use cairo::enums::{FontSlant, FontWeight};
 
-// TODO: Data type to hold the hodo area state
-
 pub fn set_up_hodograph_area(hodo_area: &DrawingArea) {
 
     hodo_area.set_hexpand(true);

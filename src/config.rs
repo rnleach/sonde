@@ -10,6 +10,11 @@ pub const WINDOW_WIDTH: i32 = 650;
 /// Main window initial height
 pub const WINDOW_HEIGHT: i32 = 650;
 
+/// Active readout line width
+pub const ACTIVE_READOUT_LINE_WIDTH: f64 = 3.0;
+/// Active readout line color
+pub const ACTIVE_READOUT_LINE_RGB: (f64, f64, f64) = (1.0, 0.0, 0.0);
+
 /// Font face
 pub static FONT_NAME: &'static str = "Courier New";
 /// Font size, legend, pressure, temperature lines
@@ -53,7 +58,6 @@ pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) =
     (0.090196078, 0.050980392, 0.360784314, 1.0);
 /// Color used for isopleths of theta-e
 pub const ISO_THETA_E_RGBA: (f64, f64, f64, f64) = (0.333333333, 0.662745098, 0.278431373, 1.0);
-
 /// Color used for temperature plot
 pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
 /// Line width for Temperature Plot

@@ -4,8 +4,8 @@ version = "0.0.1"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
-sounding-base = "^0.0.8"
-sounding-bufkit = "^0.0.6"
+sounding-base = "^0.0.11"
+sounding-bufkit = "^0.0.9"
 error-chain = "0.11.0"
 cairo-rs = "0.2.0"
 glib = "0.3.1"

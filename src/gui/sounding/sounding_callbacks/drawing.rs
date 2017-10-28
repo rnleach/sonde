@@ -172,7 +172,6 @@ pub enum TemperatureType {
 }
 
 // Draw the temperature profile
-#[inline]
 pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppContext) {
 
     if let Some(sndg) = ac.get_sounding_for_display() {
@@ -213,7 +212,6 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
 }
 
 /// Draw a straight line on the graph.
-#[inline]
 pub fn plot_straight_lines(
     cr: &Context,
     ac: &AppContext,
@@ -233,7 +231,6 @@ pub fn plot_straight_lines(
 }
 
 /// Draw a straight line on the graph.
-#[inline]
 pub fn plot_straight_dashed_lines(
     cr: &Context,
     ac: &AppContext,

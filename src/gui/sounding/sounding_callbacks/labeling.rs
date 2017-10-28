@@ -3,6 +3,7 @@ use app::AppContext;
 use config;
 
 use coords::ScreenCoords;
+use gui::ScreenRect;
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
@@ -41,74 +42,6 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
     let labels = collect_labels(cr, ac);
     draw_labels(cr, labels);
-}
-
-// FIXME: Move this somewhere else in GUI? Seems more useful than just here.
-#[derive(Clone, Copy)]
-struct ScreenRect {
-    lower_left: ScreenCoords,
-    upper_right: ScreenCoords,
-}
-
-impl ScreenRect {
-    fn overlaps(&self, other: &ScreenRect) -> bool {
-        let (xmin_s, ymin_s) = self.lower_left;
-        let (xmax_s, ymax_s) = self.upper_right;
-        let (xmin_o, ymin_o) = other.lower_left;
-        let (xmax_o, ymax_o) = other.upper_right;
-
-        if xmin_s > xmax_o {
-            return false;
-        }
-        if xmax_s < xmin_o {
-            return false;
-        }
-        if ymin_s > ymax_o {
-            return false;
-        }
-        if ymax_s < ymin_o {
-            return false;
-        }
-
-        true
-    }
-
-    fn inside(&self, big_rect: &ScreenRect) -> bool {
-        let (xmin_s, ymin_s) = self.lower_left;
-        let (xmax_s, ymax_s) = self.upper_right;
-        let (xmin_o, ymin_o) = big_rect.lower_left;
-        let (xmax_o, ymax_o) = big_rect.upper_right;
-
-        if xmin_s < xmin_o {
-            return false;
-        }
-        if xmax_s > xmax_o {
-            return false;
-        }
-        if ymin_s < ymin_o {
-            return false;
-        }
-        if ymax_s > ymax_o {
-            return false;
-        }
-
-        true
-    }
-
-    fn width(&self) -> f64 {
-        self.upper_right.0 - self.lower_left.0
-    }
-
-    fn height(&self) -> f64 {
-        self.upper_right.1 - self.lower_left.1
-    }
-
-    fn add_padding(&self, padding: f64) -> ScreenRect {
-        ScreenRect {
-            lower_left: (self.lower_left.0 - padding, self.lower_left.1 - padding),
-            upper_right: (self.upper_right.0 + padding, self.upper_right.1 + padding),
-        }
-    }
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {

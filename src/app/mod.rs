@@ -36,8 +36,10 @@ pub struct AppContext {
     pub device_width: i32,
 
     // state of input for left button press and panning.
-    pub left_button_press_start: DeviceCoords,
     pub left_button_pressed: bool,
+
+    // last cursor position
+    pub last_cursor_position_skew_t: DeviceCoords,
 }
 
 impl AppContext {
@@ -61,7 +63,7 @@ impl AppContext {
             translate_y: 0.0,
             device_height: 100,
             device_width: 100,
-            left_button_press_start: (0.0, 0.0),
+            last_cursor_position_skew_t: (0.0, 0.0),
             left_button_pressed: false,
         }))
     }
@@ -280,6 +282,12 @@ impl AppContext {
     #[inline]
     pub fn convert_screen_to_tp(&self, coords: ScreenCoords) -> TPCoords {
         let xy = self.convert_screen_to_xy(coords);
+        Self::convert_xy_to_tp(xy)
+    }
+
+    /// Convert from device coords to temperature, pressure.
+    pub fn convert_device_to_tp(&self, coords: DeviceCoords) -> TPCoords {
+        let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_tp(xy)
     }
 

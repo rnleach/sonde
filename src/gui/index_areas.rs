@@ -4,8 +4,6 @@ use gtk::{DrawingArea, WidgetExt};
 use cairo::Context;
 use cairo::enums::{FontSlant, FontWeight};
 
-// TODO: Data type to hold the index area
-
 pub fn set_up_index_areas(index_area1: &DrawingArea, index_area2: &DrawingArea) {
 
     // configure index area 1
