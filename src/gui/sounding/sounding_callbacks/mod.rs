@@ -32,6 +32,9 @@ pub fn draw_sounding(
     drawing::draw_temperature_profile(DewPoint, &cr, &ac);
     drawing::draw_temperature_profile(DryBulb, &cr, &ac);
 
+    // Draw the wind profile
+    drawing::draw_wind_profile(&cr, &ac);
+
     // Draw labels and legend
     labeling::prepare_to_label(&cr, &ac);
     labeling::draw_background_labels(&cr, &ac);
@@ -127,6 +130,7 @@ pub fn leave_event(
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
+    // This position is special, if it is here, the sample readout will not draw.
     ac.last_cursor_position_skew_t = (0.0, 0.0);
     sounding_area.queue_draw();
 
