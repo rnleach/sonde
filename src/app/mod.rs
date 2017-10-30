@@ -314,9 +314,6 @@ impl AppContext {
         let width_scale = 1.0 / width;
         let height_scale = 1.0 / height;
 
-        // println!("lower_left: {:?}, upper_right: {:?}, width_scale: {}, height_scale: {}",
-        // lower_left, upper_right, width_scale, height_scale);
-
         self.zoom_factor = f64::min(width_scale, height_scale);
 
         self.bound_view();

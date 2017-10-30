@@ -96,7 +96,6 @@ fn draw_wind_barb(direction: f64, _speed: f64, shaft_length: f64, center: Screen
     cr.fill();
 
     let dir = direction.to_radians();
-    println!("direction: {}, dir:{} * PI", direction, dir/::std::f64::consts::PI);
     let (dx, dy) = (shaft_length * dir.sin(), shaft_length * dir.cos());
     let shaft_end = (center.0 + dx, center.1 + dy);
 
