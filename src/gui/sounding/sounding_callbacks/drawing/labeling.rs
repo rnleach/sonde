@@ -7,17 +7,14 @@ use gui::ScreenRect;
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
-// Set up the font matrix, and set the font, etc.
 pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
 
-    // Configure the font.
     let font_face = FontFace::toy_create(config::FONT_NAME, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
     set_font_size(config::LARGE_FONT_SIZE, cr, ac);
 }
 
-// Set the font size by reseting the font matrix
 fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
     let dpi = match ac.get_dpi() {
         None => 72.0,
@@ -107,6 +104,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
 fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
 
+    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
     let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
 
     for (label, rect) in labels {
@@ -157,6 +155,7 @@ fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
     }
 
     // Add some padding to keep away from the window edge
+    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
     let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
     screen_x_max -= padding;
     screen_y_max -= padding;
@@ -175,6 +174,7 @@ fn check_overlap_then_add(
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
+    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
     let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
     let padded_rect = label_pair.1.add_padding(padding);
 
@@ -323,6 +323,7 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
+    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
     let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
     box_height += 2.0 * padding;
     box_width += 2.0 * padding;
@@ -363,6 +364,7 @@ fn draw_legend_text(
     let rgb = config::ISOBAR_RGBA;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
+    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
     let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
 
     // Remember how many lines we have drawn so far for setting position of the next line.

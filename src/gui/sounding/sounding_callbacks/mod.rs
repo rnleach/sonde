@@ -8,8 +8,6 @@ use gtk::{DrawingArea, Inhibit, WidgetExt};
 use app;
 
 mod drawing;
-mod labeling;
-mod sample_readout;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_sounding(
@@ -17,31 +15,15 @@ pub fn draw_sounding(
     cr: &Context,
     ac: &app::AppContextPointer,
 ) -> Inhibit {
-    use self::drawing::TemperatureType::{DryBulb, WetBulb, DewPoint};
 
     let mut ac = ac.borrow_mut();
 
     drawing::prepare_to_draw(sounding_area, cr, &mut ac);
-
-    // Draw isentrops, isotherms, isobars, ...
-    drawing::draw_background_fill(&cr, &ac);
-    drawing::draw_background_lines(&cr, &ac);
-
-    // Draw temperature profiles
-    drawing::draw_temperature_profile(WetBulb, &cr, &ac);
-    drawing::draw_temperature_profile(DewPoint, &cr, &ac);
-    drawing::draw_temperature_profile(DryBulb, &cr, &ac);
-
-    // Draw the wind profile
+    drawing::draw_background(&cr, &ac);
+    drawing::draw_temperature_profiles(&cr, &ac);
     drawing::draw_wind_profile(&cr, &ac);
-
-    // Draw labels and legend
-    labeling::prepare_to_label(&cr, &ac);
-    labeling::draw_background_labels(&cr, &ac);
-    labeling::draw_legend(&cr, &ac);
-
-    // Draw the active readout/sample.
-    sample_readout::draw_active_sample(&cr, &ac);
+    drawing::draw_labels(&cr, &ac);
+    drawing::draw_active_sample(&cr, &ac);
 
     Inhibit(false)
 }
@@ -130,7 +112,7 @@ pub fn leave_event(
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
-    // This position is special, if it is here, the sample readout will not draw.
+    // FIXME: Use an enum or option instead of a special position
     ac.last_cursor_position_skew_t = (0.0, 0.0);
     sounding_area.queue_draw();
 

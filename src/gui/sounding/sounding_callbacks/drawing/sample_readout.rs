@@ -8,19 +8,17 @@ use cairo::Context;
 use sounding_base::Sounding;
 use sounding_base::sounding::DataRow; // FIXME: Public export this in sounding-base.
 
-// Add an active readout/sampling box.
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
-    // Get the cursor position to draw the sample at (or close to).
     let position = ac.last_cursor_position_skew_t;
 
     if position == (0.0, 0.0) {
+        // FIXME: Use an option in ac instead of a special position.
         // Return without drawing if this is still set at 0.0.
         return;
     }
     let (_, sample_p) = ac.convert_device_to_tp(position);
 
-    // Get the actual sounding, abort and draw nothing if it is invalid
     let snd = if let Some(snd) = ac.get_sounding_for_display() {
         snd
     } else {
@@ -30,10 +28,8 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    // Get the sounding data nearest to the cursor.
     let vals = snd.fetch_nearest_pnt(sample_p);
 
-    // Update the sample_p to the actual pressure where data was gathered.
     let sample_p = if vals.pressure.as_option().is_some() {
         vals.pressure.unwrap()
     } else {
@@ -201,6 +197,7 @@ fn calculate_screen_rect(
     }
 }
 
+// FIXME: Better function name, this draws text too.
 fn draw_box(rect: &ScreenRect, cr: &Context, lines: &Vec<String>) {
     let ScreenRect {
         lower_left: (xmin, ymin),
