@@ -58,7 +58,7 @@ fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
     if let Some(name) = path.file_name() {
         let mut src_name = "File: ".to_owned();
         src_name.push_str(&name.to_string_lossy());
-        ac.set_source_name(Some(src_name));
+        ac.set_source_description(Some(src_name));
     }
 
     Ok(())

@@ -2,68 +2,14 @@ use cairo::Context;
 
 use app::AppContext;
 use config;
-use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points, plot_straight_dashed_lines, plot_straight_lines};
+use coords::TPCoords;
+use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points,
+                                                 plot_straight_dashed_lines, plot_straight_lines};
 
 pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
-
-    const MAXP: f64 = config::MAXP;
-    const MINP: f64 = config::MINP;
-
-    // Banding for temperatures.
-    // FIXME: Make my own function.
-    let rgb = config::BACKGROUND_BAND_RGB;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-    let mut start_line = -160i32;
-    while start_line < 100 {
-        let t1 = start_line as f64;
-        let t2 = t1 + 10.0;
-
-        let mut coords = [(t1, MAXP), (t1, MINP), (t2, MINP), (t2, MAXP)];
-        for coord in coords.iter_mut() {
-            let f64_coord = (coord.0 as f64, coord.1 as f64);
-            *coord = ac.convert_tp_to_screen(f64_coord);
-        }
-        cr.move_to(coords[0].0, coords[0].1);
-        for i in 1..4 {
-            cr.line_to(coords[i].0, coords[i].1);
-        }
-        cr.close_path();
-        cr.fill();
-
-        start_line += 20;
-    }
-
-    // Hail growth zone
-    // FIXME: Make my own function
-    let rgb = config::HAIL_ZONE_RGB;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-    let mut coords = [(-10.0, MAXP), (-10.0, MINP), (-30.0, MINP), (-30.0, MAXP)];
-    for coord in coords.iter_mut() {
-        let f64_coord = (coord.0 as f64, coord.1 as f64);
-        *coord = ac.convert_tp_to_screen(f64_coord);
-    }
-    cr.move_to(coords[0].0, coords[0].1);
-    for i in 1..4 {
-        cr.line_to(coords[i].0, coords[i].1);
-    }
-    cr.close_path();
-    cr.fill();
-
-    // Dendritic snow growth zone
-    // FIXME: Make my own function
-    let rgb = config::DENDRTITIC_ZONE_RGB;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-    let mut coords = [(-12.0, MAXP), (-12.0, MINP), (-18.0, MINP), (-18.0, MAXP)];
-    for coord in coords.iter_mut() {
-        let f64_coord = (coord.0 as f64, coord.1 as f64);
-        *coord = ac.convert_tp_to_screen(f64_coord);
-    }
-    cr.move_to(coords[0].0, coords[0].1);
-    for i in 1..4 {
-        cr.line_to(coords[i].0, coords[i].1);
-    }
-    cr.close_path();
-    cr.fill();
+    draw_temperature_banding(cr, ac);
+    draw_hail_growth_zone(cr, ac);
+    draw_dendtritic_growth_zone(cr, ac);
 }
 
 // Draw isentrops, isotherms, isobars, ...
@@ -118,4 +64,62 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
         config::ISOBAR_RGBA,
         &config::ISOBAR_PNTS,
     );
+}
+
+fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
+
+    let rgb = config::BACKGROUND_BAND_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let mut start_line = -160i32;
+    while start_line < 100 {
+        let t1 = start_line as f64;
+        let t2 = t1 + 10.0;
+
+        draw_temperature_band(t1, t2, cr, ac);
+
+        start_line += 20;
+    }
+}
+
+fn draw_hail_growth_zone(cr: &Context, ac: &AppContext) {
+
+    let rgb = config::HAIL_ZONE_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    draw_temperature_band(-30.0, -10.0, cr, ac);
+}
+
+fn draw_dendtritic_growth_zone(cr: &Context, ac: &AppContext) {
+
+    let rgb = config::DENDRTITIC_ZONE_RGB;
+    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+
+    draw_temperature_band(-18.0, -12.0, cr, ac);
+}
+
+fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext) {
+    // Assume color has already been set up for us.
+
+    const MAXP: f64 = config::MAXP;
+    const MINP: f64 = config::MINP;
+
+    let mut coords = [
+        (warm_t, MAXP),
+        (warm_t, MINP),
+        (cold_t, MINP),
+        (cold_t, MAXP),
+    ];
+
+    // Convert points to screen coords
+    for coord in coords.iter_mut() {
+        *coord = ac.convert_tp_to_screen(TPCoords {
+            temperature: coord.0,
+            pressure: coord.1,
+        });
+    }
+    cr.move_to(coords[0].0, coords[0].1);
+    for i in 1..4 {
+        cr.line_to(coords[i].0, coords[i].1);
+    }
+    cr.close_path();
+    cr.fill();
 }

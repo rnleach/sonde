@@ -1,6 +1,7 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
 use config;
+use coords::TPCoords;
 use gui::ScreenRect;
 
 use cairo::Context;
@@ -9,14 +10,16 @@ use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
-    let position = ac.last_cursor_position_skew_t;
-
-    if position == (0.0, 0.0) {
-        // FIXME: Use an option in ac instead of a special position.
-        // Return without drawing if this is still set at 0.0.
+    let position = if let Some(position) = ac.last_cursor_position_skew_t {
+        position
+    } else {
         return;
-    }
-    let (_, sample_p) = ac.convert_device_to_tp(position);
+    };
+
+    let TPCoords {
+        temperature: _,
+        pressure: sample_p,
+    } = ac.convert_device_to_tp(position);
 
     let snd = if let Some(snd) = ac.get_sounding_for_display() {
         snd
@@ -43,7 +46,7 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
     let box_rect = calculate_screen_rect(cr, ac, &lines, sample_p);
 
-    draw_box(&box_rect, cr, &lines);
+    draw_sample_readout_text_box(&box_rect, cr, &lines);
 }
 
 fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
@@ -122,8 +125,14 @@ fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
         cr.device_to_user_distance(config::ACTIVE_READOUT_LINE_WIDTH, 0.0)
             .0,
     );
-    let start = ac.convert_tp_to_screen((-200.0, sample_p));
-    let end = ac.convert_tp_to_screen((60.0, sample_p));
+    let start = ac.convert_tp_to_screen(TPCoords {
+        temperature: -200.0,
+        pressure: sample_p,
+    });
+    let end = ac.convert_tp_to_screen(TPCoords {
+        temperature: 60.0,
+        pressure: sample_p,
+    });
     cr.move_to(start.0, start.1);
     cr.line_to(end.0, end.1);
     cr.stroke();
@@ -154,7 +163,10 @@ fn calculate_screen_rect(
     height += 2.0 * padding;
 
     let (mut left, _) = ac.convert_device_to_screen((5.0, 0.0));
-    let (_, top) = ac.convert_tp_to_screen((0.0, sample_p));
+    let (_, top) = ac.convert_tp_to_screen(TPCoords {
+        temperature: 0.0,
+        pressure: sample_p,
+    });
     let mut bottom = top - height;
 
     let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
@@ -198,8 +210,7 @@ fn calculate_screen_rect(
     }
 }
 
-// FIXME: Better function name, this draws text too.
-fn draw_box(rect: &ScreenRect, cr: &Context, lines: &Vec<String>) {
+fn draw_sample_readout_text_box(rect: &ScreenRect, cr: &Context, lines: &Vec<String>) {
     let ScreenRect {
         lower_left: (xmin, ymin),
         upper_right: (xmax, ymax),

@@ -80,7 +80,7 @@ pub fn button_press_event(
     // Left mouse button
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.last_cursor_position_skew_t = event.get_position();
+        ac.last_cursor_position_skew_t = Some(event.get_position());
         ac.left_button_pressed = true;
         Inhibit(true)
     } else {
@@ -96,7 +96,7 @@ pub fn button_release_event(
 ) -> Inhibit {
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.last_cursor_position_skew_t = (0.0, 0.0);
+        ac.last_cursor_position_skew_t = None;
         ac.left_button_pressed = false;
         Inhibit(true)
     } else {
@@ -112,8 +112,7 @@ pub fn leave_event(
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
-    // FIXME: Use an enum or option instead of a special position
-    ac.last_cursor_position_skew_t = (0.0, 0.0);
+    ac.last_cursor_position_skew_t = None;
     sounding_area.queue_draw();
 
     Inhibit(false)
@@ -128,19 +127,23 @@ pub fn mouse_motion_event(
 
     let mut ac = ac.borrow_mut();
     if ac.left_button_pressed {
-        let old_position = ac.convert_device_to_xy(ac.last_cursor_position_skew_t);
-        ac.last_cursor_position_skew_t = event.get_position();
-        let new_position = ac.convert_device_to_xy(ac.last_cursor_position_skew_t);
-        let delta = (
-            new_position.0 - old_position.0,
-            new_position.1 - old_position.1,
-        );
-        ac.translate_x -= delta.0;
-        ac.translate_y -= delta.1;
+        if let Some(last_position) = ac.last_cursor_position_skew_t {
+            let old_position = ac.convert_device_to_xy(last_position);
+            let new_position = event.get_position();
+            ac.last_cursor_position_skew_t = Some(new_position);
 
-        sounding_area.queue_draw();
+            let new_position = ac.convert_device_to_xy(new_position);
+            let delta = (
+                new_position.0 - old_position.0,
+                new_position.1 - old_position.1,
+            );
+            ac.translate_x -= delta.0;
+            ac.translate_y -= delta.1;
+
+            sounding_area.queue_draw();
+        }
     } else if ac.plottable() {
-        ac.last_cursor_position_skew_t = event.get_position();
+        ac.last_cursor_position_skew_t = Some(event.get_position());
         sounding_area.queue_draw();
     }
     Inhibit(false)

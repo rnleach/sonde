@@ -1,6 +1,5 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
-#![allow(dead_code)] // For now.
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -16,18 +15,25 @@ pub type AppContextPointer = Rc<RefCell<AppContext>>;
 
 /// Holds the application state. This is a singleton (not enforced) that is shared globally.
 pub struct AppContext {
-    source_name: Option<String>,
+    // Source description is used in the legend if it is present. Not all file formats include a
+    // station name or model name or base time. In bufkit files this is usually part of the file
+    // name. So whatever function loads a sounding should set this to reflect where it came from.
+    source_description: Option<String>,
+
     list: Vec<Sounding>,
+    currently_displayed_index: usize,
+
+    // FIXME: XYRect?
     // Lower left and  upper right corners of the bounding box that bounds all the soundings in
     // the list.
     lower_left: XYCoords,
     upper_right: XYCoords,
 
-    currently_displayed: usize,
-    widgets: Option<Gui>,
+    gui: Option<Gui>,
 
-    // Standard x-y coords
+    // Standard x-y coords, used for zooming and panning.
     pub zoom_factor: f64, // Multiply by this after translating
+    // FIXME: XYCoords?
     pub translate_x: f64, // subtract this from x before converting to screen coords.
     pub translate_y: f64, // subtract this from y before converting to screen coords.
 
@@ -38,8 +44,10 @@ pub struct AppContext {
     // state of input for left button press and panning.
     pub left_button_pressed: bool,
 
-    // last cursor position
-    pub last_cursor_position_skew_t: DeviceCoords,
+    // last cursor position in skew_t widget, used for sampling and panning
+    pub last_cursor_position_skew_t: Option<DeviceCoords>,
+
+    // FIXME: add padding info to be calculated in screen coords during prepare to draw.
 }
 
 impl AppContext {
@@ -50,12 +58,12 @@ impl AppContext {
     pub fn new() -> AppContextPointer {
         Rc::new(RefCell::new(AppContext {
             // Data state
-            source_name: None,
+            source_description: None,
             list: vec![],
             lower_left: (0.0, 0.0),
             upper_right: (1.0, 1.0),
-            currently_displayed: 0,
-            widgets: None,
+            currently_displayed_index: 0,
+            gui: None,
 
             // Sounding Area GUI state
             zoom_factor: 1.0,
@@ -63,21 +71,21 @@ impl AppContext {
             translate_y: 0.0,
             device_height: 100,
             device_width: 100,
-            last_cursor_position_skew_t: (0.0, 0.0),
+            last_cursor_position_skew_t: None,
             left_button_pressed: false,
         }))
     }
 
-    pub fn set_gui(&mut self, widgets: Gui) {
-        self.widgets = Some(widgets);
+    pub fn set_gui(&mut self, gui: Gui) {
+        self.gui = Some(gui);
     }
 
     pub fn load_data(&mut self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
         use config;
 
         self.list = src.into_iter().collect();
-        self.currently_displayed = 0;
-        self.source_name = None;
+        self.currently_displayed_index = 0;
+        self.source_description = None;
 
         self.lower_left = (0.45, 0.45);
         self.upper_right = (0.55, 0.55);
@@ -85,7 +93,14 @@ impl AppContext {
         for snd in &self.list {
             for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
                 if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
-                    if p < config::MINP { None } else { Some((t, p)) }
+                    if p < config::MINP {
+                        None
+                    } else {
+                        Some(TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        })
+                    }
                 } else {
                     None
                 }
@@ -114,7 +129,14 @@ impl AppContext {
 
             for pair in snd.pressure.iter().zip(&snd.dew_point).filter_map(|p| {
                 if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
-                    if p < config::MINP { None } else { Some((t, p)) }
+                    if p < config::MINP {
+                        None
+                    } else {
+                        Some(TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        })
+                    }
                 } else {
                     None
                 }
@@ -136,7 +158,7 @@ impl AppContext {
             }
         }
 
-        if let Some(ref wdgs) = self.widgets {
+        if let Some(ref wdgs) = self.gui {
             wdgs.draw_all();
         }
 
@@ -151,14 +173,14 @@ impl AppContext {
     /// Set the next one as the one to display, or wrap to the beginning.
     pub fn display_next(&mut self) {
         if self.plottable() {
-            if self.currently_displayed < self.list.len() - 1 {
-                self.currently_displayed += 1;
+            if self.currently_displayed_index < self.list.len() - 1 {
+                self.currently_displayed_index += 1;
             } else {
-                self.currently_displayed = 0;
+                self.currently_displayed_index = 0;
             }
         }
 
-        if let Some(ref wdgs) = self.widgets {
+        if let Some(ref wdgs) = self.gui {
             wdgs.draw_all();
         }
     }
@@ -166,14 +188,14 @@ impl AppContext {
     /// Set the previous one as the one to display, or wrap to the end.
     pub fn display_previous(&mut self) {
         if self.plottable() {
-            if self.currently_displayed > 0 {
-                self.currently_displayed -= 1;
+            if self.currently_displayed_index > 0 {
+                self.currently_displayed_index -= 1;
             } else {
-                self.currently_displayed = self.list.len() - 1;
+                self.currently_displayed_index = self.list.len() - 1;
             }
         }
 
-        if let Some(ref wdgs) = self.widgets {
+        if let Some(ref wdgs) = self.gui {
             wdgs.draw_all();
         }
     }
@@ -181,7 +203,7 @@ impl AppContext {
     /// Get the sounding to draw.
     pub fn get_sounding_for_display(&self) -> Option<&Sounding> {
         if self.plottable() {
-            Some(&self.list[self.currently_displayed])
+            Some(&self.list[self.currently_displayed_index])
         } else {
             None
         }
@@ -189,21 +211,20 @@ impl AppContext {
 
     /// A scale factor to use when converting from XY to Screen Coordinates.
     /// NOT the same as the zoom factor.
-    #[inline]
+    /// FIXME: More documentation on this.
     pub fn scale_factor(&self) -> f64 {
         ::std::cmp::min(self.device_height, self.device_width) as f64
     }
 
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
-    #[inline]
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
         use config;
         use std::f64;
 
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.1)) /
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
             (f64::log10(config::MAXP) - f64::log10(config::MINP));
 
-        let x = (coords.0 - config::MINT) / (config::MAXT - config::MINT);
+        let x = (coords.temperature - config::MINT) / (config::MAXT - config::MINT);
 
         // do the skew
         let x = x + y;
@@ -244,7 +265,10 @@ impl AppContext {
                 y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
         );
 
-        (t, p)
+        TPCoords {
+            temperature: t,
+            pressure: p,
+        }
     }
 
     /// Conversion from (x,y) coords to screen coords
@@ -303,6 +327,8 @@ impl AppContext {
     /// Fit to the given x-y max coords.
     #[inline]
     pub fn fit_to_data(&mut self) {
+
+        // FIXME: Take into account labels and wind barbs.
         use std::f64;
 
         self.translate_x = self.lower_left.0;
@@ -354,13 +380,13 @@ impl AppContext {
     }
 
     /// Set the source name
-    pub fn set_source_name(&mut self, new_name: Option<String>) {
-        self.source_name = new_name;
+    pub fn set_source_description(&mut self, new_name: Option<String>) {
+        self.source_description = new_name;
     }
 
     /// Get the source name
-    pub fn get_source_name(&self) -> Option<String> {
-        match self.source_name {
+    pub fn get_source_description(&self) -> Option<String> {
+        match self.source_description {
             Some(ref name) => Some(name.clone()),
             None => None,
         }
@@ -371,7 +397,7 @@ impl AppContext {
         use gtk::WidgetExt;
         use gdk::ScreenExt;
 
-        match self.widgets {
+        match self.gui {
             None => None,
             Some(ref gui) => {
                 match gui.get_sounding_area().get_screen() {

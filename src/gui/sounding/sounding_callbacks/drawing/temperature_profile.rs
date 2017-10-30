@@ -2,6 +2,7 @@ use cairo::Context;
 
 use app::AppContext;
 use config;
+use coords::TPCoords;
 use gui::sounding::sounding_callbacks::drawing::plot_curve_from_points;
 
 pub enum TemperatureType {
@@ -37,10 +38,17 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
         let profile_data: Vec<_> = pres_data
             .iter()
             .zip(temp_data.iter())
-            .filter_map(|val_pair| if let (Some(p), Some(t)) =
+            .filter_map(|val_pair| if let (Some(pressure), Some(temperature)) =
                 (val_pair.0.as_option(), val_pair.1.as_option())
             {
-                if p > config::MINP { Some((t, p)) } else { None }
+                if pressure > config::MINP {
+                    Some(TPCoords {
+                        temperature,
+                        pressure,
+                    })
+                } else {
+                    None
+                }
             } else {
                 None
             })

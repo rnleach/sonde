@@ -1,6 +1,15 @@
+// FIXME: Document the different coordinate systems.
+
 /// Temperature-Pressure coordinates.
 /// Origin lower left. (Temperature, Pressure)
-pub type TPCoords = (f64, f64);
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TPCoords {
+    /// Temperature in Celsius
+    pub temperature: f64,
+    /// Pressure in hPa
+    pub pressure: f64,
+}
+
 /// XY coordinates of the skew-t graph, range 0.0 to 1.0.
 /// Origin lower left, (x,y)
 pub type XYCoords = (f64, f64);

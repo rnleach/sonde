@@ -2,7 +2,7 @@
 use app::AppContext;
 use config;
 
-use coords::ScreenCoords;
+use coords::{ScreenCoords, TPCoords};
 use gui::ScreenRect;
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
@@ -56,7 +56,10 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
         let extents = cr.text_extents(&label);
 
-        let (_, screen_y) = ac.convert_tp_to_screen((0.0, p));
+        let (_, screen_y) = ac.convert_tp_to_screen(TPCoords {
+            temperature: 0.0,
+            pressure: p,
+        });
         let screen_y = screen_y - extents.height / 2.0;
 
         let label_lower_left = (lower_left.0, screen_y);
@@ -73,14 +76,20 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
         check_overlap_then_add(cr, &mut labels, &screen_edges, pair);
     }
 
-    let (_, screen_max_p) = ac.convert_screen_to_tp(lower_left);
+    let TPCoords {
+        temperature: _,
+        pressure: screen_max_p,
+    } = ac.convert_screen_to_tp(lower_left);
     for &t in config::ISOTHERMS.into_iter() {
 
         let label = format!("{}", t);
 
         let extents = cr.text_extents(&label);
 
-        let (mut xpos, mut ypos) = ac.convert_tp_to_screen((t, screen_max_p));
+        let (mut xpos, mut ypos) = ac.convert_tp_to_screen(TPCoords {
+            temperature: t,
+            pressure: screen_max_p,
+        });
         xpos -= extents.width / 2.0; // Center
         ypos -= extents.height / 2.0; // Center
         ypos += extents.height; // Move up off bottom axis.
@@ -214,10 +223,15 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 
     let font_extents = cr.font_extents();
 
-    let (source_name, valid_time, location) = build_legend_strings(ac);
+    let (source_description, valid_time, location) = build_legend_strings(ac);
 
-    let (box_width, box_height) =
-        calculate_legend_box_size(cr, &font_extents, &source_name, &valid_time, &location);
+    let (box_width, box_height) = calculate_legend_box_size(
+        cr,
+        &font_extents,
+        &source_description,
+        &valid_time,
+        &location,
+    );
 
     let legend_rect = ScreenRect {
         lower_left: (upper_left.0, upper_left.1 - box_height),
@@ -230,7 +244,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         cr,
         &upper_left,
         &font_extents,
-        &source_name,
+        &source_description,
         &valid_time,
         &location,
     );
@@ -238,7 +252,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 
 fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Option<String>) {
 
-    let source_name: Option<String> = ac.get_source_name();
+    let source_description: Option<String> = ac.get_source_description();
     let mut valid_time: Option<String> = None;
     let mut location: Option<String> = None;
     if let Some(snd) = ac.get_sounding_for_display() {
@@ -273,13 +287,13 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
         }
     }
 
-    (source_name, valid_time, location)
+    (source_description, valid_time, location)
 }
 
 fn calculate_legend_box_size(
     cr: &Context,
     font_extents: &FontExtents,
-    source_name: &Option<String>,
+    source_description: &Option<String>,
     valid_time: &Option<String>,
     location: &Option<String>,
 ) -> (f64, f64) {
@@ -287,7 +301,7 @@ fn calculate_legend_box_size(
     let mut box_width: f64 = 0.0;
     let mut box_height: f64 = 0.0;
 
-    if let &Some(ref src) = source_name {
+    if let &Some(ref src) = source_description {
         let extents = cr.text_extents(src);
         if extents.width > box_width {
             box_width = extents.width;
@@ -302,7 +316,7 @@ fn calculate_legend_box_size(
         }
         box_height += extents.height;
         // Add line spacing if previous line was there.
-        if source_name.is_some() {
+        if source_description.is_some() {
             box_height += font_extents.height - extents.height;
         }
     }
@@ -357,7 +371,7 @@ fn draw_legend_text(
     cr: &Context,
     upper_left: &ScreenCoords,
     font_extents: &FontExtents,
-    source_name: &Option<String>,
+    source_description: &Option<String>,
     valid_time: &Option<String>,
     location: &Option<String>,
 ) {
@@ -376,7 +390,7 @@ fn draw_legend_text(
         upper_left.1 - padding - font_extents.ascent,
     );
 
-    if let &Some(ref src) = source_name {
+    if let &Some(ref src) = source_description {
         cr.show_text(src);
         num_lines_drawn += 1;
         cr.move_to(

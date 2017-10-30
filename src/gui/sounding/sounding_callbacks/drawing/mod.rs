@@ -56,12 +56,12 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     cr.clip();
 }
 
-pub fn draw_background(cr: &Context, ac: &AppContext){
+pub fn draw_background(cr: &Context, ac: &AppContext) {
     background::draw_background_fill(&cr, &ac);
     background::draw_background_lines(&cr, &ac);
 }
 
-pub fn draw_temperature_profiles(cr: &Context, ac: &AppContext){
+pub fn draw_temperature_profiles(cr: &Context, ac: &AppContext) {
     use self::temperature_profile::TemperatureType::{DewPoint, DryBulb, WetBulb};
 
     temperature_profile::draw_temperature_profile(WetBulb, &cr, &ac);
@@ -73,13 +73,13 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     wind_profile::draw_wind_profile(cr, ac);
 }
 
-pub fn draw_labels(cr: &Context, ac: &AppContext){
+pub fn draw_labels(cr: &Context, ac: &AppContext) {
     labeling::prepare_to_label(cr, ac);
     labeling::draw_background_labels(cr, ac);
     labeling::draw_legend(cr, ac);
 }
 
-pub fn draw_active_sample(cr: &Context, ac: &AppContext){
+pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
     sample_readout::draw_active_sample(cr, ac);
 }
 
