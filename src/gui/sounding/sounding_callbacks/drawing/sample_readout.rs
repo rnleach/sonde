@@ -5,8 +5,7 @@ use gui::ScreenRect;
 
 use cairo::Context;
 
-use sounding_base::Sounding;
-use sounding_base::sounding::DataRow; // FIXME: Public export this in sounding-base.
+use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
@@ -28,7 +27,9 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    let vals = snd.fetch_nearest_pnt(sample_p);
+    // TODO: Add option to use nearest pnt or interpolate.
+    // let vals = snd.fetch_nearest_pnt(sample_p);
+    let vals = snd.linear_interpolate(sample_p);
 
     let sample_p = if vals.pressure.as_option().is_some() {
         vals.pressure.unwrap()
