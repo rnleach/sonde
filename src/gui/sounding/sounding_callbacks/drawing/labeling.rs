@@ -155,15 +155,18 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
 
 fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
 
-    let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
+    let ScreenRect {
+        lower_left,
+        upper_right,
+    } = ac.bounding_box_in_screen_coords();
     let ScreenCoords {
         x: mut screen_x_min,
         y: mut screen_y_min,
-    } = lower_left_screen;
+    } = lower_left;
     let ScreenCoords {
         x: mut screen_x_max,
         y: mut screen_y_max,
-    } = upper_right_screen;
+    } = upper_right;
 
     // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
     let ScreenCoords { x: xmin, y: ymin } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });

@@ -8,7 +8,7 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect, ScreenRect};
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;
@@ -59,7 +59,10 @@ impl AppContext {
             // Data state
             source_description: None,
             list: vec![],
-            xy_envelope: XYRect{ lower_left: XYCoords { x: 0.0, y: 0.0 }, upper_right: XYCoords { x: 1.0, y: 1.0 }},
+            xy_envelope: XYRect {
+                lower_left: XYCoords { x: 0.0, y: 0.0 },
+                upper_right: XYCoords { x: 1.0, y: 1.0 },
+            },
             currently_displayed_index: 0,
             gui: None,
 
@@ -88,7 +91,10 @@ impl AppContext {
         self.currently_displayed_index = 0;
         self.source_description = None;
 
-        self.xy_envelope = XYRect {lower_left: XYCoords { x: 0.45, y: 0.45 }, upper_right: XYCoords { x: 0.55, y: 0.55 }};
+        self.xy_envelope = XYRect {
+            lower_left: XYCoords { x: 0.45, y: 0.45 },
+            upper_right: XYCoords { x: 0.55, y: 0.55 },
+        };
 
         for snd in &self.list {
             for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
@@ -210,8 +216,8 @@ impl AppContext {
     }
 
     /// This is the scale factor that will be set for the cairo transform matrix.
-    /// 
-    /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of 
+    ///
+    /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
     /// 1 in `ScreenCoords` when the zoom factor is 1.
     pub fn scale_factor(&self) -> f64 {
         ::std::cmp::min(self.device_height, self.device_width) as f64
@@ -310,7 +316,7 @@ impl AppContext {
     }
 
     /// Get a bounding box in screen coords
-    pub fn bounding_box_in_screen_coords(&self) -> (ScreenCoords, ScreenCoords) {
+    pub fn bounding_box_in_screen_coords(&self) -> ScreenRect {
         let lower_left = self.convert_device_to_screen(DeviceCoords {
             col: 0.0,
             row: self.device_height as f64,
@@ -320,7 +326,10 @@ impl AppContext {
             row: 0.0,
         });
 
-        (lower_left, upper_right)
+        ScreenRect {
+            lower_left,
+            upper_right,
+        }
     }
 
     /// Fit to the given x-y max coords.

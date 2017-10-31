@@ -187,8 +187,10 @@ fn calculate_screen_rect(
     }
 
     // Keep it on the screen
-    let (ScreenCoords { x: xmin, y: ymin }, ScreenCoords { x: xmax, y: ymax }) =
-        ac.bounding_box_in_screen_coords();
+    let ScreenRect {
+        lower_left: ScreenCoords { x: xmin, y: ymin },
+        upper_right: ScreenCoords { x: xmax, y: ymax },
+    } = ac.bounding_box_in_screen_coords();
     if left < xmin {
         left = xmin;
     }

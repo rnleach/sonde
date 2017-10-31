@@ -15,6 +15,19 @@ pub const ACTIVE_READOUT_LINE_WIDTH: f64 = 3.0;
 /// Active readout line color
 pub const ACTIVE_READOUT_LINE_RGB: (f64, f64, f64) = (1.0, 0.0, 0.0);
 
+/// Wind barb shaft length in pixels
+pub const WIND_BARB_SHAFT_LENGTH_IN_PIXELS: f64 = 35.0;
+/// Lenght of wind barbs and pennants
+pub const WIND_BARB_BARB_LENGTH_IN_PIXELS: f64 = 15.0;
+/// Width of wind barbs and pennants
+pub const WIND_BARB_PENNANT_WIDTH_IN_PIXELS: f64 = 6.0;
+/// Size of the dot on a wind barb
+pub const WIND_BARB_DOT_RADIUS_IN_PIXELS: f64 = 3.5;
+/// Color used for winds plot
+pub const WIND_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
+/// Line width for Dew point Plot
+pub const WIND_LINE_WIDTH: f64 = 1.0;
+
 /// Font face
 pub static FONT_NAME: &'static str = "Courier New";
 /// Font size, legend, pressure, temperature lines

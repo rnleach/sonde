@@ -84,7 +84,7 @@ pub struct XYCoords {
 
 impl XYCoords {
     pub fn origin() -> Self {
-        XYCoords{x:0.0, y:0.0}
+        XYCoords { x: 0.0, y: 0.0 }
     }
 }
 
@@ -97,7 +97,11 @@ pub struct ScreenCoords {
     pub y: f64,
 }
 
-impl ScreenCoords {}
+impl ScreenCoords {
+    pub fn origin() -> Self {
+        ScreenCoords { x: 0.0, y: 0.0 }
+    }
+}
 
 /// Device coordinates (pixels positions).
 ///  Origin upper left, (Column, Row)
@@ -109,7 +113,7 @@ pub struct DeviceCoords {
 
 impl DeviceCoords {
     pub fn origin() -> Self {
-        DeviceCoords{col:0.0, row:0.0}
+        DeviceCoords { col: 0.0, row: 0.0 }
     }
 }
 
@@ -139,6 +143,26 @@ impl ScreenRect {
                 x: self.upper_right.x + padding,
                 y: self.upper_right.y + padding,
             },
+        }
+    }
+
+    pub fn expand_to_fit(&mut self, point: ScreenCoords) {
+        let ScreenCoords { x, y } = point;
+
+        if x < self.lower_left.x {
+            self.lower_left.x = x;
+        }
+
+        if x > self.upper_right.x {
+            self.upper_right.x = x;
+        }
+
+        if y < self.lower_left.y {
+            self.lower_left.y = y;
+        }
+
+        if y > self.upper_right.y {
+            self.upper_right.y = y;
         }
     }
 }
