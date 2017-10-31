@@ -233,8 +233,10 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    // FIXME: Get this 5 px distance from the config
-    let mut upper_left = ac.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
+    let mut upper_left = ac.convert_device_to_screen(DeviceCoords::origin());
+    upper_left.x += ac.edge_padding;
+    upper_left.y -= ac.edge_padding;
+
     // Make sure we stay on the x-y coords domain
     let ScreenCoords { x: xmin, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
     let edge_offset = upper_left.x; // This distance is used to push off the edge by 5 pixels

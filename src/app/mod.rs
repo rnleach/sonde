@@ -8,7 +8,7 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect};
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;
@@ -23,19 +23,15 @@ pub struct AppContext {
     list: Vec<Sounding>,
     currently_displayed_index: usize,
 
-    // FIXME: XYRect?
     // Lower left and  upper right corners of the bounding box that bounds all the soundings in
     // the list.
-    lower_left: XYCoords,
-    upper_right: XYCoords,
+    xy_envelope: XYRect,
 
     gui: Option<Gui>,
 
     // Standard x-y coords, used for zooming and panning.
     pub zoom_factor: f64, // Multiply by this after translating
-    // FIXME: XYCoords?
-    pub translate_x: f64, // subtract this from x before converting to screen coords.
-    pub translate_y: f64, // subtract this from y before converting to screen coords.
+    pub translate: XYCoords,
 
     // device dimensions
     pub device_height: i32,
@@ -63,15 +59,13 @@ impl AppContext {
             // Data state
             source_description: None,
             list: vec![],
-            lower_left: XYCoords { x: 0.0, y: 0.0 },
-            upper_right: XYCoords { x: 1.0, y: 1.0 },
+            xy_envelope: XYRect{ lower_left: XYCoords { x: 0.0, y: 0.0 }, upper_right: XYCoords { x: 1.0, y: 1.0 }},
             currently_displayed_index: 0,
             gui: None,
 
             // Sounding Area GUI state
             zoom_factor: 1.0,
-            translate_x: 0.0,
-            translate_y: 0.0,
+            translate: XYCoords::origin(),
             device_height: 100,
             device_width: 100,
             last_cursor_position_skew_t: None,
@@ -94,8 +88,7 @@ impl AppContext {
         self.currently_displayed_index = 0;
         self.source_description = None;
 
-        self.lower_left = XYCoords { x: 0.45, y: 0.45 };
-        self.upper_right = XYCoords { x: 0.55, y: 0.55 };
+        self.xy_envelope = XYRect {lower_left: XYCoords { x: 0.45, y: 0.45 }, upper_right: XYCoords { x: 0.55, y: 0.55 }};
 
         for snd in &self.list {
             for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
@@ -114,17 +107,17 @@ impl AppContext {
             })
             {
                 let XYCoords { x, y } = Self::convert_tp_to_xy(pair);
-                if x < self.lower_left.x {
-                    self.lower_left.x = x;
+                if x < self.xy_envelope.lower_left.x {
+                    self.xy_envelope.lower_left.x = x;
                 }
-                if y < self.lower_left.y {
-                    self.lower_left.y = y;
+                if y < self.xy_envelope.lower_left.y {
+                    self.xy_envelope.lower_left.y = y;
                 }
-                if x > self.upper_right.x {
-                    self.upper_right.x = x;
+                if x > self.xy_envelope.upper_right.x {
+                    self.xy_envelope.upper_right.x = x;
                 }
-                if y > self.upper_right.y {
-                    self.upper_right.y = y;
+                if y > self.xy_envelope.upper_right.y {
+                    self.xy_envelope.upper_right.y = y;
                 }
             }
 
@@ -150,17 +143,17 @@ impl AppContext {
             })
             {
                 let XYCoords { x, y } = Self::convert_tp_to_xy(pair);
-                if x < self.lower_left.x {
-                    self.lower_left.x = x;
+                if x < self.xy_envelope.lower_left.x {
+                    self.xy_envelope.lower_left.x = x;
                 }
-                if y < self.lower_left.y {
-                    self.lower_left.y = y;
+                if y < self.xy_envelope.lower_left.y {
+                    self.xy_envelope.lower_left.y = y;
                 }
-                if x > self.upper_right.x {
-                    self.upper_right.x = x;
+                if x > self.xy_envelope.upper_right.x {
+                    self.xy_envelope.upper_right.x = x;
                 }
-                if y > self.upper_right.y {
-                    self.upper_right.y = y;
+                if y > self.xy_envelope.upper_right.y {
+                    self.xy_envelope.upper_right.y = y;
                 }
             }
         }
@@ -216,9 +209,10 @@ impl AppContext {
         }
     }
 
-    /// A scale factor to use when converting from XY to Screen Coordinates.
-    /// NOT the same as the zoom factor.
-    /// FIXME: More documentation on this.
+    /// This is the scale factor that will be set for the cairo transform matrix.
+    /// 
+    /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of 
+    /// 1 in `ScreenCoords` when the zoom factor is 1.
     pub fn scale_factor(&self) -> f64 {
         ::std::cmp::min(self.device_height, self.device_width) as f64
     }
@@ -279,8 +273,8 @@ impl AppContext {
     pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
         // Apply translation first
-        let x = coords.x - self.translate_x;
-        let y = coords.y - self.translate_y;
+        let x = coords.x - self.translate.x;
+        let y = coords.y - self.translate.y;
 
         // Apply scaling
         let x = (self.zoom_factor * x) as f64;
@@ -292,8 +286,8 @@ impl AppContext {
     pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Screen coords go 0 -> 1 down the y axis and 0 -> aspect_ratio right along the x axis.
 
-        let x = coords.x / self.zoom_factor + self.translate_x;
-        let y = coords.y / self.zoom_factor + self.translate_y;
+        let x = coords.x / self.zoom_factor + self.translate.x;
+        let y = coords.y / self.zoom_factor + self.translate.y;
         XYCoords { x, y }
     }
 
@@ -335,11 +329,11 @@ impl AppContext {
         // FIXME: Take into account labels and wind barbs.
         use std::f64;
 
-        self.translate_x = self.lower_left.x;
-        self.translate_y = self.lower_left.y;
+        self.translate.x = self.xy_envelope.lower_left.x;
+        self.translate.y = self.xy_envelope.lower_left.y;
 
-        let width = self.upper_right.x - self.lower_left.x;
-        let height = self.upper_right.y - self.lower_left.y;
+        let width = self.xy_envelope.upper_right.x - self.xy_envelope.lower_left.x;
+        let height = self.xy_envelope.upper_right.y - self.xy_envelope.lower_left.y;
 
         let width_scale = 1.0 / width;
         let height_scale = 1.0 / height;
@@ -363,26 +357,26 @@ impl AppContext {
         let height = upper_left.y - lower_right.y;
 
         if width <= 1.0 {
-            if self.translate_x < 0.0 {
-                self.translate_x = 0.0;
+            if self.translate.x < 0.0 {
+                self.translate.x = 0.0;
             }
             let max_x = 1.0 - width;
-            if self.translate_x > max_x {
-                self.translate_x = max_x;
+            if self.translate.x > max_x {
+                self.translate.x = max_x;
             }
         } else {
-            self.translate_x = -(width - 1.0) / 2.0;
+            self.translate.x = -(width - 1.0) / 2.0;
         }
         if height < 1.0 {
-            if self.translate_y < 0.0 {
-                self.translate_y = 0.0;
+            if self.translate.y < 0.0 {
+                self.translate.y = 0.0;
             }
             let max_y = 1.0 - height;
-            if self.translate_y > max_y {
-                self.translate_y = max_y;
+            if self.translate.y > max_y {
+                self.translate.y = max_y;
             }
         } else {
-            self.translate_y = -(height - 1.0) / 2.0;
+            self.translate.y = -(height - 1.0) / 2.0;
         }
     }
 

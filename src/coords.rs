@@ -82,7 +82,11 @@ pub struct XYCoords {
     pub y: f64,
 }
 
-impl XYCoords {}
+impl XYCoords {
+    pub fn origin() -> Self {
+        XYCoords{x:0.0, y:0.0}
+    }
+}
 
 /// On screen coordinates. Meant to scale and translate XYCoords to fit on the screen.
 /// Origin lower left, (x,y).
@@ -103,7 +107,11 @@ pub struct DeviceCoords {
     pub row: f64,
 }
 
-impl DeviceCoords {}
+impl DeviceCoords {
+    pub fn origin() -> Self {
+        DeviceCoords{col:0.0, row:0.0}
+    }
+}
 
 impl From<(f64, f64)> for DeviceCoords {
     fn from(src: (f64, f64)) -> Self {
@@ -114,7 +122,7 @@ impl From<(f64, f64)> for DeviceCoords {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct ScreenRect {
     pub lower_left: ScreenCoords,
     pub upper_right: ScreenCoords,
@@ -136,6 +144,30 @@ impl ScreenRect {
 }
 
 impl Rect for ScreenRect {
+    fn min_x(&self) -> f64 {
+        self.lower_left.x
+    }
+
+    fn max_x(&self) -> f64 {
+        self.upper_right.x
+    }
+
+    fn min_y(&self) -> f64 {
+        self.lower_left.y
+    }
+
+    fn max_y(&self) -> f64 {
+        self.upper_right.y
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct XYRect {
+    pub lower_left: XYCoords,
+    pub upper_right: XYCoords,
+}
+
+impl Rect for XYRect {
     fn min_x(&self) -> f64 {
         self.lower_left.x
     }

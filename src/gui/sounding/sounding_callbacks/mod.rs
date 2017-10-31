@@ -63,8 +63,8 @@ pub fn scroll_event(
         ac.zoom_factor = MAX_ZOOM;
     }
 
-    ac.translate_x = pos.x - old_zoom / ac.zoom_factor * (pos.x - ac.translate_x);
-    ac.translate_y = pos.y - old_zoom / ac.zoom_factor * (pos.y - ac.translate_y);
+    ac.translate.x = pos.x - old_zoom / ac.zoom_factor * (pos.x - ac.translate.x);
+    ac.translate.y = pos.y - old_zoom / ac.zoom_factor * (pos.y - ac.translate.y);
 
     sounding_area.queue_draw();
 
@@ -138,8 +138,8 @@ pub fn mouse_motion_event(
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,
             );
-            ac.translate_x -= delta.0;
-            ac.translate_y -= delta.1;
+            ac.translate.x -= delta.0;
+            ac.translate.y -= delta.1;
 
             sounding_area.queue_draw();
         }
