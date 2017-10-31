@@ -111,10 +111,12 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext
 
     // Convert points to screen coords
     for coord in coords.iter_mut() {
-        *coord = ac.convert_tp_to_screen(TPCoords {
+        let screen_coords = ac.convert_tp_to_screen(TPCoords {
             temperature: coord.0,
             pressure: coord.1,
         });
+        coord.0 = screen_coords.x;
+        coord.1 = screen_coords.y;
     }
     cr.move_to(coords[0].0, coords[0].1);
     for i in 1..4 {

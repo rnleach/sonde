@@ -2,8 +2,7 @@
 use app::AppContext;
 use config;
 
-use coords::{ScreenCoords, TPCoords};
-use gui::ScreenRect;
+use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
 
 use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
@@ -22,7 +21,10 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
     };
 
     let font_size = size_in_pnts / 72.0 * dpi;
-    let (font_size, _) = ac.convert_device_to_screen((font_size, 0.0));
+    let ScreenCoords { x: font_size, y: _ } = ac.convert_device_to_screen(DeviceCoords {
+        col: font_size,
+        row: 0.0,
+    });
 
     // Flip the y-coordinate so it displays the font right side up
     cr.set_font_matrix(Matrix {
@@ -56,14 +58,20 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
         let extents = cr.text_extents(&label);
 
-        let (_, screen_y) = ac.convert_tp_to_screen(TPCoords {
+        let ScreenCoords { x: _, y: screen_y } = ac.convert_tp_to_screen(TPCoords {
             temperature: 0.0,
             pressure: p,
         });
         let screen_y = screen_y - extents.height / 2.0;
 
-        let label_lower_left = (lower_left.0, screen_y);
-        let label_upper_right = (lower_left.0 + extents.width, screen_y + extents.height);
+        let label_lower_left = ScreenCoords {
+            x: lower_left.x,
+            y: screen_y,
+        };
+        let label_upper_right = ScreenCoords {
+            x: lower_left.x + extents.width,
+            y: screen_y + extents.height,
+        };
 
         let pair = (
             label,
@@ -86,7 +94,10 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
         let extents = cr.text_extents(&label);
 
-        let (mut xpos, mut ypos) = ac.convert_tp_to_screen(TPCoords {
+        let ScreenCoords {
+            x: mut xpos,
+            y: mut ypos,
+        } = ac.convert_tp_to_screen(TPCoords {
             temperature: t,
             pressure: screen_max_p,
         });
@@ -95,8 +106,11 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
         ypos += extents.height; // Move up off bottom axis.
         xpos += extents.height; // Move right for 45 degree angle from move up
 
-        let label_lower_left = (xpos, ypos);
-        let label_upper_right = (xpos + extents.width, ypos + extents.height);
+        let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+        let label_upper_right = ScreenCoords {
+            x: xpos + extents.width,
+            y: ypos + extents.height,
+        };
 
         let pair = (
             label,
@@ -125,8 +139,8 @@ fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
         let mut rgb = config::BACKGROUND_RGB;
         cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
         cr.rectangle(
-            lower_left.0 - padding,
-            lower_left.1 - padding,
+            lower_left.x - padding,
+            lower_left.y - padding,
             rect.width() + 2.0 * padding,
             rect.height() + 2.0 * padding,
         );
@@ -135,7 +149,7 @@ fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
         // Setup label colors
         rgb = config::LABEL_RGB;
         cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
-        cr.move_to(lower_left.0, lower_left.1);
+        cr.move_to(lower_left.x, lower_left.y);
         cr.show_text(&label);
     }
 }
@@ -143,12 +157,18 @@ fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
 fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
 
     let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
-    let (mut screen_x_min, mut screen_y_min) = lower_left_screen;
-    let (mut screen_x_max, mut screen_y_max) = upper_right_screen;
+    let ScreenCoords {
+        x: mut screen_x_min,
+        y: mut screen_y_min,
+    } = lower_left_screen;
+    let ScreenCoords {
+        x: mut screen_x_max,
+        y: mut screen_y_max,
+    } = upper_right_screen;
 
     // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
-    let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
-    let (xmax, ymax) = ac.convert_xy_to_screen((1.0, 1.0));
+    let ScreenCoords { x: xmin, y: ymin } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let ScreenCoords { x: xmax, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
     if xmin > screen_x_min {
         screen_x_min = xmin;
@@ -172,8 +192,14 @@ fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
     screen_y_min += padding;
 
     ScreenRect {
-        lower_left: (screen_x_min, screen_y_min),
-        upper_right: (screen_x_max, screen_y_max),
+        lower_left: ScreenCoords {
+            x: screen_x_min,
+            y: screen_y_min,
+        },
+        upper_right: ScreenCoords {
+            x: screen_x_max,
+            y: screen_y_max,
+        },
     }
 }
 
@@ -210,15 +236,17 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    let mut upper_left = ac.convert_device_to_screen((5.0, 5.0));
+    // FIXME: Get this 5 px distance from the config
+    let mut upper_left = ac.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
     // Make sure we stay on the x-y coords domain
-    let (xmin, ymax) = ac.convert_xy_to_screen((0.0, 1.0));
-    if ymax - upper_left.0 < upper_left.1 {
-        upper_left.1 = ymax - upper_left.0;
+    let ScreenCoords { x: xmin, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+    let edge_offset = upper_left.x; // This distance is used to push off the edge by 5 pixels
+    if ymax - edge_offset < upper_left.y {
+        upper_left.y = ymax - edge_offset;
     }
 
-    if xmin + upper_left.0 > upper_left.0 {
-        upper_left.0 = xmin + upper_left.0;
+    if xmin + edge_offset > upper_left.x {
+        upper_left.x = xmin + edge_offset;
     }
 
     let font_extents = cr.font_extents();
@@ -234,8 +262,14 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
     );
 
     let legend_rect = ScreenRect {
-        lower_left: (upper_left.0, upper_left.1 - box_height),
-        upper_right: (upper_left.0 + box_width, upper_left.1),
+        lower_left: ScreenCoords {
+            x: upper_left.x,
+            y: upper_left.y - box_height,
+        },
+        upper_right: ScreenCoords {
+            x: upper_left.x + box_width,
+            y: upper_left.y,
+        },
     };
 
     draw_legend_rectangle(cr, &legend_rect);
@@ -352,8 +386,8 @@ fn draw_legend_rectangle(cr: &Context, screen_rect: &ScreenRect) {
     } = *screen_rect;
 
     cr.rectangle(
-        lower_left.0,
-        lower_left.1,
+        lower_left.x,
+        lower_left.y,
         screen_rect.width(),
         screen_rect.height(),
     );
@@ -386,16 +420,16 @@ fn draw_legend_text(
 
     // Get into the initial position
     cr.move_to(
-        upper_left.0 + padding,
-        upper_left.1 - padding - font_extents.ascent,
+        upper_left.x + padding,
+        upper_left.y - padding - font_extents.ascent,
     );
 
     if let &Some(ref src) = source_description {
         cr.show_text(src);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + padding,
-            upper_left.1 - padding - font_extents.ascent -
+            upper_left.x + padding,
+            upper_left.y - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }
@@ -403,8 +437,8 @@ fn draw_legend_text(
         cr.show_text(vt);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + padding,
-            upper_left.1 - padding - font_extents.ascent -
+            upper_left.x + padding,
+            upper_left.y - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }
@@ -412,8 +446,8 @@ fn draw_legend_text(
         cr.show_text(loc);
         num_lines_drawn += 1;
         cr.move_to(
-            upper_left.0 + padding,
-            upper_left.1 - padding - font_extents.ascent -
+            upper_left.x + padding,
+            upper_left.y - padding - font_extents.ascent -
                 num_lines_drawn as f64 * font_extents.height,
         );
     }

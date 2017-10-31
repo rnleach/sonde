@@ -5,7 +5,7 @@ use gtk::{DrawingArea, WidgetExt};
 
 use app::AppContext;
 use config;
-use coords::TPCoords;
+use coords::{TPCoords, XYCoords};
 
 mod background;
 mod labeling;
@@ -45,13 +45,13 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     ac.bound_view();
 
     // Clip the drawing area
-    let upper_right_xy = ac.convert_xy_to_screen((1.0, 1.0));
-    let lower_left_xy = ac.convert_xy_to_screen((0.0, 0.0));
+    let upper_right_xy = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+    let lower_left_xy = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
     cr.rectangle(
-        lower_left_xy.0,
-        lower_left_xy.1,
-        upper_right_xy.0 - lower_left_xy.0,
-        upper_right_xy.1 - lower_left_xy.1,
+        lower_left_xy.x,
+        lower_left_xy.y,
+        upper_right_xy.x - lower_left_xy.x, // FIXME: use width
+        upper_right_xy.y - lower_left_xy.y, // FIXME: use height
     );
     cr.clip();
 }
@@ -96,8 +96,8 @@ fn plot_straight_lines(
     for &(start, end) in end_points {
         let start = ac.convert_tp_to_screen(start);
         let end = ac.convert_tp_to_screen(end);
-        cr.move_to(start.0, start.1);
-        cr.line_to(end.0, end.1);
+        cr.move_to(start.x, start.y);
+        cr.line_to(end.x, end.y);
     }
     cr.stroke();
 }
@@ -129,10 +129,10 @@ fn plot_curve_from_points(
 
     let mut iter = points.iter();
     let start = ac.convert_tp_to_screen(*iter.by_ref().next().unwrap());
-    cr.move_to(start.0, start.1);
+    cr.move_to(start.x, start.y);
     for end in iter {
         let end = ac.convert_tp_to_screen(*end);
-        cr.line_to(end.0, end.1);
+        cr.line_to(end.x, end.y);
     }
 
     cr.stroke();

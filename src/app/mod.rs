@@ -60,8 +60,8 @@ impl AppContext {
             // Data state
             source_description: None,
             list: vec![],
-            lower_left: (0.0, 0.0),
-            upper_right: (1.0, 1.0),
+            lower_left: XYCoords { x: 0.0, y: 0.0 },
+            upper_right: XYCoords { x: 1.0, y: 1.0 },
             currently_displayed_index: 0,
             gui: None,
 
@@ -87,8 +87,8 @@ impl AppContext {
         self.currently_displayed_index = 0;
         self.source_description = None;
 
-        self.lower_left = (0.45, 0.45);
-        self.upper_right = (0.55, 0.55);
+        self.lower_left = XYCoords { x: 0.45, y: 0.45 };
+        self.upper_right = XYCoords { x: 0.55, y: 0.55 };
 
         for snd in &self.list {
             for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
@@ -106,18 +106,18 @@ impl AppContext {
                 }
             })
             {
-                let (x, y) = Self::convert_tp_to_xy(pair);
-                if x < self.lower_left.0 {
-                    self.lower_left.0 = x;
+                let XYCoords { x, y } = Self::convert_tp_to_xy(pair);
+                if x < self.lower_left.x {
+                    self.lower_left.x = x;
                 }
-                if y < self.lower_left.1 {
-                    self.lower_left.1 = y;
+                if y < self.lower_left.y {
+                    self.lower_left.y = y;
                 }
-                if x > self.upper_right.0 {
-                    self.upper_right.0 = x;
+                if x > self.upper_right.x {
+                    self.upper_right.x = x;
                 }
-                if y > self.upper_right.1 {
-                    self.upper_right.1 = y;
+                if y > self.upper_right.y {
+                    self.upper_right.y = y;
                 }
             }
 
@@ -142,18 +142,18 @@ impl AppContext {
                 }
             })
             {
-                let (x, y) = Self::convert_tp_to_xy(pair);
-                if x < self.lower_left.0 {
-                    self.lower_left.0 = x;
+                let XYCoords { x, y } = Self::convert_tp_to_xy(pair);
+                if x < self.lower_left.x {
+                    self.lower_left.x = x;
                 }
-                if y < self.lower_left.1 {
-                    self.lower_left.1 = y;
+                if y < self.lower_left.y {
+                    self.lower_left.y = y;
                 }
-                if x > self.upper_right.0 {
-                    self.upper_right.0 = x;
+                if x > self.upper_right.x {
+                    self.upper_right.x = x;
                 }
-                if y > self.upper_right.1 {
-                    self.upper_right.1 = y;
+                if y > self.upper_right.y {
+                    self.upper_right.y = y;
                 }
             }
         }
@@ -228,36 +228,33 @@ impl AppContext {
 
         // do the skew
         let x = x + y;
-        (x, y)
+        XYCoords { x, y }
     }
 
     /// Convert device to screen coords
-    #[inline]
     pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
         let scale_factor = self.scale_factor();
-        (
-            coords.0 / scale_factor,
+        ScreenCoords {
+            x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
-            -(coords.1 / scale_factor) + self.device_height as f64 / scale_factor,
-        )
+            y: -(coords.row / scale_factor) + self.device_height as f64 / scale_factor,
+        }
     }
 
     /// Convert device coords to (x,y) coords
-    #[inline]
     pub fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
         let screen_coords = self.convert_device_to_screen(coords);
         self.convert_screen_to_xy(screen_coords)
     }
 
     /// Conversion from  (x,y) coords to temperature and pressure.
-    #[inline]
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
         use config;
         use std::f64;
 
         // undo the skew
-        let x = coords.0 - coords.1;
-        let y = coords.1;
+        let x = coords.x - coords.y;
+        let y = coords.y;
 
         let t = x * (config::MAXT - config::MINT) + config::MINT;
         let p = 10.0f64.powf(
@@ -272,38 +269,34 @@ impl AppContext {
     }
 
     /// Conversion from (x,y) coords to screen coords
-    #[inline]
     pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
         // Apply translation first
-        let x = coords.0 - self.translate_x;
-        let y = coords.1 - self.translate_y;
+        let x = coords.x - self.translate_x;
+        let y = coords.y - self.translate_y;
 
         // Apply scaling
         let x = (self.zoom_factor * x) as f64;
         let y = (self.zoom_factor * y) as f64;
-        (x, y)
+        ScreenCoords { x, y }
     }
 
     /// Conversion from (x,y) coords to screen coords
-    #[inline]
     pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Screen coords go 0 -> 1 down the y axis and 0 -> aspect_ratio right along the x axis.
 
-        let x = coords.0 as f64 / self.zoom_factor + self.translate_x;
-        let y = coords.1 as f64 / self.zoom_factor + self.translate_y;
-        (x, y)
+        let x = coords.x / self.zoom_factor + self.translate_x;
+        let y = coords.y / self.zoom_factor + self.translate_y;
+        XYCoords { x, y }
     }
 
     /// Conversion from temperature/pressure to screen coordinates.
-    #[inline]
     pub fn convert_tp_to_screen(&self, coords: TPCoords) -> ScreenCoords {
         let xy = Self::convert_tp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
     /// Conversion from screen coordinates to temperature, pressure.
-    #[inline]
     pub fn convert_screen_to_tp(&self, coords: ScreenCoords) -> TPCoords {
         let xy = self.convert_screen_to_xy(coords);
         Self::convert_xy_to_tp(xy)
@@ -316,26 +309,30 @@ impl AppContext {
     }
 
     /// Get a bounding box in screen coords
-    #[inline]
     pub fn bounding_box_in_screen_coords(&self) -> (ScreenCoords, ScreenCoords) {
-        let lower_left = self.convert_device_to_screen((0.0, self.device_height as f64));
-        let upper_right = self.convert_device_to_screen((self.device_width as f64, 0.0));
+        let lower_left = self.convert_device_to_screen(DeviceCoords {
+            col: 0.0,
+            row: self.device_height as f64,
+        });
+        let upper_right = self.convert_device_to_screen(DeviceCoords {
+            col: self.device_width as f64,
+            row: 0.0,
+        });
 
         (lower_left, upper_right)
     }
 
     /// Fit to the given x-y max coords.
-    #[inline]
     pub fn fit_to_data(&mut self) {
 
         // FIXME: Take into account labels and wind barbs.
         use std::f64;
 
-        self.translate_x = self.lower_left.0;
-        self.translate_y = self.lower_left.1;
+        self.translate_x = self.lower_left.x;
+        self.translate_y = self.lower_left.y;
 
-        let width = self.upper_right.0 - self.lower_left.0;
-        let height = self.upper_right.1 - self.lower_left.1;
+        let width = self.upper_right.x - self.lower_left.x;
+        let height = self.upper_right.y - self.lower_left.y;
 
         let width_scale = 1.0 / width;
         let height_scale = 1.0 / height;
@@ -349,11 +346,14 @@ impl AppContext {
     /// edges of the skew-t.
     pub fn bound_view(&mut self) {
 
-        let bounds = (self.device_width as f64, self.device_height as f64);
+        let bounds = DeviceCoords {
+            col: self.device_width as f64,
+            row: self.device_height as f64,
+        };
         let lower_right = self.convert_device_to_xy(bounds);
-        let upper_left = self.convert_device_to_xy((0.0, 0.0));
-        let width = lower_right.0 - upper_left.0;
-        let height = upper_left.1 - lower_right.1;
+        let upper_left = self.convert_device_to_xy(DeviceCoords { col: 0.0, row: 0.0 });
+        let width = lower_right.x - upper_left.x;
+        let height = upper_left.y - lower_right.y;
 
         if width <= 1.0 {
             if self.translate_x < 0.0 {

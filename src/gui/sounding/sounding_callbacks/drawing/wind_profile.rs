@@ -2,8 +2,7 @@ use cairo::Context;
 
 use app::AppContext;
 use config;
-use coords::{ScreenCoords, TPCoords};
-use gui::ScreenRect;
+use coords::{ScreenCoords, TPCoords, ScreenRect, Rect};
 
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     // TODO: DRY - lots of repeated code here.
@@ -26,7 +25,8 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     let (shaft_length, _barb_length) =
         cr.device_to_user_distance(SHAFT_LENGTH_IN_PIXELS, BARB_LENGTH_IN_PIXELS);
     let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, 0.0);
-    let ((_xmin, _ymin), (xmax, _ymax)) = ac.bounding_box_in_screen_coords();
+    let (ScreenCoords { x: _xmin, y: _ymin }, ScreenCoords { x: xmax, y: _ymax }) =
+        ac.bounding_box_in_screen_coords();
     let barb_center_x = xmax - padding - shaft_length;
 
     let barb_data: Vec<(f64, f64, ScreenCoords, ScreenRect)> = izip!(pres, dir, spd)
@@ -51,8 +51,14 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     // Remove overlap
     let mut barbs_keep: Vec<(f64, f64, ScreenCoords)> = vec![];
     let mut last_kept: ScreenRect = ScreenRect {
-        lower_left: (::std::f64::MAX, ::std::f64::MAX),
-        upper_right: (::std::f64::MAX, ::std::f64::MAX),
+        lower_left: ScreenCoords {
+            x: ::std::f64::MAX,
+            y: ::std::f64::MAX,
+        },
+        upper_right: ScreenCoords {
+            x: ::std::f64::MAX,
+            y: ::std::f64::MAX,
+        },
     };
     for (d, s, center, rect) in barb_data {
         if rect.overlaps(&last_kept) {
@@ -70,12 +76,12 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
 
 fn get_wind_barb_center(pressure: f64, xcenter: f64, ac: &AppContext) -> ScreenCoords {
 
-    let (_, yc) = ac.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { x: _, y: yc } = ac.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure,
     });
 
-    (xcenter, yc)
+    ScreenCoords { x: xcenter, y: yc }
 }
 
 fn get_wind_barb_box(
@@ -87,23 +93,32 @@ fn get_wind_barb_box(
 ) -> ScreenRect {
 
     let (dot_size, _) = cr.device_to_user_distance(8.0, 8.0);
-    let mut lower_left = (center.0 - dot_size / 2.0, center.1 - dot_size / 2.0);
-    let mut upper_right = (center.0 + dot_size / 2.0, center.1 + dot_size / 2.0);
+    let mut lower_left = ScreenCoords {
+        x: center.x - dot_size / 2.0,
+        y: center.y - dot_size / 2.0,
+    };
+    let mut upper_right = ScreenCoords {
+        x: center.x + dot_size / 2.0,
+        y: center.y + dot_size / 2.0,
+    };
     let dir = direction.to_radians();
     let (dx, dy) = (shaft_length * dir.sin(), shaft_length * dir.cos());
-    let shaft_end = (center.0 + dx, center.1 + dy);
+    let shaft_end = ScreenCoords {
+        x: center.x + dx,
+        y: center.y + dy,
+    };
 
-    if lower_left.0 > shaft_end.0 {
-        lower_left.0 = shaft_end.0;
+    if lower_left.x > shaft_end.x {
+        lower_left.x = shaft_end.x;
     }
-    if upper_right.0 < shaft_end.0 {
-        upper_right.0 = shaft_end.0;
+    if upper_right.x < shaft_end.x {
+        upper_right.x = shaft_end.x;
     }
-    if lower_left.1 > shaft_end.1 {
-        lower_left.1 = shaft_end.1;
+    if lower_left.y > shaft_end.y {
+        lower_left.y = shaft_end.y;
     }
-    if upper_right.1 < shaft_end.1 {
-        upper_right.1 = shaft_end.1;
+    if upper_right.y < shaft_end.y {
+        upper_right.y = shaft_end.y;
     }
 
     // TODO: take barbs and penants into account
@@ -125,8 +140,8 @@ fn draw_wind_barb(
 
     let (dot_size, _) = cr.device_to_user_distance(6.0, 6.0);
     cr.arc(
-        center.0,
-        center.1,
+        center.x,
+        center.y,
         dot_size,
         0.0,
         2.0 * ::std::f64::consts::PI,
@@ -135,9 +150,9 @@ fn draw_wind_barb(
 
     let dir = direction.to_radians();
     let (dx, dy) = (shaft_length * dir.sin(), shaft_length * dir.cos());
-    let shaft_end = (center.0 + dx, center.1 + dy);
+    let shaft_end = (center.x + dx, center.y + dy);
 
-    cr.move_to(center.0, center.1);
+    cr.move_to(center.x, center.y);
     cr.line_to(shaft_end.0, shaft_end.1);
     cr.stroke();
 }

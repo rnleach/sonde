@@ -1,8 +1,7 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
 use config;
-use coords::TPCoords;
-use gui::ScreenRect;
+use coords::{TPCoords, XYCoords, ScreenCoords, DeviceCoords, ScreenRect};
 
 use cairo::Context;
 
@@ -133,8 +132,8 @@ fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
         temperature: 60.0,
         pressure: sample_p,
     });
-    cr.move_to(start.0, start.1);
-    cr.line_to(end.0, end.1);
+    cr.move_to(start.x, start.y);
+    cr.line_to(end.x, end.y);
     cr.stroke();
 }
 
@@ -162,15 +161,16 @@ fn calculate_screen_rect(
     width += 2.0 * padding;
     height += 2.0 * padding;
 
-    let (mut left, _) = ac.convert_device_to_screen((5.0, 0.0));
-    let (_, top) = ac.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { x: mut left, y: _ } =
+        ac.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
+    let ScreenCoords { x: _, y: top } = ac.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure: sample_p,
     });
     let mut bottom = top - height;
 
-    let (xmin, ymin) = ac.convert_xy_to_screen((0.0, 0.0));
-    let (xmax, ymax) = ac.convert_xy_to_screen((1.0, 1.0));
+    let ScreenCoords { x: xmin, y: ymin } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let ScreenCoords { x: xmax, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
     // Prevent clipping
     if left < xmin {
@@ -187,7 +187,8 @@ fn calculate_screen_rect(
     }
 
     // Keep it on the screen
-    let ((xmin, ymin), (xmax, ymax)) = ac.bounding_box_in_screen_coords();
+    let (ScreenCoords { x: xmin, y: ymin }, ScreenCoords { x: xmax, y: ymax }) =
+        ac.bounding_box_in_screen_coords();
     if left < xmin {
         left = xmin;
     }
@@ -201,8 +202,11 @@ fn calculate_screen_rect(
         bottom = ymax - height;
     }
 
-    let lower_left = (left, bottom);
-    let top_right = (left + width, bottom + height);
+    let lower_left = ScreenCoords { x: left, y: bottom };
+    let top_right = ScreenCoords {
+        x: left + width,
+        y: bottom + height,
+    };
 
     ScreenRect {
         lower_left: lower_left,
@@ -212,8 +216,8 @@ fn calculate_screen_rect(
 
 fn draw_sample_readout_text_box(rect: &ScreenRect, cr: &Context, lines: &Vec<String>) {
     let ScreenRect {
-        lower_left: (xmin, ymin),
-        upper_right: (xmax, ymax),
+        lower_left: ScreenCoords { x: xmin, y: ymin },
+        upper_right: ScreenCoords { x: xmax, y: ymax },
     } = *rect;
 
     let rgb = config::BACKGROUND_RGB;

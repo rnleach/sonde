@@ -6,6 +6,7 @@ use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection,
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use app;
+use coords::DeviceCoords;
 
 mod drawing;
 
@@ -41,7 +42,7 @@ pub fn scroll_event(
 
     let mut ac = ac.borrow_mut();
 
-    let pos = ac.convert_device_to_xy(event.get_position());
+    let pos = ac.convert_device_to_xy(event.get_position().into());
     let dir = event.get_direction();
 
     let old_zoom = ac.zoom_factor;
@@ -62,8 +63,8 @@ pub fn scroll_event(
         ac.zoom_factor = MAX_ZOOM;
     }
 
-    ac.translate_x = pos.0 - old_zoom / ac.zoom_factor * (pos.0 - ac.translate_x);
-    ac.translate_y = pos.1 - old_zoom / ac.zoom_factor * (pos.1 - ac.translate_y);
+    ac.translate_x = pos.x - old_zoom / ac.zoom_factor * (pos.x - ac.translate_x);
+    ac.translate_y = pos.y - old_zoom / ac.zoom_factor * (pos.y - ac.translate_y);
 
     sounding_area.queue_draw();
 
@@ -80,7 +81,7 @@ pub fn button_press_event(
     // Left mouse button
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.last_cursor_position_skew_t = Some(event.get_position());
+        ac.last_cursor_position_skew_t = Some(event.get_position().into());
         ac.left_button_pressed = true;
         Inhibit(true)
     } else {
@@ -129,13 +130,13 @@ pub fn mouse_motion_event(
     if ac.left_button_pressed {
         if let Some(last_position) = ac.last_cursor_position_skew_t {
             let old_position = ac.convert_device_to_xy(last_position);
-            let new_position = event.get_position();
+            let new_position = DeviceCoords::from(event.get_position());
             ac.last_cursor_position_skew_t = Some(new_position);
 
             let new_position = ac.convert_device_to_xy(new_position);
             let delta = (
-                new_position.0 - old_position.0,
-                new_position.1 - old_position.1,
+                new_position.x - old_position.x,
+                new_position.y - old_position.y,
             );
             ac.translate_x -= delta.0;
             ac.translate_y -= delta.1;
@@ -143,7 +144,7 @@ pub fn mouse_motion_event(
             sounding_area.queue_draw();
         }
     } else if ac.plottable() {
-        ac.last_cursor_position_skew_t = Some(event.get_position());
+        ac.last_cursor_position_skew_t = Some(event.get_position().into());
         sounding_area.queue_draw();
     }
     Inhibit(false)

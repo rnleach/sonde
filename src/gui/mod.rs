@@ -10,7 +10,6 @@ pub mod sounding;
 use gtk::{DrawingArea, WidgetExt, Window, WindowType};
 
 use app::AppContextPointer;
-use coords::ScreenCoords;
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -73,72 +72,5 @@ impl Gui {
         self.hodograph_area.queue_draw();
         self.index_area.queue_draw();
         self.control_area.queue_draw();
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct ScreenRect {
-    lower_left: ScreenCoords,
-    upper_right: ScreenCoords,
-}
-
-impl ScreenRect {
-    pub fn overlaps(&self, other: &ScreenRect) -> bool {
-        let (xmin_s, ymin_s) = self.lower_left;
-        let (xmax_s, ymax_s) = self.upper_right;
-        let (xmin_o, ymin_o) = other.lower_left;
-        let (xmax_o, ymax_o) = other.upper_right;
-
-        if xmin_s > xmax_o {
-            return false;
-        }
-        if xmax_s < xmin_o {
-            return false;
-        }
-        if ymin_s > ymax_o {
-            return false;
-        }
-        if ymax_s < ymin_o {
-            return false;
-        }
-
-        true
-    }
-
-    pub fn inside(&self, big_rect: &ScreenRect) -> bool {
-        let (xmin_s, ymin_s) = self.lower_left;
-        let (xmax_s, ymax_s) = self.upper_right;
-        let (xmin_o, ymin_o) = big_rect.lower_left;
-        let (xmax_o, ymax_o) = big_rect.upper_right;
-
-        if xmin_s < xmin_o {
-            return false;
-        }
-        if xmax_s > xmax_o {
-            return false;
-        }
-        if ymin_s < ymin_o {
-            return false;
-        }
-        if ymax_s > ymax_o {
-            return false;
-        }
-
-        true
-    }
-
-    pub fn width(&self) -> f64 {
-        self.upper_right.0 - self.lower_left.0
-    }
-
-    pub fn height(&self) -> f64 {
-        self.upper_right.1 - self.lower_left.1
-    }
-
-    pub fn add_padding(&self, padding: f64) -> ScreenRect {
-        ScreenRect {
-            lower_left: (self.lower_left.0 - padding, self.lower_left.1 - padding),
-            upper_right: (self.upper_right.0 + padding, self.upper_right.1 + padding),
-        }
     }
 }
