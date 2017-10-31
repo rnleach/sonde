@@ -88,6 +88,7 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
             if pres.is_some() {
                 line.push(' ');
             }
+            let dir = (dir / 10.0).round() * 10.0;
             line.push_str(&format!("{:03.0}", dir));
         }
         if let Some(spd) = spd {

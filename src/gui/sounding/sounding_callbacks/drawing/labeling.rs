@@ -293,17 +293,24 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
     let source_description: Option<String> = ac.get_source_description();
     let mut valid_time: Option<String> = None;
     let mut location: Option<String> = None;
+
     if let Some(snd) = ac.get_sounding_for_display() {
         // Build the valid time part
         if let Some(vt) = snd.valid_time {
             use chrono::{Datelike, Timelike};
-            valid_time = Some(format!(
+            let mut temp_string = format!(
                 "Valid: {:02}/{:02}/{:04} {:02}Z",
                 vt.month(),
                 vt.day(),
                 vt.year(),
                 vt.hour()
-            ));
+            );
+
+            if let Some(lt) = snd.lead_time.as_option() {
+                temp_string.push_str(&format!(" F{:03}", lt));
+            }
+
+            valid_time = Some(temp_string);
         }
 
         // Build location part.
