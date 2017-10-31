@@ -50,10 +50,14 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     cr.rectangle(
         lower_left_xy.x,
         lower_left_xy.y,
-        upper_right_xy.x - lower_left_xy.x, // FIXME: use width
-        upper_right_xy.y - lower_left_xy.y, // FIXME: use height
+        upper_right_xy.x - lower_left_xy.x,
+        upper_right_xy.y - lower_left_xy.y,
     );
     cr.clip();
+
+    // Calculate the various padding values
+    ac.label_padding = cr.device_to_user_distance(config::LABEL_PADDING, 0.0).0;
+    ac.edge_padding = cr.device_to_user_distance(config::EDGE_PADDING, 0.0).0;
 }
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {

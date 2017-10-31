@@ -47,7 +47,10 @@ pub struct AppContext {
     // last cursor position in skew_t widget, used for sampling and panning
     pub last_cursor_position_skew_t: Option<DeviceCoords>,
 
-    // FIXME: add padding info to be calculated in screen coords during prepare to draw.
+    // Distance used for adding padding around labels in `ScreenCoords`
+    pub label_padding: f64,
+    // Distance using for keeping things too close to the edge of the window in `ScreenCoords`
+    pub edge_padding: f64,
 }
 
 impl AppContext {
@@ -73,6 +76,10 @@ impl AppContext {
             device_width: 100,
             last_cursor_position_skew_t: None,
             left_button_pressed: false,
+
+            // Drawing cache
+            edge_padding: 0.0,
+            label_padding: 0.0,
         }))
     }
 

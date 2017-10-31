@@ -40,13 +40,13 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
 // Label the pressure, temperatures, etc lines.
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
     let labels = collect_labels(cr, ac);
-    draw_labels(cr, labels);
+    draw_labels(cr, ac, labels);
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     let mut labels = vec![];
 
-    let screen_edges = calculate_plot_edges(cr, ac);
+    let screen_edges = calculate_plot_edges(ac);
     let ScreenRect {
         lower_left,
         upper_right: _,
@@ -81,7 +81,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
             },
         );
 
-        check_overlap_then_add(cr, &mut labels, &screen_edges, pair);
+        check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
     }
 
     let TPCoords {
@@ -119,16 +119,15 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                 upper_right: label_upper_right,
             },
         );
-        check_overlap_then_add(cr, &mut labels, &screen_edges, pair);
+        check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
     }
 
     labels
 }
 
-fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
+fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>) {
 
-    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
-    let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
+    let padding = ac.label_padding;
 
     for (label, rect) in labels {
         let ScreenRect {
@@ -154,7 +153,7 @@ fn draw_labels(cr: &Context, labels: Vec<(String, ScreenRect)>) {
     }
 }
 
-fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
+fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
 
     let (lower_left_screen, upper_right_screen) = ac.bounding_box_in_screen_coords();
     let ScreenCoords {
@@ -184,8 +183,7 @@ fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
     }
 
     // Add some padding to keep away from the window edge
-    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
-    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    let padding = ac.edge_padding;
     screen_x_max -= padding;
     screen_y_max -= padding;
     screen_x_min += padding;
@@ -204,13 +202,12 @@ fn calculate_plot_edges(cr: &Context, ac: &AppContext) -> ScreenRect {
 }
 
 fn check_overlap_then_add(
-    cr: &Context,
+    ac: &AppContext,
     vector: &mut Vec<(String, ScreenRect)>,
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
-    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
-    let (padding, _) = cr.device_to_user_distance(config::LABEL_PADDING, config::LABEL_PADDING);
+    let padding = ac.label_padding;
     let padded_rect = label_pair.1.add_padding(padding);
 
     // Make sure it is on screen - but don't add padding to this check cause the screen already
@@ -255,6 +252,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 
     let (box_width, box_height) = calculate_legend_box_size(
         cr,
+        ac,
         &font_extents,
         &source_description,
         &valid_time,
@@ -276,6 +274,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 
     draw_legend_text(
         cr,
+        ac,
         &upper_left,
         &font_extents,
         &source_description,
@@ -326,6 +325,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 
 fn calculate_legend_box_size(
     cr: &Context,
+    ac: &AppContext,
     font_extents: &FontExtents,
     source_description: &Option<String>,
     valid_time: &Option<String>,
@@ -371,8 +371,7 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
-    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
-    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    let padding = ac.edge_padding;
     box_height += 2.0 * padding;
     box_width += 2.0 * padding;
 
@@ -403,6 +402,7 @@ fn draw_legend_rectangle(cr: &Context, screen_rect: &ScreenRect) {
 
 fn draw_legend_text(
     cr: &Context,
+    ac: &AppContext,
     upper_left: &ScreenCoords,
     font_extents: &FontExtents,
     source_description: &Option<String>,
@@ -412,8 +412,7 @@ fn draw_legend_text(
     let rgb = config::ISOBAR_RGBA;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
-    // FIXME: Move to padding types to AppContext, used a lot of places. Update in prepare to draw.
-    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    let padding = ac.edge_padding;
 
     // Remember how many lines we have drawn so far for setting position of the next line.
     let mut num_lines_drawn = 0;
