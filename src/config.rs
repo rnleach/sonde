@@ -51,15 +51,13 @@ pub struct Config {
     pub dew_point_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for dew point plot
     pub dew_point_line_width: f64,
-    
-
 }
 
 impl Config {}
 
 impl Default for Config {
-    fn default()-> Self {
-        Config{
+    fn default() -> Self {
+        Config {
             //
             // Window Layout
             //
@@ -109,7 +107,7 @@ pub const BORDER_WIDTH: u32 = 3;
 //
 // Constants for defining a standard x-y coordinate system
 //
-// NOTE: Leave these as compile time constants unless background isopleths are dynamically 
+// NOTE: Leave these as compile time constants unless background isopleths are dynamically
 //       calculated also.
 
 /// Maximum pressure plotted on skew-t (bottom edge)
@@ -411,4 +409,3 @@ pub fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
 
     result
 }
-

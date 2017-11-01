@@ -14,18 +14,24 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     let barb_config = WindBarbConfig::init(cr, ac);
     let barb_data = gather_wind_data(&snd, &barb_config);
     let barb_data = filter_wind_data(barb_data, ac);
-    
+
     let rgba = ac.config.wind_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(ac.config.wind_barb_line_width, 0.0).0);
+    cr.set_line_width(
+        cr.device_to_user_distance(ac.config.wind_barb_line_width, 0.0)
+            .0,
+    );
 
     for bdata in barb_data.into_iter() {
         bdata.draw(cr);
     }
 }
 
-fn gather_wind_data(snd: &::sounding_base::Sounding, barb_config: &WindBarbConfig) -> Vec<WindBarbData> {
-    
+fn gather_wind_data(
+    snd: &::sounding_base::Sounding,
+    barb_config: &WindBarbConfig,
+) -> Vec<WindBarbData> {
+
     let dir = &snd.direction;
     let spd = &snd.speed;
     let pres = &snd.pressure;
@@ -311,5 +317,3 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, ac: &AppContext) -> ScreenC
 
     ScreenCoords { x: xcenter, y: yc }
 }
-
-
