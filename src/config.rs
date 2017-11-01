@@ -121,7 +121,8 @@ pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
 
-// TODO: Organize this better --------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// old code below, refactor in progress
 
 /// Active readout line width
 pub const ACTIVE_READOUT_LINE_WIDTH: f64 = 3.0;

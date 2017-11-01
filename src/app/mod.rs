@@ -131,12 +131,6 @@ impl AppContext {
                 }
             }
 
-            // TODO: Once you get surface temperature, make a station pressure-surface temp
-            // point and throw that in the mix.
-            // if let Some(p) = snd.station_pres.as_option() {
-
-            // }
-
             for pair in snd.pressure.iter().zip(&snd.dew_point).filter_map(|p| {
                 if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
                     if p < config::MINP {
@@ -339,7 +333,6 @@ impl AppContext {
     /// Fit to the given x-y max coords.
     pub fn fit_to_data(&mut self) {
 
-        // FIXME: Take into account labels and wind barbs.
         use std::f64;
 
         self.translate.x = self.xy_envelope.lower_left.x;

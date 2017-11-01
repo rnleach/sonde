@@ -29,7 +29,6 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    // TODO: Add option to use nearest pnt or interpolate.
     // let vals = snd.fetch_nearest_pnt(sample_p);
     let vals = snd.linear_interpolate(sample_p);
 
