@@ -17,7 +17,7 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     
     let rgba = ac.config.wind_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(ac.config.wind_barb_barb_length, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(ac.config.wind_barb_line_width, 0.0).0);
 
     for bdata in barb_data.into_iter() {
         bdata.draw(cr);
