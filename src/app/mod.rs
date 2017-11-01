@@ -9,12 +9,16 @@ use sounding_base::Sounding;
 use errors::*;
 use gui::Gui;
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect, ScreenRect};
+use config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;
 
 /// Holds the application state. This is a singleton (not enforced) that is shared globally.
 pub struct AppContext {
+    // Configuration, style and layout settings.
+    pub config: Config,
+
     // Source description is used in the legend if it is present. Not all file formats include a
     // station name or model name or base time. In bufkit files this is usually part of the file
     // name. So whatever function loads a sounding should set this to reflect where it came from.
@@ -23,10 +27,10 @@ pub struct AppContext {
     list: Vec<Sounding>,
     currently_displayed_index: usize,
 
-    // Lower left and  upper right corners of the bounding box that bounds all the soundings in
-    // the list.
+    // Rectangle that bounds all the soundings in the list.
     xy_envelope: XYRect,
 
+    // Handle to the GUI
     gui: Option<Gui>,
 
     // Standard x-y coords, used for zooming and panning.
@@ -56,7 +60,7 @@ impl AppContext {
     /// drawn on the GUI.
     pub fn new() -> AppContextPointer {
         Rc::new(RefCell::new(AppContext {
-            // Data state
+            config: Config::default(),
             source_description: None,
             list: vec![],
             xy_envelope: XYRect {

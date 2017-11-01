@@ -24,15 +24,15 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
         };
 
         let line_width = match t_type {
-            TemperatureType::DryBulb => config::TEMPERATURE_LINE_WIDTH,
-            TemperatureType::WetBulb => config::WET_BULB_LINE_WIDTH,
-            TemperatureType::DewPoint => config::DEW_POINT_LINE_WIDTH,
+            TemperatureType::DryBulb => ac.config.temperature_line_width,
+            TemperatureType::WetBulb => ac.config.wet_bulb_line_width,
+            TemperatureType::DewPoint => ac.config.dew_point_line_width,
         };
 
         let line_rgba = match t_type {
-            TemperatureType::DryBulb => config::TEMPERATURE_RGBA,
-            TemperatureType::WetBulb => config::WET_BULB_RGBA,
-            TemperatureType::DewPoint => config::DEW_POINT_RGBA,
+            TemperatureType::DryBulb => ac.config.temperature_rgba,
+            TemperatureType::WetBulb => ac.config.wet_bulb_rgba,
+            TemperatureType::DewPoint => ac.config.dew_point_rgba,
         };
 
         let profile_data: Vec<_> = pres_data

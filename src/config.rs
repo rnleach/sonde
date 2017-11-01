@@ -2,33 +2,131 @@
 
 use coords::TPCoords;
 
-// TODO: Organize this better
+/// Data that can be changed at run-time affecting the look and feel of the application.
+pub struct Config {
+    //
+    // Window Layout
+    //
+    /// Width of window in pixels.
+    pub window_width: i32,
+    /// Height of window in pixels.
+    pub window_height: i32,
 
-// Layout and borders
-/// Main window border width in pixels.
+    //
+    // Wind profile
+    //
+    /// Wind barb shaft length in pixels.
+    pub wind_barb_shaft_length: f64,
+    /// Lenght of wind barbs and pennants in pixels.
+    pub wind_barb_barb_length: f64,
+    /// Width of wind barbs and pennants in pixels.
+    pub wind_barb_pennant_width: f64,
+    /// Radius of the dot on a wind barb in pixels.
+    pub wind_barb_dot_radius: f64,
+    /// Color used for winds plot.
+    pub wind_rgba: (f64, f64, f64, f64),
+    /// Line width in pixels for wind barbs.
+    pub wind_barb_line_width: f64,
+
+    //
+    // Temperature profile
+    //
+    /// Color used for temperature plot.
+    pub temperature_rgba: (f64, f64, f64, f64),
+    /// Line width in pixels for temperature plot.
+    pub temperature_line_width: f64,
+
+    //
+    // Wet bulb temperature profile
+    //
+    /// Color used for wet bulb temperature plot.
+    pub wet_bulb_rgba: (f64, f64, f64, f64),
+    /// Line width in pixels for dew point plot.
+    pub wet_bulb_line_width: f64,
+
+    //
+    // Dew point temperature profile
+    //
+    /// Color used for dew point plot.
+    pub dew_point_rgba: (f64, f64, f64, f64),
+    /// Line width in pixels for dew point plot
+    pub dew_point_line_width: f64,
+    
+
+}
+
+impl Config {}
+
+impl Default for Config {
+    fn default()-> Self {
+        Config{
+            //
+            // Window Layout
+            //
+            window_width: 850,
+            window_height: 650,
+
+            //
+            // Wind profile
+            //
+            wind_barb_shaft_length: 35.0,
+            wind_barb_barb_length: 15.0,
+            wind_barb_pennant_width: 6.0,
+            wind_barb_dot_radius: 3.5,
+            wind_rgba: (0.0, 0.0, 0.0, 1.0),
+            wind_barb_line_width: 1.0,
+
+            //
+            // Temperature profile
+            //
+            temperature_rgba: (0.0, 0.0, 0.0, 1.0),
+            temperature_line_width: 2.0,
+
+            //
+            // Wet bulb temperature profile
+            //
+            wet_bulb_rgba: (0.0, 0.0, 0.0, 1.0),
+            wet_bulb_line_width: 1.0,
+
+            //
+            // Dew point temperature profile
+            //
+            dew_point_rgba: (0.0, 0.0, 0.0, 1.0),
+            dew_point_line_width: 2.0,
+        }
+    }
+}
+
+/**************************************************************************************************
+*                         Constant, compile time configuration items.
+**************************************************************************************************/
+//
+// Window Layout
+//
+/// Window border width in pixels
 pub const BORDER_WIDTH: u32 = 3;
-/// Main window initial width
-pub const WINDOW_WIDTH: i32 = 850;
-/// Main window initial height
-pub const WINDOW_HEIGHT: i32 = 650;
+
+//
+// Constants for defining a standard x-y coordinate system
+//
+// NOTE: Leave these as compile time constants unless background isopleths are dynamically 
+//       calculated also.
+
+/// Maximum pressure plotted on skew-t (bottom edge)
+pub const MAXP: f64 = 1050.0; // mb
+/// Minimum pressure plotted on skew-t (top edge)
+pub const MINP: f64 = 99.0; // mb
+/// Coldest temperature plotted at max pressure, on the bottom edge.
+pub const MINT: f64 = -46.5; // C - at MAXP
+/// Warmest temperature plotted at max pressure, on the bottom edge.
+pub const MAXT: f64 = 50.5; // C - at MAXP
+
+// TODO: Organize this better --------------------------------------------------------------------
 
 /// Active readout line width
 pub const ACTIVE_READOUT_LINE_WIDTH: f64 = 3.0;
 /// Active readout line color
 pub const ACTIVE_READOUT_LINE_RGB: (f64, f64, f64) = (1.0, 0.0, 0.0);
-
-/// Wind barb shaft length in pixels
-pub const WIND_BARB_SHAFT_LENGTH_IN_PIXELS: f64 = 35.0;
-/// Lenght of wind barbs and pennants
-pub const WIND_BARB_BARB_LENGTH_IN_PIXELS: f64 = 15.0;
-/// Width of wind barbs and pennants
-pub const WIND_BARB_PENNANT_WIDTH_IN_PIXELS: f64 = 6.0;
-/// Size of the dot on a wind barb
-pub const WIND_BARB_DOT_RADIUS_IN_PIXELS: f64 = 3.5;
-/// Color used for winds plot
-pub const WIND_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
-/// Line width for Dew point Plot
-pub const WIND_LINE_WIDTH: f64 = 1.0;
 
 /// Font face
 pub static FONT_NAME: &'static str = "Courier New";
@@ -41,15 +139,6 @@ pub const LABEL_PADDING: f64 = 3.0;
 /// Label coloring
 pub const LABEL_RGB: (f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745);
 
-// Constants for defining a standard x-y coordinate system
-/// Maximum pressure plotted on skew-t (bottom edge)
-pub const MAXP: f64 = 1050.0; // mb
-/// Minimum pressure plotted on skew-t (top edge)
-pub const MINP: f64 = 99.0; // mb
-/// Coldest temperature plotted at max pressure, on the bottom edge.
-pub const MINT: f64 = -46.5; // C - at MAXP
-/// Warmest temperature plotted at max pressure, on the bottom edge.
-pub const MAXT: f64 = 50.5; // C - at MAXP
 /// Hightest elevation pressure level to draw isentrops up to
 pub const ISENTROPS_TOP_P: f64 = 200.0;
 /// Number of points to use per isentrop line when drawing.
@@ -80,18 +169,8 @@ pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) =
     (0.090196078, 0.050980392, 0.360784314, 1.0);
 /// Color used for isopleths of theta-e
 pub const ISO_THETA_E_RGBA: (f64, f64, f64, f64) = (0.333333333, 0.662745098, 0.278431373, 1.0);
-/// Color used for temperature plot
-pub const TEMPERATURE_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
-/// Line width for Temperature Plot
-pub const TEMPERATURE_LINE_WIDTH: f64 = 2.0;
-/// Color used for dew point plot
-pub const DEW_POINT_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
-/// Line width for Dew point Plot
-pub const DEW_POINT_LINE_WIDTH: f64 = 2.0;
-/// Color used for wet bulb plot
-pub const WET_BULB_RGBA: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 1.0);
-/// Line width for Dew point Plot
-pub const WET_BULB_LINE_WIDTH: f64 = 1.0;
+
+
 
 /// Isotherms to label on the chart.
 pub const ISOTHERMS: [f64; 31] = [

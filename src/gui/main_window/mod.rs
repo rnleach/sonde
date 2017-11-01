@@ -4,7 +4,7 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu, ContainerExt};
 
-use app::AppContextPointer;
+use app::{AppContextPointer, AppContext};
 use config;
 use gui::Gui;
 
@@ -26,7 +26,7 @@ pub fn layout(gui: Gui, app_context: AppContextPointer) {
     v_box.pack_start(&drawing_areas, true, true, 0);
     window.add(&v_box);
 
-    configure_main_window(&window);
+    configure_main_window(&window, &app_context.borrow());
 
 }
 
@@ -78,10 +78,10 @@ fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
     grid
 }
 
-fn configure_main_window(window: &Window) {
+fn configure_main_window(window: &Window, ac: &AppContext) {
     // Set up window title, size, etc
     window.set_title("Sonde");
-    window.set_default_size(config::WINDOW_WIDTH, config::WINDOW_HEIGHT);
+    window.set_default_size(ac.config.window_width, ac.config.window_height);
     window.set_decorated(true);
     window.show_all();
     window.connect_delete_event(|_, _| {

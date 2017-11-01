@@ -1,7 +1,6 @@
 use cairo::Context;
 
 use app::AppContext;
-use config;
 use coords::{ScreenCoords, TPCoords, ScreenRect, Rect};
 
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
@@ -16,9 +15,9 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     let barb_data = gather_wind_data(&snd, &barb_config);
     let barb_data = filter_wind_data(barb_data, ac);
     
-    let rgba = config::WIND_RGBA;
+    let rgba = ac.config.wind_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(config::WIND_LINE_WIDTH, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(ac.config.wind_barb_barb_length, 0.0).0);
 
     for bdata in barb_data.into_iter() {
         bdata.draw(cr);
@@ -85,13 +84,13 @@ struct WindBarbConfig<'a> {
 impl<'a, 'b> WindBarbConfig<'a> {
     fn init(cr: &'b Context, ac: &'a AppContext) -> Self {
         let (shaft_length, barb_length) = cr.device_to_user_distance(
-            config::WIND_BARB_SHAFT_LENGTH_IN_PIXELS,
-            -config::WIND_BARB_BARB_LENGTH_IN_PIXELS,
+            ac.config.wind_barb_shaft_length,
+            -ac.config.wind_barb_barb_length,
         );
 
         let (dot_size, pennant_width) = cr.device_to_user_distance(
-            config::WIND_BARB_DOT_RADIUS_IN_PIXELS,
-            -config::WIND_BARB_PENNANT_WIDTH_IN_PIXELS,
+            ac.config.wind_barb_dot_radius,
+            -ac.config.wind_barb_pennant_width,
         );
         let padding = ac.edge_padding;
         let ScreenRect {
