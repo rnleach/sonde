@@ -357,18 +357,28 @@ should not be altered.
 lazy_static! {
 
     /// Compute points for background isotherms only once
-    pub static ref ISOTHERM_PNTS: Vec<(TPCoords, TPCoords)> = {
+    pub static ref ISOTHERM_PNTS: Vec<[TPCoords; 2]> = {
         ISOTHERMS
         .into_iter()
-        .map(|t| (TPCoords{temperature:*t, pressure:MAXP}, TPCoords{temperature:*t, pressure:MINP}))
+        .map(|t| {
+            [
+                TPCoords{temperature:*t, pressure:MAXP}, 
+                TPCoords{temperature:*t, pressure:MINP}
+            ]
+        })
         .collect()
     };
 
     /// Compute points for background isobars only once
-    pub static ref ISOBAR_PNTS: Vec<(TPCoords, TPCoords)> = {
+    pub static ref ISOBAR_PNTS: Vec<[TPCoords; 2]> = {
         ISOBARS
             .into_iter()
-            .map(|p| (TPCoords{temperature:-150.0, pressure:*p}, TPCoords{temperature:60.0, pressure:*p}))
+            .map(|p| {
+                [
+                    TPCoords{temperature:-150.0, pressure:*p}, 
+                    TPCoords{temperature:60.0, pressure:*p}
+                ]
+            })
             .collect()
     };
 
@@ -381,11 +391,11 @@ lazy_static! {
     };
 
     /// Compute points for background mixing ratio only once
-    pub static ref ISO_MIXING_RATIO_PNTS: Vec<(TPCoords, TPCoords)> = {
+    pub static ref ISO_MIXING_RATIO_PNTS: Vec<[TPCoords; 2]> = {
         ISO_MIXING_RATIO
         .into_iter()
         .map(|mw| {
-            (
+            [
                 TPCoords{
                     temperature: ::formula::temperature_from_p_and_saturated_mw(MAXP, *mw),
                     pressure: MAXP
@@ -394,7 +404,7 @@ lazy_static! {
                     temperature: ::formula::temperature_from_p_and_saturated_mw(ISO_MIXING_RATIO_TOP_P, *mw),
                     pressure: ISO_MIXING_RATIO_TOP_P,
                 },
-            )
+            ]
         })
         .collect()
     };

@@ -3,8 +3,7 @@ use cairo::Context;
 use app::AppContext;
 use config;
 use coords::TPCoords;
-use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points,
-                                                 plot_straight_dashed_lines, plot_straight_lines};
+use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points, plot_dashed_curve_from_points};
 
 pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
     draw_temperature_banding(cr, ac);
@@ -39,31 +38,37 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     }
 
     // Draw mixing ratio lines
-    plot_straight_dashed_lines(
-        cr,
-        &ac,
-        ac.config.background_line_width,
-        ac.config.iso_mixing_ratio_rgba,
-        &config::ISO_MIXING_RATIO_PNTS,
-    );
+    for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
+        plot_dashed_curve_from_points(
+            cr,
+            &ac,
+            ac.config.background_line_width,
+            ac.config.iso_mixing_ratio_rgba,
+            pnts,
+        );
+    }
 
     // Draw isotherms
-    plot_straight_lines(
-        cr,
-        &ac,
-        ac.config.background_line_width,
-        ac.config.isotherm_rgba,
-        &config::ISOTHERM_PNTS,
-    );
+    for pnts in config::ISOTHERM_PNTS.iter() {
+        plot_curve_from_points(
+            cr,
+            &ac,
+            ac.config.background_line_width,
+            ac.config.isotherm_rgba,
+            pnts,
+        );
+    }
 
     // Draw isobars
-    plot_straight_lines(
-        cr,
-        &ac,
-        ac.config.background_line_width,
-        ac.config.isobar_rgba,
-        &config::ISOBAR_PNTS,
-    );
+    for pnts in config::ISOBAR_PNTS.iter() {
+        plot_curve_from_points(
+            cr,
+            &ac,
+            ac.config.background_line_width,
+            ac.config.isobar_rgba,
+            pnts,
+        );
+    }
 }
 
 fn draw_temperature_banding(cr: &Context, ac: &AppContext) {

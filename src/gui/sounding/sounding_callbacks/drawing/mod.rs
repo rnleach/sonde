@@ -86,38 +86,6 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
     sample_readout::draw_active_sample(cr, ac);
 }
 
-// Draw a straight line on the graph.
-fn plot_straight_lines(
-    cr: &Context,
-    ac: &AppContext,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    end_points: &[(TPCoords, TPCoords)],
-) {
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
-    for &(start, end) in end_points {
-        let start = ac.convert_tp_to_screen(start);
-        let end = ac.convert_tp_to_screen(end);
-        cr.move_to(start.x, start.y);
-        cr.line_to(end.x, end.y);
-    }
-    cr.stroke();
-}
-
-// Draw a straight line on the graph.
-fn plot_straight_dashed_lines(
-    cr: &Context,
-    ac: &AppContext,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    end_points: &[(TPCoords, TPCoords)],
-) {
-    cr.set_dash(&[0.02], 0.0);
-    plot_straight_lines(cr, ac, line_width_pixels, rgba, end_points);
-    cr.set_dash(&[], 0.0);
-}
-
 // Draw a curve connecting a list of points.
 fn plot_curve_from_points(
     cr: &Context,
@@ -126,6 +94,8 @@ fn plot_curve_from_points(
     rgba: (f64, f64, f64, f64),
     points: &[TPCoords],
 ) {
+    // Need at least two points to draw a line.
+    if points.len() < 2 { return; }
 
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
@@ -139,4 +109,17 @@ fn plot_curve_from_points(
     }
 
     cr.stroke();
+}
+
+// Draw a dashed line on the graph.
+fn plot_dashed_curve_from_points(
+    cr: &Context,
+    ac: &AppContext,
+    line_width_pixels: f64,
+    rgba: (f64, f64, f64, f64),
+    points: &[TPCoords],
+) {
+    cr.set_dash(&[0.02], 0.0);
+    plot_curve_from_points(cr, ac, line_width_pixels, rgba, points);
+    cr.set_dash(&[], 0.0);
 }
