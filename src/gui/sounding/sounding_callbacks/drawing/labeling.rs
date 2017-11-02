@@ -8,10 +8,10 @@ use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
 
 pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
 
-    let font_face = FontFace::toy_create(config::FONT_NAME, FontSlant::Normal, FontWeight::Bold);
+    let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    set_font_size(config::LARGE_FONT_SIZE, cr, ac);
+    set_font_size(ac.config.label_font_size, cr, ac);
 }
 
 fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
@@ -135,7 +135,7 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
             upper_right: _,
         } = rect;
 
-        let mut rgb = config::BACKGROUND_RGB;
+        let mut rgb = ac.config.background_rgb;
         cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
         cr.rectangle(
             lower_left.x - padding,
@@ -146,7 +146,7 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
         cr.fill();
 
         // Setup label colors
-        rgb = config::LABEL_RGB;
+        rgb = ac.config.label_rgb;
         cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
         cr.move_to(lower_left.x, lower_left.y);
         cr.show_text(&label);
@@ -275,7 +275,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         },
     };
 
-    draw_legend_rectangle(cr, &legend_rect);
+    draw_legend_rectangle(cr, ac, &legend_rect);
 
     draw_legend_text(
         cr,
@@ -390,7 +390,7 @@ fn calculate_legend_box_size(
     (box_width, box_height)
 }
 
-fn draw_legend_rectangle(cr: &Context, screen_rect: &ScreenRect) {
+fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect) {
     let ScreenRect {
         lower_left,
         upper_right: _,
@@ -403,11 +403,11 @@ fn draw_legend_rectangle(cr: &Context, screen_rect: &ScreenRect) {
         screen_rect.height(),
     );
 
-    let rgb = config::ISOBAR_RGBA;
+    let rgb = ac.config.isobar_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke_preserve();
-    let rgb = config::BACKGROUND_RGB;
+    let rgb = ac.config.background_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     cr.fill();
 }
@@ -421,7 +421,7 @@ fn draw_legend_text(
     valid_time: &Option<String>,
     location: &Option<String>,
 ) {
-    let rgb = config::ISOBAR_RGBA;
+    let rgb = ac.config.isobar_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
     let padding = ac.edge_padding;

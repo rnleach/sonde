@@ -1,6 +1,5 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
-use config;
 use coords::{TPCoords, XYCoords, ScreenCoords, DeviceCoords, ScreenRect};
 
 use cairo::Context;
@@ -44,7 +43,7 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
     let box_rect = calculate_screen_rect(cr, ac, &lines, sample_p);
 
-    draw_sample_readout_text_box(&box_rect, cr, &lines);
+    draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
 }
 
 fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
@@ -118,10 +117,10 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
 }
 
 fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
-    let rgb = config::ACTIVE_READOUT_LINE_RGB;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.active_readout_line_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(
-        cr.device_to_user_distance(config::ACTIVE_READOUT_LINE_WIDTH, 0.0)
+        cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
             .0,
     );
     let start = ac.convert_tp_to_screen(TPCoords {
@@ -156,7 +155,7 @@ fn calculate_screen_rect(
         height += font_extents.height;
     }
 
-    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    let (padding, _) = cr.device_to_user_distance(ac.config.edge_padding, 0.0);
 
     width += 2.0 * padding;
     height += 2.0 * padding;
@@ -216,22 +215,27 @@ fn calculate_screen_rect(
     }
 }
 
-fn draw_sample_readout_text_box(rect: &ScreenRect, cr: &Context, lines: &Vec<String>) {
+fn draw_sample_readout_text_box(
+    rect: &ScreenRect,
+    cr: &Context,
+    ac: &AppContext,
+    lines: &Vec<String>,
+) {
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },
         upper_right: ScreenCoords { x: xmax, y: ymax },
     } = *rect;
 
-    let rgb = config::BACKGROUND_RGB;
+    let rgb = ac.config.background_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
     cr.fill_preserve();
-    let rgb = config::LABEL_RGB;
+    let rgb = ac.config.label_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke();
 
-    let (padding, _) = cr.device_to_user_distance(config::EDGE_PADDING, config::EDGE_PADDING);
+    let (padding, _) = cr.device_to_user_distance(ac.config.edge_padding, 0.0);
 
     let font_extents = cr.font_extents();
     let mut lines_drawn = 0.0;

@@ -4,7 +4,6 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
 use app::AppContext;
-use config;
 use coords::{TPCoords, XYCoords};
 
 mod background;
@@ -23,9 +22,9 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     // Fill with backgound color
     cr.rectangle(0.0, 0.0, ac.device_width as f64, ac.device_height as f64);
     cr.set_source_rgb(
-        config::BACKGROUND_RGB.0,
-        config::BACKGROUND_RGB.1,
-        config::BACKGROUND_RGB.2,
+        ac.config.background_rgb.0,
+        ac.config.background_rgb.1,
+        ac.config.background_rgb.2,
     );
     cr.fill();
 
@@ -56,8 +55,8 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     cr.clip();
 
     // Calculate the various padding values
-    ac.label_padding = cr.device_to_user_distance(config::LABEL_PADDING, 0.0).0;
-    ac.edge_padding = cr.device_to_user_distance(config::EDGE_PADDING, 0.0).0;
+    ac.label_padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+    ac.edge_padding = cr.device_to_user_distance(ac.config.edge_padding, 0.0).0;
 }
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {

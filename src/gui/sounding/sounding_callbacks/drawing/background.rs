@@ -21,8 +21,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
         plot_curve_from_points(
             cr,
             &ac,
-            config::BACKGROUND_LINE_WIDTH,
-            config::ISENTROP_RGBA,
+            ac.config.background_line_width,
+            ac.config.isentrop_rgba,
             pnts,
         );
     }
@@ -32,8 +32,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
         plot_curve_from_points(
             cr,
             &ac,
-            config::BACKGROUND_LINE_WIDTH,
-            config::ISO_THETA_E_RGBA,
+            ac.config.background_line_width,
+            ac.config.iso_theta_e_rgba,
             pnts,
         );
     }
@@ -42,8 +42,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     plot_straight_dashed_lines(
         cr,
         &ac,
-        config::BACKGROUND_LINE_WIDTH,
-        config::ISO_MIXING_RATIO_RGBA,
+        ac.config.background_line_width,
+        ac.config.iso_mixing_ratio_rgba,
         &config::ISO_MIXING_RATIO_PNTS,
     );
 
@@ -51,8 +51,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     plot_straight_lines(
         cr,
         &ac,
-        config::BACKGROUND_LINE_WIDTH,
-        config::ISOTHERM_RGBA,
+        ac.config.background_line_width,
+        ac.config.isotherm_rgba,
         &config::ISOTHERM_PNTS,
     );
 
@@ -60,15 +60,15 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     plot_straight_lines(
         cr,
         &ac,
-        config::BACKGROUND_LINE_WIDTH,
-        config::ISOBAR_RGBA,
+        ac.config.background_line_width,
+        ac.config.isobar_rgba,
         &config::ISOBAR_PNTS,
     );
 }
 
 fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
 
-    let rgb = config::BACKGROUND_BAND_RGB;
+    let rgb = ac.config.background_band_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     let mut start_line = -160i32;
     while start_line < 100 {
@@ -83,14 +83,14 @@ fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
 
 fn draw_hail_growth_zone(cr: &Context, ac: &AppContext) {
 
-    let rgb = config::HAIL_ZONE_RGB;
+    let rgb = ac.config.hail_zone_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
     draw_temperature_band(-30.0, -10.0, cr, ac);
 }
 
 fn draw_dendtritic_growth_zone(cr: &Context, ac: &AppContext) {
 
-    let rgb = config::DENDRTITIC_ZONE_RGB;
+    let rgb = ac.config.dendritic_zone_rgb;
     cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
 
     draw_temperature_band(-18.0, -12.0, cr, ac);

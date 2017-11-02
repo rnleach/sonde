@@ -51,6 +51,52 @@ pub struct Config {
     pub dew_point_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for dew point plot
     pub dew_point_line_width: f64,
+
+    //
+    // Labeling
+    //
+    /// Font face
+    pub font_name: String,
+    /// Font size for labels in points
+    pub label_font_size: f64,
+    /// Default padding in text boxes and the plot edge for text. In pixels.
+    pub edge_padding: f64,
+    ///  Default padding for labels and their background in pixels
+    pub label_padding: f64,
+    /// Label color
+    pub label_rgb: (f64, f64, f64),
+
+    //
+    // Background
+    //
+    /// Line width in pixels for skew-t background lines.
+    pub background_line_width: f64,
+    /// Background color
+    pub background_rgb: (f64, f64, f64),
+    /// Background banding color for temperature bands.
+    pub background_band_rgb: (f64, f64, f64),
+    /// Color used to fill the dendritic snow growth zone
+    pub dendritic_zone_rgb: (f64, f64, f64),
+    /// Color used to fill the hail growth zone
+    pub hail_zone_rgb: (f64, f64, f64),
+    /// Color used for isotherms
+    pub isotherm_rgba: (f64, f64, f64, f64),
+    /// Color used for isobars
+    pub isobar_rgba: (f64, f64, f64, f64),
+    /// Color used for isentrops
+    pub isentrop_rgba: (f64, f64, f64, f64),
+    /// Color used for isopleths of mixing ration
+    pub iso_mixing_ratio_rgba: (f64, f64, f64, f64),
+    /// Color used for isopleths of theta-e
+    pub iso_theta_e_rgba: (f64, f64, f64, f64),
+
+    //
+    // Active readout
+    //
+    /// Active readout line width
+    pub active_readout_line_width: f64,
+    /// Active readout line color
+    pub active_readout_line_rgba: (f64, f64, f64, f64),
 }
 
 impl Config {}
@@ -91,6 +137,35 @@ impl Default for Config {
             //
             dew_point_rgba: (0.0, 0.0, 0.0, 1.0),
             dew_point_line_width: 2.0,
+
+            //
+            // Labeling
+            //
+            font_name: "Courier New".to_owned(),
+            label_font_size: 12.0,
+            edge_padding: 5.0,
+            label_padding: 3.0,
+            label_rgb: (0.862745098, 0.388235294, 0.156862745),
+
+            //
+            // Background
+            //
+            background_line_width: 1.0,
+            background_rgb: (1.0, 1.0, 1.0),
+            background_band_rgb: (0.933333333, 0.964705882, 0.917647059),
+            dendritic_zone_rgb: (0.0, 0.466666667, 0.780392157),
+            hail_zone_rgb: (0.0, 0.803921569, 0.803921569),
+            isotherm_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            isobar_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            isentrop_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            iso_mixing_ratio_rgba: (0.090196078, 0.050980392, 0.360784314, 1.0),
+            iso_theta_e_rgba: (0.333333333, 0.662745098, 0.278431373, 1.0),
+
+            //
+            // Active readout
+            //
+            active_readout_line_width: 3.0,
+            active_readout_line_rgba: (1.0, 0.0, 0.0, 1.0),
         }
     }
 }
@@ -109,7 +184,6 @@ pub const BORDER_WIDTH: u32 = 3;
 //
 // NOTE: Leave these as compile time constants unless background isopleths are dynamically
 //       calculated also.
-
 /// Maximum pressure plotted on skew-t (bottom edge)
 pub const MAXP: f64 = 1050.0; // mb
 /// Minimum pressure plotted on skew-t (top edge)
@@ -119,58 +193,21 @@ pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
 
-// ------------------------------------------------------------------------------------------------
-// old code below, refactor in progress
-
-/// Active readout line width
-pub const ACTIVE_READOUT_LINE_WIDTH: f64 = 3.0;
-/// Active readout line color
-pub const ACTIVE_READOUT_LINE_RGB: (f64, f64, f64) = (1.0, 0.0, 0.0);
-
-/// Font face
-pub static FONT_NAME: &'static str = "Courier New";
-/// Font size, legend, pressure, temperature lines
-pub const LARGE_FONT_SIZE: f64 = 12.0;
-/// Default padding in text boxes and the plot edge for text. In pixels.
-pub const EDGE_PADDING: f64 = 5.0;
-///  Default padding for labels and their background in pixels
-pub const LABEL_PADDING: f64 = 3.0;
-/// Label coloring
-pub const LABEL_RGB: (f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745);
-
-/// Hightest elevation pressure level to draw isentrops up to
+//
+// Limits on the top pressure level for some background lines.
+//
+// NOTE: Leave these as compile time constants unless background isopleths are dynamically
+//       calculated also.
+/// Highest elevation pressure level to draw isentrops up to
 pub const ISENTROPS_TOP_P: f64 = 200.0;
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 30;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
 pub const ISO_MIXING_RATIO_TOP_P: f64 = 300.0;
 
-
-/// Line width in pixels for skew-t background lines.
-pub const BACKGROUND_LINE_WIDTH: f64 = 1.0;
-
-/// Background color
-pub const BACKGROUND_RGB: (f64, f64, f64) = (1.0, 1.0, 1.0);
-//// Background banding color
-pub const BACKGROUND_BAND_RGB: (f64, f64, f64) = (0.933333333, 0.964705882, 0.917647059);
-/// Color used to fill the dendritic snow growth zone
-pub const DENDRTITIC_ZONE_RGB: (f64, f64, f64) = (0.0, 0.466666667, 0.780392157);
-/// Color used to fill the hail growth zone
-pub const HAIL_ZONE_RGB: (f64, f64, f64) = (0.0, 0.803921569, 0.803921569);
-/// Color used for isotherms
-pub const ISOTHERM_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
-/// Color used for isobars
-pub const ISOBAR_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
-/// Color used for isentrops
-pub const ISENTROP_RGBA: (f64, f64, f64, f64) = (0.862745098, 0.388235294, 0.156862745, 1.0);
-/// Color used for isopleths of mixing ration
-pub const ISO_MIXING_RATIO_RGBA: (f64, f64, f64, f64) =
-    (0.090196078, 0.050980392, 0.360784314, 1.0);
-/// Color used for isopleths of theta-e
-pub const ISO_THETA_E_RGBA: (f64, f64, f64, f64) = (0.333333333, 0.662745098, 0.278431373, 1.0);
-
-
-
+//
+// Constant values to plot on background.
+//
 /// Isotherms to label on the chart.
 pub const ISOTHERMS: [f64; 31] = [
     -150.0,
@@ -386,7 +423,7 @@ lazy_static! {
 }
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
-pub fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
+fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
     use std::f64;
     use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
 
