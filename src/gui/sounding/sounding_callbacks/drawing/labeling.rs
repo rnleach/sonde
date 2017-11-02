@@ -52,74 +52,78 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
         upper_right: _,
     } = screen_edges;
 
-    for &p in config::ISOBARS.into_iter() {
+    if ac.config.show_isobars {
+        for &p in config::ISOBARS.into_iter() {
 
-        let label = format!("{}", p);
+            let label = format!("{}", p);
 
-        let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label);
 
-        let ScreenCoords { x: _, y: screen_y } = ac.convert_tp_to_screen(TPCoords {
-            temperature: 0.0,
-            pressure: p,
-        });
-        let screen_y = screen_y - extents.height / 2.0;
+            let ScreenCoords { x: _, y: screen_y } = ac.convert_tp_to_screen(TPCoords {
+                temperature: 0.0,
+                pressure: p,
+            });
+            let screen_y = screen_y - extents.height / 2.0;
 
-        let label_lower_left = ScreenCoords {
-            x: lower_left.x,
-            y: screen_y,
-        };
-        let label_upper_right = ScreenCoords {
-            x: lower_left.x + extents.width,
-            y: screen_y + extents.height,
-        };
+            let label_lower_left = ScreenCoords {
+                x: lower_left.x,
+                y: screen_y,
+            };
+            let label_upper_right = ScreenCoords {
+                x: lower_left.x + extents.width,
+                y: screen_y + extents.height,
+            };
 
-        let pair = (
-            label,
-            ScreenRect {
-                lower_left: label_lower_left,
-                upper_right: label_upper_right,
-            },
-        );
+            let pair = (
+                label,
+                ScreenRect {
+                    lower_left: label_lower_left,
+                    upper_right: label_upper_right,
+                },
+            );
 
-        check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+            check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+        }
     }
 
-    let TPCoords {
-        temperature: _,
-        pressure: screen_max_p,
-    } = ac.convert_screen_to_tp(lower_left);
-    for &t in config::ISOTHERMS.into_iter() {
-
-        let label = format!("{}", t);
-
-        let extents = cr.text_extents(&label);
-
-        let ScreenCoords {
-            x: mut xpos,
-            y: mut ypos,
-        } = ac.convert_tp_to_screen(TPCoords {
-            temperature: t,
+    if ac.config.show_isotherms {
+        let TPCoords {
+            temperature: _,
             pressure: screen_max_p,
-        });
-        xpos -= extents.width / 2.0; // Center
-        ypos -= extents.height / 2.0; // Center
-        ypos += extents.height; // Move up off bottom axis.
-        xpos += extents.height; // Move right for 45 degree angle from move up
+        } = ac.convert_screen_to_tp(lower_left);
+        for &t in config::ISOTHERMS.into_iter() {
 
-        let label_lower_left = ScreenCoords { x: xpos, y: ypos };
-        let label_upper_right = ScreenCoords {
-            x: xpos + extents.width,
-            y: ypos + extents.height,
-        };
+            let label = format!("{}", t);
 
-        let pair = (
-            label,
-            ScreenRect {
-                lower_left: label_lower_left,
-                upper_right: label_upper_right,
-            },
-        );
-        check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+            let extents = cr.text_extents(&label);
+
+            let ScreenCoords {
+                x: mut xpos,
+                y: mut ypos,
+            } = ac.convert_tp_to_screen(TPCoords {
+                temperature: t,
+                pressure: screen_max_p,
+            });
+            xpos -= extents.width / 2.0; // Center
+            ypos -= extents.height / 2.0; // Center
+            ypos += extents.height; // Move up off bottom axis.
+            xpos += extents.height; // Move right for 45 degree angle from move up
+
+            let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+            let label_upper_right = ScreenCoords {
+                x: xpos + extents.width,
+                y: ypos + extents.height,
+            };
+
+            let pair = (
+                label,
+                ScreenRect {
+                    lower_left: label_lower_left,
+                    upper_right: label_upper_right,
+                },
+            );
+            check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+        }
     }
 
     labels

@@ -95,7 +95,9 @@ fn plot_curve_from_points(
     points: &[TPCoords],
 ) {
     // Need at least two points to draw a line.
-    if points.len() < 2 { return; }
+    if points.len() < 2 {
+        return;
+    }
 
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);

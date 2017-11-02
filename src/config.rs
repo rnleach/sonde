@@ -75,20 +75,31 @@ pub struct Config {
     pub background_rgb: (f64, f64, f64),
     /// Background banding color for temperature bands.
     pub background_band_rgb: (f64, f64, f64),
+    /// Show or hide background temperature banding.
+    pub show_background_bands: bool,
     /// Color used to fill the dendritic snow growth zone
     pub dendritic_zone_rgb: (f64, f64, f64),
+    /// Show or hide the dendritic zone banding.
+    pub show_dendritic_zone: bool,
     /// Color used to fill the hail growth zone
     pub hail_zone_rgb: (f64, f64, f64),
+    // Show or hide the hail growth zone
+    pub show_hail_zone: bool,
     /// Color used for isotherms
     pub isotherm_rgba: (f64, f64, f64, f64),
+    pub show_isotherms: bool,
     /// Color used for isobars
     pub isobar_rgba: (f64, f64, f64, f64),
+    pub show_isobars: bool,
     /// Color used for isentrops
     pub isentrop_rgba: (f64, f64, f64, f64),
+    pub show_isentrops: bool,
     /// Color used for isopleths of mixing ration
     pub iso_mixing_ratio_rgba: (f64, f64, f64, f64),
+    pub show_iso_mixing_ratio: bool,
     /// Color used for isopleths of theta-e
     pub iso_theta_e_rgba: (f64, f64, f64, f64),
+    pub show_iso_theta_e: bool,
 
     //
     // Active readout
@@ -153,13 +164,21 @@ impl Default for Config {
             background_line_width: 1.0,
             background_rgb: (1.0, 1.0, 1.0),
             background_band_rgb: (0.933333333, 0.964705882, 0.917647059),
+            show_background_bands: true,
             dendritic_zone_rgb: (0.0, 0.466666667, 0.780392157),
+            show_dendritic_zone: true,
             hail_zone_rgb: (0.0, 0.803921569, 0.803921569),
+            show_hail_zone: true,
             isotherm_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            show_isotherms: true,
             isobar_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            show_isobars: true,
             isentrop_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            show_isentrops: true,
             iso_mixing_ratio_rgba: (0.090196078, 0.050980392, 0.360784314, 1.0),
+            show_iso_mixing_ratio: true,
             iso_theta_e_rgba: (0.333333333, 0.662745098, 0.278431373, 1.0),
+            show_iso_theta_e: true,
 
             //
             // Active readout
@@ -362,7 +381,7 @@ lazy_static! {
         .into_iter()
         .map(|t| {
             [
-                TPCoords{temperature:*t, pressure:MAXP}, 
+                TPCoords{temperature:*t, pressure:MAXP},
                 TPCoords{temperature:*t, pressure:MINP}
             ]
         })
@@ -375,7 +394,7 @@ lazy_static! {
             .into_iter()
             .map(|p| {
                 [
-                    TPCoords{temperature:-150.0, pressure:*p}, 
+                    TPCoords{temperature:-150.0, pressure:*p},
                     TPCoords{temperature:60.0, pressure:*p}
                 ]
             })
@@ -392,16 +411,18 @@ lazy_static! {
 
     /// Compute points for background mixing ratio only once
     pub static ref ISO_MIXING_RATIO_PNTS: Vec<[TPCoords; 2]> = {
+        use formula::*;
+
         ISO_MIXING_RATIO
         .into_iter()
         .map(|mw| {
             [
                 TPCoords{
-                    temperature: ::formula::temperature_from_p_and_saturated_mw(MAXP, *mw),
+                    temperature: temperature_from_p_and_saturated_mw(MAXP, *mw),
                     pressure: MAXP
                 },
                 TPCoords{
-                    temperature: ::formula::temperature_from_p_and_saturated_mw(ISO_MIXING_RATIO_TOP_P, *mw),
+                    temperature: temperature_from_p_and_saturated_mw(ISO_MIXING_RATIO_TOP_P, *mw),
                     pressure: ISO_MIXING_RATIO_TOP_P,
                 },
             ]

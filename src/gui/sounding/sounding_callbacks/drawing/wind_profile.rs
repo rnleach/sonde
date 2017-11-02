@@ -1,7 +1,7 @@
 use cairo::Context;
 
 use app::AppContext;
-use coords::{ScreenCoords, TPCoords, ScreenRect, Rect};
+use coords::{ScreenCoords, TPCoords, ScreenRect, Rect, XYCoords};
 
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
 
@@ -99,10 +99,16 @@ impl<'a, 'b> WindBarbConfig<'a> {
             -ac.config.wind_barb_pennant_width,
         );
         let padding = ac.edge_padding;
-        let ScreenRect {
-            lower_left: ScreenCoords { x: _xmin, y: _ymin },
-            upper_right: ScreenCoords { x: xmax, y: _ymax },
-        } = ac.bounding_box_in_screen_coords();
+
+        let screen_bounds = ac.bounding_box_in_screen_coords();
+        let XYCoords { x: mut xmax, y: _ } = ac.convert_screen_to_xy(screen_bounds.upper_right);
+
+        if xmax > 1.0 {
+            xmax = 1.0;
+        }
+
+        let ScreenCoords { x: xmax, y: _ } = ac.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
+
         let xcoord = xmax - padding - shaft_length;
 
         WindBarbConfig {

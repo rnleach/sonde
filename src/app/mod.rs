@@ -31,7 +31,7 @@ pub struct AppContext {
     xy_envelope: XYRect,
 
     // Handle to the GUI
-    gui: Option<Gui>,
+    pub gui: Option<Gui>,
 
     // Standard x-y coords, used for zooming and panning.
     pub zoom_factor: f64, // Multiply by this after translating

@@ -169,6 +169,13 @@ pub fn key_release_event(
     } else {
         Inhibit(false)
     }
+}
 
-
+/// Handles key-press events
+pub fn key_press_event(
+    _sounding_area: &DrawingArea,
+    _event: &EventKey,
+    _ac: &app::AppContextPointer,
+) -> Inhibit {
+    Inhibit(true)
 }

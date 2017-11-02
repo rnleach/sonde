@@ -3,12 +3,22 @@ use cairo::Context;
 use app::AppContext;
 use config;
 use coords::TPCoords;
-use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points, plot_dashed_curve_from_points};
+use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points,
+                                                 plot_dashed_curve_from_points};
 
 pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
-    draw_temperature_banding(cr, ac);
-    draw_hail_growth_zone(cr, ac);
-    draw_dendtritic_growth_zone(cr, ac);
+
+    if ac.config.show_background_bands {
+        draw_temperature_banding(cr, ac);
+    }
+
+    if ac.config.show_hail_zone {
+        draw_hail_growth_zone(cr, ac);
+    }
+
+    if ac.config.show_dendritic_zone {
+        draw_dendtritic_growth_zone(cr, ac);
+    }
 }
 
 // Draw isentrops, isotherms, isobars, ...
@@ -16,58 +26,68 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draws background lines from the bottom up.
 
     // Draw isentrops
-    for pnts in config::ISENTROP_PNTS.iter() {
-        plot_curve_from_points(
-            cr,
-            &ac,
-            ac.config.background_line_width,
-            ac.config.isentrop_rgba,
-            pnts,
-        );
+    if ac.config.show_isentrops {
+        for pnts in config::ISENTROP_PNTS.iter() {
+            plot_curve_from_points(
+                cr,
+                &ac,
+                ac.config.background_line_width,
+                ac.config.isentrop_rgba,
+                pnts,
+            );
+        }
     }
 
     // Draw theta-e lines
-    for pnts in config::ISO_THETA_E_PNTS.iter() {
-        plot_curve_from_points(
-            cr,
-            &ac,
-            ac.config.background_line_width,
-            ac.config.iso_theta_e_rgba,
-            pnts,
-        );
+    if ac.config.show_iso_theta_e {
+        for pnts in config::ISO_THETA_E_PNTS.iter() {
+            plot_curve_from_points(
+                cr,
+                &ac,
+                ac.config.background_line_width,
+                ac.config.iso_theta_e_rgba,
+                pnts,
+            );
+        }
     }
 
     // Draw mixing ratio lines
-    for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
-        plot_dashed_curve_from_points(
-            cr,
-            &ac,
-            ac.config.background_line_width,
-            ac.config.iso_mixing_ratio_rgba,
-            pnts,
-        );
+    if ac.config.show_iso_mixing_ratio {
+        for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
+            plot_dashed_curve_from_points(
+                cr,
+                &ac,
+                ac.config.background_line_width,
+                ac.config.iso_mixing_ratio_rgba,
+                pnts,
+            );
+        }
     }
 
     // Draw isotherms
-    for pnts in config::ISOTHERM_PNTS.iter() {
-        plot_curve_from_points(
-            cr,
-            &ac,
-            ac.config.background_line_width,
-            ac.config.isotherm_rgba,
-            pnts,
-        );
+    if ac.config.show_isotherms {
+        for pnts in config::ISOTHERM_PNTS.iter() {
+            plot_curve_from_points(
+                cr,
+                &ac,
+                ac.config.background_line_width,
+                ac.config.isotherm_rgba,
+                pnts,
+            );
+        }
     }
 
     // Draw isobars
-    for pnts in config::ISOBAR_PNTS.iter() {
-        plot_curve_from_points(
-            cr,
-            &ac,
-            ac.config.background_line_width,
-            ac.config.isobar_rgba,
-            pnts,
-        );
+    if ac.config.show_isobars {
+        for pnts in config::ISOBAR_PNTS.iter() {
+            plot_curve_from_points(
+                cr,
+                &ac,
+                ac.config.background_line_width,
+                ac.config.isobar_rgba,
+                pnts,
+            );
+        }
     }
 }
 

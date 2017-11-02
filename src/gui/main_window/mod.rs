@@ -17,8 +17,8 @@ pub fn layout(gui: Gui, app_context: AppContextPointer) {
     // Build the menu bar
     let menu_bar = build_menu_bar(&app_context, &window);
 
-    // Layout the drawing areas
-    let drawing_areas = layout_drawing_areas(&gui);
+    // Layout main gui areas
+    let drawing_areas = layout_frames(&gui);
 
     // Layout everything else
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -67,13 +67,56 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     menu_bar
 }
 
-fn layout_drawing_areas(gui: &Gui) -> gtk::Grid {
+fn layout_frames(gui: &Gui) -> gtk::Grid {
+
+    const TOTAL_WIDTH: i32 = 4;
+    const TOTAL_HEIGHT: i32 = 4;
+
+    const SKEW_T_WIDTH_FRACTION: f32 = 0.75;
+    const SKEW_T_WIDTH: i32 = (TOTAL_WIDTH as f32 * SKEW_T_WIDTH_FRACTION) as i32;
+    const OTHER_WIDTH: i32 = TOTAL_WIDTH - SKEW_T_WIDTH;
+
+    const HODO_FRACTION: f32 = 0.4;
+    const HODO_HEIGHT: i32 = (TOTAL_HEIGHT as f32 * HODO_FRACTION) as i32;
+
+    const INDEX_FRACTION: f32 = 0.4;
+    const INDEX_HEIGHT: i32 = (TOTAL_HEIGHT as f32 * INDEX_FRACTION) as i32;
+
+    const CONTROL_HEIGHT: i32 = TOTAL_HEIGHT - INDEX_HEIGHT - HODO_HEIGHT;
+
 
     let grid = gtk::Grid::new();
-    grid.attach(&add_border_frame(&gui.get_sounding_area()), 0, 0, 3, 8);
-    grid.attach(&add_border_frame(&gui.get_hodograph_area()), 3, 0, 1, 2);
-    grid.attach(&add_border_frame(&gui.get_index_area()), 3, 2, 1, 3);
-    grid.attach(&add_border_frame(&gui.get_control_area()), 3, 5, 1, 3);
+    grid.attach(
+        &add_border_frame(&gui.get_sounding_area()),
+        0,
+        0,
+        SKEW_T_WIDTH,
+        TOTAL_HEIGHT,
+    );
+    grid.attach(
+        &add_border_frame(&gui.get_hodograph_area()),
+        SKEW_T_WIDTH,
+        0,
+        OTHER_WIDTH,
+        HODO_HEIGHT,
+    );
+    grid.attach(
+        &add_border_frame(&gui.get_index_area()),
+        SKEW_T_WIDTH,
+        HODO_HEIGHT,
+        OTHER_WIDTH,
+        INDEX_HEIGHT,
+    );
+    grid.attach(
+        &add_border_frame(&gui.get_control_area()),
+        SKEW_T_WIDTH,
+        HODO_HEIGHT + INDEX_HEIGHT,
+        OTHER_WIDTH,
+        CONTROL_HEIGHT,
+    );
+
+    grid.set_row_homogeneous(true);
+    grid.set_column_homogeneous(true);
 
     grid
 }
@@ -94,6 +137,8 @@ fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
     let f = gtk::Frame::new(None);
     f.add(widget);
     f.set_border_width(config::BORDER_WIDTH);
+    f.set_hexpand(true);
+    f.set_vexpand(true);
 
     f
 }
