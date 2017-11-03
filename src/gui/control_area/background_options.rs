@@ -22,11 +22,15 @@ pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
 
     // Second set is background fills
     let fills_frame = build_fills_frame(&acp);
-    
+
+    // Third set is for font
+    let font_frame = build_font_frame(&acp);
+
     // Layout boxes in the frame
     f.add(&v_box);
     v_box.pack_start(&lines_frame, true, true, PADDING);
     v_box.pack_start(&fills_frame, true, true, PADDING);
+    v_box.pack_start(&font_frame, true, true, PADDING);
     let sw = ScrolledWindow::new(None, None);
     sw.add(&f);
 
@@ -134,4 +138,16 @@ fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
     hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
 
     target_box.pack_start(&hbox, false, true, PADDING);
+}
+
+fn build_font_frame(acp: &AppContextPointer) -> gtk::Frame {
+    let font_frame = gtk::Frame::new(Some("Labels"));
+    let font_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    font_frame.add(&font_box);
+
+    build_config_color_and_check!(font_box, "Labels", acp, show_labels, label_rgba);
+
+    // TODO: Add option to show/hide legend. Already in the config.
+
+    font_frame
 }

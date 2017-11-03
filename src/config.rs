@@ -63,6 +63,10 @@ pub struct Config {
     //
     // Labeling
     //
+    /// Whether to show labels
+    pub show_labels: bool,
+    /// Whether to show the legend
+    pub show_legend: bool,
     /// Font face
     pub font_name: String,
     /// Font size for labels in points
@@ -165,6 +169,8 @@ impl Default for Config {
             //
             // Labeling
             //
+            show_labels: true,
+            show_legend: true,
             font_name: "Courier New".to_owned(),
             label_font_size: 12.0,
             edge_padding: 5.0,
