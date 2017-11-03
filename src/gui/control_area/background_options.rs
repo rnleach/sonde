@@ -1,0 +1,123 @@
+use gtk;
+use gtk::prelude::*;
+use gtk::{Frame, ScrolledWindow, ColorButton, CheckButton};
+use gdk::RGBA;
+
+use gui::control_area::{BOX_SPACING, PADDING};
+
+use app::AppContextPointer;
+
+pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
+    let f = Frame::new(None);
+    f.set_shadow_type(gtk::ShadowType::None);
+    f.set_hexpand(true);
+    f.set_vexpand(true);
+
+    // Layout vertically
+    let v_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    v_box.set_baseline_position(gtk::BaselinePosition::Top);
+
+    // First set is background fills
+    let fills_frame = gtk::Frame::new(Some("Shading"));
+    let fills_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    fills_frame.add(&fills_box);
+
+    // Fills buttons
+    build_config_color_and_check!(
+        fills_box,
+        "Dendritic Zone",
+        acp,
+        show_dendritic_zone,
+        dendritic_zone_rgba
+    );
+    build_config_color_and_check!(
+        fills_box,
+        "Hail Growth Zone",
+        acp,
+        show_hail_zone,
+        hail_zone_rgba
+    );
+    build_config_color_and_check!(
+        fills_box,
+        "Striping",
+        acp,
+        show_background_bands,
+        background_band_rgba
+    );
+
+    // Background color
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    let color = ColorButton::new();
+
+    // Inner scope to borrow acp
+    {
+        let ac = acp.borrow();
+
+        let rgba = ac.config.background_rgba;
+        color.set_rgba(&RGBA {
+            red: rgba.0,
+            green: rgba.1,
+            blue: rgba.2,
+            alpha: rgba.3,
+        });
+    }
+
+    // Create color button callback
+    let acp1 = acp.clone();
+    ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
+        let mut ac = acp1.borrow_mut();
+        let rgba = button.get_rgba();
+
+        ac.config.background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+
+        if let Some(ref gui) = ac.gui {
+            gui.get_sounding_area().queue_draw();
+        }
+    });
+
+    // Layout
+    hbox.pack_start(&color, false, true, PADDING);
+    hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
+    fills_box.pack_start(&hbox, false, true, PADDING);
+
+    // Second set is background lines
+    let lines_frame = gtk::Frame::new(Some("Lines"));
+    let lines_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    lines_frame.add(&lines_box);
+
+    // Lines buttons
+    build_config_color_and_check!(
+        lines_box,
+        "Dry Adiabats",
+        acp,
+        show_isentrops,
+        isentrop_rgba
+    );
+    build_config_color_and_check!(
+        lines_box,
+        "Moist Adiabats",
+        acp,
+        show_iso_theta_e,
+        iso_theta_e_rgba
+    );
+    build_config_color_and_check!(
+        lines_box,
+        "Mixing Ratio",
+        acp,
+        show_iso_mixing_ratio,
+        iso_mixing_ratio_rgba
+    );
+    build_config_color_and_check!(lines_box, "Temperature", acp, show_isotherms, isotherm_rgba);
+    build_config_color_and_check!(lines_box, "Pressure", acp, show_isobars, isobar_rgba);
+
+    //
+    // Layout boxes in the frame
+    //
+    f.add(&v_box);
+    v_box.pack_start(&lines_frame, true, true, PADDING);
+    v_box.pack_start(&fills_frame, true, true, PADDING);
+    let sw = ScrolledWindow::new(None, None);
+    sw.add(&f);
+
+    sw
+}
