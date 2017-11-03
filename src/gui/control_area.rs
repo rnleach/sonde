@@ -1,6 +1,6 @@
 use gtk;
 use gtk::prelude::*;
-use gtk::{Frame, Notebook, NotebookExt, WidgetExt};
+use gtk::{Frame, Notebook, ScrolledWindow};
 
 use app::AppContextPointer;
 
@@ -9,6 +9,7 @@ pub fn set_up_control_area(control_area: &Notebook, acp: AppContextPointer) {
 
     control_area.set_hexpand(true);
     control_area.set_vexpand(true);
+    control_area.set_scrollable(true);
 
     let background_options = make_background_frame(acp.clone());
     control_area.add(&background_options);
@@ -17,6 +18,8 @@ pub fn set_up_control_area(control_area: &Notebook, acp: AppContextPointer) {
 
 const PADDING: u32 = 2;
 const BOX_SPACING: i32 = 5;
+
+// TODO: Add color button, put all in HBOX, then add to *V_BOX, will need color variable to change too
 
 macro_rules! build_config_check_button {
     ($button:ident, $label:expr, $acp:ident, $setting:ident) => {
@@ -36,7 +39,7 @@ macro_rules! build_config_check_button {
         });
     };
 }
-fn make_background_frame(acp: AppContextPointer) -> Frame {
+fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
     f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
@@ -86,6 +89,8 @@ fn make_background_frame(acp: AppContextPointer) -> Frame {
     f.add(&h_box);
     h_box.pack_start(&lines_frame, true, true, PADDING);
     h_box.pack_start(&fills_frame, true, true, PADDING);
+    let sw = ScrolledWindow::new(None, None);
+    sw.add(&f);
 
-    f
+    sw
 }

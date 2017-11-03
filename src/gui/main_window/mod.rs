@@ -2,7 +2,7 @@ use glib;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Window, WidgetExt, GridExt, MenuBar, MenuItem, Menu, ContainerExt};
+use gtk::{Window, MenuBar, MenuItem, Menu};
 
 use app::{AppContextPointer, AppContext};
 use config;
@@ -18,12 +18,12 @@ pub fn layout(gui: Gui, app_context: AppContextPointer) {
     let menu_bar = build_menu_bar(&app_context, &window);
 
     // Layout main gui areas
-    let drawing_areas = layout_frames(&gui);
+    let frames = layout_frames(&gui);
 
     // Layout everything else
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     v_box.pack_start(&menu_bar, false, false, 0);
-    v_box.pack_start(&drawing_areas, true, true, 0);
+    v_box.pack_start(&frames, true, true, 0);
     window.add(&v_box);
 
     configure_main_window(&window, &app_context.borrow());

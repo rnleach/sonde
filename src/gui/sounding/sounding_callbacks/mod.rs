@@ -126,6 +126,8 @@ pub fn mouse_motion_event(
     ac: &app::AppContextPointer,
 ) -> Inhibit {
 
+    sounding_area.grab_focus();
+
     let mut ac = ac.borrow_mut();
     if ac.left_button_pressed {
         if let Some(last_position) = ac.last_cursor_position_skew_t {
