@@ -17,7 +17,56 @@ pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
 
-    // First set is background fills
+    // First set is background lines
+    let lines_frame = build_lines_frame(&acp);
+
+    // Second set is background fills
+    let fills_frame = build_fills_frame(&acp);
+    
+    // Layout boxes in the frame
+    f.add(&v_box);
+    v_box.pack_start(&lines_frame, true, true, PADDING);
+    v_box.pack_start(&fills_frame, true, true, PADDING);
+    let sw = ScrolledWindow::new(None, None);
+    sw.add(&f);
+
+    sw
+}
+
+fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
+    let lines_frame = gtk::Frame::new(Some("Lines"));
+    let lines_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    lines_frame.add(&lines_box);
+
+    // Lines buttons
+    build_config_color_and_check!(
+        lines_box,
+        "Dry Adiabats",
+        acp,
+        show_isentrops,
+        isentrop_rgba
+    );
+    build_config_color_and_check!(
+        lines_box,
+        "Moist Adiabats",
+        acp,
+        show_iso_theta_e,
+        iso_theta_e_rgba
+    );
+    build_config_color_and_check!(
+        lines_box,
+        "Mixing Ratio",
+        acp,
+        show_iso_mixing_ratio,
+        iso_mixing_ratio_rgba
+    );
+    build_config_color_and_check!(lines_box, "Temperature", acp, show_isotherms, isotherm_rgba);
+    build_config_color_and_check!(lines_box, "Pressure", acp, show_isobars, isobar_rgba);
+
+    lines_frame
+}
+
+fn build_fills_frame(acp: &AppContextPointer) -> gtk::Frame {
     let fills_frame = gtk::Frame::new(Some("Shading"));
     let fills_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     fills_frame.add(&fills_box);
@@ -44,7 +93,12 @@ pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
         show_background_bands,
         background_band_rgba
     );
+    add_background_color_button(fills_box, &acp);
 
+    fills_frame
+}
+
+fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
     // Background color
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let color = ColorButton::new();
@@ -78,46 +132,6 @@ pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
     // Layout
     hbox.pack_start(&color, false, true, PADDING);
     hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
-    fills_box.pack_start(&hbox, false, true, PADDING);
 
-    // Second set is background lines
-    let lines_frame = gtk::Frame::new(Some("Lines"));
-    let lines_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    lines_frame.add(&lines_box);
-
-    // Lines buttons
-    build_config_color_and_check!(
-        lines_box,
-        "Dry Adiabats",
-        acp,
-        show_isentrops,
-        isentrop_rgba
-    );
-    build_config_color_and_check!(
-        lines_box,
-        "Moist Adiabats",
-        acp,
-        show_iso_theta_e,
-        iso_theta_e_rgba
-    );
-    build_config_color_and_check!(
-        lines_box,
-        "Mixing Ratio",
-        acp,
-        show_iso_mixing_ratio,
-        iso_mixing_ratio_rgba
-    );
-    build_config_color_and_check!(lines_box, "Temperature", acp, show_isotherms, isotherm_rgba);
-    build_config_color_and_check!(lines_box, "Pressure", acp, show_isobars, isobar_rgba);
-
-    //
-    // Layout boxes in the frame
-    //
-    f.add(&v_box);
-    v_box.pack_start(&lines_frame, true, true, PADDING);
-    v_box.pack_start(&fills_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new(None, None);
-    sw.add(&f);
-
-    sw
+    target_box.pack_start(&hbox, false, true, PADDING);
 }
