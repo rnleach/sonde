@@ -80,27 +80,47 @@ fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
 
-    build_config_color_and_check!(v_box, "Wet Bulb", acp, show_wet_bulb, wet_bulb_rgba);
-    build_config_color_and_check!(v_box, "Dew Point", acp, show_dew_point, dew_point_rgba);
+    // First set active readout
+    let sample_frame = gtk::Frame::new(Some("Sampling"));
+    let sample_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    sample_frame.add(&sample_box);
+
+    // Active readout
     build_config_color_and_check!(
-        v_box,
+        sample_box,
+        "Sampling",
+        acp,
+        show_active_readout,
+        active_readout_line_rgba
+    );
+
+    // Second set is data
+    let data_frame = gtk::Frame::new(Some("Profiles"));
+    let data_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    data_frame.add(&data_box);
+
+    build_config_color_and_check!(data_box, "Wet Bulb", acp, show_wet_bulb, wet_bulb_rgba);
+    build_config_color_and_check!(data_box, "Dew Point", acp, show_dew_point, dew_point_rgba);
+    build_config_color_and_check!(
+        data_box,
         "Temperature",
         acp,
         show_temperature,
         temperature_rgba
     );
-    build_config_color_and_check!(v_box, "Wind", acp, show_wind_profile, wind_rgba);
+    build_config_color_and_check!(data_box, "Wind", acp, show_wind_profile, wind_rgba);
 
     //
     // Layout boxes in the frame
     //
     f.add(&v_box);
+    v_box.pack_start(&sample_frame, true, true, PADDING);
+    v_box.pack_start(&data_frame, true, true, PADDING);
     let sw = ScrolledWindow::new(None, None);
     sw.add(&f);
 
     sw
 }
-
 
 fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
@@ -139,6 +159,41 @@ fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
         show_background_bands,
         background_band_rgba
     );
+
+    // Background color
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    let color = ColorButton::new();
+
+    // Inner scope to borrow acp
+    {
+        let ac = acp.borrow();
+
+        let rgba = ac.config.background_rgba;
+        color.set_rgba(&RGBA {
+            red: rgba.0,
+            green: rgba.1,
+            blue: rgba.2,
+            alpha: rgba.3,
+        });
+    }
+
+    // Create color button callback
+    let acp1 = acp.clone();
+    ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
+        let mut ac = acp1.borrow_mut();
+        let rgba = button.get_rgba();
+
+        ac.config.background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+
+        if let Some(ref gui) = ac.gui {
+            gui.get_sounding_area().queue_draw();
+        }
+    });
+
+    // Layout
+    hbox.pack_start(&color, false, true, PADDING);
+    hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
+    fills_box.pack_start(&hbox, false, true, PADDING);
 
     // Second set is background lines
     let lines_frame = gtk::Frame::new(Some("Lines"));

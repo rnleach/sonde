@@ -94,7 +94,9 @@ pub fn draw_labels(cr: &Context, ac: &AppContext) {
 }
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
-    sample_readout::draw_active_sample(cr, ac);
+    if ac.config.show_active_readout {
+        sample_readout::draw_active_sample(cr, ac);
+    }
 }
 
 // Draw a curve connecting a list of points.
