@@ -476,7 +476,7 @@ lazy_static! {
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
     use std::f64;
-    use config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
+    use app::config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
 
     let mut result = vec![];
 

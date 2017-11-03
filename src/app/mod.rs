@@ -9,7 +9,10 @@ use sounding_base::Sounding;
 use errors::*;
 use gui::Gui;
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect, ScreenRect};
-use config::Config;
+
+// Module for configuring application
+pub mod config;
+use ::app::config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;
@@ -89,7 +92,7 @@ impl AppContext {
     }
 
     pub fn load_data(&mut self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
-        use config;
+        use app::config;
 
         self.list = src.into_iter().collect();
         self.currently_displayed_index = 0;
@@ -223,7 +226,7 @@ impl AppContext {
 
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
-        use config;
+        use app::config;
         use std::f64;
 
         let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
@@ -254,7 +257,7 @@ impl AppContext {
 
     /// Conversion from  (x,y) coords to temperature and pressure.
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
-        use config;
+        use app::config;
         use std::f64;
 
         // undo the skew

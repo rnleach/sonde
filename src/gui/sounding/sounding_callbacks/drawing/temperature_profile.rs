@@ -1,7 +1,6 @@
 use cairo::Context;
 
-use app::AppContext;
-use config;
+use app::{AppContext, config};
 use coords::TPCoords;
 use gui::sounding::sounding_callbacks::drawing::plot_curve_from_points;
 

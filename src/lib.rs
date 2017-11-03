@@ -22,11 +22,8 @@ extern crate sounding_bufkit;
 // Module for maintaining application state
 mod app;
 
-// Module for configuring application
-pub mod config;
-
 // Module for coordinate systems
-pub mod coords;
+mod coords;
 
 // Errors
 mod errors;

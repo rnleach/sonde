@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use gtk::{Window, MenuBar, MenuItem, Menu};
 
 use app::{AppContextPointer, AppContext};
-use config;
+use ::app::config;
 use gui::Gui;
 
 mod menu_callbacks;

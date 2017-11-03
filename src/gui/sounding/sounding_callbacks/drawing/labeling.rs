@@ -1,6 +1,5 @@
 //! Functions used for adding labels to the sounding plot
-use app::AppContext;
-use config;
+use app::{AppContext, config};
 
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
 
