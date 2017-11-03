@@ -27,6 +27,8 @@ pub struct Config {
     pub wind_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for wind barbs.
     pub wind_barb_line_width: f64,
+    /// Show the wind profile
+    pub show_wind_profile: bool,
 
     //
     // Temperature profile
@@ -35,6 +37,8 @@ pub struct Config {
     pub temperature_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for temperature plot.
     pub temperature_line_width: f64,
+    /// Show the temperature profile
+    pub show_temperature: bool,
 
     //
     // Wet bulb temperature profile
@@ -43,6 +47,8 @@ pub struct Config {
     pub wet_bulb_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for dew point plot.
     pub wet_bulb_line_width: f64,
+    /// Show the wet bulb profile
+    pub show_wet_bulb: bool,
 
     //
     // Dew point temperature profile
@@ -51,6 +57,8 @@ pub struct Config {
     pub dew_point_rgba: (f64, f64, f64, f64),
     /// Line width in pixels for dew point plot
     pub dew_point_line_width: f64,
+    /// Show the dew point profile
+    pub show_dew_point: bool,
 
     //
     // Labeling
@@ -64,7 +72,7 @@ pub struct Config {
     ///  Default padding for labels and their background in pixels
     pub label_padding: f64,
     /// Label color
-    pub label_rgb: (f64, f64, f64),
+    pub label_rgba: (f64, f64, f64, f64),
 
     //
     // Background
@@ -72,17 +80,17 @@ pub struct Config {
     /// Line width in pixels for skew-t background lines.
     pub background_line_width: f64,
     /// Background color
-    pub background_rgb: (f64, f64, f64),
+    pub background_rgba: (f64, f64, f64, f64),
     /// Background banding color for temperature bands.
-    pub background_band_rgb: (f64, f64, f64),
+    pub background_band_rgba: (f64, f64, f64, f64),
     /// Show or hide background temperature banding.
     pub show_background_bands: bool,
     /// Color used to fill the dendritic snow growth zone
-    pub dendritic_zone_rgb: (f64, f64, f64),
+    pub dendritic_zone_rgba: (f64, f64, f64, f64),
     /// Show or hide the dendritic zone banding.
     pub show_dendritic_zone: bool,
     /// Color used to fill the hail growth zone
-    pub hail_zone_rgb: (f64, f64, f64),
+    pub hail_zone_rgba: (f64, f64, f64, f64),
     // Show or hide the hail growth zone
     pub show_hail_zone: bool,
     /// Color used for isotherms
@@ -130,24 +138,28 @@ impl Default for Config {
             wind_barb_dot_radius: 3.5,
             wind_rgba: (0.0, 0.0, 0.0, 1.0),
             wind_barb_line_width: 1.0,
+            show_wind_profile: true,
 
             //
             // Temperature profile
             //
             temperature_rgba: (0.0, 0.0, 0.0, 1.0),
             temperature_line_width: 2.0,
+            show_temperature: true,
 
             //
             // Wet bulb temperature profile
             //
             wet_bulb_rgba: (0.0, 0.0, 0.0, 1.0),
             wet_bulb_line_width: 1.0,
+            show_wet_bulb: true,
 
             //
             // Dew point temperature profile
             //
             dew_point_rgba: (0.0, 0.0, 0.0, 1.0),
             dew_point_line_width: 2.0,
+            show_dew_point: true,
 
             //
             // Labeling
@@ -156,18 +168,18 @@ impl Default for Config {
             label_font_size: 12.0,
             edge_padding: 5.0,
             label_padding: 3.0,
-            label_rgb: (0.862745098, 0.388235294, 0.156862745),
+            label_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
 
             //
             // Background
             //
             background_line_width: 1.0,
-            background_rgb: (1.0, 1.0, 1.0),
-            background_band_rgb: (0.933333333, 0.964705882, 0.917647059),
+            background_rgba: (1.0, 1.0, 1.0, 1.0),
+            background_band_rgba: (0.933333333, 0.964705882, 0.917647059, 1.0),
             show_background_bands: true,
-            dendritic_zone_rgb: (0.0, 0.466666667, 0.780392157),
+            dendritic_zone_rgba: (0.0, 0.466666667, 0.780392157, 1.0),
             show_dendritic_zone: true,
-            hail_zone_rgb: (0.0, 0.803921569, 0.803921569),
+            hail_zone_rgba: (0.0, 0.803921569, 0.803921569, 1.0),
             show_hail_zone: true,
             isotherm_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
             show_isotherms: true,

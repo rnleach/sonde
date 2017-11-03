@@ -226,12 +226,12 @@ fn draw_sample_readout_text_box(
         upper_right: ScreenCoords { x: xmax, y: ymax },
     } = *rect;
 
-    let rgb = ac.config.background_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.background_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
     cr.fill_preserve();
-    let rgb = ac.config.label_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.label_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke();
 

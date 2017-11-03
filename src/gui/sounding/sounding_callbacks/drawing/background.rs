@@ -93,8 +93,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
 
 fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
 
-    let rgb = ac.config.background_band_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.background_band_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     let mut start_line = -160i32;
     while start_line < 100 {
         let t1 = start_line as f64;
@@ -108,15 +108,15 @@ fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
 
 fn draw_hail_growth_zone(cr: &Context, ac: &AppContext) {
 
-    let rgb = ac.config.hail_zone_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.hail_zone_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     draw_temperature_band(-30.0, -10.0, cr, ac);
 }
 
 fn draw_dendtritic_growth_zone(cr: &Context, ac: &AppContext) {
 
-    let rgb = ac.config.dendritic_zone_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.dendritic_zone_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     draw_temperature_band(-18.0, -12.0, cr, ac);
 }

@@ -21,10 +21,11 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
 
     // Fill with backgound color
     cr.rectangle(0.0, 0.0, ac.device_width as f64, ac.device_height as f64);
-    cr.set_source_rgb(
-        ac.config.background_rgb.0,
-        ac.config.background_rgb.1,
-        ac.config.background_rgb.2,
+    cr.set_source_rgba(
+        ac.config.background_rgba.0,
+        ac.config.background_rgba.1,
+        ac.config.background_rgba.2,
+        ac.config.background_rgba.3,
     );
     cr.fill();
 
@@ -67,13 +68,23 @@ pub fn draw_background(cr: &Context, ac: &AppContext) {
 pub fn draw_temperature_profiles(cr: &Context, ac: &AppContext) {
     use self::temperature_profile::TemperatureType::{DewPoint, DryBulb, WetBulb};
 
-    temperature_profile::draw_temperature_profile(WetBulb, &cr, &ac);
-    temperature_profile::draw_temperature_profile(DewPoint, &cr, &ac);
-    temperature_profile::draw_temperature_profile(DryBulb, &cr, &ac);
+    if ac.config.show_wet_bulb {
+        temperature_profile::draw_temperature_profile(WetBulb, &cr, &ac);
+    }
+
+    if ac.config.show_dew_point {
+        temperature_profile::draw_temperature_profile(DewPoint, &cr, &ac);
+    }
+
+    if ac.config.show_temperature {
+        temperature_profile::draw_temperature_profile(DryBulb, &cr, &ac);
+    }
 }
 
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
-    wind_profile::draw_wind_profile(cr, ac);
+    if ac.config.show_wind_profile {
+        wind_profile::draw_wind_profile(cr, ac);
+    }
 }
 
 pub fn draw_labels(cr: &Context, ac: &AppContext) {

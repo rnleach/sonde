@@ -139,8 +139,8 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
             upper_right: _,
         } = rect;
 
-        let mut rgb = ac.config.background_rgb;
-        cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+        let mut rgba = ac.config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.rectangle(
             lower_left.x - padding,
             lower_left.y - padding,
@@ -150,8 +150,8 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
         cr.fill();
 
         // Setup label colors
-        rgb = ac.config.label_rgb;
-        cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+        rgba = ac.config.label_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.move_to(lower_left.x, lower_left.y);
         cr.show_text(&label);
     }
@@ -411,8 +411,8 @@ fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke_preserve();
-    let rgb = ac.config.background_rgb;
-    cr.set_source_rgb(rgb.0, rgb.1, rgb.2);
+    let rgba = ac.config.background_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.fill();
 }
 
