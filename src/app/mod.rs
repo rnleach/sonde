@@ -8,11 +8,11 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect, ScreenRect};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, OPCoords, XYCoords, XYRect, ScreenRect};
 
 // Module for configuring application
 pub mod config;
-use ::app::config::Config;
+use app::config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;
@@ -32,6 +32,7 @@ pub struct AppContext {
 
     // Rectangle that bounds all the soundings in the list.
     xy_envelope: XYRect,
+    pub max_abs_omega: f64,
 
     // Handle to the GUI
     pub gui: Option<Gui>,
@@ -70,6 +71,7 @@ impl AppContext {
                 lower_left: XYCoords { x: 0.0, y: 0.0 },
                 upper_right: XYCoords { x: 1.0, y: 1.0 },
             },
+            max_abs_omega: 20.0,
             currently_displayed_index: 0,
             gui: None,
 
@@ -165,6 +167,30 @@ impl AppContext {
             }
         }
 
+        // TODO: Set default max_abs_omega in config.
+        self.max_abs_omega = 5.0;
+        for snd in &self.list {
+            for abs_omega in snd.pressure.iter().zip(&snd.omega).filter_map(
+                |p| if let (Some(p),
+                            Some(o)) =
+                    (p.0.as_option(), p.1.as_option())
+                {
+                    if p < config::MINP {
+                        None
+                    } else {
+                        Some(o.abs())
+                    }
+                } else {
+                    None
+                },
+            )
+            {
+                if abs_omega > self.max_abs_omega {
+                    self.max_abs_omega = abs_omega;
+                }
+            }
+        }
+
         if let Some(ref wdgs) = self.gui {
             wdgs.draw_all();
         }
@@ -239,6 +265,27 @@ impl AppContext {
         XYCoords { x, y }
     }
 
+    /// Conversion from omega (o) and pressure (p) to SceenCoords (x,y)
+    pub fn convert_op_to_screen(&self, coords: OPCoords) -> ScreenCoords {
+        use app::config;
+        use std::f64;
+
+        // XYCoords
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
+            (f64::log10(config::MAXP) - f64::log10(config::MINP));
+
+        // ScreenCoords
+        let y = y - self.translate.y;
+        let y = self.zoom_factor * y;
+
+        let ScreenRect { upper_right: ScreenCoords { x, .. }, .. } =
+            self.bounding_box_in_screen_coords();
+        let x = x / 2.0;
+        let x = x + coords.omega / self.max_abs_omega / 2.0;
+
+        ScreenCoords { x, y }
+    }
+
     /// Convert device to screen coords
     pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
         let scale_factor = self.scale_factor();
@@ -284,8 +331,8 @@ impl AppContext {
         let y = coords.y - self.translate.y;
 
         // Apply scaling
-        let x = (self.zoom_factor * x) as f64;
-        let y = (self.zoom_factor * y) as f64;
+        let x = self.zoom_factor * x;
+        let y = self.zoom_factor * y;
         ScreenCoords { x, y }
     }
 

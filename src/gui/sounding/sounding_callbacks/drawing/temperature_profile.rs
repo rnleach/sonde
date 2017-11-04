@@ -34,25 +34,26 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
             TemperatureType::DewPoint => ac.config.dew_point_rgba,
         };
 
-        let profile_data: Vec<_> = pres_data
-            .iter()
-            .zip(temp_data.iter())
-            .filter_map(|val_pair| if let (Some(pressure), Some(temperature)) =
-                (val_pair.0.as_option(), val_pair.1.as_option())
-            {
-                if pressure > config::MINP {
-                    Some(TPCoords {
-                        temperature,
-                        pressure,
-                    })
+        let profile_data = pres_data.iter().zip(temp_data.iter()).filter_map(
+            |val_pair| {
+                if let (Some(pressure), Some(temperature)) =
+                    (val_pair.0.as_option(), val_pair.1.as_option())
+                {
+                    if pressure > config::MINP {
+                        let tp_coords = TPCoords {
+                            temperature,
+                            pressure,
+                        };
+                        Some(ac.convert_tp_to_screen(tp_coords))
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
-            } else {
-                None
-            })
-            .collect();
+            },
+        );
 
-        plot_curve_from_points(cr, &ac, line_width, line_rgba, &profile_data);
+        plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
 }

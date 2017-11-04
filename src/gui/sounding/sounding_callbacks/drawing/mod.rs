@@ -4,13 +4,14 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
 use app::AppContext;
-use coords::{TPCoords, XYCoords};
+use coords::{ScreenCoords, XYCoords};
 
 mod background;
 mod labeling;
 mod sample_readout;
 mod temperature_profile;
 mod wind_profile;
+mod omega_profile;
 
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
     // Get the dimensions of the DrawingArea
@@ -87,6 +88,13 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     }
 }
 
+pub fn draw_omega_profile(cr: &Context, ac: &AppContext) {
+
+    if ac.config.show_omega {
+        omega_profile::draw_omega_profile(cr, ac);
+    }
+}
+
 pub fn draw_labels(cr: &Context, ac: &AppContext) {
     labeling::prepare_to_label(cr, ac);
 
@@ -105,41 +113,38 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 }
 
 // Draw a curve connecting a list of points.
-fn plot_curve_from_points(
+fn plot_curve_from_points<I>(
     cr: &Context,
-    ac: &AppContext,
     line_width_pixels: f64,
     rgba: (f64, f64, f64, f64),
-    points: &[TPCoords],
-) {
-    // Need at least two points to draw a line.
-    if points.len() < 2 {
-        return;
-    }
-
+    points: I,
+) where
+    I: Iterator<Item = ScreenCoords>,
+{
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
 
-    let mut iter = points.iter();
-    let start = ac.convert_tp_to_screen(*iter.by_ref().next().unwrap());
-    cr.move_to(start.x, start.y);
-    for end in iter {
-        let end = ac.convert_tp_to_screen(*end);
-        cr.line_to(end.x, end.y);
-    }
+    let mut points = points;
+    if let Some(start) = points.by_ref().next() {
+        cr.move_to(start.x, start.y);
+        for end in points {
+            cr.line_to(end.x, end.y);
+        }
 
-    cr.stroke();
+        cr.stroke();
+    }
 }
 
 // Draw a dashed line on the graph.
-fn plot_dashed_curve_from_points(
+fn plot_dashed_curve_from_points<I>(
     cr: &Context,
-    ac: &AppContext,
     line_width_pixels: f64,
     rgba: (f64, f64, f64, f64),
-    points: &[TPCoords],
-) {
+    points: I,
+) where
+    I: Iterator<Item = ScreenCoords>,
+{
     cr.set_dash(&[0.02], 0.0);
-    plot_curve_from_points(cr, ac, line_width_pixels, rgba, points);
+    plot_curve_from_points(cr, line_width_pixels, rgba, points);
     cr.set_dash(&[], 0.0);
 }

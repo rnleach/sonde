@@ -61,6 +61,16 @@ pub struct Config {
     pub show_dew_point: bool,
 
     //
+    // Omega profile
+    //
+    /// Show the omega profile
+    pub show_omega: bool,
+    /// Line width in pixels for omega
+    pub omega_line_width: f64,
+    /// Color used for omega line
+    pub omega_rgba: (f64, f64, f64, f64),
+
+    //
     // Labeling
     //
     /// Whether to show labels
@@ -165,6 +175,13 @@ impl Default for Config {
             dew_point_rgba: (0.0, 0.0, 0.0, 1.0),
             dew_point_line_width: 2.0,
             show_dew_point: true,
+
+            //
+            // Omega profile
+            //
+            show_omega: true,
+            omega_line_width: 1.0,
+            omega_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Labeling

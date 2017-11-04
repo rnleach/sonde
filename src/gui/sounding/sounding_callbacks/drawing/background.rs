@@ -27,9 +27,11 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isentrops
     if ac.config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
+            let pnts = pnts.iter().map(
+                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
+            );
             plot_curve_from_points(
                 cr,
-                &ac,
                 ac.config.background_line_width,
                 ac.config.isentrop_rgba,
                 pnts,
@@ -40,9 +42,11 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw theta-e lines
     if ac.config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
+            let pnts = pnts.iter().map(
+                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
+            );
             plot_curve_from_points(
                 cr,
-                &ac,
                 ac.config.background_line_width,
                 ac.config.iso_theta_e_rgba,
                 pnts,
@@ -53,9 +57,11 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw mixing ratio lines
     if ac.config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
+            let pnts = pnts.iter().map(
+                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
+            );
             plot_dashed_curve_from_points(
                 cr,
-                &ac,
                 ac.config.background_line_width,
                 ac.config.iso_mixing_ratio_rgba,
                 pnts,
@@ -66,9 +72,11 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isotherms
     if ac.config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
+            let pnts = pnts.iter().map(
+                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
+            );
             plot_curve_from_points(
                 cr,
-                &ac,
                 ac.config.background_line_width,
                 ac.config.isotherm_rgba,
                 pnts,
@@ -79,9 +87,11 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
+            let pnts = pnts.iter().map(
+                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
+            );
             plot_curve_from_points(
                 cr,
-                &ac,
                 ac.config.background_line_width,
                 ac.config.isobar_rgba,
                 pnts,
