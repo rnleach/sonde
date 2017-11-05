@@ -17,7 +17,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
 
-    // First set active readout
+    // First set active readout and omega-rh pane
     let sample_frame = gtk::Frame::new(Some("Sampling"));
     let sample_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     sample_frame.add(&sample_box);
@@ -30,6 +30,38 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
         show_active_readout,
         active_readout_line_rgba
     );
+
+    // Show hide rh-omega
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    let rh_omega = CheckButton::new();
+
+    // Inner scope to borrow acp
+    {
+        let ac = acp.borrow();
+        rh_omega.set_active(ac.config.show_omega);
+    }
+
+    // Create rh_omega callback
+    let acp1 = acp.clone();
+    rh_omega.connect_toggled(move |button| {
+        let mut ac = acp1.borrow_mut();
+
+        ac.config.show_omega = button.get_active();
+
+        if let Some(ref gui) = ac.gui {
+        if ac.config.show_omega {
+            gui.get_omega_area().show();
+        } else {
+            gui.get_omega_area().hide();
+        }
+        }
+    });
+
+    // Layout
+    hbox.pack_start(&rh_omega, false, true, PADDING);
+    hbox.pack_start(&gtk::Label::new("RH-Omega"), false, true, PADDING);
+
+    sample_box.pack_start(&hbox, false, true, PADDING);
 
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));

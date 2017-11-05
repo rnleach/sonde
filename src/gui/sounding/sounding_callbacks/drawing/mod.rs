@@ -11,7 +11,6 @@ mod labeling;
 mod sample_readout;
 mod temperature_profile;
 mod wind_profile;
-mod omega_profile;
 
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
     // Get the dimensions of the DrawingArea
@@ -85,13 +84,6 @@ pub fn draw_temperature_profiles(cr: &Context, ac: &AppContext) {
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     if ac.config.show_wind_profile {
         wind_profile::draw_wind_profile(cr, ac);
-    }
-}
-
-pub fn draw_omega_profile(cr: &Context, ac: &AppContext) {
-
-    if ac.config.show_omega {
-        omega_profile::draw_omega_profile(cr, ac);
     }
 }
 

@@ -84,10 +84,13 @@ fn layout_frames(gui: &Gui) -> gtk::Grid {
 
     const CONTROL_HEIGHT: i32 = TOTAL_HEIGHT - INDEX_HEIGHT - HODO_HEIGHT;
 
+    let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    h_box.pack_start(&gui.get_omega_area(), false, true, 0);
+    h_box.pack_start(&gui.get_sounding_area(), true, true, 0);
 
     let grid = gtk::Grid::new();
     grid.attach(
-        &add_border_frame(&gui.get_sounding_area()),
+        &add_border_frame(&h_box),
         0,
         0,
         SKEW_T_WIDTH,

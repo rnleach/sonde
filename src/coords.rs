@@ -73,18 +73,6 @@ pub struct TPCoords {
 
 impl TPCoords {}
 
-/// Omega-Pressure coordinates.
-/// Origin lower left. (Omega, Pressure)
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct OPCoords {
-    /// Omega in Pa/s
-    pub omega: f64,
-    /// Pressure in hPa
-    pub pressure: f64,
-}
-
-impl OPCoords {}
-
 /// XY coordinates of the skew-t graph, range 0.0 to 1.0. This coordinate system is dependend on
 /// settings for the maximum/minimum plottable pressure and temperatures in the config module.
 /// Origin lower left, (x,y)

@@ -8,7 +8,7 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, ScreenCoords, TPCoords, OPCoords, XYCoords, XYRect, ScreenRect};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords, XYRect, ScreenRect};
 
 // Module for configuring application
 pub mod config;
@@ -265,27 +265,6 @@ impl AppContext {
         XYCoords { x, y }
     }
 
-    /// Conversion from omega (o) and pressure (p) to SceenCoords (x,y)
-    pub fn convert_op_to_screen(&self, coords: OPCoords) -> ScreenCoords {
-        use app::config;
-        use std::f64;
-
-        // XYCoords
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
-            (f64::log10(config::MAXP) - f64::log10(config::MINP));
-
-        // ScreenCoords
-        let y = y - self.translate.y;
-        let y = self.zoom_factor * y;
-
-        let ScreenRect { upper_right: ScreenCoords { x, .. }, .. } =
-            self.bounding_box_in_screen_coords();
-        let x = x / 2.0;
-        let x = x + coords.omega / self.max_abs_omega / 2.0;
-
-        ScreenCoords { x, y }
-    }
-
     /// Convert device to screen coords
     pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
         let scale_factor = self.scale_factor();
@@ -399,8 +378,8 @@ impl AppContext {
         self.bound_view();
     }
 
-    /// Center the skew-t in the view if zoomed out, and if zoomed in don't let it view beyond the
-    /// edges of the skew-t.
+    /// Right justify the skew-t in the view if zoomed out, and if zoomed in don't let it view 
+    /// beyond the edges of the skew-t.
     pub fn bound_view(&mut self) {
 
         let bounds = DeviceCoords {
@@ -421,7 +400,7 @@ impl AppContext {
                 self.translate.x = max_x;
             }
         } else {
-            self.translate.x = -(width - 1.0) / 2.0;
+            self.translate.x = 0.0;
         }
         if height < 1.0 {
             if self.translate.y < 0.0 {

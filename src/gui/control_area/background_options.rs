@@ -97,6 +97,7 @@ fn build_fills_frame(acp: &AppContextPointer) -> gtk::Frame {
         show_background_bands,
         background_band_rgba
     );
+    
     add_background_color_button(fills_box, &acp);
 
     fills_frame

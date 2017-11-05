@@ -19,6 +19,7 @@ use app::AppContextPointer;
 #[derive(Clone)]
 pub struct Gui {
     sounding_area: DrawingArea,
+    omega_area: DrawingArea,
     hodograph_area: DrawingArea,
     index_area: DrawingArea,
     control_area: Notebook,
@@ -30,6 +31,7 @@ impl Gui {
     pub fn new(acp: AppContextPointer) -> Gui {
         let gui = Gui {
             sounding_area: DrawingArea::new(),
+            omega_area: DrawingArea::new(),
             hodograph_area: DrawingArea::new(),
             index_area: DrawingArea::new(),
             control_area: Notebook::new(),
@@ -38,6 +40,7 @@ impl Gui {
         };
 
         sounding::set_up_sounding_area(&gui.get_sounding_area(), acp.clone());
+        sounding::set_up_omega_area(&gui.get_omega_area(), acp.clone());
         hodograph::set_up_hodograph_area(&gui.get_hodograph_area());
         control_area::set_up_control_area(&gui.get_control_area(), acp.clone());
         index_area::set_up_index_area(&gui.get_index_area());
@@ -49,6 +52,10 @@ impl Gui {
 
     pub fn get_sounding_area(&self) -> DrawingArea {
         self.sounding_area.clone()
+    }
+
+    pub fn get_omega_area(&self) -> DrawingArea {
+        self.omega_area.clone()
     }
 
     pub fn get_hodograph_area(&self) -> DrawingArea {
