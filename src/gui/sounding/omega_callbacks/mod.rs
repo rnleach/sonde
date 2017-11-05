@@ -5,11 +5,7 @@ use gtk::{DrawingArea, Inhibit, WidgetExt};
 use app::{AppContext, AppContextPointer};
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_omega(
-    omega_area: &DrawingArea,
-    cr: &Context,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn draw_omega(omega_area: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
     let mut ac = ac.borrow_mut();
 
@@ -54,11 +50,11 @@ pub fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppConte
     // });
 
     // // Update the translation to center or bound the graph
-    // ac.bound_view();
+    // ac.skew_t_bound_view();
 
     // // Clip the drawing area
-    // let upper_right_xy = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-    // let lower_left_xy = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    // let upper_right_xy = ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+    // let lower_left_xy = ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
     // cr.rectangle(
     //     lower_left_xy.x,
     //     lower_left_xy.y,
@@ -69,5 +65,5 @@ pub fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppConte
 
     // // Calculate the various padding values
     // ac.label_padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
-    // ac.edge_padding = cr.device_to_user_distance(ac.config.edge_padding, 0.0).0;
+    // ac.skew_t.edge_padding = cr.device_to_user_distance(ac.config.edge_padding, 0.0).0;
 }

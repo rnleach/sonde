@@ -6,7 +6,7 @@ use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection,
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use app;
-use coords::DeviceCoords;
+use coords::{DeviceCoords, XYCoords};
 
 mod drawing;
 
@@ -31,7 +31,7 @@ pub fn draw_sounding(
 
 /// Handles zooming from the mouse whell. Connected to the scroll-event signal.
 pub fn scroll_event(
-    sounding_area: &DrawingArea,
+    _sounding_area: &DrawingArea,
     event: &EventScroll,
     ac: &app::AppContextPointer,
 ) -> Inhibit {
@@ -42,31 +42,39 @@ pub fn scroll_event(
 
     let mut ac = ac.borrow_mut();
 
-    let pos = ac.convert_device_to_xy(event.get_position().into());
+    let pos = ac.skew_t.convert_device_to_xy(event.get_position().into());
     let dir = event.get_direction();
 
-    let old_zoom = ac.zoom_factor;
+    let old_zoom = ac.get_zoom_factor();
+    let mut new_zoom = old_zoom;
 
     match dir {
         ScrollDirection::Up => {
-            ac.zoom_factor *= DELTA_SCALE;
+            new_zoom *= DELTA_SCALE;
         }
         ScrollDirection::Down => {
-            ac.zoom_factor /= DELTA_SCALE;
+            new_zoom /= DELTA_SCALE;
         }
         _ => {}
     }
 
-    if ac.zoom_factor < MIN_ZOOM {
-        ac.zoom_factor = MIN_ZOOM;
-    } else if ac.zoom_factor > MAX_ZOOM {
-        ac.zoom_factor = MAX_ZOOM;
+    if new_zoom < MIN_ZOOM {
+        new_zoom = MIN_ZOOM;
+    } else if new_zoom > MAX_ZOOM {
+        new_zoom = MAX_ZOOM;
     }
+    ac.set_zoom_factor(new_zoom);
 
-    ac.translate.x = pos.x - old_zoom / ac.zoom_factor * (pos.x - ac.translate.x);
-    ac.translate.y = pos.y - old_zoom / ac.zoom_factor * (pos.y - ac.translate.y);
+    let translate = ac.get_skew_t_translation();
+    let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
+    let translate_y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
+    let translate = XYCoords {
+        x: translate_x,
+        y: translate_y,
+    };
+    ac.set_skew_t_translation(translate);
 
-    sounding_area.queue_draw();
+    ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(true)
 }
@@ -81,8 +89,8 @@ pub fn button_press_event(
     // Left mouse button
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.last_cursor_position_skew_t = Some(event.get_position().into());
-        ac.left_button_pressed = true;
+        ac.skew_t.last_cursor_position_skew_t = Some(event.get_position().into());
+        ac.skew_t.left_button_pressed = true;
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -97,8 +105,8 @@ pub fn button_release_event(
 ) -> Inhibit {
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.last_cursor_position_skew_t = None;
-        ac.left_button_pressed = false;
+        ac.skew_t.last_cursor_position_skew_t = None;
+        ac.skew_t.left_button_pressed = false;
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -107,14 +115,14 @@ pub fn button_release_event(
 
 /// Handles leave notify
 pub fn leave_event(
-    sounding_area: &DrawingArea,
+    _sounding_area: &DrawingArea,
     _event: &EventCrossing,
     ac: &app::AppContextPointer,
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
-    ac.last_cursor_position_skew_t = None;
-    sounding_area.queue_draw();
+    ac.skew_t.last_cursor_position_skew_t = None;
+    ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(false)
 }
@@ -129,25 +137,27 @@ pub fn mouse_motion_event(
     sounding_area.grab_focus();
 
     let mut ac = ac.borrow_mut();
-    if ac.left_button_pressed {
-        if let Some(last_position) = ac.last_cursor_position_skew_t {
-            let old_position = ac.convert_device_to_xy(last_position);
+    if ac.skew_t.left_button_pressed {
+        if let Some(last_position) = ac.skew_t.last_cursor_position_skew_t {
+            let old_position = ac.skew_t.convert_device_to_xy(last_position);
             let new_position = DeviceCoords::from(event.get_position());
-            ac.last_cursor_position_skew_t = Some(new_position);
+            ac.skew_t.last_cursor_position_skew_t = Some(new_position);
 
-            let new_position = ac.convert_device_to_xy(new_position);
+            let new_position = ac.skew_t.convert_device_to_xy(new_position);
             let delta = (
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,
             );
-            ac.translate.x -= delta.0;
-            ac.translate.y -= delta.1;
+            let mut translate = ac.get_skew_t_translation();
+            translate.x -= delta.0;
+            translate.y -= delta.1;
+            ac.set_skew_t_translation(translate);
 
-            sounding_area.queue_draw();
+            ac.queue_draw_skew_t_rh_omega();
         }
     } else if ac.plottable() {
-        ac.last_cursor_position_skew_t = Some(event.get_position().into());
-        sounding_area.queue_draw();
+        ac.skew_t.last_cursor_position_skew_t = Some(event.get_position().into());
+        ac.queue_draw_skew_t_rh_omega();
     }
     Inhibit(false)
 }

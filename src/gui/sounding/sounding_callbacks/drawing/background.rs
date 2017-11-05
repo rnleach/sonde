@@ -27,9 +27,9 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isentrops
     if ac.config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
-            let pnts = pnts.iter().map(
-                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
-            );
+            let pnts = pnts.iter().map(|tp_coords| {
+                ac.skew_t.convert_tp_to_screen(*tp_coords)
+            });
             plot_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -42,9 +42,9 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw theta-e lines
     if ac.config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
-            let pnts = pnts.iter().map(
-                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
-            );
+            let pnts = pnts.iter().map(|tp_coords| {
+                ac.skew_t.convert_tp_to_screen(*tp_coords)
+            });
             plot_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -57,9 +57,9 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw mixing ratio lines
     if ac.config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
-            let pnts = pnts.iter().map(
-                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
-            );
+            let pnts = pnts.iter().map(|tp_coords| {
+                ac.skew_t.convert_tp_to_screen(*tp_coords)
+            });
             plot_dashed_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -72,9 +72,9 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isotherms
     if ac.config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
-            let pnts = pnts.iter().map(
-                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
-            );
+            let pnts = pnts.iter().map(|tp_coords| {
+                ac.skew_t.convert_tp_to_screen(*tp_coords)
+            });
             plot_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -87,9 +87,9 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
-            let pnts = pnts.iter().map(
-                |tp_coords| ac.convert_tp_to_screen(*tp_coords),
-            );
+            let pnts = pnts.iter().map(|tp_coords| {
+                ac.skew_t.convert_tp_to_screen(*tp_coords)
+            });
             plot_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -145,7 +145,7 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext
 
     // Convert points to screen coords
     for coord in coords.iter_mut() {
-        let screen_coords = ac.convert_tp_to_screen(TPCoords {
+        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
             temperature: coord.0,
             pressure: coord.1,
         });

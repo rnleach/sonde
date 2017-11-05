@@ -44,7 +44,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
                             temperature,
                             pressure,
                         };
-                        Some(ac.convert_tp_to_screen(tp_coords))
+                        Some(ac.skew_t.convert_tp_to_screen(tp_coords))
                     } else {
                         None
                     }

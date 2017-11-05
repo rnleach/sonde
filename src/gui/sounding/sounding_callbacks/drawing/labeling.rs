@@ -20,7 +20,7 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
     };
 
     let font_size = size_in_pnts / 72.0 * dpi;
-    let ScreenCoords { x: font_size, y: _ } = ac.convert_device_to_screen(DeviceCoords {
+    let ScreenCoords { x: font_size, y: _ } = ac.skew_t.convert_device_to_screen(DeviceCoords {
         col: font_size,
         row: 0.0,
     });
@@ -58,7 +58,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
             let extents = cr.text_extents(&label);
 
-            let ScreenCoords { x: _, y: screen_y } = ac.convert_tp_to_screen(TPCoords {
+            let ScreenCoords { x: _, y: screen_y } = ac.skew_t.convert_tp_to_screen(TPCoords {
                 temperature: 0.0,
                 pressure: p,
             });
@@ -89,7 +89,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
         let TPCoords {
             temperature: _,
             pressure: screen_max_p,
-        } = ac.convert_screen_to_tp(lower_left);
+        } = ac.skew_t.convert_screen_to_tp(lower_left);
         for &t in config::ISOTHERMS.into_iter() {
 
             let label = format!("{}", t);
@@ -99,7 +99,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.convert_tp_to_screen(TPCoords {
+            } = ac.skew_t.convert_tp_to_screen(TPCoords {
                 temperature: t,
                 pressure: screen_max_p,
             });
@@ -130,7 +130,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
 fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>) {
 
-    let padding = ac.label_padding;
+    let padding = ac.skew_t.label_padding;
 
     for (label, rect) in labels {
         let ScreenRect {
@@ -161,7 +161,7 @@ fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
     let ScreenRect {
         lower_left,
         upper_right,
-    } = ac.bounding_box_in_screen_coords();
+    } = ac.skew_t.bounding_box_in_screen_coords();
     let ScreenCoords {
         x: mut screen_x_min,
         y: mut screen_y_min,
@@ -172,8 +172,10 @@ fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
     } = upper_right;
 
     // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
-    let ScreenCoords { x: xmin, y: ymin } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    let ScreenCoords { x: xmax, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+    let ScreenCoords { x: xmin, y: ymin } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let ScreenCoords { x: xmax, y: ymax } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
     if xmin > screen_x_min {
         screen_x_min = xmin;
@@ -189,7 +191,7 @@ fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
     }
 
     // Add some padding to keep away from the window edge
-    let padding = ac.edge_padding;
+    let padding = ac.skew_t.edge_padding;
     screen_x_max -= padding;
     screen_y_max -= padding;
     screen_x_min += padding;
@@ -213,7 +215,7 @@ fn check_overlap_then_add(
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
-    let padding = ac.label_padding;
+    let padding = ac.skew_t.label_padding;
     let padded_rect = label_pair.1.add_padding(padding);
 
     // Make sure it is on screen - but don't add padding to this check cause the screen already
@@ -239,12 +241,13 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         return;
     }
 
-    let mut upper_left = ac.convert_device_to_screen(DeviceCoords::origin());
-    upper_left.x += ac.edge_padding;
-    upper_left.y -= ac.edge_padding;
+    let mut upper_left = ac.skew_t.convert_device_to_screen(DeviceCoords::origin());
+    upper_left.x += ac.skew_t.edge_padding;
+    upper_left.y -= ac.skew_t.edge_padding;
 
     // Make sure we stay on the x-y coords domain
-    let ScreenCoords { x: xmin, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+    let ScreenCoords { x: xmin, y: ymax } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
     let edge_offset = upper_left.x; // This distance is used to push off the edge by 5 pixels
     if ymax - edge_offset < upper_left.y {
         upper_left.y = ymax - edge_offset;
@@ -386,7 +389,7 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
-    let padding = ac.edge_padding;
+    let padding = ac.skew_t.edge_padding;
     box_height += 2.0 * padding;
     box_width += 2.0 * padding;
 
@@ -427,7 +430,7 @@ fn draw_legend_text(
     let rgb = ac.config.isobar_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
-    let padding = ac.edge_padding;
+    let padding = ac.skew_t.edge_padding;
 
     // Remember how many lines we have drawn so far for setting position of the next line.
     let mut num_lines_drawn = 0;

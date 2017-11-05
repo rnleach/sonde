@@ -55,7 +55,7 @@ fn gather_wind_data(
 fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBarbData> {
     // Remove overlapping barbs, or barbs not on the screen
     let mut keepers: Vec<WindBarbData> = vec![];
-    let screen_box = ac.bounding_box_in_screen_coords();
+    let screen_box = ac.skew_t.bounding_box_in_screen_coords();
     let mut last_added_bbox: ScreenRect = ScreenRect {
         lower_left: ScreenCoords {
             x: ::std::f64::MAX,
@@ -98,16 +98,18 @@ impl<'a, 'b> WindBarbConfig<'a> {
             ac.config.wind_barb_dot_radius,
             -ac.config.wind_barb_pennant_width,
         );
-        let padding = ac.edge_padding;
+        let padding = ac.skew_t.edge_padding;
 
-        let screen_bounds = ac.bounding_box_in_screen_coords();
-        let XYCoords { x: mut xmax, y: _ } = ac.convert_screen_to_xy(screen_bounds.upper_right);
+        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
+        let XYCoords { x: mut xmax, y: _ } =
+            ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
         if xmax > 1.0 {
             xmax = 1.0;
         }
 
-        let ScreenCoords { x: xmax, y: _ } = ac.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
+        let ScreenCoords { x: xmax, y: _ } =
+            ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
 
         let xcoord = xmax - padding - shaft_length;
 
@@ -316,7 +318,7 @@ impl WindBarbData {
 
 fn get_wind_barb_center(pressure: f64, xcenter: f64, ac: &AppContext) -> ScreenCoords {
 
-    let ScreenCoords { x: _, y: yc } = ac.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { x: _, y: yc } = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure,
     });

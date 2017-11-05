@@ -8,7 +8,7 @@ use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
-    let position = if let Some(position) = ac.last_cursor_position_skew_t {
+    let position = if let Some(position) = ac.skew_t.last_cursor_position_skew_t {
         position
     } else {
         return;
@@ -17,7 +17,7 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
     let TPCoords {
         temperature: _,
         pressure: sample_p,
-    } = ac.convert_device_to_tp(position);
+    } = ac.skew_t.convert_device_to_tp(position);
 
     let snd = if let Some(snd) = ac.get_sounding_for_display() {
         snd
@@ -123,11 +123,11 @@ fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
         cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
             .0,
     );
-    let start = ac.convert_tp_to_screen(TPCoords {
+    let start = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: -200.0,
         pressure: sample_p,
     });
-    let end = ac.convert_tp_to_screen(TPCoords {
+    let end = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 60.0,
         pressure: sample_p,
     });
@@ -160,16 +160,19 @@ fn calculate_screen_rect(
     width += 2.0 * padding;
     height += 2.0 * padding;
 
-    let ScreenCoords { x: mut left, y: _ } =
-        ac.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
-    let ScreenCoords { x: _, y: top } = ac.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { x: mut left, y: _ } = ac.skew_t.convert_device_to_screen(
+        DeviceCoords { col: 5.0, row: 5.0 },
+    );
+    let ScreenCoords { x: _, y: top } = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure: sample_p,
     });
     let mut bottom = top - height;
 
-    let ScreenCoords { x: xmin, y: ymin } = ac.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    let ScreenCoords { x: xmax, y: ymax } = ac.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+    let ScreenCoords { x: xmin, y: ymin } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let ScreenCoords { x: xmax, y: ymax } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
     // Prevent clipping
     if left < xmin {
@@ -189,7 +192,7 @@ fn calculate_screen_rect(
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },
         upper_right: ScreenCoords { x: xmax, y: ymax },
-    } = ac.bounding_box_in_screen_coords();
+    } = ac.skew_t.bounding_box_in_screen_coords();
     if left < xmin {
         left = xmin;
     }

@@ -89,13 +89,7 @@ fn layout_frames(gui: &Gui) -> gtk::Grid {
     h_box.pack_start(&gui.get_sounding_area(), true, true, 0);
 
     let grid = gtk::Grid::new();
-    grid.attach(
-        &add_border_frame(&h_box),
-        0,
-        0,
-        SKEW_T_WIDTH,
-        TOTAL_HEIGHT,
-    );
+    grid.attach(&add_border_frame(&h_box), 0, 0, SKEW_T_WIDTH, TOTAL_HEIGHT);
     grid.attach(
         &add_border_frame(&gui.get_hodograph_area()),
         SKEW_T_WIDTH,

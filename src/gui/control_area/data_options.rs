@@ -49,11 +49,11 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
         ac.config.show_omega = button.get_active();
 
         if let Some(ref gui) = ac.gui {
-        if ac.config.show_omega {
-            gui.get_omega_area().show();
-        } else {
-            gui.get_omega_area().hide();
-        }
+            if ac.config.show_omega {
+                gui.get_omega_area().show();
+            } else {
+                gui.get_omega_area().hide();
+            }
         }
     });
 

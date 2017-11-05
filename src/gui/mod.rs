@@ -76,6 +76,7 @@ impl Gui {
 
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
+        self.omega_area.queue_draw();
         self.hodograph_area.queue_draw();
         self.index_area.queue_draw();
         self.control_area.queue_draw();
