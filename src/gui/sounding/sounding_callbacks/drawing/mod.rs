@@ -1,7 +1,6 @@
 //! Helper functions for the draw callback.
 
 use cairo::{Context, Matrix};
-use gtk::{DrawingArea, WidgetExt};
 
 use app::AppContext;
 use coords::XYCoords;
@@ -12,7 +11,7 @@ mod sample_readout;
 mod temperature_profile;
 mod wind_profile;
 
-pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
+pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     // Get the dimensions of the DrawingArea
     ac.update_skew_t_allocation();
     let scale_factor = ac.skew_t.scale_factor();
@@ -101,7 +100,7 @@ pub fn draw_labels(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
+pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
     if ac.config.show_active_readout {
         sample_readout::draw_active_sample(cr, ac);
     }

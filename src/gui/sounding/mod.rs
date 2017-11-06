@@ -19,7 +19,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppCo
     sounding_area.set_vexpand(true);
 
     let ac = app_context.clone();
-    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &ac));
+    sounding_area.connect_draw(move |_da, cr| sounding_callbacks::draw_sounding(cr, &ac));
 
     let ac = app_context.clone();
     sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));

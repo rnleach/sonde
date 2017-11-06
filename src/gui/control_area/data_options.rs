@@ -18,7 +18,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
 
     // First set active readout and omega-rh pane
-    let sample_frame = gtk::Frame::new(Some("Sampling"));
+    let sample_frame = gtk::Frame::new(Some("View"));
     let sample_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     sample_frame.add(&sample_box);
 
@@ -38,7 +38,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     // Inner scope to borrow acp
     {
         let ac = acp.borrow();
-        rh_omega.set_active(ac.config.show_omega);
+        rh_omega.set_active(ac.config.show_rh_omega_frame);
     }
 
     // Create rh_omega callback
@@ -46,7 +46,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     rh_omega.connect_toggled(move |button| {
         let mut ac = acp1.borrow_mut();
 
-        ac.config.show_omega = button.get_active();
+        ac.config.show_rh_omega_frame = button.get_active();
         ac.show_hide_rh_omega();
     });
 
@@ -71,6 +71,13 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
         temperature_rgba
     );
     build_config_color_and_check!(data_box, "Wind", acp, show_wind_profile, wind_rgba);
+    build_config_color_and_check!(
+        data_box,
+        "Vertical Velocity (\u{03C9})",
+        acp,
+        show_omega_profile,
+        omega_rgba
+    );
 
     //
     // Layout boxes in the frame

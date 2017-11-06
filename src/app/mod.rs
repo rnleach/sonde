@@ -31,6 +31,7 @@ pub struct AppContext {
 
     list: Vec<Sounding>,
     currently_displayed_index: usize,
+    pub last_sample_pressure: Option<f64>,
 
     // Handle to the GUI
     gui: Option<Gui>,
@@ -53,6 +54,7 @@ impl AppContext {
             source_description: None,
             list: vec![],
             currently_displayed_index: 0,
+            last_sample_pressure: None,
             gui: None,
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
@@ -137,8 +139,7 @@ impl AppContext {
             }
         }
 
-        // TODO: Set default max_abs_omega in config.
-        self.rh_omega.max_abs_omega = 1.0;
+        self.rh_omega.max_abs_omega = config::MAX_ABS_W;
         for snd in &self.list {
             for abs_omega in snd.pressure.iter().zip(&snd.omega).filter_map(
                 |p| if let (Some(p),
@@ -160,6 +161,9 @@ impl AppContext {
                 }
             }
         }
+
+        const EXTRA_SPACE_FACTOR: f64 = 1.2;
+        self.rh_omega.max_abs_omega *= EXTRA_SPACE_FACTOR;
 
         self.fit_to_data();
 
@@ -342,15 +346,9 @@ impl AppContext {
         }
     }
 
-    pub fn queue_draw_rh_omega(&self) {
-        if let Some(ref gui) = self.gui {
-            gui.get_omega_area().queue_draw();
-        }
-    }
-
     pub fn show_hide_rh_omega(&self) {
         if let Some(ref gui) = self.gui {
-            if self.config.show_omega {
+            if self.config.show_rh_omega_frame {
                 gui.get_omega_area().show();
             } else {
                 gui.get_omega_area().hide();
@@ -540,7 +538,7 @@ pub struct RHOmegaContext {
 impl RHOmegaContext {
     pub fn new() -> Self {
         RHOmegaContext {
-            max_abs_omega: 1.0,
+            max_abs_omega: config::MAX_ABS_W,
             translate_y: 0.0,
             zoom_factor: 1.0,
             skew_t_scale_factor: 1.0,
@@ -572,23 +570,6 @@ impl RHOmegaContext {
         XYCoords { x, y }
     }
 
-    /// Conversion from  (x,y) coords to temperature and pressure.
-    pub fn convert_xy_to_wp(&self, coords: XYCoords) -> WPCoords {
-        use app::config;
-        use std::f64;
-
-        let x = coords.x;
-        let y = coords.y;
-
-        let w = x * (2.0 * self.max_abs_omega) - self.max_abs_omega;
-        let p = 10.0f64.powf(
-            f64::log10(config::MAXP) -
-                y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
-        );
-
-        WPCoords { w, p }
-    }
-
     /// Conversion from (x,y) coords to screen coords
     pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
@@ -602,27 +583,12 @@ impl RHOmegaContext {
         ScreenCoords { x, y }
     }
 
-    /// Conversion from (x,y) coords to screen coords
-    pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
-
-        let x = coords.x / self.scale_factor() * self.skew_t_scale_factor;
-        let y = coords.y / self.zoom_factor + self.translate_y;
-        XYCoords { x, y }
-    }
 
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
         let xy = self.convert_wp_to_xy(coords);
 
-        let screen = self.convert_xy_to_screen(xy);
-
         self.convert_xy_to_screen(xy)
-    }
-
-    /// Conversion from screen coordinates to omega, pressure.
-    pub fn convert_screen_to_wp(&self, coords: ScreenCoords) -> WPCoords {
-        let xy = self.convert_screen_to_xy(coords);
-        self.convert_xy_to_wp(xy)
     }
 
     /// Get maximum absolute omega

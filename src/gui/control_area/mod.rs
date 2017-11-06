@@ -38,7 +38,7 @@ macro_rules! build_config_color_and_check {
         });
 
         // Layout
-        hbox.pack_start(&color, false, true, PADDING);
+        hbox.pack_end(&color, false, true, PADDING);
         hbox.pack_start(&check, false, true, PADDING);
         $v_box.pack_start(&hbox, false, true, PADDING);
     };

@@ -132,7 +132,7 @@ fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
     });
 
     // Layout
-    hbox.pack_start(&color, false, true, PADDING);
+    hbox.pack_end(&color, false, true, PADDING);
     hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
 
     target_box.pack_start(&hbox, false, true, PADDING);

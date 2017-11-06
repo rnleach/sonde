@@ -3,8 +3,8 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use app::{AppContext, AppContextPointer, config};
-use coords::{XYCoords, ScreenCoords, WPCoords, TPCoords};
-use gui::sounding::{plot_curve_from_points, plot_dashed_curve_from_points};
+use coords::{XYCoords, WPCoords, TPCoords};
+use gui::sounding::plot_curve_from_points;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_omega(omega_area: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
@@ -13,6 +13,7 @@ pub fn draw_omega(omega_area: &DrawingArea, cr: &Context, ac: &AppContextPointer
 
     prepare_to_draw(omega_area, cr, &mut ac);
     draw_background(cr, &mut ac);
+    draw_labels(cr, &ac);
     draw_rh_profile(cr, &ac);
     draw_omega_profile(cr, &ac);
     draw_active_readout(cr, &ac);
@@ -105,28 +106,58 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
         }
     }
 
-    // Draw mid-line
-    let mid_line = [
-        WPCoords {
-            w: 0.0,
-            p: config::MINP,
-        },
-        WPCoords {
-            w: 0.0,
-            p: config::MAXP,
-        },
+    // Draw w-lines
+    // FIXME: move to config
+    let omega_lines = [
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0,
+        -1.5,
+        -1.0,
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0,
     ];
-    plot_curve_from_points(
-        cr,
-        ac.config.background_line_width,
-        ac.config.isobar_rgba,
-        mid_line.iter().map(|wp_coords| {
-            ac.rh_omega.convert_wp_to_screen(*wp_coords)
-        }),
-    );
+    for omega in omega_lines.iter() {
+        let v_line = [
+            WPCoords {
+                w: *omega,
+                p: config::MINP,
+            },
+            WPCoords {
+                w: *omega,
+                p: config::MAXP,
+            },
+        ];
+        plot_curve_from_points(
+            cr,
+            ac.config.background_line_width,
+            ac.config.isobar_rgba,
+            v_line.iter().map(|wp_coords| {
+                ac.rh_omega.convert_wp_to_screen(*wp_coords)
+            }),
+        );
+    }
+}
+
+fn draw_labels(cr: &Context, ac: &AppContext) {
+    // TODO: 
 }
 
 fn draw_omega_profile(cr: &Context, ac: &AppContext) {
+
+    if !ac.config.show_omega_profile {
+        return;
+    }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
 
@@ -159,5 +190,24 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
 }
 
 fn draw_active_readout(cr: &Context, ac: &AppContext) {
-    // TODO:
+    if let Some(sample_p) = ac.last_sample_pressure {
+
+        let rgba = ac.config.active_readout_line_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(
+            cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
+                .0,
+        );
+        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: -1000.0,
+            p: sample_p,
+        });
+        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: 1000.0,
+            p: sample_p,
+        });
+        cr.move_to(start.x, start.y);
+        cr.line_to(end.x, end.y);
+        cr.stroke();
+    }
 }

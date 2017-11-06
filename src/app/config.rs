@@ -63,8 +63,10 @@ pub struct Config {
     //
     // Omega profile
     //
+    /// Show the rh omega frame
+    pub show_rh_omega_frame: bool,
     /// Show the omega profile
-    pub show_omega: bool,
+    pub show_omega_profile: bool,
     /// Line width in pixels for omega
     pub omega_line_width: f64,
     /// Color used for omega line
@@ -179,8 +181,9 @@ impl Default for Config {
             //
             // Omega profile
             //
-            show_omega: true,
-            omega_line_width: 1.0,
+            show_rh_omega_frame: true,
+            show_omega_profile: true,
+            omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
@@ -249,13 +252,16 @@ pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
 
+/// Initial maximum absolute vertical velocity in Pa/s
+pub const MAX_ABS_W: f64 = 1.0;
+
 //
 // Limits on the top pressure level for some background lines.
 //
 // NOTE: Leave these as compile time constants unless background isopleths are dynamically
 //       calculated also.
 /// Highest elevation pressure level to draw isentrops up to
-pub const ISENTROPS_TOP_P: f64 = 200.0;
+pub const ISENTROPS_TOP_P: f64 = MINP; //200.0;
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 30;
 /// Hightest elevation pressure level to draw iso mixing ratio up to

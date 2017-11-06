@@ -11,20 +11,16 @@ use coords::{DeviceCoords, XYCoords};
 mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_sounding(
-    sounding_area: &DrawingArea,
-    cr: &Context,
-    ac: &app::AppContextPointer,
-) -> Inhibit {
+pub fn draw_sounding(cr: &Context, ac: &app::AppContextPointer) -> Inhibit {
 
     let mut ac = ac.borrow_mut();
 
-    drawing::prepare_to_draw(sounding_area, cr, &mut ac);
+    drawing::prepare_to_draw(cr, &mut ac);
     drawing::draw_background(&cr, &ac);
     drawing::draw_temperature_profiles(&cr, &ac);
     drawing::draw_wind_profile(&cr, &ac);
     drawing::draw_labels(&cr, &ac);
-    drawing::draw_active_sample(&cr, &ac);
+    drawing::draw_active_sample(&cr, &mut ac);
 
     Inhibit(false)
 }
@@ -122,6 +118,7 @@ pub fn leave_event(
     let mut ac = ac.borrow_mut();
 
     ac.skew_t.last_cursor_position_skew_t = None;
+    ac.last_sample_pressure = None;
     ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(false)
@@ -156,7 +153,12 @@ pub fn mouse_motion_event(
             ac.queue_draw_skew_t_rh_omega();
         }
     } else if ac.plottable() {
-        ac.skew_t.last_cursor_position_skew_t = Some(event.get_position().into());
+        let position: DeviceCoords = event.get_position().into();
+
+        ac.skew_t.last_cursor_position_skew_t = Some(position);
+        let tp_position = ac.skew_t.convert_device_to_tp(position);
+        ac.last_sample_pressure = Some(tp_position.pressure);
+
         ac.queue_draw_skew_t_rh_omega();
     }
     Inhibit(false)

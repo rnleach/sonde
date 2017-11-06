@@ -6,38 +6,36 @@ use cairo::Context;
 
 use sounding_base::{DataRow, Sounding};
 
-pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
+pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
 
-    let position = if let Some(position) = ac.skew_t.last_cursor_position_skew_t {
-        position
-    } else {
-        return;
-    };
-
-    let TPCoords {
-        temperature: _,
-        pressure: sample_p,
-    } = ac.skew_t.convert_device_to_tp(position);
-
-    let snd = if let Some(snd) = ac.get_sounding_for_display() {
-        snd
-    } else {
-        return;
-    };
-    if snd.pressure.len() < 1 {
-        return;
-    }
-
-    // let vals = snd.fetch_nearest_pnt(sample_p);
-    let vals = snd.linear_interpolate(sample_p);
-
-    let sample_p = if vals.pressure.as_option().is_some() {
-        vals.pressure.unwrap()
-    } else {
+    let mut sample_p = if let Some(sample_p) = ac.last_sample_pressure {
         sample_p
+    } else {
+        return;
     };
 
-    let lines = create_text(&vals, &snd);
+    let vals: DataRow;
+    let lines: Vec<String>;
+    {
+        let snd = if let Some(snd) = ac.get_sounding_for_display() {
+            snd
+        } else {
+            return;
+        };
+        if snd.pressure.len() < 1 {
+            return;
+        }
+
+        vals = snd.linear_interpolate(sample_p);
+
+        sample_p = if vals.pressure.as_option().is_some() {
+            vals.pressure.unwrap()
+        } else {
+            sample_p
+        };
+
+        lines = create_text(&vals, &snd);
+    }
 
     draw_sample_line(cr, ac, sample_p);
 
@@ -56,9 +54,10 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
     let dir = vals.direction.as_option();
     let spd = vals.speed.as_option();
     let hgt_asl = vals.height.as_option();
+    let omega = vals.omega.as_option();
     let elevation = snd.elevation.as_option();
 
-    if t_c.is_some() || dp_c.is_some() {
+    if t_c.is_some() || dp_c.is_some() || omega.is_some() {
         let mut line = String::with_capacity(128);
         if let Some(t_c) = t_c {
             line.push_str(&format!("{:.0}C", t_c));
@@ -73,6 +72,9 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
             let e = ::formula::vapor_pressure_water(dp_c);
             let es = ::formula::vapor_pressure_water(t_c);
             line.push_str(&format!(" {:.0}%", 100.0 * e / es));
+        }
+        if let Some(omega) = omega {
+            line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
         }
         results.push(line);
     }

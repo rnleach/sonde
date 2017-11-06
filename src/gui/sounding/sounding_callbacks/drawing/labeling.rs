@@ -409,7 +409,7 @@ fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect
         screen_rect.height(),
     );
 
-    let rgb = ac.config.isobar_rgba;
+    let rgb = ac.config.label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke_preserve();
@@ -427,7 +427,7 @@ fn draw_legend_text(
     valid_time: &Option<String>,
     location: &Option<String>,
 ) {
-    let rgb = ac.config.isobar_rgba;
+    let rgb = ac.config.label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
     let padding = ac.skew_t.edge_padding;
