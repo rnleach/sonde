@@ -50,6 +50,7 @@ pub fn run() -> Result<()> {
     {
         let mut app = app_context.borrow_mut();
         app.set_gui(gui.clone());
+        app.show_hide_rh_omega(); // Hide this widget if defaulted in config.
     }
 
     // Initialize the main loop.

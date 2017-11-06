@@ -33,7 +33,7 @@ pub struct AppContext {
     currently_displayed_index: usize,
 
     // Handle to the GUI
-    pub gui: Option<Gui>,
+    gui: Option<Gui>,
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
@@ -161,6 +161,8 @@ impl AppContext {
             }
         }
 
+        self.fit_to_data();
+
         if let Some(ref wdgs) = self.gui {
             wdgs.draw_all();
         }
@@ -241,8 +243,8 @@ impl AppContext {
         }
     }
 
-    /// Fit to the given x-y max coords.
-    pub fn fit_to_data(&mut self) {
+    /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
+    fn fit_to_data(&mut self) {
 
         use std::f64;
 
@@ -258,6 +260,16 @@ impl AppContext {
         self.set_zoom_factor(f64::min(width_scale, height_scale));
 
         self.bound_view();
+    }
+
+    /// Update the dimensions of the skew-t drawing area
+    pub fn update_skew_t_allocation(&mut self) {
+        if let Some(ref gui) = self.gui {
+
+            let alloc = gui.get_sounding_area().get_allocation();
+            self.skew_t.device_width = alloc.width;
+            self.skew_t.device_height = alloc.height;
+        }
     }
 
     /// Right justify the skew-t in the view if zoomed out, and if zoomed in don't let it view
@@ -323,9 +335,26 @@ impl AppContext {
     }
 
     pub fn queue_draw_skew_t_rh_omega(&self) {
+
         if let Some(ref gui) = self.gui {
             gui.get_sounding_area().queue_draw();
             gui.get_omega_area().queue_draw();
+        }
+    }
+
+    pub fn queue_draw_rh_omega(&self) {
+        if let Some(ref gui) = self.gui {
+            gui.get_omega_area().queue_draw();
+        }
+    }
+
+    pub fn show_hide_rh_omega(&self) {
+        if let Some(ref gui) = self.gui {
+            if self.config.show_omega {
+                gui.get_omega_area().show();
+            } else {
+                gui.get_omega_area().hide();
+            }
         }
     }
 }
@@ -501,6 +530,7 @@ pub struct RHOmegaContext {
     // Translate for zoom and pan in skew-t
     translate_y: f64,
     zoom_factor: f64,
+    pub skew_t_scale_factor: f64,
 
     // device dimensions
     pub device_height: i32,
@@ -513,6 +543,7 @@ impl RHOmegaContext {
             max_abs_omega: 1.0,
             translate_y: 0.0,
             zoom_factor: 1.0,
+            skew_t_scale_factor: 1.0,
 
             device_height: 100,
             device_width: 100,
@@ -541,22 +572,6 @@ impl RHOmegaContext {
         XYCoords { x, y }
     }
 
-    /// Convert device to screen coords
-    pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = self.scale_factor();
-        ScreenCoords {
-            x: coords.col / scale_factor,
-            // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) + self.device_height as f64 / scale_factor,
-        }
-    }
-
-    /// Convert device coords to (x,y) coords
-    pub fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
-        let screen_coords = self.convert_device_to_screen(coords);
-        self.convert_screen_to_xy(screen_coords)
-    }
-
     /// Conversion from  (x,y) coords to temperature and pressure.
     pub fn convert_xy_to_wp(&self, coords: XYCoords) -> WPCoords {
         use app::config;
@@ -582,6 +597,7 @@ impl RHOmegaContext {
         let y = coords.y - self.translate_y;
 
         // Apply scaling
+        let x = x / self.skew_t_scale_factor * self.scale_factor();
         let y = self.zoom_factor * y;
         ScreenCoords { x, y }
     }
@@ -589,7 +605,7 @@ impl RHOmegaContext {
     /// Conversion from (x,y) coords to screen coords
     pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
 
-        let x = coords.x;
+        let x = coords.x / self.scale_factor() * self.skew_t_scale_factor;
         let y = coords.y / self.zoom_factor + self.translate_y;
         XYCoords { x, y }
     }
@@ -597,6 +613,9 @@ impl RHOmegaContext {
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
         let xy = self.convert_wp_to_xy(coords);
+
+        let screen = self.convert_xy_to_screen(xy);
+
         self.convert_xy_to_screen(xy)
     }
 

@@ -47,14 +47,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
         let mut ac = acp1.borrow_mut();
 
         ac.config.show_omega = button.get_active();
-
-        if let Some(ref gui) = ac.gui {
-            if ac.config.show_omega {
-                gui.get_omega_area().show();
-            } else {
-                gui.get_omega_area().hide();
-            }
-        }
+        ac.show_hide_rh_omega();
     });
 
     // Layout

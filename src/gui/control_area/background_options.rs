@@ -128,10 +128,7 @@ fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
         let rgba = button.get_rgba();
 
         ac.config.background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-
-        if let Some(ref gui) = ac.gui {
-            gui.get_sounding_area().queue_draw();
-        }
+        ac.queue_draw_skew_t_rh_omega();
     });
 
     // Layout

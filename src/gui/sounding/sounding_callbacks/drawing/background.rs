@@ -2,8 +2,7 @@ use cairo::Context;
 
 use app::{AppContext, config};
 use coords::TPCoords;
-use gui::sounding::sounding_callbacks::drawing::{plot_curve_from_points,
-                                                 plot_dashed_curve_from_points};
+use gui::sounding::{plot_curve_from_points, plot_dashed_curve_from_points};
 
 pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
 

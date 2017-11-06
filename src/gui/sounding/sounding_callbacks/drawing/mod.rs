@@ -4,7 +4,7 @@ use cairo::{Context, Matrix};
 use gtk::{DrawingArea, WidgetExt};
 
 use app::AppContext;
-use coords::{ScreenCoords, XYCoords};
+use coords::XYCoords;
 
 mod background;
 mod labeling;
@@ -14,9 +14,7 @@ mod wind_profile;
 
 pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
     // Get the dimensions of the DrawingArea
-    let alloc = sounding_area.get_allocation();
-    ac.skew_t.device_width = alloc.width;
-    ac.skew_t.device_height = alloc.height;
+    ac.update_skew_t_allocation();
     let scale_factor = ac.skew_t.scale_factor();
 
     // Fill with backgound color
@@ -46,9 +44,6 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
         y0: ac.skew_t.device_height as f64 / scale_factor,
     });
 
-    // Update the translation to center or bound the graph
-    ac.bound_view();
-
     // Clip the drawing area
     let upper_right_xy = ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
     let lower_left_xy = ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
@@ -63,6 +58,9 @@ pub fn prepare_to_draw(sounding_area: &DrawingArea, cr: &Context, ac: &mut AppCo
     // Calculate the various padding values
     ac.skew_t.label_padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
     ac.skew_t.edge_padding = cr.device_to_user_distance(ac.config.edge_padding, 0.0).0;
+
+    // Bound the xy-coords to always be on screen.
+    ac.bound_view();
 }
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {
@@ -107,41 +105,4 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
     if ac.config.show_active_readout {
         sample_readout::draw_active_sample(cr, ac);
     }
-}
-
-// Draw a curve connecting a list of points.
-fn plot_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
-    I: Iterator<Item = ScreenCoords>,
-{
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
-
-    let mut points = points;
-    if let Some(start) = points.by_ref().next() {
-        cr.move_to(start.x, start.y);
-        for end in points {
-            cr.line_to(end.x, end.y);
-        }
-
-        cr.stroke();
-    }
-}
-
-// Draw a dashed line on the graph.
-fn plot_dashed_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
-    I: Iterator<Item = ScreenCoords>,
-{
-    cr.set_dash(&[0.02], 0.0);
-    plot_curve_from_points(cr, line_width_pixels, rgba, points);
-    cr.set_dash(&[], 0.0);
 }

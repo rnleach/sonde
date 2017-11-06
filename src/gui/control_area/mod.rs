@@ -24,10 +24,7 @@ macro_rules! build_config_color_and_check {
         check.connect_toggled(move|button|{
             let mut ac = acp1.borrow_mut();
             ac.config.$show_var = button.get_active();
-
-            if let Some(ref gui) = ac.gui {
-                gui.get_sounding_area().queue_draw();
-            }
+            ac.queue_draw_skew_t_rh_omega();
         });
 
         // Create color button callback
@@ -37,10 +34,7 @@ macro_rules! build_config_color_and_check {
             let rgba = button.get_rgba();
 
             ac.config.$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-
-            if let Some(ref gui) = ac.gui {
-                gui.get_sounding_area().queue_draw();
-            }
+            ac.queue_draw_skew_t_rh_omega();
         });
 
         // Layout

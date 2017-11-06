@@ -28,13 +28,9 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     if dialog.run() == ResponseType::Ok.into() {
 
         if let Some(filename) = dialog.get_filename() {
-            if load_file(&filename, ac).is_ok() {
-                let mut ac = ac.borrow_mut();
-                ac.fit_to_data();
-            } else {
+            if !load_file(&filename, ac).is_ok() {
                 // TODO: Show error dialog
-            }
-
+            } 
         } else {
             // TODO: Show error dialog
         }
