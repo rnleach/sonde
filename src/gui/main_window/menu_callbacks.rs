@@ -30,7 +30,7 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
         if let Some(filename) = dialog.get_filename() {
             if !load_file(&filename, ac).is_ok() {
                 // TODO: Show error dialog
-            } 
+            }
         } else {
             // TODO: Show error dialog
         }

@@ -111,4 +111,3 @@ fn plot_dashed_curve_from_points<I>(
     plot_curve_from_points(cr, line_width_pixels, rgba, points);
     cr.set_dash(&[], 0.0);
 }
-

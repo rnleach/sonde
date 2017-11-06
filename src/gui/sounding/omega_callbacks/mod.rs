@@ -31,7 +31,12 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
     ac.rh_omega.skew_t_scale_factor = scale_factor;
 
     // Fill with backgound color
-    cr.rectangle(0.0, 0.0, ac.rh_omega.device_width as f64, ac.rh_omega.device_height as f64);
+    cr.rectangle(
+        0.0,
+        0.0,
+        ac.rh_omega.device_width as f64,
+        ac.rh_omega.device_height as f64,
+    );
     cr.set_source_rgba(
         ac.config.background_rgba.0,
         ac.config.background_rgba.1,
@@ -53,8 +58,12 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
     });
 
     // Clip the drawing area
-    let upper_right_xy = ac.rh_omega.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-    let lower_left_xy = ac.rh_omega.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let upper_right_xy = ac.rh_omega.convert_xy_to_screen(
+        XYCoords { x: 1.0, y: 1.0 },
+    );
+    let lower_left_xy = ac.rh_omega.convert_xy_to_screen(
+        XYCoords { x: 0.0, y: 0.0 },
+    );
     cr.rectangle(
         lower_left_xy.x,
         lower_left_xy.y,
@@ -64,18 +73,29 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
     cr.clip();
 }
 
-fn draw_background( cr: &Context, ac: &mut AppContext) {
+fn draw_background(cr: &Context, ac: &mut AppContext) {
 
     // If is plottable, draw snow growth zones
     // TODO:
-    
+
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
-            let TPCoords{pressure: p, ..} = pnts[0];
-            
-            let pnts = [WPCoords{w:-ac.rh_omega.get_max_abs_omega(), p}, WPCoords{w:ac.rh_omega.get_max_abs_omega(), p}];
-            let pnts = pnts.iter().map(|wp_coords| {ac.rh_omega.convert_wp_to_screen(*wp_coords)});
+            let TPCoords { pressure: p, .. } = pnts[0];
+
+            let pnts = [
+                WPCoords {
+                    w: -ac.rh_omega.get_max_abs_omega(),
+                    p,
+                },
+                WPCoords {
+                    w: ac.rh_omega.get_max_abs_omega(),
+                    p,
+                },
+            ];
+            let pnts = pnts.iter().map(|wp_coords| {
+                ac.rh_omega.convert_wp_to_screen(*wp_coords)
+            });
             plot_curve_from_points(
                 cr,
                 ac.config.background_line_width,
@@ -86,17 +106,28 @@ fn draw_background( cr: &Context, ac: &mut AppContext) {
     }
 
     // Draw mid-line
-    let mid_line = [WPCoords{w: 0.0, p: config::MINP},WPCoords{w: 0.0, p: config::MAXP}];
+    let mid_line = [
+        WPCoords {
+            w: 0.0,
+            p: config::MINP,
+        },
+        WPCoords {
+            w: 0.0,
+            p: config::MAXP,
+        },
+    ];
     plot_curve_from_points(
-            cr,
-            ac.config.background_line_width,
-            ac.config.isobar_rgba,
-            mid_line.iter().map(|wp_coords|{ac.rh_omega.convert_wp_to_screen(*wp_coords)}),
-        );
+        cr,
+        ac.config.background_line_width,
+        ac.config.isobar_rgba,
+        mid_line.iter().map(|wp_coords| {
+            ac.rh_omega.convert_wp_to_screen(*wp_coords)
+        }),
+    );
 }
 
-fn draw_omega_profile(cr: &Context, ac: &AppContext){
-    
+fn draw_omega_profile(cr: &Context, ac: &AppContext) {
+
     if let Some(sndg) = ac.get_sounding_for_display() {
 
         let pres_data = &sndg.pressure;
@@ -106,11 +137,9 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext){
 
         let profile_data = pres_data.iter().zip(omega_data.iter()).filter_map(
             |val_pair| {
-                if let (Some(p), Some(w)) =
-                    (val_pair.0.as_option(), val_pair.1.as_option())
-                {
+                if let (Some(p), Some(w)) = (val_pair.0.as_option(), val_pair.1.as_option()) {
                     if p > config::MINP {
-                        let wp_coords = WPCoords { w, p};
+                        let wp_coords = WPCoords { w, p };
                         Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
                     } else {
                         None
@@ -125,10 +154,10 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext){
     }
 }
 
-fn draw_rh_profile( cr: &Context, ac: &AppContext){
+fn draw_rh_profile(cr: &Context, ac: &AppContext) {
     // TODO:
 }
 
-fn draw_active_readout( cr: &Context, ac: &AppContext){
+fn draw_active_readout(cr: &Context, ac: &AppContext) {
     // TODO:
 }
