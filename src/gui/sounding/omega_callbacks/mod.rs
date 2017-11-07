@@ -107,37 +107,8 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
     }
 
     // Draw w-lines
-    // FIXME: move to config
-    let omega_lines = [
-        -4.0,
-        -3.5,
-        -3.0,
-        -2.5,
-        -2.0,
-        -1.5,
-        -1.0,
-        -0.5,
-        0.0,
-        0.5,
-        1.0,
-        1.5,
-        2.0,
-        2.5,
-        3.0,
-        3.5,
-        4.0,
-    ];
-    for omega in omega_lines.iter() {
-        let v_line = [
-            WPCoords {
-                w: *omega,
-                p: config::MINP,
-            },
-            WPCoords {
-                w: *omega,
-                p: config::MAXP,
-            },
-        ];
+    for v_line in config::ISO_OMEGA_PNTS.iter() {
+        
         plot_curve_from_points(
             cr,
             ac.config.background_line_width,

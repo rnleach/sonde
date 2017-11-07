@@ -1,6 +1,6 @@
 //! Keep configuration data in this module.
 
-use coords::TPCoords;
+use coords::{TPCoords, WPCoords};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -411,6 +411,17 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
 //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
+pub const ISO_OMEGA:[f64; 9] = [
+        -4.0,
+        -3.0,
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+    ];
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
@@ -493,6 +504,25 @@ lazy_static! {
             v
         })
         .collect()
+    };
+
+    /// Compute points for background omega
+    pub static ref ISO_OMEGA_PNTS: Vec<[WPCoords; 2]> = {
+        ISO_OMEGA
+            .into_iter()
+            .map(|w| {
+                [
+                WPCoords {
+                    w: *w,
+                    p: MINP,
+                },
+                WPCoords {
+                    w: *w,
+                    p: MAXP,
+                },
+            ]
+            })
+            .collect()
     };
 }
 
