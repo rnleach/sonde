@@ -35,8 +35,8 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
     cr.rectangle(
         0.0,
         0.0,
-        ac.rh_omega.device_width as f64,
-        ac.rh_omega.device_height as f64,
+        f64::from(ac.rh_omega.device_width),
+        f64::from(ac.rh_omega.device_height),
     );
     cr.set_source_rgba(
         ac.config.background_rgba.0,
@@ -55,7 +55,7 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: ac.rh_omega.device_height as f64 / scale_factor,
+        y0: f64::from(ac.rh_omega.device_height) / scale_factor,
     });
 
     // Clip the drawing area
@@ -120,7 +120,7 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
     }
 }
 
-fn draw_labels(cr: &Context, ac: &AppContext) {
+fn draw_labels(_cr: &Context, _ac: &AppContext) {
     // TODO:
 }
 
@@ -157,7 +157,7 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_rh_profile(cr: &Context, ac: &AppContext) {
+fn draw_rh_profile(_cr: &Context, _ac: &AppContext) {
     // TODO:
 }
 

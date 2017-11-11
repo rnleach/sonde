@@ -288,8 +288,8 @@ impl AppContext {
     pub fn bound_view(&mut self) {
 
         let bounds = DeviceCoords {
-            col: self.skew_t.device_width as f64,
-            row: self.skew_t.device_height as f64,
+            col: f64::from(self.skew_t.device_width),
+            row: f64::from(self.skew_t.device_height),
         };
         let lower_right = self.skew_t.convert_device_to_xy(bounds);
         let upper_left = self.skew_t.convert_device_to_xy(
@@ -415,7 +415,7 @@ impl SkewTContext {
     /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
     /// 1 in `ScreenCoords` when the zoom factor is 1.
     pub fn scale_factor(&self) -> f64 {
-        ::std::cmp::min(self.device_height, self.device_width) as f64
+        f64::from(::std::cmp::min(self.device_height, self.device_width))
     }
 
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
@@ -439,7 +439,7 @@ impl SkewTContext {
         ScreenCoords {
             x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) + self.device_height as f64 / scale_factor,
+            y: -(coords.row / scale_factor) + f64::from(self.device_height) / scale_factor,
         }
     }
 
@@ -514,10 +514,10 @@ impl SkewTContext {
     pub fn bounding_box_in_screen_coords(&self) -> ScreenRect {
         let lower_left = self.convert_device_to_screen(DeviceCoords {
             col: 0.0,
-            row: self.device_height as f64,
+            row: f64::from(self.device_height),
         });
         let upper_right = self.convert_device_to_screen(DeviceCoords {
-            col: self.device_width as f64,
+            col: f64::from(self.device_width),
             row: 0.0,
         });
 
@@ -560,7 +560,7 @@ impl RHOmegaContext {
     /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
     /// 1 in `ScreenCoords` when the zoom factor is 1.
     pub fn scale_factor(&self) -> f64 {
-        ::std::cmp::min(self.device_height, self.device_width) as f64
+        f64::from(::std::cmp::min(self.device_height, self.device_width))
     }
 
     /// Conversion from omega (w) and pressure (p) to (x,y) coords

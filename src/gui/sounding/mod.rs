@@ -1,5 +1,7 @@
 //! Module holds the code for drawing the skew-t plot.
 
+use std::rc::Rc;
+
 use cairo::Context;
 use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
           POINTER_MOTION_HINT_MASK, LEAVE_NOTIFY_MASK, KEY_RELEASE_MASK, KEY_PRESS_MASK};
@@ -12,44 +14,44 @@ use app;
 use coords::ScreenCoords;
 
 /// Initialize the drawing area and connect signal handlers.
-pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppContextPointer) {
+pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &app::AppContextPointer) {
 
     // Layout
     sounding_area.set_hexpand(true);
     sounding_area.set_vexpand(true);
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_draw(move |_da, cr| sounding_callbacks::draw_sounding(cr, &ac));
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_button_press_event(move |da, ev| {
         sounding_callbacks::button_press_event(da, ev, &ac)
     });
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_button_release_event(move |da, ev| {
         sounding_callbacks::button_release_event(da, ev, &ac)
     });
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_motion_notify_event(move |da, ev| {
         sounding_callbacks::mouse_motion_event(da, ev, &ac)
     });
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_leave_notify_event(move |da, ev| {
         sounding_callbacks::leave_event(da, ev, &ac)
     });
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_key_release_event(move |da, ev| {
         sounding_callbacks::key_release_event(da, ev, &ac)
     });
 
-    let ac = app_context.clone();
+    let ac = Rc::clone(app_context);
     sounding_area.connect_key_press_event(move |da, ev| {
         sounding_callbacks::key_press_event(da, ev, &ac)
     });
@@ -64,14 +66,14 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: app::AppCo
 
 }
 
-pub fn set_up_omega_area(omega_area: &DrawingArea, app_context: app::AppContextPointer) {
+pub fn set_up_omega_area(omega_area: &DrawingArea, app_context: &app::AppContextPointer) {
 
     // Layout
     omega_area.set_hexpand(false);
     omega_area.set_vexpand(true);
     omega_area.set_property_width_request(80);
 
-    let acp = app_context.clone();
+    let acp = Rc::clone(app_context);
     omega_area.connect_draw(move |da, cr| omega_callbacks::draw_omega(da, cr, &acp));
 }
 

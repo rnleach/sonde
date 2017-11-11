@@ -484,7 +484,7 @@ lazy_static! {
         .map(|theta_e_k| {
             let mut v = vec![];
             let mut p = ISENTROPS_TOP_P;
-            let dp = (MAXP - MINP) / POINTS_PER_ISENTROP as f64;
+            let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
             while p < MAXP + 1.0001 * dp {
                 let t = find_root(&|t| {theta_e_saturated_kelvin(p,t)- theta_e_k},
                     -150.0, 60.0);
@@ -530,7 +530,7 @@ fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
             temperature: t,
             pressure: p,
         });
-        p += (ISENTROPS_TOP_P - MAXP) / (POINTS_PER_ISENTROP as f64);
+        p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
     }
     let t = ::formula::temperature_c_from_theta(theta, ISENTROPS_TOP_P);
     result.push(TPCoords {

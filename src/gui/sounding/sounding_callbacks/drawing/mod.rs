@@ -20,8 +20,8 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     cr.rectangle(
         0.0,
         0.0,
-        ac.skew_t.device_width as f64,
-        ac.skew_t.device_height as f64,
+        f64::from(ac.skew_t.device_width),
+        f64::from(ac.skew_t.device_height),
     );
     cr.set_source_rgba(
         ac.config.background_rgba.0,
@@ -40,7 +40,7 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: ac.skew_t.device_height as f64 / scale_factor,
+        y0: f64::from(ac.skew_t.device_height) / scale_factor,
     });
 
     // Clip the drawing area
@@ -63,23 +63,23 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
 }
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {
-    background::draw_background_fill(&cr, &ac);
-    background::draw_background_lines(&cr, &ac);
+    background::draw_background_fill(cr, ac);
+    background::draw_background_lines(cr, ac);
 }
 
 pub fn draw_temperature_profiles(cr: &Context, ac: &AppContext) {
     use self::temperature_profile::TemperatureType::{DewPoint, DryBulb, WetBulb};
 
     if ac.config.show_wet_bulb {
-        temperature_profile::draw_temperature_profile(WetBulb, &cr, &ac);
+        temperature_profile::draw_temperature_profile(WetBulb, cr, ac);
     }
 
     if ac.config.show_dew_point {
-        temperature_profile::draw_temperature_profile(DewPoint, &cr, &ac);
+        temperature_profile::draw_temperature_profile(DewPoint, cr, ac);
     }
 
     if ac.config.show_temperature {
-        temperature_profile::draw_temperature_profile(DryBulb, &cr, &ac);
+        temperature_profile::draw_temperature_profile(DryBulb, cr, ac);
     }
 }
 

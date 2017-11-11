@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use glib;
 
 use gtk;
@@ -10,15 +12,15 @@ use gui::Gui;
 
 mod menu_callbacks;
 
-pub fn layout(gui: Gui, app_context: AppContextPointer) {
+pub fn layout(gui: &Gui, app_context: &AppContextPointer) {
 
     let window = gui.get_window();
 
     // Build the menu bar
-    let menu_bar = build_menu_bar(&app_context, &window);
+    let menu_bar = build_menu_bar(app_context, &window);
 
     // Layout main gui areas
-    let frames = layout_frames(&gui);
+    let frames = layout_frames(gui);
 
     // Layout everything else
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -39,7 +41,7 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     // The open item
     let open_item = MenuItem::new_with_label("Open");
     let win1 = win.clone();
-    let ac1 = ac.clone();
+    let ac1 = Rc::clone(ac);
     open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
     // The quit item

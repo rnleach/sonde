@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gtk;
 use gtk::prelude::*;
 use gtk::{Frame, ScrolledWindow, ColorButton, CheckButton};
@@ -7,7 +9,7 @@ use gui::control_area::{BOX_SPACING, PADDING};
 
 use app::AppContextPointer;
 
-pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
+pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
     f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
@@ -42,7 +44,7 @@ pub fn make_data_option_frame(acp: AppContextPointer) -> ScrolledWindow {
     }
 
     // Create rh_omega callback
-    let acp1 = acp.clone();
+    let acp1 = Rc::clone(acp);
     rh_omega.connect_toggled(move |button| {
         let mut ac = acp1.borrow_mut();
 

@@ -16,11 +16,11 @@ pub fn draw_sounding(cr: &Context, ac: &app::AppContextPointer) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
     drawing::prepare_to_draw(cr, &mut ac);
-    drawing::draw_background(&cr, &ac);
-    drawing::draw_temperature_profiles(&cr, &ac);
-    drawing::draw_wind_profile(&cr, &ac);
-    drawing::draw_labels(&cr, &ac);
-    drawing::draw_active_sample(&cr, &mut ac);
+    drawing::draw_background(cr, &ac);
+    drawing::draw_temperature_profiles(cr, &ac);
+    drawing::draw_wind_profile(cr, &ac);
+    drawing::draw_labels(cr, &ac);
+    drawing::draw_active_sample(cr, &mut ac);
 
     Inhibit(false)
 }

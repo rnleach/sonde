@@ -34,7 +34,7 @@ pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
             sample_p
         };
 
-        lines = create_text(&vals, &snd);
+        lines = create_text(&vals, snd);
     }
 
     draw_sample_line(cr, ac, sample_p);
@@ -141,7 +141,7 @@ fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
 fn calculate_screen_rect(
     cr: &Context,
     ac: &AppContext,
-    strings: &Vec<String>,
+    strings: &[String],
     sample_p: f64,
 ) -> ScreenRect {
     let mut width: f64 = 0.0;
@@ -162,10 +162,10 @@ fn calculate_screen_rect(
     width += 2.0 * padding;
     height += 2.0 * padding;
 
-    let ScreenCoords { x: mut left, y: _ } = ac.skew_t.convert_device_to_screen(
+    let ScreenCoords { x: mut left, .. } = ac.skew_t.convert_device_to_screen(
         DeviceCoords { col: 5.0, row: 5.0 },
     );
-    let ScreenCoords { x: _, y: top } = ac.skew_t.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure: sample_p,
     });
@@ -224,7 +224,7 @@ fn draw_sample_readout_text_box(
     rect: &ScreenRect,
     cr: &Context,
     ac: &AppContext,
-    lines: &Vec<String>,
+    lines: &[String],
 ) {
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },

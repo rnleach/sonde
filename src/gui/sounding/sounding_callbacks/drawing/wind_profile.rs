@@ -12,7 +12,7 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
     };
 
     let barb_config = WindBarbConfig::init(cr, ac);
-    let barb_data = gather_wind_data(&snd, &barb_config);
+    let barb_data = gather_wind_data(snd, &barb_config);
     let barb_data = filter_wind_data(barb_data, ac);
 
     let rgba = ac.config.wind_rgba;
@@ -22,7 +22,7 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
             .0,
     );
 
-    for bdata in barb_data.into_iter() {
+    for bdata in &barb_data {
         bdata.draw(cr);
     }
 }
@@ -49,7 +49,7 @@ fn gather_wind_data(
         })
         .map(|tuple| {
             let (p, d, s) = tuple;
-            WindBarbData::create(p, d, s, &barb_config)
+            WindBarbData::create(p, d, s, barb_config)
         })
         .collect()
 }
@@ -68,7 +68,7 @@ fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBa
             y: ::std::f64::MAX,
         },
     };
-    for bdata in barb_data.into_iter() {
+    for bdata in barb_data {
         let bbox = bdata.bounding_box();
         if !bbox.inside(&screen_box) || bbox.overlaps(&last_added_bbox) {
             continue;
@@ -103,14 +103,14 @@ impl<'a, 'b> WindBarbConfig<'a> {
         let padding = ac.skew_t.edge_padding;
 
         let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
-        let XYCoords { x: mut xmax, y: _ } =
+        let XYCoords { x: mut xmax, .. } =
             ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
         if xmax > 1.0 {
             xmax = 1.0;
         }
 
-        let ScreenCoords { x: xmax, y: _ } =
+        let ScreenCoords { x: xmax, .. } =
             ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
 
         let xcoord = xmax - padding - shaft_length;
@@ -320,7 +320,7 @@ impl WindBarbData {
 
 fn get_wind_barb_center(pressure: f64, xcenter: f64, ac: &AppContext) -> ScreenCoords {
 
-    let ScreenCoords { x: _, y: yc } = ac.skew_t.convert_tp_to_screen(TPCoords {
+    let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure,
     });

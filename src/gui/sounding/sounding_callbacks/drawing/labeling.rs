@@ -20,7 +20,7 @@ fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
     };
 
     let font_size = size_in_pnts / 72.0 * dpi;
-    let ScreenCoords { x: font_size, y: _ } = ac.skew_t.convert_device_to_screen(DeviceCoords {
+    let ScreenCoords { x: font_size, .. } = ac.skew_t.convert_device_to_screen(DeviceCoords {
         col: font_size,
         row: 0.0,
     });
@@ -46,19 +46,16 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     let mut labels = vec![];
 
     let screen_edges = calculate_plot_edges(ac);
-    let ScreenRect {
-        lower_left,
-        upper_right: _,
-    } = screen_edges;
+    let ScreenRect { lower_left, .. } = screen_edges;
 
     if ac.config.show_isobars {
-        for &p in config::ISOBARS.into_iter() {
+        for &p in &config::ISOBARS {
 
             let label = format!("{}", p);
 
             let extents = cr.text_extents(&label);
 
-            let ScreenCoords { x: _, y: screen_y } = ac.skew_t.convert_tp_to_screen(TPCoords {
+            let ScreenCoords { y: screen_y, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
                 temperature: 0.0,
                 pressure: p,
             });
@@ -86,11 +83,8 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     }
 
     if ac.config.show_isotherms {
-        let TPCoords {
-            temperature: _,
-            pressure: screen_max_p,
-        } = ac.skew_t.convert_screen_to_tp(lower_left);
-        for &t in config::ISOTHERMS.into_iter() {
+        let TPCoords { pressure: screen_max_p, .. } = ac.skew_t.convert_screen_to_tp(lower_left);
+        for &t in &config::ISOTHERMS {
 
             let label = format!("{}", t);
 
@@ -133,10 +127,7 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
     let padding = ac.skew_t.label_padding;
 
     for (label, rect) in labels {
-        let ScreenRect {
-            lower_left,
-            upper_right: _,
-        } = rect;
+        let ScreenRect { lower_left, .. } = rect;
 
         let mut rgba = ac.config.background_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
@@ -227,7 +218,7 @@ fn check_overlap_then_add(
     // Check for overlap
 
     for &(_, ref rect) in vector.iter() {
-        if padded_rect.overlaps(&rect) {
+        if padded_rect.overlaps(rect) {
             return;
         }
     }
@@ -354,7 +345,7 @@ fn calculate_legend_box_size(
     let mut box_width: f64 = 0.0;
     let mut box_height: f64 = 0.0;
 
-    if let &Some(ref src) = source_description {
+    if let Some(ref src) = *source_description {
         let extents = cr.text_extents(src);
         if extents.width > box_width {
             box_width = extents.width;
@@ -362,7 +353,7 @@ fn calculate_legend_box_size(
         box_height += extents.height;
     }
 
-    if let &Some(ref vt) = valid_time {
+    if let Some(ref vt) = *valid_time {
         let extents = cr.text_extents(vt);
         if extents.width > box_width {
             box_width = extents.width;
@@ -374,7 +365,7 @@ fn calculate_legend_box_size(
         }
     }
 
-    if let &Some(ref loc) = location {
+    if let Some(ref loc) = *location {
         let extents = cr.text_extents(loc);
         if extents.width > box_width {
             box_width = extents.width;
@@ -398,10 +389,7 @@ fn calculate_legend_box_size(
 }
 
 fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect) {
-    let ScreenRect {
-        lower_left,
-        upper_right: _,
-    } = *screen_rect;
+    let ScreenRect { lower_left, .. } = *screen_rect;
 
     cr.rectangle(
         lower_left.x,
@@ -442,31 +430,31 @@ fn draw_legend_text(
         upper_left.y - padding - font_extents.ascent,
     );
 
-    if let &Some(ref src) = source_description {
+    if let Some(ref src) = *source_description {
         cr.show_text(src);
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
             upper_left.y - padding - font_extents.ascent -
-                num_lines_drawn as f64 * font_extents.height,
+                f64::from(num_lines_drawn) * font_extents.height,
         );
     }
-    if let &Some(ref vt) = valid_time {
+    if let Some(ref vt) = *valid_time {
         cr.show_text(vt);
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
             upper_left.y - padding - font_extents.ascent -
-                num_lines_drawn as f64 * font_extents.height,
+                f64::from(num_lines_drawn) * font_extents.height,
         );
     }
-    if let &Some(ref loc) = location {
+    if let Some(ref loc) = *location {
         cr.show_text(loc);
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
             upper_left.y - padding - font_extents.ascent -
-                num_lines_drawn as f64 * font_extents.height,
+                f64::from(num_lines_drawn) * font_extents.height,
         );
     }
 }

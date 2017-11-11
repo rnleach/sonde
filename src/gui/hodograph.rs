@@ -22,7 +22,7 @@ fn draw_hodo(hodo_area: &DrawingArea, cr: &Context) -> Inhibit {
 
     // Draw a green border
     let alloc = hodo_area.get_allocation();
-    cr.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
+    cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
     cr.set_source_rgb(0.0, 1.0, 0.0);
     cr.set_line_width(9.0);
     cr.stroke();

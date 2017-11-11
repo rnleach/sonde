@@ -105,7 +105,7 @@ fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     let mut start_line = -160i32;
     while start_line < 100 {
-        let t1 = start_line as f64;
+        let t1 = f64::from(start_line);
         let t2 = t1 + 10.0;
 
         draw_temperature_band(t1, t2, cr, ac);
@@ -143,7 +143,7 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext
     ];
 
     // Convert points to screen coords
-    for coord in coords.iter_mut() {
+    for coord in &mut coords {
         let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
             temperature: coord.0,
             pressure: coord.1,
@@ -151,10 +151,15 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext
         coord.0 = screen_coords.x;
         coord.1 = screen_coords.y;
     }
-    cr.move_to(coords[0].0, coords[0].1);
-    for i in 1..4 {
-        cr.line_to(coords[i].0, coords[i].1);
+
+    let mut coord_iter = coords.iter();
+    for coord in coord_iter.by_ref().take(1) {
+        cr.move_to(coord.0, coord.1);
     }
+    for coord in coord_iter {
+        cr.line_to(coord.0, coord.1);
+    }
+
     cr.close_path();
     cr.fill();
 }

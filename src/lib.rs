@@ -45,7 +45,7 @@ pub fn run() -> Result<()> {
     let app_context = app::AppContext::new();
 
     // Build the GUI
-    let gui = gui::Gui::new(app_context.clone());
+    let gui = gui::Gui::new(&app_context);
 
     // Connect the gui back to the app_context
     {

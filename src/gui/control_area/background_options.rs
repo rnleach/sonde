@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gtk;
 use gtk::prelude::*;
 use gtk::{Frame, ScrolledWindow, ColorButton, CheckButton};
@@ -7,7 +9,7 @@ use gui::control_area::{BOX_SPACING, PADDING};
 
 use app::AppContextPointer;
 
-pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
+pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
     f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
@@ -18,13 +20,13 @@ pub fn make_background_frame(acp: AppContextPointer) -> ScrolledWindow {
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
 
     // First set is background lines
-    let lines_frame = build_lines_frame(&acp);
+    let lines_frame = build_lines_frame(acp);
 
     // Second set is background fills
-    let fills_frame = build_fills_frame(&acp);
+    let fills_frame = build_fills_frame(acp);
 
     // Third set is for font
-    let font_frame = build_font_frame(&acp);
+    let font_frame = build_font_frame(acp);
 
     // Layout boxes in the frame
     f.add(&v_box);
@@ -98,12 +100,12 @@ fn build_fills_frame(acp: &AppContextPointer) -> gtk::Frame {
         background_band_rgba
     );
 
-    add_background_color_button(fills_box, &acp);
+    add_background_color_button(&fills_box, acp);
 
     fills_frame
 }
 
-fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
+fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
     // Background color
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let color = ColorButton::new();
@@ -122,7 +124,7 @@ fn add_background_color_button(target_box: gtk::Box, acp: &AppContextPointer) {
     }
 
     // Create color button callback
-    let acp1 = acp.clone();
+    let acp1 = Rc::clone(acp);
     ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
         let mut ac = acp1.borrow_mut();
         let rgba = button.get_rgba();

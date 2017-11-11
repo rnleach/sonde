@@ -100,7 +100,7 @@ impl XYCoords {
     }
 }
 
-/// On screen coordinates. Meant to scale and translate XYCoords to fit on the screen.
+/// On screen coordinates. Meant to scale and translate `XYCoords` to fit on the screen.
 /// Origin lower left, (x,y).
 /// When drawing using cairo functions, use these coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
