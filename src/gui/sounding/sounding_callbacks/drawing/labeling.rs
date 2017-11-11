@@ -302,7 +302,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 
     if let Some(snd) = ac.get_sounding_for_display() {
         // Build the valid time part
-        if let Some(vt) = snd.valid_time {
+        if let Some(vt) = snd.get_valid_time() {
             use chrono::{Datelike, Timelike};
             let mut temp_string = format!(
                 "Valid: {:02}/{:02}/{:04} {:02}Z",
@@ -312,7 +312,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
                 vt.hour()
             );
 
-            if let Some(lt) = snd.lead_time.as_option() {
+            if let Some(lt) = snd.get_lead_time().as_option() {
                 temp_string.push_str(&format!(" F{:03}", lt));
             }
 
@@ -320,18 +320,19 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
         }
 
         // Build location part.
-        if snd.lat.as_option().is_some() || snd.lon.as_option().is_some() ||
-            snd.elevation.as_option().is_some()
+        let (lat, lon, elevation) = snd.get_location();
+        if lat.as_option().is_some() || lon.as_option().is_some() ||
+            elevation.as_option().is_some()
         {
             location = Some("".to_owned());
             if let Some(ref mut loc) = location {
-                if let Some(lat) = snd.lat.as_option() {
+                if let Some(lat) = lat.as_option() {
                     loc.push_str(&format!("{:.2}", lat));
                 }
-                if let Some(lon) = snd.lon.as_option() {
+                if let Some(lon) = lon.as_option() {
                     loc.push_str(&format!(", {:.2}", lon));
                 }
-                if let Some(el) = snd.elevation.as_option() {
+                if let Some(el) = elevation.as_option() {
                     loc.push_str(&format!(", {:.0}m ({:.0}ft)", el, el * 3.28084));
                 }
             }

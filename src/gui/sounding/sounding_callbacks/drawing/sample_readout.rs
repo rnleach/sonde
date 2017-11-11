@@ -22,11 +22,11 @@ pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
         } else {
             return;
         };
-        if snd.pressure.len() < 1 {
+        if snd.get_profile(::sounding_base::Profile::Pressure).len() < 1 {
             return;
         }
 
-        vals = snd.linear_interpolate(sample_p);
+        vals = ::sounding_analysis::linear_interpolate(snd, sample_p);
 
         sample_p = if vals.pressure.as_option().is_some() {
             vals.pressure.unwrap()
@@ -55,7 +55,7 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
     let spd = vals.speed.as_option();
     let hgt_asl = vals.height.as_option();
     let omega = vals.omega.as_option();
-    let elevation = snd.elevation.as_option();
+    let elevation = snd.get_location().2.as_option();
 
     if t_c.is_some() || dp_c.is_some() || omega.is_some() {
         let mut line = String::with_capacity(128);

@@ -67,6 +67,7 @@ impl AppContext {
 
     pub fn load_data(&mut self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
         use app::config;
+        use sounding_base::Profile::*;
 
         self.list = src.into_iter().collect();
         self.currently_displayed_index = 0;
@@ -78,8 +79,12 @@ impl AppContext {
         };
 
         for snd in &self.list {
-            for pair in snd.pressure.iter().zip(&snd.temperature).filter_map(|p| {
-                if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+            for pair in snd.get_profile(Pressure)
+                .iter()
+                .zip(snd.get_profile(Temperature))
+                .filter_map(|p| if let (Some(p), Some(t)) =
+                    (p.0.as_option(), p.1.as_option())
+                {
                     if p < config::MINP {
                         None
                     } else {
@@ -90,8 +95,7 @@ impl AppContext {
                     }
                 } else {
                     None
-                }
-            })
+                })
             {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < self.skew_t.xy_envelope.lower_left.x {
@@ -108,8 +112,12 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.pressure.iter().zip(&snd.dew_point).filter_map(|p| {
-                if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+            for pair in snd.get_profile(Pressure)
+                .iter()
+                .zip(snd.get_profile(DewPoint))
+                .filter_map(|p| if let (Some(p), Some(t)) =
+                    (p.0.as_option(), p.1.as_option())
+                {
                     if p < config::MINP {
                         None
                     } else {
@@ -120,8 +128,7 @@ impl AppContext {
                     }
                 } else {
                     None
-                }
-            })
+                })
             {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < self.skew_t.xy_envelope.lower_left.x {
@@ -141,9 +148,10 @@ impl AppContext {
 
         self.rh_omega.max_abs_omega = config::MAX_ABS_W;
         for snd in &self.list {
-            for abs_omega in snd.pressure.iter().zip(&snd.omega).filter_map(
-                |p| if let (Some(p),
-                            Some(o)) =
+            for abs_omega in snd.get_profile(Pressure)
+                .iter()
+                .zip(snd.get_profile(PressureVerticalVelocity))
+                .filter_map(|p| if let (Some(p), Some(o)) =
                     (p.0.as_option(), p.1.as_option())
                 {
                     if p < config::MINP {
@@ -153,8 +161,7 @@ impl AppContext {
                     }
                 } else {
                     None
-                },
-            )
+                })
             {
                 if abs_omega > self.rh_omega.max_abs_omega {
                     self.rh_omega.max_abs_omega = abs_omega;

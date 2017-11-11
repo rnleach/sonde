@@ -16,6 +16,7 @@ extern crate glib;
 extern crate gtk;
 
 // Library with non-gui related code
+extern crate sounding_analysis;
 extern crate sounding_base;
 extern crate sounding_bufkit;
 

@@ -108,7 +108,7 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
 
     // Draw w-lines
     for v_line in config::ISO_OMEGA_PNTS.iter() {
-        
+
         plot_curve_from_points(
             cr,
             ac.config.background_line_width,
@@ -121,7 +121,7 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
 }
 
 fn draw_labels(cr: &Context, ac: &AppContext) {
-    // TODO: 
+    // TODO:
 }
 
 fn draw_omega_profile(cr: &Context, ac: &AppContext) {
@@ -131,9 +131,10 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
+        use sounding_base::Profile::{Pressure, PressureVerticalVelocity};
 
-        let pres_data = &sndg.pressure;
-        let omega_data = &sndg.omega;
+        let pres_data = sndg.get_profile(Pressure);
+        let omega_data = sndg.get_profile(PressureVerticalVelocity);
         let line_width = ac.config.omega_line_width;
         let line_rgba = ac.config.omega_rgba;
 

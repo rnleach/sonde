@@ -13,13 +13,15 @@ pub enum TemperatureType {
 // Draw the temperature profile
 pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppContext) {
 
+    use sounding_base::Profile::{Pressure, Temperature, WetBulb, DewPoint};
+
     if let Some(sndg) = ac.get_sounding_for_display() {
 
-        let pres_data = &sndg.pressure;
+        let pres_data = sndg.get_profile(Pressure);
         let temp_data = match t_type {
-            TemperatureType::DryBulb => &sndg.temperature,
-            TemperatureType::WetBulb => &sndg.wet_bulb,
-            TemperatureType::DewPoint => &sndg.dew_point,
+            TemperatureType::DryBulb => sndg.get_profile(Temperature),
+            TemperatureType::WetBulb => sndg.get_profile(WetBulb),
+            TemperatureType::DewPoint => sndg.get_profile(DewPoint),
         };
 
         let line_width = match t_type {

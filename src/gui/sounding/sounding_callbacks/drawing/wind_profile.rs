@@ -32,9 +32,11 @@ fn gather_wind_data(
     barb_config: &WindBarbConfig,
 ) -> Vec<WindBarbData> {
 
-    let dir = &snd.direction;
-    let spd = &snd.speed;
-    let pres = &snd.pressure;
+    use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
+
+    let dir = snd.get_profile(WindDirection);
+    let spd = snd.get_profile(WindSpeed);
+    let pres = snd.get_profile(Pressure);
 
     izip!(pres, dir, spd)
         .filter_map(|tuple| {
