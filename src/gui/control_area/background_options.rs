@@ -69,6 +69,36 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
     build_config_color_and_check!(lines_box, "Temperature", acp, show_isotherms, isotherm_rgba);
     build_config_color_and_check!(lines_box, "Pressure", acp, show_isobars, isobar_rgba);
 
+    // Show hide omega lines
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    let omega = CheckButton::new();
+
+    // Inner scope to borrow acp
+    {
+        let ac = acp.borrow();
+        omega.set_active(ac.config.show_iso_omega_lines);
+    }
+
+    // Create rh_omega callback
+    let acp1 = Rc::clone(acp);
+    omega.connect_toggled(move |button| {
+        let mut ac = acp1.borrow_mut();
+
+        ac.config.show_iso_omega_lines = button.get_active();
+        ac.queue_draw_skew_t_rh_omega();
+    });
+
+    // Layout
+    hbox.pack_start(&omega, false, true, PADDING);
+    hbox.pack_start(
+        &gtk::Label::new("Vertical Velocity (\u{03C9})"),
+        false,
+        true,
+        PADDING,
+    );
+
+    lines_box.pack_start(&hbox, false, true, PADDING);
+
     lines_frame
 }
 

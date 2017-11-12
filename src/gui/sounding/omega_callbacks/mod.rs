@@ -79,7 +79,7 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
     if ac.config.show_dendritic_zone {
         draw_dendtritic_snow_growth_zone(cr, ac);
     }
-    
+
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
@@ -108,20 +108,22 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
     }
 
     // Draw w-lines
-    for v_line in config::ISO_OMEGA_PNTS.iter() {
+    if ac.config.show_iso_omega_lines {
+        for v_line in config::ISO_OMEGA_PNTS.iter() {
 
-        plot_curve_from_points(
-            cr,
-            ac.config.background_line_width,
-            ac.config.isobar_rgba,
-            v_line.iter().map(|wp_coords| {
-                ac.rh_omega.convert_wp_to_screen(*wp_coords)
-            }),
-        );
+            plot_curve_from_points(
+                cr,
+                ac.config.background_line_width,
+                ac.config.isobar_rgba,
+                v_line.iter().map(|wp_coords| {
+                    ac.rh_omega.convert_wp_to_screen(*wp_coords)
+                }),
+            );
+        }
     }
 }
 
-fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &mut AppContext){
+fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &mut AppContext) {
     use sounding_base::Profile::Pressure;
 
     // If is plottable, draw snow growth zones
@@ -204,24 +206,26 @@ fn draw_rh_profile(_cr: &Context, _ac: &AppContext) {
 }
 
 fn draw_active_readout(cr: &Context, ac: &AppContext) {
-    if let Some(sample_p) = ac.last_sample_pressure {
+    if ac.config.show_active_readout {
+        if let Some(sample_p) = ac.last_sample_pressure {
 
-        let rgba = ac.config.active_readout_line_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.set_line_width(
-            cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
-                .0,
-        );
-        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: -1000.0,
-            p: sample_p,
-        });
-        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: 1000.0,
-            p: sample_p,
-        });
-        cr.move_to(start.x, start.y);
-        cr.line_to(end.x, end.y);
-        cr.stroke();
+            let rgba = ac.config.active_readout_line_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            cr.set_line_width(
+                cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
+                    .0,
+            );
+            let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
+                w: -1000.0,
+                p: sample_p,
+            });
+            let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
+                w: 1000.0,
+                p: sample_p,
+            });
+            cr.move_to(start.x, start.y);
+            cr.line_to(end.x, end.y);
+            cr.stroke();
+        }
     }
 }

@@ -123,7 +123,10 @@ pub struct Config {
     pub show_iso_mixing_ratio: bool,
     /// Color used for isopleths of theta-e
     pub iso_theta_e_rgba: (f64, f64, f64, f64),
+    /// Show or hide the moist adiabats
     pub show_iso_theta_e: bool,
+    /// Show the omega lines
+    pub show_iso_omega_lines: bool,
 
     //
     // Active readout
@@ -218,6 +221,7 @@ impl Default for Config {
             show_iso_mixing_ratio: true,
             iso_theta_e_rgba: (0.333333333, 0.662745098, 0.278431373, 1.0),
             show_iso_theta_e: true,
+            show_iso_omega_lines: true,
 
             //
             // Active readout
