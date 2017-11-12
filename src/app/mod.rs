@@ -4,6 +4,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use cairo::Context;
 use gtk::prelude::*;
 
 use sounding_base::Sounding;
@@ -168,9 +169,7 @@ impl AppContext {
                 }
             }
         }
-
-        const EXTRA_SPACE_FACTOR: f64 = 1.2;
-        self.rh_omega.max_abs_omega *= EXTRA_SPACE_FACTOR;
+        self.rh_omega.max_abs_omega = self.rh_omega.max_abs_omega.ceil();
 
         self.fit_to_data();
 
@@ -364,6 +363,91 @@ impl AppContext {
     }
 }
 
+pub trait PlotContext {
+    /// Conversion from (x,y) coords to screen coords
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords;
+
+    /// Conversion from device coordinates to `ScreenCoords`
+    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords;
+
+    /// Get the device width
+    fn device_width(&self) -> i32;
+
+    /// Get device height
+    fn device_height(&self) -> i32;
+
+    /// Get the edges of the X-Y plot area in `ScreenCoords`, may or may not be on the screen.
+    fn calculate_plot_edges(&self, cr: &Context, ac: &AppContext) -> ScreenRect {
+
+        let ScreenRect {
+            lower_left,
+            upper_right,
+        } = self.bounding_box_in_screen_coords();
+        let ScreenCoords {
+            x: mut screen_x_min,
+            y: mut screen_y_min,
+        } = lower_left;
+        let ScreenCoords {
+            x: mut screen_x_max,
+            y: mut screen_y_max,
+        } = upper_right;
+
+        // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
+        let ScreenCoords { x: xmin, y: ymin } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+        let ScreenCoords { x: xmax, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+
+        if xmin > screen_x_min {
+            screen_x_min = xmin;
+        }
+        if xmax < screen_x_max {
+            screen_x_max = xmax;
+        }
+        if ymax < screen_y_max {
+            screen_y_max = ymax;
+        }
+        if ymin > screen_y_min {
+            screen_y_min = ymin;
+        }
+
+        // Add some padding to keep away from the window edge
+        let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+        screen_x_max -= padding;
+        screen_y_max -= padding;
+        screen_x_min += padding;
+        screen_y_min += padding;
+
+        ScreenRect {
+            lower_left: ScreenCoords {
+                x: screen_x_min,
+                y: screen_y_min,
+            },
+            upper_right: ScreenCoords {
+                x: screen_x_max,
+                y: screen_y_max,
+            },
+        }
+    }
+
+    /// Get a bounding box in screen coords
+    fn bounding_box_in_screen_coords(&self) -> ScreenRect {
+        let lower_left = self.convert_device_to_screen(DeviceCoords {
+            col: 0.0,
+            row: f64::from(self.device_height()),
+        });
+        let upper_right = self.convert_device_to_screen(DeviceCoords {
+            col: f64::from(self.device_width()),
+            row: 0.0,
+        });
+
+        ScreenRect {
+            lower_left,
+            upper_right,
+        }
+    }
+}
+
 pub struct SkewTContext {
     // Rectangle that bounds all the soundings in the list.
     xy_envelope: XYRect,
@@ -433,16 +517,6 @@ impl SkewTContext {
         XYCoords { x, y }
     }
 
-    /// Convert device to screen coords
-    pub fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = self.scale_factor();
-        ScreenCoords {
-            x: coords.col / scale_factor,
-            // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) + f64::from(self.device_height) / scale_factor,
-        }
-    }
-
     /// Convert device coords to (x,y) coords
     pub fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
         let screen_coords = self.convert_device_to_screen(coords);
@@ -471,19 +545,6 @@ impl SkewTContext {
     }
 
     /// Conversion from (x,y) coords to screen coords
-    pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-
-        // Apply translation first
-        let x = coords.x - self.translate.x;
-        let y = coords.y - self.translate.y;
-
-        // Apply scaling
-        let x = self.zoom_factor * x;
-        let y = self.zoom_factor * y;
-        ScreenCoords { x, y }
-    }
-
-    /// Conversion from (x,y) coords to screen coords
     pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Screen coords go 0 -> 1 down the y axis and 0 -> aspect_ratio right along the x axis.
 
@@ -509,22 +570,36 @@ impl SkewTContext {
         let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_tp(xy)
     }
+}
 
-    /// Get a bounding box in screen coords
-    pub fn bounding_box_in_screen_coords(&self) -> ScreenRect {
-        let lower_left = self.convert_device_to_screen(DeviceCoords {
-            col: 0.0,
-            row: f64::from(self.device_height),
-        });
-        let upper_right = self.convert_device_to_screen(DeviceCoords {
-            col: f64::from(self.device_width),
-            row: 0.0,
-        });
+impl PlotContext for SkewTContext {
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
-        ScreenRect {
-            lower_left,
-            upper_right,
+        // Apply translation first
+        let x = coords.x - self.translate.x;
+        let y = coords.y - self.translate.y;
+
+        // Apply scaling
+        let x = self.zoom_factor * x;
+        let y = self.zoom_factor * y;
+        ScreenCoords { x, y }
+    }
+
+    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = self.scale_factor();
+        ScreenCoords {
+            x: coords.col / scale_factor,
+            // Flip y coordinate vertically and translate so origin is upper left corner.
+            y: -(coords.row / scale_factor) + f64::from(self.device_height) / scale_factor,
         }
+    }
+
+    fn device_height(&self) -> i32 {
+        self.device_height
+    }
+
+    fn device_width(&self) -> i32 {
+        self.device_height
     }
 }
 
@@ -577,19 +652,38 @@ impl RHOmegaContext {
         XYCoords { x, y }
     }
 
-    /// Conversion from (x,y) coords to screen coords
-    pub fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+    /// Conversion from `XYCoords` to `WPCoords`
+    pub fn convert_xy_to_wp(&self, coords: XYCoords) -> WPCoords {
+        use app::config;
+        use std::f64;
 
-        // Apply translation first
-        let x = coords.x;
-        let y = coords.y - self.translate_y;
+        let p = 10.0f64.powf(
+            -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP)) +
+                f64::log10(config::MAXP),
+        );
+        let w = coords.x * (2.0 * self.max_abs_omega) - self.max_abs_omega;
 
-        // Apply scaling
-        let x = x / self.skew_t_scale_factor * self.scale_factor();
-        let y = self.zoom_factor * y;
-        ScreenCoords { x, y }
+        WPCoords { w, p }
     }
 
+    /// Conversion from screen coords to xy
+    pub fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
+        // Unapply scaling first
+        let x = coords.x * self.skew_t_scale_factor / self.scale_factor();
+        let y = coords.y / self.zoom_factor;
+
+        // Unapply translation
+        let x = x;
+        let y = y + self.translate_y;
+
+        XYCoords { x, y }
+    }
+
+    /// Converstion from screen to `WPCoords`
+    pub fn convert_screen_to_wp(&self, coords: ScreenCoords) -> WPCoords {
+        let xy = self.convert_screen_to_xy(coords);
+        self.convert_xy_to_wp(xy)
+    }
 
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
@@ -601,5 +695,37 @@ impl RHOmegaContext {
     /// Get maximum absolute omega
     pub fn get_max_abs_omega(&self) -> f64 {
         self.max_abs_omega
+    }
+}
+
+impl PlotContext for RHOmegaContext {
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+
+        // Apply translation first
+        let x = coords.x;
+        let y = coords.y - self.translate_y;
+
+        // Apply scaling
+        let x = x / self.skew_t_scale_factor * self.scale_factor();
+        let y = self.zoom_factor * y;
+        ScreenCoords { x, y }
+    }
+
+    /// Conversion from device to screen coordinates.
+    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = self.scale_factor();
+        ScreenCoords {
+            x: coords.col / scale_factor,
+            // Flip y coordinate vertically and translate so origin is upper left corner.
+            y: -(coords.row / scale_factor) + f64::from(self.device_height) / scale_factor,
+        }
+    }
+
+    fn device_height(&self) -> i32 {
+        self.device_height
+    }
+
+    fn device_width(&self) -> i32 {
+        self.device_height
     }
 }

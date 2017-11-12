@@ -1,9 +1,9 @@
 //! Functions used for adding labels to the sounding plot
 use app::{AppContext, config};
-
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
+use gui::sounding::{set_font_size, check_overlap_then_add};
 
-use cairo::{Context, Matrix, FontExtents, FontFace, FontSlant, FontWeight};
+use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight};
 
 pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
 
@@ -13,29 +13,6 @@ pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
     set_font_size(ac.config.label_font_size, cr, ac);
 }
 
-fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
-    let dpi = match ac.get_dpi() {
-        None => 72.0,
-        Some(value) => value,
-    };
-
-    let font_size = size_in_pnts / 72.0 * dpi;
-    let ScreenCoords { x: font_size, .. } = ac.skew_t.convert_device_to_screen(DeviceCoords {
-        col: font_size,
-        row: 0.0,
-    });
-
-    // Flip the y-coordinate so it displays the font right side up
-    cr.set_font_matrix(Matrix {
-        xx: 1.0 * font_size,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0 * font_size, // Reflect it to be right side up!
-        x0: 0.0,
-        y0: 0.0,
-    });
-}
-
 // Label the pressure, temperatures, etc lines.
 pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
     let labels = collect_labels(cr, ac);
@@ -43,9 +20,11 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
+    use app::PlotContext;
+
     let mut labels = vec![];
 
-    let screen_edges = calculate_plot_edges(ac);
+    let screen_edges = ac.skew_t.calculate_plot_edges(cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
     if ac.config.show_isobars {
@@ -78,7 +57,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                 },
             );
 
-            check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
         }
     }
 
@@ -115,7 +94,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                     upper_right: label_upper_right,
                 },
             );
-            check_overlap_then_add(ac, &mut labels, &screen_edges, pair);
+            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
         }
     }
 
@@ -147,87 +126,10 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
     }
 }
 
-fn calculate_plot_edges(ac: &AppContext) -> ScreenRect {
-
-    let ScreenRect {
-        lower_left,
-        upper_right,
-    } = ac.skew_t.bounding_box_in_screen_coords();
-    let ScreenCoords {
-        x: mut screen_x_min,
-        y: mut screen_y_min,
-    } = lower_left;
-    let ScreenCoords {
-        x: mut screen_x_max,
-        y: mut screen_y_max,
-    } = upper_right;
-
-    // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
-    let ScreenCoords { x: xmin, y: ymin } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    let ScreenCoords { x: xmax, y: ymax } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-
-    if xmin > screen_x_min {
-        screen_x_min = xmin;
-    }
-    if xmax < screen_x_max {
-        screen_x_max = xmax;
-    }
-    if ymax < screen_y_max {
-        screen_y_max = ymax;
-    }
-    if ymin > screen_y_min {
-        screen_y_min = ymin;
-    }
-
-    // Add some padding to keep away from the window edge
-    let padding = ac.skew_t.edge_padding;
-    screen_x_max -= padding;
-    screen_y_max -= padding;
-    screen_x_min += padding;
-    screen_y_min += padding;
-
-    ScreenRect {
-        lower_left: ScreenCoords {
-            x: screen_x_min,
-            y: screen_y_min,
-        },
-        upper_right: ScreenCoords {
-            x: screen_x_max,
-            y: screen_y_max,
-        },
-    }
-}
-
-fn check_overlap_then_add(
-    ac: &AppContext,
-    vector: &mut Vec<(String, ScreenRect)>,
-    plot_edges: &ScreenRect,
-    label_pair: (String, ScreenRect),
-) {
-    let padding = ac.skew_t.label_padding;
-    let padded_rect = label_pair.1.add_padding(padding);
-
-    // Make sure it is on screen - but don't add padding to this check cause the screen already
-    // has padding.
-    if !label_pair.1.inside(plot_edges) {
-        return;
-    }
-
-    // Check for overlap
-
-    for &(_, ref rect) in vector.iter() {
-        if padded_rect.overlaps(rect) {
-            return;
-        }
-    }
-
-    vector.push(label_pair);
-}
-
 // Add a description box
 pub fn draw_legend(cr: &Context, ac: &AppContext) {
+    use app::PlotContext;
+
     if !ac.plottable() {
         return;
     }

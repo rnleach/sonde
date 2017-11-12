@@ -144,6 +144,8 @@ fn calculate_screen_rect(
     strings: &[String],
     sample_p: f64,
 ) -> ScreenRect {
+    use app::PlotContext;
+
     let mut width: f64 = 0.0;
     let mut height: f64 = 0.0;
 

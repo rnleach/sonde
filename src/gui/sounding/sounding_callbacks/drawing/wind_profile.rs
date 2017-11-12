@@ -55,6 +55,8 @@ fn gather_wind_data(
 }
 
 fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBarbData> {
+    use app::PlotContext;
+
     // Remove overlapping barbs, or barbs not on the screen
     let mut keepers: Vec<WindBarbData> = vec![];
     let screen_box = ac.skew_t.bounding_box_in_screen_coords();
@@ -91,6 +93,8 @@ struct WindBarbConfig<'a> {
 
 impl<'a, 'b> WindBarbConfig<'a> {
     fn init(cr: &'b Context, ac: &'a AppContext) -> Self {
+        use app::PlotContext;
+
         let (shaft_length, barb_length) = cr.device_to_user_distance(
             ac.config.wind_barb_shaft_length,
             -ac.config.wind_barb_barb_length,

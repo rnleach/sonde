@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use cairo::Context;
+use cairo::{Context, Matrix};
 use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
           POINTER_MOTION_HINT_MASK, LEAVE_NOTIFY_MASK, KEY_RELEASE_MASK, KEY_PRESS_MASK};
 use gtk::{DrawingArea, WidgetExt};
@@ -11,7 +11,7 @@ mod sounding_callbacks;
 mod omega_callbacks;
 
 use app;
-use coords::ScreenCoords;
+use coords::{ScreenCoords, DeviceCoords, ScreenRect};
 
 /// Initialize the drawing area and connect signal handlers.
 pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &app::AppContextPointer) {
@@ -112,4 +112,57 @@ fn plot_dashed_curve_from_points<I>(
     cr.set_dash(&[0.02], 0.0);
     plot_curve_from_points(cr, line_width_pixels, rgba, points);
     cr.set_dash(&[], 0.0);
+}
+
+fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &app::AppContext) {
+    use app::PlotContext;
+
+    let dpi = match ac.get_dpi() {
+        None => 72.0,
+        Some(value) => value,
+    };
+
+    let font_size = size_in_pnts / 72.0 * dpi;
+    let ScreenCoords { x: font_size, .. } = ac.skew_t.convert_device_to_screen(DeviceCoords {
+        col: font_size,
+        row: 0.0,
+    });
+
+    // Flip the y-coordinate so it displays the font right side up
+    cr.set_font_matrix(Matrix {
+        xx: 1.0 * font_size,
+        yx: 0.0,
+        xy: 0.0,
+        yy: -1.0 * font_size, // Reflect it to be right side up!
+        x0: 0.0,
+        y0: 0.0,
+    });
+}
+
+fn check_overlap_then_add(
+    cr: &Context,
+    ac: &app::AppContext,
+    vector: &mut Vec<(String, ScreenRect)>,
+    plot_edges: &ScreenRect,
+    label_pair: (String, ScreenRect),
+) {
+    use coords::Rect;
+
+    let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+    let padded_rect = label_pair.1.add_padding(padding);
+
+    // Make sure it is on screen - but don't add padding to this check cause the screen already
+    // has padding.
+    if !label_pair.1.inside(plot_edges) {
+        return;
+    }
+
+    // Check for overlap
+    for &(_, ref rect) in vector.iter() {
+        if padded_rect.overlaps(rect) {
+            return;
+        }
+    }
+
+    vector.push(label_pair);
 }

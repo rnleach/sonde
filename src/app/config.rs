@@ -415,7 +415,25 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
 //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
-pub const ISO_OMEGA: [f64; 9] = [-4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0];
+pub const ISO_OMEGA: [f64; 17] = [
+    -8.0,
+    -7.0,
+    -6.0,
+    -5.0,
+    -4.0,
+    -3.0,
+    -2.0,
+    -1.0,
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.0,
+    8.0,
+];
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
