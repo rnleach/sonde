@@ -76,9 +76,10 @@ fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) 
 
 fn draw_background(cr: &Context, ac: &mut AppContext) {
 
-    // If is plottable, draw snow growth zones
-    // TODO:
-
+    if ac.config.show_dendritic_zone {
+        draw_dendtritic_snow_growth_zone(cr, ac);
+    }
+    
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
@@ -117,6 +118,47 @@ fn draw_background(cr: &Context, ac: &mut AppContext) {
                 ac.rh_omega.convert_wp_to_screen(*wp_coords)
             }),
         );
+    }
+}
+
+fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &mut AppContext){
+    use sounding_base::Profile::Pressure;
+
+    // If is plottable, draw snow growth zones
+    if let Some(snd) = ac.get_sounding_for_display() {
+
+        let rgba = ac.config.dendritic_zone_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
+            let mut coords = [
+                (-ac.rh_omega.get_max_abs_omega(), bottom_p),
+                (-ac.rh_omega.get_max_abs_omega(), top_p),
+                (ac.rh_omega.get_max_abs_omega(), top_p),
+                (ac.rh_omega.get_max_abs_omega(), bottom_p),
+            ];
+
+            // Convert points to screen coords
+            for coord in &mut coords {
+                let screen_coords = ac.rh_omega.convert_wp_to_screen(WPCoords {
+                    w: coord.0,
+                    p: coord.1,
+                });
+                coord.0 = screen_coords.x;
+                coord.1 = screen_coords.y;
+            }
+
+            let mut coord_iter = coords.iter();
+            for coord in coord_iter.by_ref().take(1) {
+                cr.move_to(coord.0, coord.1);
+            }
+            for coord in coord_iter {
+                cr.line_to(coord.0, coord.1);
+            }
+
+            cr.close_path();
+            cr.fill();
+        }
     }
 }
 
