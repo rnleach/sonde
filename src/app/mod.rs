@@ -599,7 +599,7 @@ impl PlotContext for SkewTContext {
     }
 
     fn device_width(&self) -> i32 {
-        self.device_height
+        self.device_width
     }
 }
 
