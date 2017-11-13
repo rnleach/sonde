@@ -34,7 +34,7 @@ pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
             sample_p
         };
 
-        lines = create_text(&vals, snd);
+        lines = create_text(&vals, snd, ac);
     }
 
     draw_sample_line(cr, ac, sample_p);
@@ -44,7 +44,7 @@ pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
     draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
 }
 
-fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
+fn create_text(vals: &DataRow, snd: &Sounding, ac: &AppContext) -> Vec<String> {
 
     let mut results = vec![];
 
@@ -115,6 +115,45 @@ fn create_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
             results.push(line);
         }
     }
+
+    // Sample the screen coords. Leave these commented out for debugging later possibly. 
+    // {
+    //     use app::PlotContext;
+    //     if let Some(pnt) = ac.skew_t.last_cursor_position_skew_t {
+    //         let mut line = String::with_capacity(128);
+    //         line.push_str(&format!(
+    //             "col: {:3.0} row: {:3.0}",
+    //             pnt.col,
+    //             pnt.row
+    //         ));
+    //         results.push(line);
+    //         let mut line = String::with_capacity(128);
+    //         let pnt = ac.skew_t.convert_device_to_screen(pnt);
+    //         line.push_str(&format!(
+    //             "screen x: {:.3} y: {:.3}",
+    //             pnt.x,
+    //             pnt.y
+    //         ));
+    //         results.push(line);
+    //         let mut line = String::with_capacity(128);
+    //         let pnt2 = ac.skew_t.convert_screen_to_xy(pnt);
+    //         line.push_str(&format!(
+    //             "x: {:.3} y: {:.3}",
+    //             pnt2.x,
+    //             pnt2.y
+    //         ));
+    //         results.push(line);
+    //         let mut line = String::with_capacity(128);
+    //         let pnt = ac.skew_t.convert_screen_to_tp(pnt);
+    //         line.push_str(&format!(
+    //             "t: {:3.0} p: {:3.0}",
+    //             pnt.temperature,
+    //             pnt.pressure
+    //         ));
+    //         results.push(line);
+    //     }
+    // }
+
     results
 }
 
