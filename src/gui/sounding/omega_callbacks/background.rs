@@ -120,32 +120,35 @@ fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
 pub fn draw_labels(cr: &Context, ac: &AppContext) {
     use coords::Rect;
 
-    let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
-    cr.set_font_face(font_face);
+    if ac.config.show_labels
+    {
+        let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
+        cr.set_font_face(font_face);
 
-    set_font_size(ac.config.label_font_size, cr, ac);
+        set_font_size(ac.config.label_font_size, cr, ac);
 
-    let labels = collect_labels(cr, ac);
-    let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+        let labels = collect_labels(cr, ac);
+        let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
 
-    for (label, rect) in labels {
-        let ScreenRect { lower_left, .. } = rect;
+        for (label, rect) in labels {
+            let ScreenRect { lower_left, .. } = rect;
 
-        let mut rgba = ac.config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.rectangle(
-            lower_left.x - padding,
-            lower_left.y - padding,
-            rect.width() + 2.0 * padding,
-            rect.height() + 2.0 * padding,
-        );
-        cr.fill();
+            let mut rgba = ac.config.background_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            cr.rectangle(
+                lower_left.x - padding,
+                lower_left.y - padding,
+                rect.width() + 2.0 * padding,
+                rect.height() + 2.0 * padding,
+            );
+            cr.fill();
 
-        // Setup label colors
-        rgba = ac.config.label_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.move_to(lower_left.x, lower_left.y);
-        cr.show_text(&label);
+            // Setup label colors
+            rgba = ac.config.label_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            cr.move_to(lower_left.x, lower_left.y);
+            cr.show_text(&label);
+        }
     }
 }
 
