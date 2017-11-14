@@ -42,7 +42,7 @@ impl Gui {
         };
 
         sounding::set_up_sounding_area(&gui.get_sounding_area(), acp);
-        sounding::set_up_omega_area(&gui.get_omega_area(), acp);
+        sounding::set_up_rh_omega_area(&gui.get_omega_area(), acp);
         hodograph::set_up_hodograph_area(&gui.get_hodograph_area());
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());

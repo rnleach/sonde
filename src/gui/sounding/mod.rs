@@ -8,7 +8,7 @@ use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MA
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
-mod omega_callbacks;
+mod rh_omega_callbacks;
 
 use app;
 use coords::{ScreenCoords, DeviceCoords, ScreenRect};
@@ -66,7 +66,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &app::AppC
 
 }
 
-pub fn set_up_omega_area(omega_area: &DrawingArea, app_context: &app::AppContextPointer) {
+pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &app::AppContextPointer) {
 
     // Layout
     omega_area.set_hexpand(false);
@@ -74,7 +74,7 @@ pub fn set_up_omega_area(omega_area: &DrawingArea, app_context: &app::AppContext
     omega_area.set_property_width_request(80);
 
     let acp = Rc::clone(app_context);
-    omega_area.connect_draw(move |_da, cr| omega_callbacks::draw_omega(cr, &acp));
+    omega_area.connect_draw(move |_da, cr| rh_omega_callbacks::draw_rh_omega(cr, &acp));
 }
 
 // Draw a curve connecting a list of points.

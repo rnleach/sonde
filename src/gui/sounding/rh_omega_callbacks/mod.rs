@@ -9,7 +9,7 @@ use gui::sounding::plot_curve_from_points;
 mod background;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
+pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
     let mut ac = ac.borrow_mut();
 
@@ -21,6 +21,10 @@ pub fn draw_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
     draw_active_readout(cr, &ac);
 
     Inhibit(false)
+}
+
+fn draw_rh_profile(_cr: &Context, _ac: &AppContext) {
+    // TODO:
 }
 
 fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
@@ -104,10 +108,6 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
-}
-
-fn draw_rh_profile(_cr: &Context, _ac: &AppContext) {
-    // TODO:
 }
 
 fn draw_active_readout(cr: &Context, ac: &AppContext) {
