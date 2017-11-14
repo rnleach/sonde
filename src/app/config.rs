@@ -61,7 +61,7 @@ pub struct Config {
     pub show_dew_point: bool,
 
     //
-    // Omega profile
+    // RH-Omega profile
     //
     /// Show the rh omega frame
     pub show_rh_omega_frame: bool,
@@ -71,6 +71,8 @@ pub struct Config {
     pub omega_line_width: f64,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
+    /// Show RH
+    pub show_rh_profile: bool,
 
     //
     // Labeling
@@ -182,12 +184,13 @@ impl Default for Config {
             show_dew_point: true,
 
             //
-            // Omega profile
+            // RH-Omega profile
             //
             show_rh_omega_frame: true,
             show_omega_profile: true,
             omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
+            show_rh_profile: true,
 
             //
             // Labeling

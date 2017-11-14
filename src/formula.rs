@@ -21,6 +21,12 @@ pub fn vapor_pressure_water(temperature_c: f64) -> f64 {
     6.11 * f64::powf(10.0, 7.5 * temperature_c / (237.3 + temperature_c))
 }
 
+pub fn rh(temperature_c: f64, dew_point_c: f64) -> f64 {
+    let e = vapor_pressure_water(dew_point_c);
+    let es = vapor_pressure_water(temperature_c);
+    e / es
+}
+
 /// Get the mixing ratio in g/kg.
 pub fn mixing_ratio(temperature_c: f64, pressure_hpa: f64) -> f64 {
     let vp = vapor_pressure_water(temperature_c);

@@ -23,10 +23,6 @@ pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
     Inhibit(false)
 }
 
-fn draw_rh_profile(_cr: &Context, _ac: &AppContext) {
-    // TODO:
-}
-
 fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     use app::PlotContext;
 
@@ -75,6 +71,49 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
         upper_right_xy.y - lower_left_xy.y,
     );
     cr.clip();
+}
+
+fn draw_rh_profile(cr: &Context, ac: &AppContext) {
+    use app::PlotContext;
+
+    // TODO:
+    if !ac.config.show_rh_profile {
+        return;
+    }
+
+    if let Some(sndg) = ac.get_sounding_for_display() {
+        use sounding_base::Profile::{Pressure, Temperature, DewPoint};
+
+        let pres_data = sndg.get_profile(Pressure);
+        let t_data = sndg.get_profile(Temperature);
+        let td_data = sndg.get_profile(DewPoint);
+        let profile = izip!(pres_data, t_data, td_data)
+            .filter_map(|triplet| if let (Some(p), Some(t), Some(td)) =
+                (
+                    triplet.0.as_option(),
+                    triplet.1.as_option(),
+                    triplet.2.as_option(),
+                )
+            {
+                Some((p, ::formula::rh(t, td)))
+            } else {
+                None
+            })
+            .filter_map(|pair| {
+                let (p, rh) = pair;
+                if p > config::MINP {
+                    let XYCoords { y, .. } = ac.rh_omega.convert_wp_to_xy(WPCoords { w: 0.0, p });
+                    Some(ac.rh_omega.convert_xy_to_screen(XYCoords { x: rh, y }))
+                } else {
+                    None
+                }
+            });
+
+        let line_width = ac.config.omega_line_width * 3.0;
+        let line_rgba = ac.config.omega_rgba;
+
+        plot_curve_from_points(cr, line_width, line_rgba, profile);
+    }
 }
 
 fn draw_omega_profile(cr: &Context, ac: &AppContext) {

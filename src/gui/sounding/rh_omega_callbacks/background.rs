@@ -120,9 +120,9 @@ fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
 pub fn draw_labels(cr: &Context, ac: &AppContext) {
     use coords::Rect;
 
-    if ac.config.show_labels
-    {
-        let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
+    if ac.config.show_labels {
+        let font_face =
+            FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
         set_font_size(ac.config.label_font_size, cr, ac);

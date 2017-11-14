@@ -69,9 +69,7 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
             line.push_str(&format!("{:.0}C", dp_c));
         }
         if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-            let e = ::formula::vapor_pressure_water(dp_c);
-            let es = ::formula::vapor_pressure_water(t_c);
-            line.push_str(&format!(" {:.0}%", 100.0 * e / es));
+            line.push_str(&format!(" {:.0}%", 100.0 * ::formula::rh(t_c, dp_c)));
         }
         if let Some(omega) = omega {
             line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
@@ -116,7 +114,7 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
         }
     }
 
-    // Sample the screen coords. Leave these commented out for debugging later possibly. 
+    // Sample the screen coords. Leave these commented out for debugging later possibly.
     // {
     //     use app::PlotContext;
     //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
