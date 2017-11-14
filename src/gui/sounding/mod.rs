@@ -74,7 +74,7 @@ pub fn set_up_omega_area(omega_area: &DrawingArea, app_context: &app::AppContext
     omega_area.set_property_width_request(80);
 
     let acp = Rc::clone(app_context);
-    omega_area.connect_draw(move |da, cr| omega_callbacks::draw_omega(da, cr, &acp));
+    omega_area.connect_draw(move |_da, cr| omega_callbacks::draw_omega(cr, &acp));
 }
 
 // Draw a curve connecting a list of points.

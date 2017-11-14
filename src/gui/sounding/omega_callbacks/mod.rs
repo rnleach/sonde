@@ -1,6 +1,6 @@
 
 use cairo::{Context, Matrix};
-use gtk::{DrawingArea, Inhibit, WidgetExt};
+use gtk::Inhibit;
 
 use app::{AppContext, AppContextPointer, config};
 use coords::{XYCoords, WPCoords};
@@ -9,11 +9,11 @@ use gui::sounding::plot_curve_from_points;
 mod background;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_omega(omega_area: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
+pub fn draw_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
     let mut ac = ac.borrow_mut();
 
-    prepare_to_draw(omega_area, cr, &mut ac);
+    prepare_to_draw(cr, &mut ac);
     background::draw_background(cr, &ac);
     background::draw_labels(cr, &ac);
     draw_rh_profile(cr, &ac);
@@ -23,15 +23,10 @@ pub fn draw_omega(omega_area: &DrawingArea, cr: &Context, ac: &AppContextPointer
     Inhibit(false)
 }
 
-fn prepare_to_draw(omega_area: &DrawingArea, cr: &Context, ac: &mut AppContext) {
+fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     use app::PlotContext;
 
-    // Get the dimensions of the DrawingArea
-    let alloc = omega_area.get_allocation();
-    ac.rh_omega.device_width = alloc.width;
-    ac.rh_omega.device_height = alloc.height;
-
-    ac.update_skew_t_allocation();
+    ac.update_plot_context_allocations();
     let scale_factor = ac.skew_t.scale_factor();
     ac.rh_omega.skew_t_scale_factor = scale_factor;
 

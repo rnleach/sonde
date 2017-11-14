@@ -273,12 +273,16 @@ impl AppContext {
     }
 
     /// Update the dimensions of the skew-t drawing area
-    pub fn update_skew_t_allocation(&mut self) {
+    pub fn update_plot_context_allocations(&mut self) {
         if let Some(ref gui) = self.gui {
 
             let alloc = gui.get_sounding_area().get_allocation();
             self.skew_t.device_width = alloc.width;
             self.skew_t.device_height = alloc.height;
+
+            let alloc = gui.get_omega_area().get_allocation();
+            self.rh_omega.device_width = alloc.width;
+            self.rh_omega.device_height = alloc.height;
         }
     }
 

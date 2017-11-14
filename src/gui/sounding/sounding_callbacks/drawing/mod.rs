@@ -15,7 +15,7 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     use app::PlotContext;
 
     // Get the dimensions of the DrawingArea
-    ac.update_skew_t_allocation();
+    ac.update_plot_context_allocations();
     let scale_factor = ac.skew_t.scale_factor();
 
     // Fill with backgound color
