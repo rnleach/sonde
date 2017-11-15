@@ -80,6 +80,7 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
         show_omega_profile,
         omega_rgba
     );
+    build_config_color_and_check!(data_box, "Relative Humidity", acp, show_rh_profile, rh_rgba);
 
     //
     // Layout boxes in the frame

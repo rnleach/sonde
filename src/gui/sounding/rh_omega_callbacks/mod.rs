@@ -3,7 +3,7 @@ use cairo::{Context, Matrix};
 use gtk::Inhibit;
 
 use app::{AppContext, AppContextPointer, config};
-use coords::{XYCoords, WPCoords};
+use coords::{XYCoords, WPCoords, ScreenCoords};
 use gui::sounding::plot_curve_from_points;
 
 mod background;
@@ -76,7 +76,6 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
 fn draw_rh_profile(cr: &Context, ac: &AppContext) {
     use app::PlotContext;
 
-    // TODO:
     if !ac.config.show_rh_profile {
         return;
     }
@@ -87,7 +86,7 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
         let pres_data = sndg.get_profile(Pressure);
         let t_data = sndg.get_profile(Temperature);
         let td_data = sndg.get_profile(DewPoint);
-        let profile = izip!(pres_data, t_data, td_data)
+        let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|triplet| if let (Some(p), Some(t), Some(td)) =
                 (
                     triplet.0.as_option(),
@@ -109,10 +108,61 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
                 }
             });
 
-        let line_width = ac.config.omega_line_width * 3.0;
-        let line_rgba = ac.config.omega_rgba;
+        let line_width = ac.config.omega_line_width;
+        let mut rgba = ac.config.rh_rgba;
+        rgba.3 *= 0.75;
 
-        plot_curve_from_points(cr, line_width, line_rgba, profile);
+        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        let mut previous: Option<ScreenCoords>;
+        let mut curr: Option<ScreenCoords> = None;
+        let mut next: Option<ScreenCoords> = None;
+        loop {
+            previous = curr;
+            curr = next;
+            next = profile.next();
+
+            const XMIN: f64 = 0.0;
+            let xmax: f64;
+            let ymin: f64;
+            let ymax: f64;
+            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
+                // In the middle - most common
+                xmax = c.x;
+                let down = (c.y - p.y) / 2.0;
+                let up = (n.y - c.y) / 2.0;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
+                // Last point
+                xmax = c.x;
+                let down = (c.y - p.y) / 2.0;
+                let up = down;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
+                // First point
+                xmax = c.x;
+                let up = (n.y - c.y) / 2.0;
+                let down = up;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (Some(_), None, None) = (previous, curr, next) {
+                // Done - get out of here
+                break;
+            } else if let (None, None, Some(_)) = (previous, curr, next) {
+                // Just getting into the loop - do nothing
+                continue;
+            } else {
+                // Impossible state
+                unreachable!();
+            }
+
+            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
+            cr.fill_preserve();
+            cr.stroke();
+        }
     }
 }
 

@@ -73,6 +73,8 @@ pub struct Config {
     pub omega_rgba: (f64, f64, f64, f64),
     /// Show RH
     pub show_rh_profile: bool,
+    /// RH Color
+    pub rh_rgba: (f64, f64, f64, f64),
 
     //
     // Labeling
@@ -191,6 +193,7 @@ impl Default for Config {
             omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
             show_rh_profile: true,
+            rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
 
             //
             // Labeling
