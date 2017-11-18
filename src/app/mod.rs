@@ -689,6 +689,12 @@ impl RHOmegaContext {
         self.convert_xy_to_wp(xy)
     }
 
+    /// Conversion from `DeviceCoords` to `WPCoords`
+    pub fn convert_device_to_wp(&self, coords: DeviceCoords) -> WPCoords {
+        let screen = self.convert_device_to_screen(coords);
+        self.convert_screen_to_wp(screen)
+    }
+
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
         let xy = self.convert_wp_to_xy(coords);
@@ -717,7 +723,7 @@ impl PlotContext for RHOmegaContext {
 
     /// Conversion from device to screen coordinates.
     fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = self.scale_factor();
+        let scale_factor = self.skew_t_scale_factor;
         ScreenCoords {
             x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
@@ -730,6 +736,23 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn device_width(&self) -> i32 {
-        self.device_height
+        self.device_width
     }
+}
+
+#[test]
+fn test_coord_conversion_rh_omega() {
+    let context = RHOmegaContext::new();
+
+    let screen1 = ScreenCoords { x: 0.5, y: 0.5 };
+    let screen2 = context.convert_xy_to_screen(context.convert_screen_to_xy(screen1));
+
+    assert!(::approx_equal(screen1.x, screen2.x, 1.0e-9));
+    assert!(::approx_equal(screen1.y, screen2.y, 1.0e-9));
+
+    let wp1 = WPCoords { w: 0.0, p: 505.0 };
+    let wp2 = context.convert_screen_to_wp(context.convert_wp_to_screen(wp1));
+
+    assert!(::approx_equal(wp1.p, wp2.p, 1.0e-9));
+    assert!(::approx_equal(wp1.p, wp2.p, 1.0e-9));
 }

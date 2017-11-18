@@ -59,3 +59,8 @@ pub fn run() -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+fn approx_equal(x: f64, y: f64, tol: f64) -> bool {
+    (x - y).abs() < tol.abs()
+}

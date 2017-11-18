@@ -74,7 +74,26 @@ pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &app::AppCont
     omega_area.set_property_width_request(80);
 
     let acp = Rc::clone(app_context);
-    omega_area.connect_draw(move |_da, cr| rh_omega_callbacks::draw_rh_omega(cr, &acp));
+    omega_area.connect_draw(move |_da, cr| {
+        rh_omega_callbacks::drawing::draw_rh_omega(cr, &acp)
+    });
+
+    let ac = Rc::clone(app_context);
+    omega_area.connect_motion_notify_event(move |da, ev| {
+        rh_omega_callbacks::mouse_motion_event(da, ev, &ac)
+    });
+
+    let ac = Rc::clone(app_context);
+    omega_area.connect_leave_notify_event(move |da, ev| {
+        rh_omega_callbacks::leave_event(da, ev, &ac)
+    });
+
+    omega_area.add_events(
+        (SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_HINT_MASK |
+             POINTER_MOTION_MASK |
+             LEAVE_NOTIFY_MASK | KEY_RELEASE_MASK | KEY_PRESS_MASK)
+            .bits() as i32,
+    );
 }
 
 // Draw a curve connecting a list of points.

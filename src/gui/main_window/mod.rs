@@ -71,8 +71,8 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 
 fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
 
-    const BOX_SPACING:i32 = 0;
-    const BOX_PADDING:u32 = 0;
+    const BOX_SPACING: i32 = 0;
+    const BOX_PADDING: u32 = 0;
 
     let skew_t = gui.get_sounding_area();
     let rh_omega = gui.get_omega_area();
