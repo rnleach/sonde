@@ -97,6 +97,29 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
             );
         }
     }
+
+    // Draw the freezing line
+    if ac.config.show_freezing_line {
+        let pnts = &[
+            TPCoords {
+                temperature: 0.0,
+                pressure: config::MAXP,
+            },
+            TPCoords {
+                temperature: 0.0,
+                pressure: config::MINP,
+            },
+        ];
+        let pnts = pnts.iter().map(|tp_coords| {
+            ac.skew_t.convert_tp_to_screen(*tp_coords)
+        });
+        plot_curve_from_points(
+            cr,
+            ac.config.freezing_line_width,
+            ac.config.freezing_line_color,
+            pnts,
+        );
+    }
 }
 
 fn draw_temperature_banding(cr: &Context, ac: &AppContext) {

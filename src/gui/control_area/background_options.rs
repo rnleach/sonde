@@ -68,6 +68,13 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
     );
     build_config_color_and_check!(lines_box, "Temperature", acp, show_isotherms, isotherm_rgba);
     build_config_color_and_check!(lines_box, "Pressure", acp, show_isobars, isobar_rgba);
+    build_config_color_and_check!(
+        lines_box,
+        "Freezing Line",
+        acp,
+        show_freezing_line,
+        freezing_line_color
+    );
 
     // Show hide omega lines
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);

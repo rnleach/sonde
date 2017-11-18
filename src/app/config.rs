@@ -111,8 +111,14 @@ pub struct Config {
     pub show_dendritic_zone: bool,
     /// Color used to fill the hail growth zone
     pub hail_zone_rgba: (f64, f64, f64, f64),
-    // Show or hide the hail growth zone
+    /// Show or hide the hail growth zone
     pub show_hail_zone: bool,
+    /// Line width for freezing line
+    pub freezing_line_width: f64,
+    /// Color for freezing line
+    pub freezing_line_color: (f64, f64, f64, f64),
+    /// Show or hide freezing line
+    pub show_freezing_line: bool,
     /// Color used for isotherms
     pub isotherm_rgba: (f64, f64, f64, f64),
     pub show_isotherms: bool,
@@ -217,6 +223,9 @@ impl Default for Config {
             show_dendritic_zone: true,
             hail_zone_rgba: (0.0, 0.803921569, 0.803921569, 1.0),
             show_hail_zone: true,
+            freezing_line_width: 3.0,
+            freezing_line_color: (0.0, 0.466666667, 0.780392157, 1.0),
+            show_freezing_line: true,
             isotherm_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
             show_isotherms: true,
             isobar_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
