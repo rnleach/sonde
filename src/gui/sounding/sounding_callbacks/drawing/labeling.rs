@@ -130,7 +130,7 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
 pub fn draw_legend(cr: &Context, ac: &AppContext) {
     use app::PlotContext;
 
-    if !ac.plottable() {
+    if !(ac.plottable() && ac.config.show_legend) {
         return;
     }
 

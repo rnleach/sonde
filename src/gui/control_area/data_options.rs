@@ -46,10 +46,18 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
     // Create rh_omega callback
     let acp1 = Rc::clone(acp);
     rh_omega.connect_toggled(move |button| {
+
         let mut ac = acp1.borrow_mut();
 
         ac.config.show_rh_omega_frame = button.get_active();
         ac.show_hide_rh_omega();
+
+        let acp2 = Rc::clone(&acp1);
+        ::gtk::idle_add(move || {
+            let ac = acp2.borrow_mut();
+            ac.queue_draw_skew_t_rh_omega();
+            Continue(false)
+        });
     });
 
     // Layout

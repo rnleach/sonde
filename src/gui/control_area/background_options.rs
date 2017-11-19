@@ -183,8 +183,7 @@ fn build_font_frame(acp: &AppContextPointer) -> gtk::Frame {
     font_frame.add(&font_box);
 
     build_config_color_and_check!(font_box, "Labels", acp, show_labels, label_rgba);
-
-    // TODO: Add option to show/hide legend. Already in the config.
+    build_config_check!(font_box, "Show Legend", acp, show_legend);
 
     font_frame
 }

@@ -44,6 +44,31 @@ macro_rules! build_config_color_and_check {
     };
 }
 
+macro_rules! build_config_check{
+    ($v_box:ident, $label:expr, $acp:ident, $show_var:ident) => {
+        let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+        let check = CheckButton::new_with_label($label);
+
+        // Inner scope to borrow acp
+        {
+            let ac = $acp.borrow();
+            check.set_active(ac.config.$show_var);
+        }
+
+        // Create check button callback
+        let acp1 = $acp.clone();
+        check.connect_toggled(move|button|{
+            let mut ac = acp1.borrow_mut();
+            ac.config.$show_var = button.get_active();
+            ac.queue_draw_skew_t_rh_omega();
+        });
+
+        // Layout
+        hbox.pack_start(&check, false, true, PADDING);
+        $v_box.pack_start(&hbox, false, true, PADDING);
+    };
+}
+
 mod data_options;
 mod background_options;
 
