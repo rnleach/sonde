@@ -20,12 +20,19 @@ use app::AppContextPointer;
 /// the GUI, but instead gives a duplicate of the references to the objects.
 #[derive(Clone)]
 pub struct Gui {
+    // Left pane
     sounding_area: DrawingArea,
     omega_area: DrawingArea,
+
+    // Right pane
     hodograph_area: DrawingArea,
     index_area: DrawingArea,
     control_area: Notebook,
+
+    // Main window
     window: Window,
+
+    // Smart pointer.
     app_context: AppContextPointer,
 }
 

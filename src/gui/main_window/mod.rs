@@ -4,7 +4,7 @@ use glib;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Window, MenuBar, MenuItem, Menu};
+use gtk::{Window, MenuBar, MenuItem, Menu, Notebook};
 
 use app::{AppContextPointer, AppContext};
 use app::config;
@@ -74,31 +74,30 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     const BOX_SPACING: i32 = 0;
     const BOX_PADDING: u32 = 0;
 
+    let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
+
+    // Left pane
     let skew_t = gui.get_sounding_area();
     let rh_omega = gui.get_omega_area();
-    let hodo = gui.get_hodograph_area();
-    let index = gui.get_index_area();
-    let controls = gui.get_control_area();
-
-    let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
     let h_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-
     h_box.pack_start(&rh_omega, false, true, BOX_PADDING);
     h_box.pack_start(&skew_t, true, true, BOX_PADDING);
 
-    let v_pane_inner = gtk::Paned::new(gtk::Orientation::Vertical);
-    let v_pane_outer = gtk::Paned::new(gtk::Orientation::Vertical);
-
-    v_pane_inner.add1(&add_border_frame(&hodo));
-    v_pane_inner.add2(&add_border_frame(&index));
-    v_pane_outer.add1(&v_pane_inner);
-    v_pane_outer.add2(&add_border_frame(&controls));
-    v_pane_inner.set_position(ac.config.window_height / 3);
-    v_pane_outer.set_position(ac.config.window_height * 2 / 3);
+    // Right pane
+    let hodo = gui.get_hodograph_area();
+    let index = gui.get_index_area();
+    let controls = gui.get_control_area();
+    let notebook = Notebook::new();
+    notebook.add(&hodo);
+    notebook.set_tab_label_text(&hodo, "Hodograph");
+    notebook.add(&index);
+    notebook.set_tab_label_text(&index, "Indexes");
+    notebook.add(&controls);
+    notebook.set_tab_label_text(&controls, "Controls");
 
     main_pane.add1(&add_border_frame(&h_box));
-    main_pane.add2(&v_pane_outer);
-    main_pane.set_position(ac.config.window_width * 11 / 16);
+    main_pane.add2(&notebook);
+    main_pane.set_position(ac.config.window_width / 2);
 
     main_pane
 }

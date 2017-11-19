@@ -156,8 +156,8 @@ impl Default for Config {
             //
             // Window Layout
             //
-            window_width: 850,
-            window_height: 650,
+            window_width: 1100,
+            window_height: 550,
 
             //
             // Wind profile
