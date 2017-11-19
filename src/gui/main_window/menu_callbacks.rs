@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 
 use gtk::{DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt,
-          FileFilter, FileFilterExt, MenuItem, ResponseType, WidgetExt, Window};
+          FileFilter, FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window};
 
 use sounding_bufkit::BufkitFile;
 
@@ -28,14 +28,12 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     if dialog.run() == ResponseType::Ok.into() {
 
         if let Some(filename) = dialog.get_filename() {
-            if !load_file(&filename, ac).is_ok() {
-                // TODO: Show error dialog
+            if let Err(ref err) = load_file(&filename, ac) {
+                show_error_dialog(&format!("Error loading file: {}", err), win);
             }
         } else {
-            // TODO: Show error dialog
+            show_error_dialog("Could not retrieve file name from dialog.", win);
         }
-    } else {
-        // TODO: Show error dialog
     }
 
     dialog.destroy();
@@ -58,4 +56,17 @@ fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn show_error_dialog(message: &str, win: &Window) {
+    use gtk::{MessageType, ButtonsType, DIALOG_MODAL, DIALOG_DESTROY_WITH_PARENT};
+    let dialog = MessageDialog::new(
+        Some(win),
+        DIALOG_MODAL | DIALOG_DESTROY_WITH_PARENT,
+        MessageType::Error,
+        ButtonsType::Ok,
+        message,
+    );
+    dialog.run();
+    dialog.destroy();
 }
