@@ -1,0 +1,10 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+            "folder_exclude_patterns":["target", "doc", ".vscode"],
+            "file_exclude_patterns":["*.bk", "*.sublime*", "*.lock"]
+		}
+	]
+}

@@ -1,0 +1,1205 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ren",
+				"rename_and_reload"
+			],
+			[
+				"Err",
+				"ErrorKind"
+			],
+			[
+				"convert",
+				"convert_filenames"
+			],
+			[
+				"with",
+				"with_chain"
+			],
+			[
+				"Date",
+				"DateList"
+			],
+			[
+				"buil",
+				"build_date_list"
+			],
+			[
+				"write",
+				"write_all"
+			],
+			[
+				"app",
+				"apply_proper_motion_eq"
+			],
+			[
+				"ra",
+				"radians"
+			],
+			[
+				"ap",
+				"approx_eq"
+			],
+			[
+				"Pr",
+				"ProperMotionEq"
+			],
+			[
+				"P",
+				"ProperMotionEc"
+			],
+			[
+				"Proper",
+				"ProperMotionEq"
+			],
+			[
+				"E",
+				"Equatorial"
+			],
+			[
+				"lon",
+				"longitude"
+			],
+			[
+				"A",
+				"AstroTime"
+			],
+			[
+				"right",
+				"right_acension"
+			],
+			[
+				"Pro",
+				"ProperMotion"
+			],
+			[
+				"lat",
+				"latitude"
+			],
+			[
+				"Eclip",
+				"Ecliptical"
+			],
+			[
+				"righ",
+				"right_acension"
+			],
+			[
+				"Ecl",
+				"EclipticCoords"
+			],
+			[
+				"Hro",
+				"HorizontalCoords"
+			],
+			[
+				"ob",
+				"observer_loc"
+			],
+			[
+				"valid",
+				"valid_time"
+			],
+			[
+				"radi",
+				"radian_lat"
+			],
+			[
+				"Geo",
+				"GeoCoords"
+			],
+			[
+				"Galac",
+				"GalacticCoords"
+			],
+			[
+				"Radi",
+				"RadianAngle"
+			],
+			[
+				"val",
+				"valid_time"
+			],
+			[
+				"equ",
+				"equinox"
+			],
+			[
+				"EPSILON",
+				"EPSILON_2000"
+			],
+			[
+				"eq",
+				"equinox"
+			],
+			[
+				"dec",
+				"declination"
+			],
+			[
+				"to",
+				"to_epoch"
+			],
+			[
+				"Rad",
+				"RadianAngle"
+			],
+			[
+				"is_val",
+				"is_valid_gregorian"
+			],
+			[
+				"In",
+				"InvalidGregorianDate"
+			],
+			[
+				"is_va",
+				"is_valid_gregorian"
+			],
+			[
+				"Astro",
+				"AstroResult"
+			],
+			[
+				"isval",
+				"is_valid_julian"
+			],
+			[
+				"is",
+				"test_is_valid_gregorian"
+			],
+			[
+				"is_vali",
+				"is_valid_time"
+			],
+			[
+				"Da",
+				"DateUnderflow"
+			],
+			[
+				"time",
+				"time_type"
+			],
+			[
+				"Ast",
+				"AstroResult"
+			],
+			[
+				"As",
+				"AstroAlgorithmsError"
+			],
+			[
+				"Invalid",
+				"InvalidGregorianDate"
+			],
+			[
+				"tim",
+				"time_type"
+			],
+			[
+				"jul",
+				"julian_day"
+			],
+			[
+				"ju",
+				"julian_day"
+			],
+			[
+				"mod",
+				"modifiedJulianDay"
+			],
+			[
+				"j",
+				"julianDayNumber"
+			],
+			[
+				"decim",
+				"decimalDay"
+			],
+			[
+				"from",
+				"fromGregorianCalendarUTC"
+			],
+			[
+				"co",
+				"convertToJulian"
+			],
+			[
+				"days",
+				"daysPerMonthInJulianCalendar"
+			],
+			[
+				"day",
+				"daysPerMonthInJulianCalendar"
+			],
+			[
+				"ass",
+				"assertNotThrown"
+			],
+			[
+				"We",
+				"WeightDecayRegulizer"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "src/coords.rs",
+			"settings":
+			{
+				"buffer_size": 4985,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "   Compiling cairo-sys-rs v0.4.0                                             \n   Compiling gio-sys v0.4.0                                                  \n   Compiling gobject-sys v0.4.0                                              \n   Compiling gdk-sys v0.4.0                                                  \n   Compiling atk-sys v0.4.0                                                  \n   Compiling glib-sys v0.4.0                                                 \n   Compiling gtk-sys v0.4.0                                                  \n   Compiling pango-sys v0.4.0                                                \n   Compiling num-iter v0.1.34                                                \n   Compiling backtrace-sys v0.1.16                                           \n   Compiling num v0.1.40                                                     \n   Compiling chrono v0.4.0                                                   \n   Compiling sounding-base v0.0.15                                           \n   Compiling sounding-analysis v0.0.2                                        \n   Compiling glib v0.3.1                                                     \n   Compiling backtrace v0.3.3                                                \n   Compiling error-chain v0.11.0                                             \n   Compiling sounding-validate v0.0.2                                        \n   Compiling sounding-bufkit v0.0.11                                         \n   Compiling pango v0.2.0                                                    \n   Compiling sonde v0.0.1 (file:///home/ryan/programming/sonde)              \n    Finished dev [unoptimized + debuginfo] target(s) in 86.17 secs           \n     Running target/debug/deps/sonde-c667b56047e10bf5                        \n                                                                             \nrunning 3 tests                                                              \ntest formula::tests::test_theta_kelvin ... ok                                \ntest app::test_coord_conversion_rh_omega ... ok                              \ntest formula::tests::test_find_min ... ok                                    \n                                                                             \ntest result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filte          \nred out                                                                      \n                                                                             \n     Running target/debug/deps/sonde-91ec223ee786931b                        \n                                                                             \nrunning 0 tests                                                              \n                                                                             \ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filte          \nred out                                                                      \n                                                                             \n   Doc-tests sonde                                                           \n                                                                             \nrunning 0 tests                                                              \n                                                                             \ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filte          \nred out                                                                      \n                                                                             \nryan@ryan-Satellite-S855:~/programming/sonde$                                \n",
+			"settings":
+			{
+				"buffer_size": 3666,
+				"line_ending": "Unix",
+				"name": "Terminal (bash)",
+				"read_only": true,
+				"scratch": true
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Document"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clippy"
+				]
+			],
+			[
+				"Packages/Rust Enhanced/Cargo.sublime-build",
+				"Test"
+			]
+		],
+		[
+			[
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Document"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clippy"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Script"
+				]
+			],
+			[
+				"Packages/Rust Enhanced/Cargo.sublime-build",
+				"Test"
+			]
+		],
+		[
+			[
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Clean"
+				]
+			],
+			[
+				"Packages/Rust/Cargo.sublime-build",
+				"Test"
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 250.0,
+		"last_filter": "Term",
+		"selected_items":
+		[
+			[
+				"Term",
+				"Terminal View: Open Bash Terminal"
+			],
+			[
+				"Package Control: install",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: remo",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: Instal",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: Install Package",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: R",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: Remove Package",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: Up",
+				"Package Control: Upgrade Package"
+			]
+		],
+		"width": 359.0
+	},
+	"console":
+	{
+		"height": 96.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/ryan/programming/sonde",
+		"/home/ryan/programming/sonde/src"
+	],
+	"file_history":
+	[
+		"/home/ryan/programming/learning_cairo/cairo_gtk.c",
+		"/home/ryan/programming/learning_cairo/cairo_gtk_lines_fill_and_stroke.c",
+		"/home/ryan/programming/robot/libs/my_arduino.h",
+		"/home/ryan/programming/robot/libs/timers.h",
+		"/home/ryan/programming_mac/rust/bufkit_mos/src/bin/bufkit_downloader.rs",
+		"/home/ryan/programming_mac/rust/bufkit_mos/src/bin/sounding_validator.rs",
+		"/home/ryan/programming_mac/rust/bufkit_mos/TODO.txt",
+		"/home/ryan/programming_mac/rust/bufkit_mos/sounding_archive/src/lib.rs",
+		"/home/ryan/programming/astro_calc/src/astro_time/mod.rs",
+		"/home/ryan/programming/astro_calc/src/test_util.rs",
+		"/home/ryan/programming/astro_calc/src/lib.rs",
+		"/home/ryan/programming/astro_calc/src/astro_time/time_data.rs",
+		"/home/ryan/programming/astro_calc/src/coords/precession.rs",
+		"/home/ryan/programming/astro_calc/.gitignore",
+		"/home/ryan/programming/astro_calc/Cargo.toml",
+		"/home/ryan/programming/astro_calc/LICENSE",
+		"/home/ryan/programming/astro_calc/README.md",
+		"/home/ryan/programming/astro_calc/src/coords/angles.rs",
+		"/home/ryan/programming/AstroCalc/source/astrocalc/astrotime.d",
+		"/home/ryan/programming/astro_calc/src/util.rs",
+		"/home/ryan/programming/astro_calc/astro_calc.sublime-project",
+		"/home/ryan/programming/astro_calc/src/astro_time.rs",
+		"/home/ryan/programming/AstroCalc/source/astrocalc/astrocalc.d",
+		"/home/ryan/programming/AstroCalc/AstroCalc.sublime-project",
+		"/home/ryan/programming/AstroCalc/.gitignore",
+		"/home/ryan/.bashrc",
+		"/home/ryan/.profile",
+		"/home/ryan/.user_paths",
+		"/home/ryan/.config/sublime-text-3/Packages/Rust/Rust.sublime-settings",
+		"/home/ryan/programming/AstroCalc/source/astrocalc/time.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/source/dffann/linearNetworks.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/source/dffann/feedforwardnetwork.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/source/dffann/errorFunctions.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/source/dffann/activationFunctions.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/source/dffann/data.d",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/dffann.sublime-project",
+		"/home/ryan/programming/wxcoder_nlmos/dffann/dub.json",
+		"/home/ryan/programming/wxcoder_nlmos/numeric/numericD.sublime-project",
+		"/home/ryan/.config/sublime-text-3/Packages/User/Preferences.sublime-settings",
+		"/home/ryan/.config/sublime-text-3/Packages/Default/Preferences.sublime-settings",
+		"/home/ryan/programming/PlaceFileBuilder/src/AppUI.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/AppUI.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PlaceFile.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/AppController.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/AppController.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/Feature.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/Feature.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/LineFeature.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/LineFeature.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/OFileWrapper.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/OGRDataSourceWrapper.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/OGRFeatureWrapper.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PlaceFile.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PlaceFileColor.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PlaceFileColor.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PointFeature.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PointFeature.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PolygonFeature.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/PolygonFeature.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/main.cpp",
+		"/home/ryan/programming/PlaceFileBuilder/src/pfb.rc",
+		"/home/ryan/programming/PlaceFileBuilder/src/point.hpp",
+		"/home/ryan/programming/PlaceFileBuilder/makefile",
+		"/home/ryan/programming/PlaceFileBuilder/src/UI.fl",
+		"/home/ryan/programming/PlaceFileBuilder/README.md",
+		"/home/ryan/programming/PlaceFileBuilder/res/Licenses.txt",
+		"/home/ryan/programming/PlaceFileBuilder/pfb.iss",
+		"/home/ryan/programming/cppnets/src/rebol.hpp",
+		"/home/ryan/programming/cppnets/src/rebol.tpp",
+		"/run/user/1000/gvfs/sftp:host=imac.local/Users/ryanleach/Programming/workspace/ANNMOS/src/annmos/dataManagement/ArrayData.java",
+		"/home/ryan/programming/cppnets/cppnets.sublime-project"
+	],
+	"find":
+	{
+		"height": 28.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"unwrap",
+			"hours",
+			"host_url",
+			"days_back",
+			"model_names",
+			"sites",
+			"archive",
+			"new",
+			"<",
+			"DegreeAngle",
+			"approx",
+			"assert!",
+			"panic!",
+			"unwrap",
+			"time_data",
+			"AstroTime::from_gregorian_utc\\(([-_ .,0-9]+)\\).unwrap\\(\\).(\\s+)to_gregorian_utc\\(\\) == \\(",
+			"AstroTime::from_raw\\(([-_ .,0-9]+)\\).unwrap\\(\\).(\\s+)to_gregorian_utc\\(\\) == \\(",
+			"AstroTime::from_raw\\(([-_ .,0-9]+)\\).unwrap\\(\\).\\s*to_gregorian_utc\\(\\) ==(\\s+)\\(",
+			"AstroTime::from_raw\\(([-_ .,0-9]+)\\).unwrap\\(\\).\\sto_gregorian_utc\\(\\) ==(\\s+)\\(",
+			"AstroTime::from_raw\\(([-_ .,0-9]+)\\).unwrap\\(\\).to_gregorian_utc\\(\\) ==(\\s+)\\(",
+			".ulian_day",
+			"AstroTmBldr::from_julian_utc\\(([- ,0-9]+)\\).unwrap\\(\\).(\\s+)j",
+			"AstroTmBldr::from_julian_utc\\(([ -,0-9]+)\\).unwrap\\(\\).",
+			"unwrap().)",
+			".unwrap.",
+			"AstroTime::from_gregorian_utc\\(([- ,0-9]+)\\).unwrap\\(\\).(\\s+)j",
+			"AstroTime::from_julian_utc",
+			"AstroTime::from_julian_utc\\(([,.0-9 ]+)\\).unwrap\\(\\).(\\s*)",
+			"AstroTime::from_gregorian_utc\\(([,.0-9 ]+)\\).unwrap\\(\\).(\\s*)",
+			"AstroTime::from_gregorian_utc( 1957, 10, 4, 19, 26, 24 ).unwrap().",
+			"AstroTime::from_gregorian_utc\\((\\s*[-,0-9 ]+)\\).unwrap\\(\\)",
+			"AstroTime::from_raw\\((\\s+[.0-9]+\\s+)\\).unwrap\\(\\)",
+			"dynamical_time",
+			"to_gregorian",
+			"AtroTime!T",
+			"AstroTimeD",
+			"pure",
+			"fromJulianCalendarUtC",
+			"fromGregorianCalendarUtC",
+			"daysPerMonthInJulianCalendar",
+			"fromGregorianCalendarUTC",
+			"\\r\\n",
+			"isGregorianDate",
+			"flattenParms",
+			"flatParms",
+			"testData",
+			"write",
+			"onTitleChanged",
+			"titleEntry_",
+			"appWindow"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"HOURS",
+			"HOST_URL",
+			"DAYS_BACK",
+			"MODEL_NAMES",
+			"SITES",
+			"ARCHIVE",
+			"AstroTmBldr::from_gregorian_utc(\\1).build().unwrap()\\2.to_gregorian_utc() == ",
+			"AstroTmBldr::from_raw(\\1).build().unwrap()\\2.to_gregorian_utc() == ",
+			".julian_day",
+			"AstroTmBldr::from_julian_utc(\\1)\\2.build().unwrap().",
+			"unwrap()",
+			".unwrap().",
+			"AstroTmBldr::from_gregorian_utc(\\1)\\2.build().unwrap.j",
+			"AstroTmBldr::from_julian_utc",
+			"AstroTmBldr::from_julian_utc(\\1)\\2.build().unwrap().",
+			"AstroTmBldr::from_gregorian_utc(\\1)\\2.build().unwrap().",
+			"AstroTmBldr::from_gregorian_utc(\\1).build()\\2.unwrap().",
+			"AstroTmBldr::from_gregorian_utc(\\1).build().unwrap()",
+			"AstroTmBldr::from_raw(\\1).build().unwrap()",
+			"AstroTime!T",
+			"AtroTime!T",
+			"",
+			"fromAstroCalcUTC",
+			"fromJulianCalendarUTC"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/coords.rs",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4985,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Rust/Rust.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 264.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 1,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3666,
+						"regions":
+						{
+							"0,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										0,
+										12
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"1,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										78,
+										90
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"10,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										780,
+										792
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"11,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										858,
+										870
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"12,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										936,
+										948
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"13,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1014,
+										1026
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"14,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1092,
+										1104
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"15,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1170,
+										1182
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"16,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1248,
+										1260
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"17,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1326,
+										1338
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"18,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1404,
+										1416
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"19,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1482,
+										1494
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"2,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										156,
+										168
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"20,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1560,
+										1572
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"21,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1638,
+										1650
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"22,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1716,
+										1728
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"25,43":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										1993,
+										1995
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"26,45":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										2073,
+										2075
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"27,39":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										2145,
+										2147
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"29,13":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										2275,
+										2277
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"3,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										234,
+										246
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"32,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										2496,
+										2508
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"36,13":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										2821,
+										2823
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"39,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										3042,
+										3054
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"4,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										312,
+										324
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"43,13":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										3367,
+										3369
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"5,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										390,
+										402
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"6,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										468,
+										480
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"7,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										546,
+										558
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"8,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										624,
+										636
+									]
+								],
+								"scope": "terminalview.black_green"
+							},
+							"9,0":
+							{
+								"flags": 272,
+								"regions":
+								[
+									[
+										702,
+										714
+									]
+								],
+								"scope": "terminalview.black_green"
+							}
+						},
+						"selection":
+						[
+							[
+								3634,
+								3634
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"auto_complete_commit_on_tab": false,
+							"caret_style": "blink",
+							"color_scheme": "Packages/TerminalView/TerminalView.hidden-tmTheme",
+							"draw_centered": false,
+							"draw_indent_guides": false,
+							"draw_white_space": "none",
+							"gutter": false,
+							"highlight_line": false,
+							"scroll_past_end": false,
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"terminal_view": true,
+							"terminal_view_activate_args":
+							{
+								"cmd": "/bin/bash -l",
+								"cwd": "/home/ryan/programming/sonde/src",
+								"keep_open": false,
+								"syntax": null,
+								"title": "Terminal (bash)"
+							},
+							"terminal_view_last_cursor_pos":
+							[
+								46,
+								46
+							],
+							"word_wrap": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 19.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			0.5,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 316.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/Rust Enhanced/Cargo.sublime-build",
+	"project": "sonde.sublime-project",
+	"replace":
+	{
+		"height": 50.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 375.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"~/programming/AstroAlgorithms/AstroAlgoritms.sublime-project"
+			]
+		],
+		"width": 285.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 1,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 186.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
