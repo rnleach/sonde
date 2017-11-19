@@ -2,7 +2,8 @@
     "files.exclude": {
         "target": true,
         "Cargo.lock": true,
-        "**/*.rs.bk": true
+        "**/*.rs.bk": true,
+        "*.sublime*":true
     },
 
     // Shell program for integrated shell
