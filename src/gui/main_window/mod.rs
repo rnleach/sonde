@@ -78,27 +78,35 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
         };
     }
 
-    const BOX_SPACING: i32 = 0;
-    const BOX_PADDING: u32 = 0;
+    const BOX_SPACING: i32 = 3;
+    const BOX_PADDING: u32 = 3;
 
     let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
 
     // Left pane
     let skew_t = gui.get_sounding_area();
     let rh_omega = gui.get_omega_area();
-    let h_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-    h_box.pack_start(&rh_omega, false, true, BOX_PADDING);
-    h_box.pack_start(&skew_t, true, true, BOX_PADDING);
+    let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    h_box.pack_start(&rh_omega, false, true, 0);
+    h_box.pack_start(&skew_t, true, true, 0);
 
     // Set up scrolled window for text area.
     let text_win = ScrolledWindow::new(None, None);
     text_win.add(&gui.get_text_area());
+    let v_text_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    v_text_box.pack_start(
+        &::gui::text_area::make_header_text_area(),
+        false,
+        true,
+        BOX_PADDING,
+    );
+    v_text_box.pack_start(&text_win, true, true, BOX_PADDING);
 
     // Right pane
     let notebook = Notebook::new();
     add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
     add_tab!(notebook, gui.get_index_area(), "Indexes");
-    add_tab!(notebook, text_win, "Text");
+    add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
     let gui_c = gui.clone();
     notebook.connect_change_current_page(move |_, _| {

@@ -1,5 +1,5 @@
 
-use gtk::{TextView, ScrollablePolicy};
+use gtk::{TextView, ScrollablePolicy, CssProvider};
 use gtk::prelude::*;
 
 use sounding_base::Sounding;
@@ -7,15 +7,12 @@ use sounding_base::Sounding;
 use app::AppContextPointer;
 
 pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
-    use gtk::CssProvider;
 
     text_area.set_hexpand(true);
     text_area.set_vexpand(true);
     text_area.set_editable(false);
     text_area.set_vscroll_policy(ScrollablePolicy::Minimum);
-
-    // TODO: Make vbox, put a text view with a header in it, then add the text area. Then add
-    //       all of that to the scrolled window.
+    text_area.set_hscroll_policy(ScrollablePolicy::Minimum);
 
     if let Some(style) = text_area.get_style_context() {
         let provider = CssProvider::new();
@@ -53,28 +50,14 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
 
     if let Some(tb) = text_area.get_buffer() {
         if let Some(snd) = snd {
-            let mut text = String::with_capacity(1024);
-
-            text.push_str(&format!(
-                "{:4} {:5} {:5} {:5} {:5} {:6} {:4} {:4} {:4} {:4}\n",
-                "Pres",
-                "Hgt",
-                "T(C)",
-                "WB(C)",
-                "DP(C)",
-                "EPT(K)",
-                "DIR",
-                "SPD",
-                "W",
-                "CLD",
-            ));
+            let mut text = String::with_capacity(4096);
 
             for row in snd.top_down() {
                 if row.pressure.unwrap() < config::MINP {
                     continue;
                 }
                 text.push_str(&format!(
-                    "{:>4} {:>5} {:>5} {:>5} {:>5} {:>6} {:>4} {:>4} {:>4} {:>4}\n",
+                    "{:>4} {:>5} {:>5} {:>5} {:>5} {:>6} {:>4} {:>4} {:>5} {:>4}\n",
                     unwrap_to_str!(row.pressure, "{:.0}"),
                     unwrap_to_str!(row.height, "{:.0}"),
                     unwrap_to_str!(row.temperature, "{:.1}"),
@@ -111,4 +94,55 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
             }
         }
     }
+}
+
+pub fn make_header_text_area() -> TextView {
+    let header = TextView::new();
+
+    header.set_hexpand(true);
+    header.set_vexpand(false);
+    header.set_editable(false);
+    header.set_hscroll_policy(ScrollablePolicy::Minimum);
+
+    if let Some(style) = header.get_style_context() {
+        let provider = CssProvider::new();
+        CssProviderExt::load_from_data(
+            &provider,
+            "GtkTextView.view { font: courier bold 12;}\n".as_bytes(),
+        ).unwrap();
+        style.add_provider(&provider, 0);
+    }
+    if let Some(tb) = header.get_buffer() {
+        let mut text = String::with_capacity(512);
+
+        text.push_str(&format!(
+                "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}\n",
+                "Pres",
+                "Hgt",
+                "T",
+                "WB(C)",
+                "DP(C)",
+                "EPT(K)",
+                "DIR",
+                "SPD",
+                "\u{03C9}",
+                "CLD",
+            ));
+        text.push_str(&format!(
+                "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}",
+                "hPa",
+                "m",
+                "\u{00b0}C",
+                "\u{00b0}C",
+                "\u{00b0}C",
+                "\u{00b0}K",
+                "deg",
+                "KT",
+                "hPa/s",
+                "%",
+            ));
+        tb.set_text(&text);
+    }
+
+    header
 }
