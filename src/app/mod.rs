@@ -173,8 +173,9 @@ impl AppContext {
 
         self.fit_to_data();
 
-        if let Some(ref wdgs) = self.gui {
-            wdgs.draw_all();
+        if let Some(ref gui) = self.gui {
+            gui.draw_all();
+            gui.update_text_view(self.get_sounding_for_display());
         }
 
         Ok(())
@@ -195,8 +196,9 @@ impl AppContext {
             }
         }
 
-        if let Some(ref wdgs) = self.gui {
-            wdgs.draw_all();
+        if let Some(ref gui) = self.gui {
+            gui.draw_all();
+            gui.update_text_view(self.get_sounding_for_display());
         }
     }
 
@@ -210,8 +212,9 @@ impl AppContext {
             }
         }
 
-        if let Some(ref wdgs) = self.gui {
-            wdgs.draw_all();
+        if let Some(ref gui) = self.gui {
+            gui.draw_all();
+            gui.update_text_view(self.get_sounding_for_display());
         }
     }
 

@@ -4,7 +4,7 @@ use glib;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Window, MenuBar, MenuItem, Menu, Notebook};
+use gtk::{Window, MenuBar, MenuItem, Menu, Notebook, ScrolledWindow};
 
 use app::{AppContextPointer, AppContext};
 use app::config;
@@ -71,6 +71,13 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 
 fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
 
+    macro_rules! add_tab {
+        ($notebook:ident, $widget:expr, $label:expr) => {
+            $notebook.add(&$widget);
+            $notebook.set_tab_label_text(&$widget, $label);
+        };
+    }
+
     const BOX_SPACING: i32 = 0;
     const BOX_PADDING: u32 = 0;
 
@@ -83,17 +90,21 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     h_box.pack_start(&rh_omega, false, true, BOX_PADDING);
     h_box.pack_start(&skew_t, true, true, BOX_PADDING);
 
+    // Set up scrolled window for text area.
+    let text_win = ScrolledWindow::new(None, None);
+    text_win.add(&gui.get_text_area());
+
     // Right pane
-    let hodo = gui.get_hodograph_area();
-    let index = gui.get_index_area();
-    let controls = gui.get_control_area();
     let notebook = Notebook::new();
-    notebook.add(&hodo);
-    notebook.set_tab_label_text(&hodo, "Hodograph");
-    notebook.add(&index);
-    notebook.set_tab_label_text(&index, "Indexes");
-    notebook.add(&controls);
-    notebook.set_tab_label_text(&controls, "Controls");
+    add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
+    add_tab!(notebook, gui.get_index_area(), "Indexes");
+    add_tab!(notebook, text_win, "Text");
+    add_tab!(notebook, gui.get_control_area(), "Controls");
+    let gui_c = gui.clone();
+    notebook.connect_change_current_page(move |_, _| {
+        gui_c.draw_right_pane();
+        false
+    });
 
     main_pane.add1(&add_border_frame(&h_box));
     main_pane.add2(&notebook);

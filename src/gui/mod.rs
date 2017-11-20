@@ -3,13 +3,17 @@
 
 use std::rc::Rc;
 
+use sounding_base::Sounding;
+
 pub mod hodograph;
 pub mod index_area;
 pub mod control_area;
 pub mod main_window;
 pub mod sounding;
+pub mod text_area;
 
-use gtk::{DrawingArea, Notebook, WidgetExt, Window, WindowType};
+use gtk::prelude::*;
+use gtk::{DrawingArea, Notebook, Window, WindowType, TextView};
 
 use app::AppContextPointer;
 
@@ -28,6 +32,7 @@ pub struct Gui {
     hodograph_area: DrawingArea,
     index_area: DrawingArea,
     control_area: Notebook,
+    text_area: TextView,
 
     // Main window
     window: Window,
@@ -41,9 +46,12 @@ impl Gui {
         let gui = Gui {
             sounding_area: DrawingArea::new(),
             omega_area: DrawingArea::new(),
+
             hodograph_area: DrawingArea::new(),
             index_area: DrawingArea::new(),
             control_area: Notebook::new(),
+            text_area: TextView::new(),
+
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
         };
@@ -53,6 +61,7 @@ impl Gui {
         hodograph::set_up_hodograph_area(&gui.get_hodograph_area());
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
+        text_area::set_up_text_area(&gui.get_text_area(), acp);
 
         main_window::layout(&gui, acp);
 
@@ -79,6 +88,10 @@ impl Gui {
         self.control_area.clone()
     }
 
+    pub fn get_text_area(&self) -> TextView {
+        self.text_area.clone()
+    }
+
     pub fn get_window(&self) -> Window {
         self.window.clone()
     }
@@ -86,8 +99,27 @@ impl Gui {
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
         self.omega_area.queue_draw();
-        self.hodograph_area.queue_draw();
-        self.index_area.queue_draw();
-        self.control_area.queue_draw();
+
+        self.draw_right_pane();
+    }
+
+    pub fn draw_right_pane(&self) {
+        macro_rules! check_draw {
+            ($gui_element:ident) => {
+                if self.$gui_element.get_visible() {
+                    self.$gui_element.queue_draw();
+                }
+            };
+        }
+
+        check_draw!(hodograph_area);
+        check_draw!(index_area);
+        check_draw!(control_area);
+    }
+
+    pub fn update_text_view(&self, snd: Option<&Sounding>) {
+        if self.text_area.is_visible() {
+            self::text_area::update_text_area(&self.text_area, snd);
+        }
     }
 }
