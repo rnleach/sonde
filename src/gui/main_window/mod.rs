@@ -73,13 +73,14 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
 
     macro_rules! add_tab {
         ($notebook:ident, $widget:expr, $label:expr) => {
+            $widget.set_property_margin(config::WIDGET_MARGIN);
             $notebook.add(&$widget);
             $notebook.set_tab_label_text(&$widget, $label);
         };
     }
 
     const BOX_SPACING: i32 = 3;
-    const BOX_PADDING: u32 = 3;
+    const BOX_PADDING: u32 = 1;
 
     let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
 
@@ -87,6 +88,7 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     let skew_t = gui.get_sounding_area();
     let rh_omega = gui.get_omega_area();
     let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    h_box.set_property_margin(config::WIDGET_MARGIN);
     h_box.pack_start(&rh_omega, false, true, 0);
     h_box.pack_start(&skew_t, true, true, 0);
 
@@ -98,9 +100,9 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
         &::gui::text_area::make_header_text_area(),
         false,
         true,
-        BOX_PADDING,
+        0,
     );
-    v_text_box.pack_start(&text_win, true, true, BOX_PADDING);
+    v_text_box.pack_start(&text_win, true, true, 0);
 
     // Right pane
     let notebook = Notebook::new();

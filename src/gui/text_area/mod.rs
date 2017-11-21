@@ -2,6 +2,8 @@
 use gtk::{TextView, ScrollablePolicy, CssProvider};
 use gtk::prelude::*;
 
+use app::config;
+
 use sounding_base::Sounding;
 
 use app::AppContextPointer;
@@ -11,6 +13,7 @@ pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
     text_area.set_hexpand(true);
     text_area.set_vexpand(true);
     text_area.set_editable(false);
+    text_area.set_property_margin(config::WIDGET_MARGIN);
     text_area.set_vscroll_policy(ScrollablePolicy::Minimum);
     text_area.set_hscroll_policy(ScrollablePolicy::Minimum);
 
@@ -102,6 +105,8 @@ pub fn make_header_text_area() -> TextView {
     header.set_hexpand(true);
     header.set_vexpand(false);
     header.set_editable(false);
+    header.set_property_margin(config::WIDGET_MARGIN);
+    header.set_margin_bottom(0);
     header.set_hscroll_policy(ScrollablePolicy::Minimum);
 
     if let Some(style) = header.get_style_context() {

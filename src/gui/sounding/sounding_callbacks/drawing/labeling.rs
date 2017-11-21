@@ -188,6 +188,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
 }
 
 fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Option<String>) {
+    use chrono::Weekday::*;
 
     let source_description: Option<String> = ac.get_source_description();
     let mut valid_time: Option<String> = None;
@@ -198,7 +199,16 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
         if let Some(vt) = snd.get_valid_time() {
             use chrono::{Datelike, Timelike};
             let mut temp_string = format!(
-                "Valid: {:02}/{:02}/{:04} {:02}Z",
+                "Valid: {} {:02}/{:02}/{:04} {:02}Z",
+                match vt.weekday(){
+                    Sun => "Sunday",
+                    Mon => "Monday",
+                    Tue => "Tuesday",
+                    Wed => "Wednesday",
+                    Thu => "Thursday",
+                    Fri => "Friday",
+                    Sat => "Saturday",
+                },
                 vt.month(),
                 vt.day(),
                 vt.year(),
