@@ -20,12 +20,12 @@ pub fn draw_sounding(cr: &Context, ac: &app::AppContextPointer) -> Inhibit {
     drawing::draw_temperature_profiles(cr, &ac);
     drawing::draw_wind_profile(cr, &ac);
     drawing::draw_labels(cr, &ac);
-    drawing::draw_active_sample(cr, &mut ac);
+    drawing::draw_active_sample(cr, &ac);
 
     Inhibit(false)
 }
 
-/// Handles zooming from the mouse whell. Connected to the scroll-event signal.
+/// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
 pub fn scroll_event(
     _sounding_area: &DrawingArea,
     event: &EventScroll,

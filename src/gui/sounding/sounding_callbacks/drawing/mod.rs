@@ -102,7 +102,7 @@ pub fn draw_labels(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
+pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
     if ac.config.show_active_readout {
         sample_readout::draw_active_sample(cr, ac);
     }

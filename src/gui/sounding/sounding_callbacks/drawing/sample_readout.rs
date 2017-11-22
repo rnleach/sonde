@@ -6,7 +6,7 @@ use cairo::Context;
 
 use sounding_base::{DataRow, Sounding};
 
-pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
+pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
     let mut sample_p = if let Some(sample_p) = ac.last_sample_pressure {
         sample_p
@@ -28,8 +28,8 @@ pub fn draw_active_sample(cr: &Context, ac: &mut AppContext) {
 
         vals = ::sounding_analysis::linear_interpolate(snd, sample_p);
 
-        sample_p = if vals.pressure.as_option().is_some() {
-            vals.pressure.unwrap()
+        sample_p = if let Some(p) = vals.pressure.as_option() {
+            p
         } else {
             sample_p
         };

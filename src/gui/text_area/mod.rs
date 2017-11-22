@@ -1,5 +1,5 @@
 
-use gtk::{TextView, ScrollablePolicy, CssProvider};
+use gtk::{TextView, ScrollablePolicy, TextTag};
 use gtk::prelude::*;
 
 use app::config;
@@ -7,6 +7,28 @@ use app::config;
 use sounding_base::Sounding;
 
 use app::AppContextPointer;
+
+macro_rules! make_default_tag {
+    ($tb:ident) => {
+        if let Some(tag_table) = $tb.get_tag_table(){
+            let tag = TextTag::new("default");
+
+            tag.set_property_font(Some("courier bold 12"));
+
+            let success = tag_table.add(&tag);
+            debug_assert!(success, "Failed to add tag to text tag table");
+        }
+    };
+}
+
+macro_rules! set_text {
+    ($tb:ident, $txt:expr) => {
+        $tb.set_text($txt);
+        let start = $tb.get_start_iter();
+        let end = $tb.get_end_iter();
+        $tb.apply_tag_by_name("default", &start, &end);
+    };
+}
 
 pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
 
@@ -17,17 +39,9 @@ pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
     text_area.set_vscroll_policy(ScrollablePolicy::Minimum);
     text_area.set_hscroll_policy(ScrollablePolicy::Minimum);
 
-    if let Some(style) = text_area.get_style_context() {
-        let provider = CssProvider::new();
-        CssProviderExt::load_from_data(
-            &provider,
-            "GtkTextView.view { font: courier bold 12;}\n".as_bytes(),
-        ).unwrap();
-        style.add_provider(&provider, 0);
-    }
-
-    if let Some(tb) = text_area.get_buffer() {
-        tb.set_text("No data loaded.");
+    if let Some(tb) = text_area.get_buffer(){
+        make_default_tag!(tb);
+        set_text!(tb, "No data loaded");
     }
 }
 
@@ -73,6 +87,8 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
                     unwrap_to_str!(row.cloud_fraction, "{:.0}"),
                 ));
             }
+
+            // Get the scroll position before setting the text
             let old_adj;
             if let Some(adj) = text_area.get_vadjustment() {
                 old_adj = Some(adj.get_value());
@@ -80,7 +96,8 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
                 old_adj = None;
             }
 
-            tb.set_text(&text);
+            // tb.set_text(&text);
+            set_text!(tb, &text);
 
             // I don't totally understand this, but after quite a lot of experimentation this works
             // well at keeping the scroll of the text view in the same area as you step through
@@ -109,14 +126,7 @@ pub fn make_header_text_area() -> TextView {
     header.set_margin_bottom(0);
     header.set_hscroll_policy(ScrollablePolicy::Minimum);
 
-    if let Some(style) = header.get_style_context() {
-        let provider = CssProvider::new();
-        CssProviderExt::load_from_data(
-            &provider,
-            "GtkTextView.view { font: courier bold 12;}\n".as_bytes(),
-        ).unwrap();
-        style.add_provider(&provider, 0);
-    }
+    
     if let Some(tb) = header.get_buffer() {
         let mut text = String::with_capacity(512);
 
@@ -146,7 +156,9 @@ pub fn make_header_text_area() -> TextView {
                 "hPa/s",
                 "%",
             ));
-        tb.set_text(&text);
+
+        make_default_tag!(tb);
+        set_text!(tb, &text);
     }
 
     header
