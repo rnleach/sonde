@@ -118,7 +118,7 @@ pub fn leave_event(
     let mut ac = ac.borrow_mut();
 
     ac.skew_t.last_cursor_position_skew_t = None;
-    ac.last_sample_pressure = None;
+    ac.set_sample_pressure(None);
     ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(false)
@@ -150,6 +150,8 @@ pub fn mouse_motion_event(
             translate.y -= delta.1;
             ac.set_skew_t_translation(translate);
 
+            ac.set_sample_pressure(None);
+
             ac.queue_draw_skew_t_rh_omega();
         }
     } else if ac.plottable() {
@@ -157,7 +159,7 @@ pub fn mouse_motion_event(
 
         ac.skew_t.last_cursor_position_skew_t = Some(position);
         let tp_position = ac.skew_t.convert_device_to_tp(position);
-        ac.last_sample_pressure = Some(tp_position.pressure);
+        ac.set_sample_pressure(Some(tp_position.pressure));
 
         ac.queue_draw_skew_t_rh_omega();
     }

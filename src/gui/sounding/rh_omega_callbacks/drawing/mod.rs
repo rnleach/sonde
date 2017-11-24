@@ -200,7 +200,7 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
 
 fn draw_active_readout(cr: &Context, ac: &AppContext) {
     if ac.config.show_active_readout {
-        if let Some(sample_p) = ac.last_sample_pressure {
+        if let Some(sample_p) = ac.get_sample_pressure() {
 
             let rgba = ac.config.active_readout_line_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);

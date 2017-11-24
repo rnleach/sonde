@@ -8,7 +8,7 @@ use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
-    let mut sample_p = if let Some(sample_p) = ac.last_sample_pressure {
+    let mut sample_p = if let Some(sample_p) = ac.get_sample_pressure() {
         sample_p
     } else {
         return;

@@ -200,7 +200,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
             use chrono::{Datelike, Timelike};
             let mut temp_string = format!(
                 "Valid: {} {:02}/{:02}/{:04} {:02}Z",
-                match vt.weekday(){
+                match vt.weekday() {
                     Sun => "Sunday",
                     Mon => "Monday",
                     Tue => "Tuesday",

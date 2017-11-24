@@ -32,7 +32,7 @@ pub struct AppContext {
 
     list: Vec<Sounding>,
     currently_displayed_index: usize,
-    pub last_sample_pressure: Option<f64>,
+    last_sample_pressure: Option<f64>,
 
     // Handle to the GUI
     gui: Option<Gui>,
@@ -175,7 +175,7 @@ impl AppContext {
 
         if let Some(ref gui) = self.gui {
             gui.draw_all();
-            gui.update_text_view(self.get_sounding_for_display());
+            gui.update_text_view(self);
         }
 
         Ok(())
@@ -196,10 +196,7 @@ impl AppContext {
             }
         }
 
-        if let Some(ref gui) = self.gui {
-            gui.draw_all();
-            gui.update_text_view(self.get_sounding_for_display());
-        }
+        self.update_all_gui();
     }
 
     /// Set the previous one as the one to display, or wrap to the end.
@@ -212,9 +209,14 @@ impl AppContext {
             }
         }
 
+        self.update_all_gui();
+    }
+
+    // Update all the gui elements
+    fn update_all_gui(&self) {
         if let Some(ref gui) = self.gui {
             gui.draw_all();
-            gui.update_text_view(self.get_sounding_for_display());
+            gui.update_text_view(self);
         }
     }
 
@@ -366,6 +368,22 @@ impl AppContext {
             } else {
                 gui.get_omega_area().hide();
             }
+        }
+    }
+
+    pub fn get_sample_pressure(&self) -> Option<f64> {
+        self.last_sample_pressure
+    }
+
+    pub fn set_sample_pressure<T>(&mut self, sample_p: T)
+    where
+        Option<f64>: From<T>,
+    {
+        self.last_sample_pressure = Option::from(sample_p);
+
+        if let Some(ref gui) = self.gui {
+            let ta = gui.get_text_area();
+            ::gui::text_area::update_text_highlight(&ta, self);
         }
     }
 }

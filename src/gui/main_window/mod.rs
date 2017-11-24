@@ -96,12 +96,7 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     let text_win = ScrolledWindow::new(None, None);
     text_win.add(&gui.get_text_area());
     let v_text_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    v_text_box.pack_start(
-        &::gui::text_area::make_header_text_area(),
-        false,
-        true,
-        0,
-    );
+    v_text_box.pack_start(&::gui::text_area::make_header_text_area(), false, true, 0);
     v_text_box.pack_start(&text_win, true, true, 0);
 
     // Right pane

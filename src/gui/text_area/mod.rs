@@ -4,9 +4,7 @@ use gtk::prelude::*;
 
 use app::config;
 
-use sounding_base::Sounding;
-
-use app::AppContextPointer;
+use app::{AppContextPointer, AppContext};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -39,13 +37,25 @@ pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
     text_area.set_vscroll_policy(ScrollablePolicy::Minimum);
     text_area.set_hscroll_policy(ScrollablePolicy::Minimum);
 
-    if let Some(tb) = text_area.get_buffer(){
+    if let Some(tb) = text_area.get_buffer() {
         make_default_tag!(tb);
         set_text!(tb, "No data loaded");
+
+        if let Some(tag_table) = tb.get_tag_table() {
+            let above_tag = TextTag::new("highlight_above");
+            let below_tag = TextTag::new("highlight_below");
+
+            let mut success = tag_table.add(&above_tag);
+            debug_assert!(success, "Failed to add highlight_above tag");
+            success = tag_table.add(&below_tag);
+            debug_assert!(success, "Failed to add highlight_below tag");
+        }
+
+        tb.create_mark("scroll_mark", &tb.get_start_iter(), true);
     }
 }
 
-pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
+pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
     use app::config;
 
     macro_rules! unwrap_to_str {
@@ -66,7 +76,7 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
     }
 
     if let Some(tb) = text_area.get_buffer() {
-        if let Some(snd) = snd {
+        if let Some(snd) = ac.get_sounding_for_display() {
             let mut text = String::with_capacity(4096);
 
             for row in snd.top_down() {
@@ -102,14 +112,17 @@ pub fn update_text_area(text_area: &TextView, snd: Option<&Sounding>) {
             // I don't totally understand this, but after quite a lot of experimentation this works
             // well at keeping the scroll of the text view in the same area as you step through
             // time.
-            if let Some(adj) = text_area.get_vadjustment() {
-                if let Some(val) = old_adj {
-                    let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
-                        val.round()
-                    } else {
-                        (adj.get_upper() - adj.get_page_size() - 1.0).round()
-                    };
-                    adj.set_value(val);
+            if !ac.config.show_active_readout {
+                if let Some(adj) = text_area.get_vadjustment() {
+                    if let Some(val) = old_adj {
+                        let val =
+                            if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
+                                val.round()
+                            } else {
+                                (adj.get_upper() - adj.get_page_size() - 1.0).round()
+                            };
+                        adj.set_value(val);
+                    }
                 }
             }
         }
@@ -126,7 +139,7 @@ pub fn make_header_text_area() -> TextView {
     header.set_margin_bottom(0);
     header.set_hscroll_policy(ScrollablePolicy::Minimum);
 
-    
+
     if let Some(tb) = header.get_buffer() {
         let mut text = String::with_capacity(512);
 
@@ -162,4 +175,82 @@ pub fn make_header_text_area() -> TextView {
     }
 
     header
+}
+
+pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
+    use std::str::FromStr;
+
+    if let Some(tb) = text_area.get_buffer() {
+        let start = tb.get_start_iter();
+        let end = tb.get_end_iter();
+        tb.remove_tag_by_name("highlight_above", &start, &end);
+        tb.remove_tag_by_name("highlight_below", &start, &end);
+
+        if !ac.config.show_active_readout {
+            return;
+        }
+
+        if let Some(tp) = ac.get_sample_pressure() {
+            let lines = tb.get_line_count();
+            for i in 0..(lines - 1) {
+                let start_above = tb.get_iter_at_line(i);
+                let mut end_above = start_above.clone();
+                end_above.forward_chars(4);
+                let above_val: f64 = f64::from_str(
+                    tb.get_text(&start_above, &end_above, false)
+                        .unwrap_or_else(|| "0.0".to_owned())
+                        .trim(),
+                ).unwrap_or(0.0);
+
+                let start_below = tb.get_iter_at_line(i + 1);
+                let mut end_below = start_below.clone();
+                end_below.forward_chars(4);
+                let below_val: f64 = f64::from_str(
+                    tb.get_text(&start_below, &end_below, false)
+                        .unwrap_or_else(|| "0.0".to_owned())
+                        .trim(),
+                ).unwrap_or(0.0);
+
+                if tp > above_val && tp <= below_val {
+                    if let Some(tt) = tb.get_tag_table() {
+
+                        // Set line colors
+                        let rgba = ac.config.active_readout_line_rgba;
+                        let range = below_val - above_val;
+                        let alpha_below = (tp - above_val) / range;
+                        let alpha_above = 1.0 - alpha_below;
+                        let rgba_below = ::gdk::RGBA {
+                            red: rgba.0,
+                            green: rgba.1,
+                            blue: rgba.2,
+                            alpha: alpha_below,
+                        };
+                        let rgba_above = ::gdk::RGBA {
+                            red: rgba.0,
+                            green: rgba.1,
+                            blue: rgba.2,
+                            alpha: alpha_above,
+                        };
+                        if let Some(below_tag) = tt.lookup("highlight_below") {
+                            below_tag.set_property_background_rgba(Some(&rgba_below));
+                            end_below.forward_line();
+                            tb.apply_tag(&below_tag, &start_below, &end_below);
+                        }
+                        if let Some(above_tag) = tt.lookup("highlight_above") {
+                            above_tag.set_property_background_rgba(Some(&rgba_above));
+                            end_above.forward_line();
+                            tb.apply_tag(&above_tag, &start_above, &end_above);
+                        }
+
+                        // Scroll the view to this point.
+                        if let Some(ref mark) = tb.get_mark("scroll_mark") {
+                            tb.move_mark(mark, &end_above);
+                            text_area.scroll_to_mark(mark, 0.0, true, 0.0, 0.5);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
 }

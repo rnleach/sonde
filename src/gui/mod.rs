@@ -3,8 +3,6 @@
 
 use std::rc::Rc;
 
-use sounding_base::Sounding;
-
 pub mod hodograph;
 pub mod index_area;
 pub mod control_area;
@@ -15,7 +13,7 @@ pub mod text_area;
 use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, Window, WindowType, TextView};
 
-use app::AppContextPointer;
+use app::{AppContextPointer, AppContext};
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -117,9 +115,10 @@ impl Gui {
         check_draw!(control_area);
     }
 
-    pub fn update_text_view(&self, snd: Option<&Sounding>) {
+    pub fn update_text_view(&self, ac: &AppContext) {
         if self.text_area.is_visible() {
-            self::text_area::update_text_area(&self.text_area, snd);
+            self::text_area::update_text_area(&self.text_area, ac);
+            self::text_area::update_text_highlight(&self.text_area, ac);
         }
     }
 }
