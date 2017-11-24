@@ -760,20 +760,3 @@ impl PlotContext for RHOmegaContext {
         self.device_width
     }
 }
-
-#[test]
-fn test_coord_conversion_rh_omega() {
-    let context = RHOmegaContext::new();
-
-    let screen1 = ScreenCoords { x: 0.5, y: 0.5 };
-    let screen2 = context.convert_xy_to_screen(context.convert_screen_to_xy(screen1));
-
-    assert!(::approx_equal(screen1.x, screen2.x, 1.0e-9));
-    assert!(::approx_equal(screen1.y, screen2.y, 1.0e-9));
-
-    let wp1 = WPCoords { w: 0.0, p: 505.0 };
-    let wp2 = context.convert_screen_to_wp(context.convert_wp_to_screen(wp1));
-
-    assert!(::approx_equal(wp1.p, wp2.p, 1.0e-9));
-    assert!(::approx_equal(wp1.p, wp2.p, 1.0e-9));
-}

@@ -98,21 +98,7 @@ impl Gui {
         self.sounding_area.queue_draw();
         self.omega_area.queue_draw();
 
-        self.draw_right_pane();
-    }
-
-    pub fn draw_right_pane(&self) {
-        macro_rules! check_draw {
-            ($gui_element:ident) => {
-                if self.$gui_element.get_visible() {
-                    self.$gui_element.queue_draw();
-                }
-            };
-        }
-
-        check_draw!(hodograph_area);
-        check_draw!(index_area);
-        check_draw!(control_area);
+        // TODO: Add here as needed.
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {

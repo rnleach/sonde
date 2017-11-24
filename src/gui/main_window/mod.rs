@@ -105,11 +105,6 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
-    let gui_c = gui.clone();
-    notebook.connect_change_current_page(move |_, _| {
-        gui_c.draw_right_pane();
-        false
-    });
 
     main_pane.add1(&add_border_frame(&h_box));
     main_pane.add2(&notebook);

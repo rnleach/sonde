@@ -38,7 +38,7 @@ pub fn scroll_event(
 
     let mut ac = ac.borrow_mut();
 
-    let pos = ac.skew_t.convert_device_to_xy(event.get_position().into());
+    let pos = ac.skew_t.convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.get_zoom_factor();
