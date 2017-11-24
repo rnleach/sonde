@@ -2,7 +2,7 @@ use cairo::Context;
 
 use app::{AppContext, config};
 use coords::TPCoords;
-use gui::sounding::plot_curve_from_points;
+use gui::plot_curve_from_points;
 
 #[derive(Clone, Copy, Debug)]
 pub enum TemperatureType {

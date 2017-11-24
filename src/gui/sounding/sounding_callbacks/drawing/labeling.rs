@@ -1,7 +1,8 @@
 //! Functions used for adding labels to the sounding plot
 use app::{AppContext, config};
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
-use gui::sounding::{set_font_size, check_overlap_then_add};
+use gui::check_overlap_then_add;
+use gui::sounding::set_font_size;
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight};
 

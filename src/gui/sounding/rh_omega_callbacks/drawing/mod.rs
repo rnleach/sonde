@@ -3,7 +3,7 @@ use gtk::Inhibit;
 
 use app::{AppContext, AppContextPointer, config};
 use coords::{XYCoords, WPCoords, ScreenCoords};
-use gui::sounding::plot_curve_from_points;
+use gui::plot_curve_from_points;
 
 mod background;
 

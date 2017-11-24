@@ -2,7 +2,8 @@ use cairo::{Context, FontFace, FontSlant, FontWeight};
 
 use app::{AppContext, config};
 use coords::{WPCoords, TPCoords, ScreenRect, ScreenCoords};
-use gui::sounding::{plot_curve_from_points, set_font_size, check_overlap_then_add};
+use gui::{plot_curve_from_points, check_overlap_then_add};
+use gui::sounding::set_font_size;
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {
 
