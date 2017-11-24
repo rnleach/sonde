@@ -34,8 +34,8 @@ pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
     text_area.set_vexpand(true);
     text_area.set_editable(false);
     text_area.set_property_margin(config::WIDGET_MARGIN);
-    text_area.set_vscroll_policy(ScrollablePolicy::Minimum);
-    text_area.set_hscroll_policy(ScrollablePolicy::Minimum);
+    text_area.set_vscroll_policy(ScrollablePolicy::Natural);
+    text_area.set_hscroll_policy(ScrollablePolicy::Natural);
 
     if let Some(tb) = text_area.get_buffer() {
         make_default_tag!(tb);
