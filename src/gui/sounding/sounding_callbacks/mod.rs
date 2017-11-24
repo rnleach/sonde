@@ -167,29 +167,29 @@ pub fn mouse_motion_event(
 /// Handles key-release events, display next or previous sounding in a series.
 pub fn key_release_event(
     _sounding_area: &DrawingArea,
-    event: &EventKey,
-    dc: &app::AppContextPointer,
+    _event: &EventKey,
+    _dc: &app::AppContextPointer,
 ) -> Inhibit {
-
-    let keyval = event.get_keyval();
-    if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
-        let mut dc = dc.borrow_mut();
-        dc.display_next();
-        Inhibit(true)
-    } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
-        let mut dc = dc.borrow_mut();
-        dc.display_previous();
-        Inhibit(true)
-    } else {
-        Inhibit(false)
-    }
+    Inhibit(false)
 }
 
 /// Handles key-press events
 pub fn key_press_event(
     _sounding_area: &DrawingArea,
-    _event: &EventKey,
-    _ac: &app::AppContextPointer,
+    event: &EventKey,
+    ac: &app::AppContextPointer,
 ) -> Inhibit {
-    Inhibit(true)
+
+    let keyval = event.get_keyval();
+    if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+        let mut ac = ac.borrow_mut();
+        ac.display_next();
+        Inhibit(true)
+    } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+        let mut ac = ac.borrow_mut();
+        ac.display_previous();
+        Inhibit(true)
+    } else {
+        Inhibit(false)
+    }
 }
