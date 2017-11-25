@@ -58,7 +58,7 @@ impl Gui {
 
         sounding::set_up_sounding_area(&gui.get_sounding_area(), acp);
         sounding::set_up_rh_omega_area(&gui.get_omega_area(), acp);
-        hodograph::set_up_hodograph_area(&gui.get_hodograph_area());
+        hodograph::set_up_hodograph_area(&gui.get_hodograph_area(), acp);
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
@@ -99,6 +99,7 @@ impl Gui {
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
         self.omega_area.queue_draw();
+        self.hodograph_area.queue_draw();
 
         // TODO: Add here as needed.
     }

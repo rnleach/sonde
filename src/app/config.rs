@@ -1,6 +1,6 @@
 //! Keep configuration data in this module.
 
-use coords::{TPCoords, WPCoords};
+use coords::{TPCoords, WPCoords, SDCoords};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -146,6 +146,20 @@ pub struct Config {
     /// Active readout line color
     pub active_readout_line_rgba: (f64, f64, f64, f64),
     pub show_active_readout: bool,
+
+    //
+    // Hodograph
+    //
+    /// Background veclocity color
+    pub iso_speed_rgba: (f64, f64, f64, f64),
+    /// Show or hide iso speed lines
+    pub show_iso_speed: bool,
+    /// Velocity plot line width
+    pub velocity_line_width: f64,
+    /// Velociy line color
+    pub veclocity_rgba: (f64, f64, f64, f64),
+    /// Show or hide the velocity plot.
+    pub show_velocity: bool,
 }
 
 impl Config {}
@@ -244,6 +258,15 @@ impl Default for Config {
             active_readout_line_width: 3.0,
             active_readout_line_rgba: (1.0, 0.0, 0.0, 1.0),
             show_active_readout: true,
+
+            //
+            // Hodograph
+            //
+            iso_speed_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            show_iso_speed: true,
+            velocity_line_width: 2.0,
+            veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
+            show_velocity: true,
         }
     }
 }
@@ -451,6 +474,34 @@ pub const ISO_OMEGA: [f64; 17] = [
     7.0,
     8.0,
 ];
+
+pub const ISO_SPEED: [f64; 25] = [
+    5.0,
+    10.0,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    35.0,
+    40.0,
+    45.0,
+    50.0,
+    60.0,
+    70.0,
+    80.0,
+    90.0,
+    100.0,
+    110.0,
+    120.0,
+    130.0,
+    140.0,
+    150.0,
+    160.0,
+    170.0,
+    180.0,
+    190.0,
+    200.0,
+];
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
@@ -552,6 +603,23 @@ lazy_static! {
             ]
             })
             .collect()
+    };
+
+    /// Compute points for background speed
+    pub static ref ISO_SPEED_PNTS: Vec<Vec<SDCoords>> = {
+
+        ISO_SPEED
+        .iter()
+        .map(|&speed| {
+            let mut v = vec![];
+            let mut dir = 0.0;
+            while dir <= 361.0 {
+                v.push(SDCoords{speed, dir});
+                dir += 1.0;
+            }
+            v
+        })
+        .collect()
     };
 }
 

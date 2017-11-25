@@ -10,7 +10,7 @@ use gtk::{DrawingArea, WidgetExt};
 mod sounding_callbacks;
 mod rh_omega_callbacks;
 
-use app::{AppContextPointer,AppContext, PlotContext};
+use app::{AppContextPointer, AppContext, PlotContext};
 use coords::{ScreenCoords, DeviceCoords};
 
 /// Initialize the drawing area and connect signal handlers.

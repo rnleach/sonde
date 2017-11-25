@@ -73,6 +73,18 @@ pub struct TPCoords {
 
 impl TPCoords {}
 
+/// Speed-Direction coordinates for the hodograph.
+/// Origin center. (Speed, Direction wind is from)
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SDCoords {
+    /// Speed in knots
+    pub speed: f64,
+    /// direction in degrees
+    pub dir: f64,
+}
+
+impl TPCoords {}
+
 /// Omega-Pressure coordinates.
 /// Origin lower left. (Omega, Pressure)
 #[derive(Clone, Copy, Debug, PartialEq)]

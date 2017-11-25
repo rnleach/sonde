@@ -11,7 +11,8 @@ use sounding_base::Sounding;
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, ScreenCoords, TPCoords, WPCoords, XYCoords, XYRect, ScreenRect};
+use coords::{DeviceCoords, ScreenCoords, TPCoords, SDCoords, WPCoords, XYCoords, XYRect,
+             ScreenRect};
 
 // Module for configuring application
 pub mod config;
@@ -42,6 +43,9 @@ pub struct AppContext {
 
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
+
+    // Handle to Hodograph context
+    pub hodo: HodoContext,
 }
 
 impl AppContext {
@@ -59,6 +63,7 @@ impl AppContext {
             gui: None,
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
+            hodo: HodoContext::new(),
         }))
     }
 
@@ -78,6 +83,8 @@ impl AppContext {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
             upper_right: XYCoords { x: 0.55, y: 0.55 },
         };
+        self.rh_omega.max_abs_omega = config::MAX_ABS_W;
+        self.hodo.max_speed = 100.0; // FIXME: Put in configuration
 
         for snd in &self.list {
             for pair in snd.get_profile(Pressure)
@@ -145,10 +152,7 @@ impl AppContext {
                     self.skew_t.xy_envelope.upper_right.y = y;
                 }
             }
-        }
 
-        self.rh_omega.max_abs_omega = config::MAX_ABS_W;
-        for snd in &self.list {
             for abs_omega in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
@@ -168,8 +172,26 @@ impl AppContext {
                     self.rh_omega.max_abs_omega = abs_omega;
                 }
             }
+
+            for speed in snd.get_profile(Pressure)
+                .iter()
+                .zip(snd.get_profile(WindSpeed))
+                .filter_map(|p| if let (Some(p), Some(s)) =
+                    (p.0.as_option(), p.1.as_option())
+                {
+                    if p < config::MINP { None } else { Some(s) }
+                } else {
+                    None
+                })
+            {
+                if speed > self.hodo.max_speed {
+                    self.hodo.max_speed = speed;
+                }
+            }
         }
+
         self.rh_omega.max_abs_omega = self.rh_omega.max_abs_omega.ceil();
+        self.hodo.max_speed = (self.hodo.max_speed / 10.0).ceil() * 10.0;
 
         self.fit_to_data();
 
@@ -281,6 +303,9 @@ impl AppContext {
     pub fn update_plot_context_allocations(&mut self) {
         if let Some(ref gui) = self.gui {
 
+            // FIXME: This functionality should be removed, instead use a callback on the
+            // connect_size_allocate method.
+
             let alloc = gui.get_sounding_area().get_allocation();
             self.skew_t.device_width = alloc.width;
             self.skew_t.device_height = alloc.height;
@@ -288,6 +313,10 @@ impl AppContext {
             let alloc = gui.get_omega_area().get_allocation();
             self.rh_omega.device_width = alloc.width;
             self.rh_omega.device_height = alloc.height;
+
+            let alloc = gui.get_hodograph_area().get_allocation();
+            self.hodo.device_width = alloc.width;
+            self.hodo.device_height = alloc.height;
         }
     }
 
@@ -745,6 +774,83 @@ impl PlotContext for RHOmegaContext {
     /// Conversion from device to screen coordinates.
     fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
         let scale_factor = self.skew_t_scale_factor;
+        ScreenCoords {
+            x: coords.col / scale_factor,
+            // Flip y coordinate vertically and translate so origin is upper left corner.
+            y: -(coords.row / scale_factor) + f64::from(self.device_height) / scale_factor,
+        }
+    }
+
+    fn device_height(&self) -> i32 {
+        self.device_height
+    }
+
+    fn device_width(&self) -> i32 {
+        self.device_width
+    }
+}
+
+pub struct HodoContext {
+    // device dimensions
+    pub device_height: i32,
+    pub device_width: i32,
+
+    // Distance used for adding padding around labels in `ScreenCoords`
+    pub label_padding: f64,
+    // Distance using for keeping things too close to the edge of the window in `ScreenCoords`
+    pub edge_padding: f64,
+
+    // Maximum plot value for the speed
+    pub max_speed: f64,
+}
+
+impl HodoContext {
+    // Create a new instance of HodoContext
+    pub fn new() -> Self {
+        HodoContext {
+            device_height: 1,
+            device_width: 1,
+            label_padding: 0.0,
+            edge_padding: 0.0,
+            max_speed: 100.0,
+        }
+    }
+
+    /// This is the scale factor that will be set for the cairo transform matrix.
+    ///
+    /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
+    /// 1 in `ScreenCoords` when the zoom factor is 1.
+    pub fn scale_factor(&self) -> f64 {
+        f64::from(::std::cmp::min(self.device_height, self.device_width))
+    }
+
+    /// Conversion from speed and direction to (x,y) coords
+    pub fn convert_sd_to_xy(&self, coords: SDCoords) -> XYCoords {
+        let radius = coords.speed / 2.0 / self.max_speed;
+        let angle = (270.0 - coords.dir).to_radians();
+
+        let x = radius * angle.cos();
+        let y = radius * angle.sin();
+        XYCoords { x, y }
+    }
+
+    /// Conversion from speed and direction to (x,y) coords
+    pub fn convert_sd_to_screen(&self, coords: SDCoords) -> ScreenCoords {
+        let xy = self.convert_sd_to_xy(coords);
+        self.convert_xy_to_screen(xy)
+    }
+}
+
+impl PlotContext for HodoContext {
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+        let x = coords.x + 0.5;
+        let y = coords.y + 0.5;
+
+        ScreenCoords { x, y }
+    }
+
+    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = self.scale_factor();
         ScreenCoords {
             x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
