@@ -59,10 +59,10 @@ fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
 }
 
 fn show_error_dialog(message: &str, win: &Window) {
-    use gtk::{MessageType, ButtonsType, DIALOG_MODAL, DIALOG_DESTROY_WITH_PARENT};
+    use gtk::{MessageType, ButtonsType, DialogFlags};
     let dialog = MessageDialog::new(
         Some(win),
-        DIALOG_MODAL | DIALOG_DESTROY_WITH_PARENT,
+        DialogFlags::MODAL | DialogFlags::DESTROY_WITH_PARENT,
         MessageType::Error,
         ButtonsType::Ok,
         message,

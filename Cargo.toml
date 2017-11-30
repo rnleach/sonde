@@ -7,11 +7,11 @@ authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 sounding-base = "^0.1"
 sounding-bufkit = "^0.1"
 sounding-analysis = "^0.1"
-error-chain = "0.11.0"
-cairo-rs = "0.2.0"
-glib = "0.3.1"
-gtk = { version = "0.2.0", features = ["v3_10"] }
-gdk = "0.6.0"
-lazy_static = "0.2"
+error-chain = "^0.11"
+cairo-rs = "^0.3"
+glib = "^0.4"
+gtk = { version = "^0.3", features = ["v3_10"] }
+gdk = "^0.7"
+lazy_static = "^1"
 chrono = "0.4"
 itertools = "^0.7.0"

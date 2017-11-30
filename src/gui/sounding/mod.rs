@@ -3,8 +3,7 @@
 use std::rc::Rc;
 
 use cairo::{Context, Matrix};
-use gdk::{SCROLL_MASK, BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
-          POINTER_MOTION_HINT_MASK, LEAVE_NOTIFY_MASK, KEY_RELEASE_MASK, KEY_PRESS_MASK};
+use gdk::EventMask;
 use gtk::{DrawingArea, WidgetExt};
 
 mod sounding_callbacks;
@@ -58,9 +57,11 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
     sounding_area.set_can_focus(true);
 
     sounding_area.add_events(
-        (SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_HINT_MASK |
-             POINTER_MOTION_MASK |
-             LEAVE_NOTIFY_MASK | KEY_RELEASE_MASK | KEY_PRESS_MASK)
+        (EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK | EventMask::BUTTON_RELEASE_MASK |
+             EventMask::POINTER_MOTION_HINT_MASK |
+             EventMask::POINTER_MOTION_MASK |
+             EventMask::LEAVE_NOTIFY_MASK | EventMask::KEY_RELEASE_MASK |
+             EventMask::KEY_PRESS_MASK)
             .bits() as i32,
     );
 
@@ -89,9 +90,10 @@ pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &AppContextPo
     });
 
     omega_area.add_events(
-        (SCROLL_MASK | BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_HINT_MASK |
-             POINTER_MOTION_MASK |
-             LEAVE_NOTIFY_MASK | KEY_RELEASE_MASK | KEY_PRESS_MASK)
+        (EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK | EventMask::BUTTON_RELEASE_MASK |
+             EventMask::POINTER_MOTION_HINT_MASK |
+             EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK |
+             EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
             .bits() as i32,
     );
 }
