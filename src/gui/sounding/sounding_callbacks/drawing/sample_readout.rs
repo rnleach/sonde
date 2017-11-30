@@ -8,34 +8,25 @@ use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
-    let mut sample_p = if let Some(sample_p) = ac.get_sample_pressure() {
+    let vals = if let Some(vals) = ac.get_sample() {
+        vals
+    } else {
+        return;
+    };
+
+    let snd = if let Some(snd) = ac.get_sounding_for_display() {
+        snd
+    } else {
+        return;
+    };
+
+    let sample_p = if let Some(sample_p) = vals.pressure.as_option() {
         sample_p
     } else {
         return;
     };
 
-    let vals: DataRow;
-    let lines: Vec<String>;
-    {
-        let snd = if let Some(snd) = ac.get_sounding_for_display() {
-            snd
-        } else {
-            return;
-        };
-        if snd.get_profile(::sounding_base::Profile::Pressure).len() < 1 {
-            return;
-        }
-
-        vals = ::sounding_analysis::linear_interpolate(snd, sample_p);
-
-        sample_p = if let Some(p) = vals.pressure.as_option() {
-            p
-        } else {
-            sample_p
-        };
-
-        lines = create_text(&vals, snd, ac);
-    }
+    let lines = create_text(&vals, snd, ac);
 
     draw_sample_line(cr, ac, sample_p);
 

@@ -120,7 +120,7 @@ pub fn leave_event(
     let mut ac = ac.borrow_mut();
 
     ac.skew_t.last_cursor_position_skew_t = None;
-    ac.set_sample_pressure(None);
+    ac.set_sample(None);
     ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(false)
@@ -152,7 +152,7 @@ pub fn mouse_motion_event(
             translate.y -= delta.1;
             ac.set_skew_t_translation(translate);
 
-            ac.set_sample_pressure(None);
+            ac.set_sample(None);
 
             ac.queue_draw_skew_t_rh_omega();
         }
@@ -161,7 +161,11 @@ pub fn mouse_motion_event(
 
         ac.skew_t.last_cursor_position_skew_t = Some(position);
         let tp_position = ac.skew_t.convert_device_to_tp(position);
-        ac.set_sample_pressure(Some(tp_position.pressure));
+        let sample = ::sounding_analysis::linear_interpolate(
+            ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+            tp_position.pressure,
+        );
+        ac.set_sample(Some(sample));
 
         ac.queue_draw_skew_t_rh_omega();
     }

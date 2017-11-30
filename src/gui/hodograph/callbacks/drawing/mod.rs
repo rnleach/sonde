@@ -97,7 +97,6 @@ fn draw_background_fill(cr: &Context, ac: &AppContext) {
         }
         do_draw = !do_draw;
     }
-
 }
 
 fn draw_background_lines(cr: &Context, ac: &AppContext) {

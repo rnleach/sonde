@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use cairo::Context;
 use gtk::prelude::*;
 
-use sounding_base::Sounding;
+use sounding_base::{Sounding, DataRow};
 
 use errors::*;
 use gui::Gui;
@@ -33,7 +33,7 @@ pub struct AppContext {
 
     list: Vec<Sounding>,
     currently_displayed_index: usize,
-    last_sample_pressure: Option<f64>,
+    last_sample: Option<DataRow>,
 
     // Handle to the GUI
     gui: Option<Gui>,
@@ -59,7 +59,7 @@ impl AppContext {
             source_description: None,
             list: vec![],
             currently_displayed_index: 0,
-            last_sample_pressure: None,
+            last_sample: None,
             gui: None,
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
@@ -400,15 +400,15 @@ impl AppContext {
         }
     }
 
-    pub fn get_sample_pressure(&self) -> Option<f64> {
-        self.last_sample_pressure
+    pub fn get_sample(&self) -> Option<DataRow> {
+        self.last_sample.clone()
     }
 
-    pub fn set_sample_pressure<T>(&mut self, sample_p: T)
+    pub fn set_sample<T>(&mut self, sample: T)
     where
-        Option<f64>: From<T>,
+        Option<DataRow>: From<T>,
     {
-        self.last_sample_pressure = Option::from(sample_p);
+        self.last_sample = Option::from(sample);
 
         if let Some(ref gui) = self.gui {
             let ta = gui.get_text_area();

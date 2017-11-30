@@ -200,25 +200,32 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
 
 fn draw_active_readout(cr: &Context, ac: &AppContext) {
     if ac.config.show_active_readout {
-        if let Some(sample_p) = ac.get_sample_pressure() {
+        let sample_p = if let Some(sample) = ac.get_sample() {
+            if let Some(sample_p) = sample.pressure.as_option() {
+                sample_p
+            } else {
+                return;
+            }
+        } else {
+            return;
+        };
 
-            let rgba = ac.config.active_readout_line_rgba;
-            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            cr.set_line_width(
-                cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
-                    .0,
-            );
-            let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
-                w: -1000.0,
-                p: sample_p,
-            });
-            let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
-                w: 1000.0,
-                p: sample_p,
-            });
-            cr.move_to(start.x, start.y);
-            cr.line_to(end.x, end.y);
-            cr.stroke();
-        }
+        let rgba = ac.config.active_readout_line_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(
+            cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
+                .0,
+        );
+        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: -1000.0,
+            p: sample_p,
+        });
+        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: 1000.0,
+            p: sample_p,
+        });
+        cr.move_to(start.x, start.y);
+        cr.line_to(end.x, end.y);
+        cr.stroke();
     }
 }

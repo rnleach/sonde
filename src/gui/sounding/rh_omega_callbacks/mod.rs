@@ -14,7 +14,7 @@ pub fn leave_event(
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
-    ac.set_sample_pressure(None);
+    ac.set_sample(None);
     ac.queue_draw_skew_t_rh_omega();
 
     Inhibit(false)
@@ -34,7 +34,11 @@ pub fn mouse_motion_event(
         let position: DeviceCoords = event.get_position().into();
 
         let wp_position = ac.rh_omega.convert_device_to_wp(position);
-        ac.set_sample_pressure(Some(wp_position.p));
+        let sample = ::sounding_analysis::linear_interpolate(
+            ac.get_sounding_for_display().unwrap(),
+            wp_position.p,
+        );
+        ac.set_sample(Some(sample));
 
         ac.queue_draw_skew_t_rh_omega();
     }
