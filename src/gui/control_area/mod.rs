@@ -24,7 +24,7 @@ macro_rules! build_config_color_and_check {
         check.connect_toggled(move|button|{
             let mut ac = acp1.borrow_mut();
             ac.config.$show_var = button.get_active();
-            ac.queue_draw_skew_t_rh_omega();
+            ac.update_all_gui();
         });
 
         // Create color button callback
@@ -34,7 +34,7 @@ macro_rules! build_config_color_and_check {
             let rgba = button.get_rgba();
 
             ac.config.$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-            ac.queue_draw_skew_t_rh_omega();
+            ac.update_all_gui();
         });
 
         // Layout
@@ -60,7 +60,7 @@ macro_rules! build_config_check{
         check.connect_toggled(move|button|{
             let mut ac = acp1.borrow_mut();
             ac.config.$show_var = button.get_active();
-            ac.queue_draw_skew_t_rh_omega();
+            ac.update_all_gui();
         });
 
         // Layout

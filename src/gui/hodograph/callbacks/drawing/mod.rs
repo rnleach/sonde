@@ -159,8 +159,32 @@ pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_active_readout(_cr: &Context, ac: &AppContext) {
-    if ac.config.show_active_readout {
-        // TODO:app
+pub fn draw_active_readout(cr: &Context, ac: &AppContext) {
+    if !ac.config.show_active_readout {
+        return;
     }
+
+    let (speed, dir) = if let Some(sample) = ac.get_sample() {
+        if let (Some(speed), Some(dir)) = (sample.speed.as_option(), sample.direction.as_option()) {
+            (speed, dir)
+        } else {
+            return;
+        }
+    } else {
+        return;
+    };
+
+    let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
+    let coords = ac.hodo.convert_sd_to_screen(SDCoords { speed, dir });
+
+    let rgba = ac.config.active_readout_line_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    cr.arc(
+        coords.x,
+        coords.y,
+        pnt_size,
+        0.0,
+        2.0 * ::std::f64::consts::PI,
+    );
+    cr.fill();
 }

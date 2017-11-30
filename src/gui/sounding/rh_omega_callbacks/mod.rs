@@ -15,7 +15,7 @@ pub fn leave_event(
     let mut ac = ac.borrow_mut();
 
     ac.set_sample(None);
-    ac.queue_draw_skew_t_rh_omega();
+    ac.update_all_gui();
 
     Inhibit(false)
 }
@@ -40,7 +40,7 @@ pub fn mouse_motion_event(
         );
         ac.set_sample(Some(sample));
 
-        ac.queue_draw_skew_t_rh_omega();
+        ac.update_all_gui();
     }
     Inhibit(false)
 }

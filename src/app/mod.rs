@@ -235,7 +235,7 @@ impl AppContext {
     }
 
     // Update all the gui elements
-    fn update_all_gui(&self) {
+    pub fn update_all_gui(&self) {
         if let Some(ref gui) = self.gui {
             gui.draw_all();
             gui.update_text_view(self);
@@ -380,14 +380,6 @@ impl AppContext {
     pub fn set_skew_t_translation(&mut self, translate: XYCoords) {
         self.skew_t.translate = translate;
         self.rh_omega.translate_y = translate.y;
-    }
-
-    pub fn queue_draw_skew_t_rh_omega(&self) {
-
-        if let Some(ref gui) = self.gui {
-            gui.get_sounding_area().queue_draw();
-            gui.get_omega_area().queue_draw();
-        }
     }
 
     pub fn show_hide_rh_omega(&self) {

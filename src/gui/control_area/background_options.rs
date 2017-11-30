@@ -92,7 +92,7 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
         let mut ac = acp1.borrow_mut();
 
         ac.config.show_iso_omega_lines = button.get_active();
-        ac.queue_draw_skew_t_rh_omega();
+        ac.update_all_gui();
     });
 
     // Layout
@@ -167,7 +167,7 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
         let rgba = button.get_rgba();
 
         ac.config.background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-        ac.queue_draw_skew_t_rh_omega();
+        ac.update_all_gui();
     });
 
     // Layout

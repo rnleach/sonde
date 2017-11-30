@@ -72,7 +72,7 @@ pub fn scroll_event(
     };
     ac.set_skew_t_translation(translate);
 
-    ac.queue_draw_skew_t_rh_omega();
+    ac.update_all_gui();
 
     Inhibit(true)
 }
@@ -121,7 +121,7 @@ pub fn leave_event(
 
     ac.skew_t.last_cursor_position_skew_t = None;
     ac.set_sample(None);
-    ac.queue_draw_skew_t_rh_omega();
+    ac.update_all_gui();
 
     Inhibit(false)
 }
@@ -151,10 +151,8 @@ pub fn mouse_motion_event(
             translate.x -= delta.0;
             translate.y -= delta.1;
             ac.set_skew_t_translation(translate);
-
             ac.set_sample(None);
-
-            ac.queue_draw_skew_t_rh_omega();
+            ac.update_all_gui();
         }
     } else if ac.plottable() {
         let position: DeviceCoords = event.get_position().into();
@@ -166,8 +164,7 @@ pub fn mouse_motion_event(
             tp_position.pressure,
         );
         ac.set_sample(Some(sample));
-
-        ac.queue_draw_skew_t_rh_omega();
+        ac.update_all_gui();
     }
     Inhibit(false)
 }

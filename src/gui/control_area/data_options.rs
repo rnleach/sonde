@@ -55,7 +55,7 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
         let acp2 = Rc::clone(&acp1);
         ::gtk::idle_add(move || {
             let ac = acp2.borrow_mut();
-            ac.queue_draw_skew_t_rh_omega();
+            ac.update_all_gui();
             Continue(false)
         });
     });
