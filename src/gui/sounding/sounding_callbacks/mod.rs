@@ -61,16 +61,22 @@ pub fn scroll_event(
     } else if new_zoom > MAX_ZOOM {
         new_zoom = MAX_ZOOM;
     }
-    ac.set_zoom_factor(new_zoom);
+    ac.skew_t.set_zoom_factor(new_zoom);
+    ac.rh_omega.set_zoom_factor(new_zoom);
 
-    let translate = ac.get_skew_t_translation();
+    let translate = ac.skew_t.get_translate();
     let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
     let translate_y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
     let translate = XYCoords {
         x: translate_x,
         y: translate_y,
     };
-    ac.set_skew_t_translation(translate);
+    ac.skew_t.set_translate(translate);
+
+    // Bound the xy-coords to always be on screen.
+    ac.skew_t.bound_view();
+    let translate = ac.skew_t.get_translate();
+    ac.rh_omega.set_translate(translate);
 
     ac.update_all_gui();
 
@@ -149,10 +155,16 @@ pub fn mouse_motion_event(
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,
             );
-            let mut translate = ac.get_skew_t_translation();
+            let mut translate = ac.skew_t.get_translate();
             translate.x -= delta.0;
             translate.y -= delta.1;
-            ac.set_skew_t_translation(translate);
+            ac.skew_t.set_translate(translate);
+
+            // Bound the xy-coords to always be on screen.
+            ac.skew_t.bound_view();
+            let translate = ac.skew_t.get_translate();
+            ac.rh_omega.set_translate(translate);
+
             ac.set_sample(None);
             ac.update_all_gui();
         }
@@ -175,7 +187,7 @@ pub fn mouse_motion_event(
 pub fn key_release_event(
     _sounding_area: &DrawingArea,
     _event: &EventKey,
-    _dc: &AppContextPointer,
+    _ac: &AppContextPointer,
 ) -> Inhibit {
     Inhibit(false)
 }

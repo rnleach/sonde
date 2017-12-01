@@ -10,7 +10,7 @@ use sounding_base::{Sounding, DataRow};
 
 use errors::*;
 use gui::Gui;
-use coords::{DeviceCoords, TPCoords, XYCoords, XYRect};
+use coords::{TPCoords, XYCoords, XYRect};
 
 // Module for configuring application
 pub mod config;
@@ -228,6 +228,7 @@ impl AppContext {
             } else {
                 self.currently_displayed_index = 0;
             }
+            self.update_sample();
         }
 
         self.update_all_gui();
@@ -241,9 +242,23 @@ impl AppContext {
             } else {
                 self.currently_displayed_index = self.list.len() - 1;
             }
+            self.update_sample();
         }
 
         self.update_all_gui();
+    }
+
+    fn update_sample(&mut self) {
+        if let Some(sample) = self.last_sample.clone() {
+            if let Some(p) = sample.pressure.as_option() {
+                self.last_sample = Some(::sounding_analysis::linear_interpolate(
+                    &self.list[self.currently_displayed_index],
+                    p,
+                ));
+            } else {
+                self.last_sample = None;
+            }
+        }
     }
 
     // Update all the gui elements
@@ -300,7 +315,7 @@ impl AppContext {
         let skew_t_xy_envelope = self.skew_t.get_xy_envelope();
 
         let lower_left = skew_t_xy_envelope.lower_left;
-        self.set_skew_t_translation(lower_left);
+        self.skew_t.set_translate(lower_left);
 
         let width = skew_t_xy_envelope.upper_right.x - skew_t_xy_envelope.lower_left.x;
         let height = skew_t_xy_envelope.upper_right.y - skew_t_xy_envelope.lower_left.y;
@@ -308,9 +323,16 @@ impl AppContext {
         let width_scale = 1.0 / width;
         let height_scale = 1.0 / height;
 
-        self.set_zoom_factor(f64::min(width_scale, height_scale));
+        self.skew_t.set_zoom_factor(
+            f64::min(width_scale, height_scale),
+        );
+        self.rh_omega.set_zoom_factor(
+            f64::min(width_scale, height_scale),
+        );
 
-        self.bound_view();
+        self.skew_t.bound_view();
+        self.rh_omega.set_translate(self.skew_t.get_translate());
+        self.hodo.bound_view();
     }
 
     /// Update the dimensions of the skew-t drawing area
@@ -334,68 +356,9 @@ impl AppContext {
         }
     }
 
-    /// Right justify the skew-t in the view if zoomed out, and if zoomed in don't let it view
-    /// beyond the edges of the skew-t.
-    pub fn bound_view(&mut self) {
-
-        let bounds = DeviceCoords {
-            col: f64::from(self.skew_t.get_device_width()),
-            row: f64::from(self.skew_t.get_device_height()),
-        };
-        let lower_right = self.skew_t.convert_device_to_xy(bounds);
-        let upper_left = self.skew_t.convert_device_to_xy(
-            DeviceCoords { col: 0.0, row: 0.0 },
-        );
-        let width = lower_right.x - upper_left.x;
-        let height = upper_left.y - lower_right.y;
-
-        let mut skew_t_translate = self.skew_t.get_translate();
-        if width <= 1.0 {
-            if skew_t_translate.x < 0.0 {
-                skew_t_translate.x = 0.0;
-            }
-            let max_x = 1.0 - width;
-            if skew_t_translate.x > max_x {
-                skew_t_translate.x = max_x;
-            }
-        } else {
-            skew_t_translate.x = 0.0;
-        }
-        if height < 1.0 {
-            if skew_t_translate.y < 0.0 {
-                skew_t_translate.y = 0.0;
-            }
-            let max_y = 1.0 - height;
-            if skew_t_translate.y > max_y {
-                skew_t_translate.y = max_y;
-            }
-        } else {
-            skew_t_translate.y = -(height - 1.0) / 2.0;
-        }
-        self.rh_omega.set_translate(skew_t_translate);
-        self.skew_t.set_translate(skew_t_translate);
-    }
-
     /// Get the zoom factor
     pub fn get_zoom_factor(&self) -> f64 {
         self.skew_t.get_zoom_factor()
-    }
-
-    /// Set the zoom factor
-    pub fn set_zoom_factor(&mut self, new_zoom: f64) {
-        self.skew_t.set_zoom_factor(new_zoom);
-        self.rh_omega.set_zoom_factor(new_zoom);
-    }
-
-    /// Get the translation needed to draw correctly for panning and zooming the skew_t
-    pub fn get_skew_t_translation(&self) -> XYCoords {
-        self.skew_t.get_translate()
-    }
-
-    /// Set the translation needed to draw correctly for panning and zooming the skew_t
-    pub fn set_skew_t_translation(&mut self, translate: XYCoords) {
-        self.skew_t.set_translate(translate);
-        self.rh_omega.set_translate(translate);
     }
 
     pub fn show_hide_rh_omega(&self) {

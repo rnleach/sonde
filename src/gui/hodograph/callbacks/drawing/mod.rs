@@ -65,6 +65,8 @@ pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
         ).0,
     );
 
+    ac.hodo.bound_view();
+
 }
 
 pub fn draw_hodo_background(cr: &Context, ac: &AppContext) {

@@ -69,9 +69,6 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
             0.0,
         ).0,
     );
-
-    // Bound the xy-coords to always be on screen.
-    ac.bound_view();
 }
 
 pub fn draw_background(cr: &Context, ac: &AppContext) {

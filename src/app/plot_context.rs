@@ -187,6 +187,45 @@ pub trait PlotContext {
             upper_right,
         }
     }
+
+    /// Left justify the plot in the view if zoomed out, and if zoomed in don't let it view
+    /// beyond the edges of the plot.
+    fn bound_view(&mut self) {
+
+        let bounds = DeviceCoords {
+            col: f64::from(self.get_device_width()),
+            row: f64::from(self.get_device_height()),
+        };
+        let lower_right = self.convert_device_to_xy(bounds);
+        let upper_left = self.convert_device_to_xy(DeviceCoords { col: 0.0, row: 0.0 });
+        let width = lower_right.x - upper_left.x;
+        let height = upper_left.y - lower_right.y;
+
+        let mut translate = self.get_translate();
+        if width <= 1.0 {
+            if translate.x < 0.0 {
+                translate.x = 0.0;
+            }
+            let max_x = 1.0 - width;
+            if translate.x > max_x {
+                translate.x = max_x;
+            }
+        } else {
+            translate.x = 0.0;
+        }
+        if height < 1.0 {
+            if translate.y < 0.0 {
+                translate.y = 0.0;
+            }
+            let max_y = 1.0 - height;
+            if translate.y > max_y {
+                translate.y = max_y;
+            }
+        } else {
+            translate.y = -(height - 1.0) / 2.0;
+        }
+        self.set_translate(translate);
+    }
 }
 
 pub struct GenericContext {
