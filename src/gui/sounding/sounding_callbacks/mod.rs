@@ -5,13 +5,13 @@ use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection,
           keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
-use app;
+use app::{AppContextPointer, PlotContext};
 use coords::{DeviceCoords, XYCoords};
 
 mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_sounding(cr: &Context, ac: &app::AppContextPointer) -> Inhibit {
+pub fn draw_sounding(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
     let mut ac = ac.borrow_mut();
 
@@ -29,7 +29,7 @@ pub fn draw_sounding(cr: &Context, ac: &app::AppContextPointer) -> Inhibit {
 pub fn scroll_event(
     _sounding_area: &DrawingArea,
     event: &EventScroll,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
 
     const DELTA_SCALE: f64 = 1.05;
@@ -81,14 +81,16 @@ pub fn scroll_event(
 pub fn button_press_event(
     _sounding_area: &DrawingArea,
     event: &EventButton,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
 
     // Left mouse button
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.skew_t.last_cursor_position_skew_t = Some(event.get_position().into());
-        ac.skew_t.left_button_pressed = true;
+        ac.skew_t.set_last_cursor_position(
+            Some(event.get_position().into()),
+        );
+        ac.skew_t.set_left_button_pressed(true);
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -99,12 +101,12 @@ pub fn button_press_event(
 pub fn button_release_event(
     _sounding_area: &DrawingArea,
     event: &EventButton,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
     if event.get_button() == 1 {
         let mut ac = ac.borrow_mut();
-        ac.skew_t.last_cursor_position_skew_t = None;
-        ac.skew_t.left_button_pressed = false;
+        ac.skew_t.set_last_cursor_position(None);
+        ac.skew_t.set_left_button_pressed(false);
         Inhibit(true)
     } else {
         Inhibit(false)
@@ -115,11 +117,11 @@ pub fn button_release_event(
 pub fn leave_event(
     _sounding_area: &DrawingArea,
     _event: &EventCrossing,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
     let mut ac = ac.borrow_mut();
 
-    ac.skew_t.last_cursor_position_skew_t = None;
+    ac.skew_t.set_last_cursor_position(None);
     ac.set_sample(None);
     ac.update_all_gui();
 
@@ -130,17 +132,17 @@ pub fn leave_event(
 pub fn mouse_motion_event(
     sounding_area: &DrawingArea,
     event: &EventMotion,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
 
     sounding_area.grab_focus();
 
     let mut ac = ac.borrow_mut();
-    if ac.skew_t.left_button_pressed {
-        if let Some(last_position) = ac.skew_t.last_cursor_position_skew_t {
+    if ac.skew_t.get_left_button_pressed() {
+        if let Some(last_position) = ac.skew_t.get_last_cursor_position() {
             let old_position = ac.skew_t.convert_device_to_xy(last_position);
             let new_position = DeviceCoords::from(event.get_position());
-            ac.skew_t.last_cursor_position_skew_t = Some(new_position);
+            ac.skew_t.set_last_cursor_position(Some(new_position));
 
             let new_position = ac.skew_t.convert_device_to_xy(new_position);
             let delta = (
@@ -157,7 +159,7 @@ pub fn mouse_motion_event(
     } else if ac.plottable() {
         let position: DeviceCoords = event.get_position().into();
 
-        ac.skew_t.last_cursor_position_skew_t = Some(position);
+        ac.skew_t.set_last_cursor_position(Some(position));
         let tp_position = ac.skew_t.convert_device_to_tp(position);
         let sample = ::sounding_analysis::linear_interpolate(
             ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
@@ -173,7 +175,7 @@ pub fn mouse_motion_event(
 pub fn key_release_event(
     _sounding_area: &DrawingArea,
     _event: &EventKey,
-    _dc: &app::AppContextPointer,
+    _dc: &AppContextPointer,
 ) -> Inhibit {
     Inhibit(false)
 }
@@ -182,7 +184,7 @@ pub fn key_release_event(
 pub fn key_press_event(
     _sounding_area: &DrawingArea,
     event: &EventKey,
-    ac: &app::AppContextPointer,
+    ac: &AppContextPointer,
 ) -> Inhibit {
 
     let keyval = event.get_keyval();

@@ -1,5 +1,5 @@
 //! Functions used for adding labels to the sounding plot
-use app::{AppContext, config};
+use app::{AppContext, PlotContext, config};
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
 use gui::check_overlap_then_add;
 use gui::sounding::set_font_size;
@@ -104,7 +104,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
 fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>) {
 
-    let padding = ac.skew_t.label_padding;
+    let padding = ac.skew_t.get_label_padding();
 
     for (label, rect) in labels {
         let ScreenRect { lower_left, .. } = rect;
@@ -136,8 +136,8 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
     }
 
     let mut upper_left = ac.skew_t.convert_device_to_screen(DeviceCoords::origin());
-    upper_left.x += ac.skew_t.edge_padding;
-    upper_left.y -= ac.skew_t.edge_padding;
+    upper_left.x += ac.skew_t.get_edge_padding();
+    upper_left.y -= ac.skew_t.get_edge_padding();
 
     // Make sure we stay on the x-y coords domain
     let ScreenCoords { x: xmin, y: ymax } =
@@ -294,7 +294,7 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
-    let padding = ac.skew_t.edge_padding;
+    let padding = ac.skew_t.get_edge_padding();
     box_height += 2.0 * padding;
     box_width += 2.0 * padding;
 
@@ -332,7 +332,7 @@ fn draw_legend_text(
     let rgb = ac.config.label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
-    let padding = ac.skew_t.edge_padding;
+    let padding = ac.skew_t.get_edge_padding();
 
     // Remember how many lines we have drawn so far for setting position of the next line.
     let mut num_lines_drawn = 0;

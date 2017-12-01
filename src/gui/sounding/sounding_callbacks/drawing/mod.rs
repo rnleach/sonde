@@ -22,8 +22,8 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     cr.rectangle(
         0.0,
         0.0,
-        f64::from(ac.skew_t.device_width),
-        f64::from(ac.skew_t.device_height),
+        f64::from(ac.skew_t.get_device_width()),
+        f64::from(ac.skew_t.get_device_height()),
     );
     cr.set_source_rgba(
         ac.config.background_rgba.0,
@@ -42,7 +42,7 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: f64::from(ac.skew_t.device_height) / scale_factor,
+        y0: f64::from(ac.skew_t.get_device_height()) / scale_factor,
     });
 
     // Clip the drawing area
@@ -57,8 +57,18 @@ pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     cr.clip();
 
     // Calculate the various padding values
-    ac.skew_t.label_padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
-    ac.skew_t.edge_padding = cr.device_to_user_distance(ac.config.edge_padding, 0.0).0;
+    ac.skew_t.set_label_padding(
+        cr.device_to_user_distance(
+            ac.config.label_padding,
+            0.0,
+        ).0,
+    );
+    ac.skew_t.set_edge_padding(
+        cr.device_to_user_distance(
+            ac.config.edge_padding,
+            0.0,
+        ).0,
+    );
 
     // Bound the xy-coords to always be on screen.
     ac.bound_view();

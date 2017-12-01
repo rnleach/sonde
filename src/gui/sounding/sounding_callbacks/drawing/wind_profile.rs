@@ -104,7 +104,7 @@ impl<'a, 'b> WindBarbConfig<'a> {
             ac.config.wind_barb_dot_radius,
             -ac.config.wind_barb_pennant_width,
         );
-        let padding = ac.skew_t.edge_padding;
+        let padding = ac.skew_t.get_edge_padding();
 
         let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
         let XYCoords { x: mut xmax, .. } =

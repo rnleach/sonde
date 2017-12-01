@@ -33,8 +33,8 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     cr.rectangle(
         0.0,
         0.0,
-        f64::from(ac.rh_omega.device_width),
-        f64::from(ac.rh_omega.device_height),
+        f64::from(ac.rh_omega.get_device_width()),
+        f64::from(ac.rh_omega.get_device_height()),
     );
     cr.set_source_rgba(
         ac.config.background_rgba.0,
@@ -53,7 +53,7 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: f64::from(ac.rh_omega.device_height) / scale_factor,
+        y0: f64::from(ac.rh_omega.get_device_height()) / scale_factor,
     });
 
     // Clip the drawing area
