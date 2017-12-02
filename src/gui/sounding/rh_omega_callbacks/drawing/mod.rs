@@ -1,7 +1,7 @@
 use cairo::{Context, Matrix};
 use gtk::Inhibit;
 
-use app::{AppContext, AppContextPointer, config};
+use app::{AppContext, AppContextPointer, RHOmegaContext, config};
 use coords::{XYCoords, WPCoords, ScreenCoords};
 use gui::plot_curve_from_points;
 
@@ -100,7 +100,8 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
             .filter_map(|pair| {
                 let (p, rh) = pair;
                 if p > config::MINP {
-                    let XYCoords { y, .. } = ac.rh_omega.convert_wp_to_xy(WPCoords { w: 0.0, p });
+                    let XYCoords { y, .. } =
+                        RHOmegaContext::convert_wp_to_xy(WPCoords { w: 0.0, p });
                     Some(ac.rh_omega.convert_xy_to_screen(XYCoords { x: rh, y }))
                 } else {
                     None

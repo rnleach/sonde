@@ -23,11 +23,11 @@ fn draw_background_lines(cr: &Context, ac: &AppContext) {
 
             let pnts = [
                 WPCoords {
-                    w: -ac.rh_omega.get_max_abs_omega(),
+                    w: -config::MAX_ABS_W,
                     p,
                 },
                 WPCoords {
-                    w: ac.rh_omega.get_max_abs_omega(),
+                    w: config::MAX_ABS_W,
                     p,
                 },
             ];
@@ -88,10 +88,10 @@ fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
 
         for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
             let mut coords = [
-                (-ac.rh_omega.get_max_abs_omega(), bottom_p),
-                (-ac.rh_omega.get_max_abs_omega(), top_p),
-                (ac.rh_omega.get_max_abs_omega(), top_p),
-                (ac.rh_omega.get_max_abs_omega(), bottom_p),
+                (-config::MAX_ABS_W, bottom_p),
+                (-config::MAX_ABS_W, top_p),
+                (config::MAX_ABS_W, top_p),
+                (config::MAX_ABS_W, bottom_p),
             ];
 
             // Convert points to screen coords
@@ -164,12 +164,8 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     if ac.config.show_iso_omega_lines {
         let WPCoords { p: screen_max_p, .. } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
-        for &w in &[
-            0.0,
-            -ac.rh_omega.get_max_abs_omega(),
-            ac.rh_omega.get_max_abs_omega(),
-        ]
-        {
+        // FIXME:: Use better algorithm to get labels, this works fine, just add more values to try
+        for &w in &[0.0, -config::MAX_ABS_W, config::MAX_ABS_W] {
 
             let label = format!("{:.0}", w * 10.0);
 

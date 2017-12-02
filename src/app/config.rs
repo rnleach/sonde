@@ -285,8 +285,7 @@ pub const WIDGET_MARGIN: i32 = 4;
 //
 // Constants for defining a standard x-y coordinate system
 //
-// NOTE: Leave these as compile time constants unless background isopleths are dynamically
-//       calculated also.
+
 /// Maximum pressure plotted on skew-t (bottom edge)
 pub const MAXP: f64 = 1050.0; // mb
 /// Minimum pressure plotted on skew-t (top edge)
@@ -296,24 +295,27 @@ pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
 
-/// Initial maximum absolute vertical velocity in Pa/s
-pub const MAX_ABS_W: f64 = 1.0;
+/// Maximum absolute vertical velocity in Pa/s
+pub const MAX_ABS_W: f64 = 10.0;
+
+/// Maximum wind speed on hodograph in Knots
+pub const MAX_SPEED: f64 = 250.0;
 
 //
 // Limits on the top pressure level for some background lines.
 //
-// NOTE: Leave these as compile time constants unless background isopleths are dynamically
-//       calculated also.
+
 /// Highest elevation pressure level to draw isentrops up to
-pub const ISENTROPS_TOP_P: f64 = MINP; //200.0;
+pub const ISENTROPS_TOP_P: f64 = MINP;
 /// Number of points to use per isentrop line when drawing.
-pub const POINTS_PER_ISENTROP: u32 = 30;
+pub const POINTS_PER_ISENTROP: u32 = 40;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
 pub const ISO_MIXING_RATIO_TOP_P: f64 = 300.0;
 
 //
 // Constant values to plot on background.
 //
+
 /// Isotherms to label on the chart.
 pub const ISOTHERMS: [f64; 31] = [
     -150.0,
@@ -455,7 +457,9 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
 //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
-pub const ISO_OMEGA: [f64; 17] = [
+pub const ISO_OMEGA: [f64; 21] = [
+    -10.0,
+    -9.0,
     -8.0,
     -7.0,
     -6.0,
@@ -473,9 +477,11 @@ pub const ISO_OMEGA: [f64; 17] = [
     6.0,
     7.0,
     8.0,
+    9.0,
+    10.0,
 ];
 
-pub const ISO_SPEED: [f64; 20] = [
+pub const ISO_SPEED: [f64; 25] = [
     10.0,
     20.0,
     30.0,
@@ -496,7 +502,13 @@ pub const ISO_SPEED: [f64; 20] = [
     180.0,
     190.0,
     200.0,
+    210.0,
+    220.0,
+    230.0,
+    240.0,
+    250.0,
 ];
+
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.

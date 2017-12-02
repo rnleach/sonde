@@ -5,9 +5,6 @@ use app::config;
 use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords, XYRect};
 
 pub struct RHOmegaContext {
-    // Bound for the omega plot
-    pub max_abs_omega: f64,
-
     pub skew_t_scale_factor: f64,
 
     generic: GenericContext,
@@ -16,7 +13,6 @@ pub struct RHOmegaContext {
 impl RHOmegaContext {
     pub fn new() -> Self {
         RHOmegaContext {
-            max_abs_omega: config::MAX_ABS_W,
             skew_t_scale_factor: 1.0,
 
             generic: GenericContext::new(),
@@ -24,29 +20,27 @@ impl RHOmegaContext {
     }
 
     /// Conversion from omega (w) and pressure (p) to (x,y) coords
-    pub fn convert_wp_to_xy(&self, coords: WPCoords) -> XYCoords {
-        use app::config;
+    pub fn convert_wp_to_xy(coords: WPCoords) -> XYCoords {
         use std::f64;
 
         let y = (f64::log10(config::MAXP) - f64::log10(coords.p)) /
             (f64::log10(config::MAXP) - f64::log10(config::MINP));
 
         // The + sign below looks weird, but is correct.
-        let x = (coords.w + self.max_abs_omega) / (2.0 * self.max_abs_omega);
+        let x = (coords.w + config::MAX_ABS_W) / (2.0 * config::MAX_ABS_W);
 
         XYCoords { x, y }
     }
 
     /// Conversion from `XYCoords` to `WPCoords`
-    pub fn convert_xy_to_wp(&self, coords: XYCoords) -> WPCoords {
-        use app::config;
+    pub fn convert_xy_to_wp(coords: XYCoords) -> WPCoords {
         use std::f64;
 
         let p = 10.0f64.powf(
             -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP)) +
                 f64::log10(config::MAXP),
         );
-        let w = coords.x * (2.0 * self.max_abs_omega) - self.max_abs_omega;
+        let w = coords.x * (2.0 * config::MAX_ABS_W) - config::MAX_ABS_W;
 
         WPCoords { w, p }
     }
@@ -54,7 +48,7 @@ impl RHOmegaContext {
     /// Converstion from screen to `WPCoords`
     pub fn convert_screen_to_wp(&self, coords: ScreenCoords) -> WPCoords {
         let xy = self.convert_screen_to_xy(coords);
-        self.convert_xy_to_wp(xy)
+        RHOmegaContext::convert_xy_to_wp(xy)
     }
 
     /// Conversion from `DeviceCoords` to `WPCoords`
@@ -65,14 +59,9 @@ impl RHOmegaContext {
 
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
-        let xy = self.convert_wp_to_xy(coords);
+        let xy = RHOmegaContext::convert_wp_to_xy(coords);
 
         self.convert_xy_to_screen(xy)
-    }
-
-    /// Get maximum absolute omega
-    pub fn get_max_abs_omega(&self) -> f64 {
-        self.max_abs_omega
     }
 }
 

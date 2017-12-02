@@ -10,7 +10,7 @@ use sounding_base::{Sounding, DataRow};
 
 use errors::*;
 use gui::Gui;
-use coords::{TPCoords, XYCoords, XYRect};
+use coords::{TPCoords, WPCoords, XYCoords, XYRect};
 
 // Module for configuring application
 pub mod config;
@@ -23,7 +23,7 @@ mod skew_t_context;
 use self::skew_t_context::SkewTContext;
 
 mod rh_omega_context;
-use self::rh_omega_context::RHOmegaContext;
+pub use self::rh_omega_context::RHOmegaContext;
 
 mod hodo_context;
 use self::hodo_context::HodoContext;
@@ -89,10 +89,14 @@ impl AppContext {
         self.currently_displayed_index = 0;
         self.source_description = None;
 
-        self.rh_omega.max_abs_omega = config::MAX_ABS_W;
-        self.hodo.max_speed = 100.0; // FIXME: Put in configuration
+        self.hodo.max_speed = config::MAX_SPEED; // FIXME: Use static bounds
 
         let mut skew_t_xy_envelope = XYRect {
+            lower_left: XYCoords { x: 0.45, y: 0.45 },
+            upper_right: XYCoords { x: 0.55, y: 0.55 },
+        };
+
+        let mut rh_omega_xy_envelope = XYRect {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
             upper_right: XYCoords { x: 0.55, y: 0.55 },
         };
@@ -122,12 +126,14 @@ impl AppContext {
                 }
                 if y < skew_t_xy_envelope.lower_left.y {
                     skew_t_xy_envelope.lower_left.y = y;
+                    rh_omega_xy_envelope.lower_left.y = y;
                 }
                 if x > skew_t_xy_envelope.upper_right.x {
                     skew_t_xy_envelope.upper_right.x = x;
                 }
                 if y > skew_t_xy_envelope.upper_right.y {
                     skew_t_xy_envelope.upper_right.y = y;
+                    rh_omega_xy_envelope.upper_right.y = y;
                 }
             }
 
@@ -155,16 +161,18 @@ impl AppContext {
                 }
                 if y < skew_t_xy_envelope.lower_left.y {
                     skew_t_xy_envelope.lower_left.y = y;
+                    rh_omega_xy_envelope.lower_left.y = y;
                 }
                 if x > skew_t_xy_envelope.upper_right.x {
                     skew_t_xy_envelope.upper_right.x = x;
                 }
                 if y > skew_t_xy_envelope.upper_right.y {
                     skew_t_xy_envelope.upper_right.y = y;
+                    rh_omega_xy_envelope.upper_right.y = y;
                 }
             }
 
-            for abs_omega in snd.get_profile(Pressure)
+            for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
                 .filter_map(|p| if let (Some(p), Some(o)) =
@@ -173,14 +181,18 @@ impl AppContext {
                     if p < config::MINP {
                         None
                     } else {
-                        Some(o.abs())
+                        Some(WPCoords { w: o.abs(), p })
                     }
                 } else {
                     None
                 })
             {
-                if abs_omega > self.rh_omega.max_abs_omega {
-                    self.rh_omega.max_abs_omega = abs_omega;
+                let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
+                if -x < rh_omega_xy_envelope.lower_left.x {
+                    rh_omega_xy_envelope.lower_left.x = -x;
+                }
+                if x > rh_omega_xy_envelope.upper_right.x {
+                    rh_omega_xy_envelope.upper_right.x = x;
                 }
             }
 
@@ -202,7 +214,7 @@ impl AppContext {
         }
 
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
-        self.rh_omega.max_abs_omega = self.rh_omega.max_abs_omega.ceil();
+        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
         self.hodo.max_speed = (self.hodo.max_speed / 10.0).ceil() * 10.0;
 
         self.fit_to_data();
@@ -309,6 +321,9 @@ impl AppContext {
 
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&mut self) {
+
+        // FIXME: Add fit for x values of RH_OMEGA (may require edits in draw function)
+        // FIXME: Add fit for hodograph - once envelope is set up properly
 
         use std::f64;
 
