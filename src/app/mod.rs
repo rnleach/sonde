@@ -188,11 +188,16 @@ impl AppContext {
                 })
             {
                 let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
-                if -x < rh_omega_xy_envelope.lower_left.x {
-                    rh_omega_xy_envelope.lower_left.x = -x;
-                }
                 if x > rh_omega_xy_envelope.upper_right.x {
                     rh_omega_xy_envelope.upper_right.x = x;
+                }
+                let pair = WPCoords {
+                    w: -pair.w,
+                    p: pair.p,
+                };
+                let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
+                if x < rh_omega_xy_envelope.lower_left.x {
+                    rh_omega_xy_envelope.lower_left.x = x;
                 }
             }
 
@@ -322,7 +327,6 @@ impl AppContext {
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&mut self) {
 
-        // FIXME: Add fit for x values of RH_OMEGA (may require edits in draw function)
         // FIXME: Add fit for hodograph - once envelope is set up properly
 
         use std::f64;
@@ -341,12 +345,18 @@ impl AppContext {
         self.skew_t.set_zoom_factor(
             f64::min(width_scale, height_scale),
         );
-        self.rh_omega.set_zoom_factor(
-            f64::min(width_scale, height_scale),
-        );
+
+        let rh_omega_xy_envelope = self.rh_omega.get_xy_envelope();
+        let lower_left = rh_omega_xy_envelope.lower_left;
+        self.rh_omega.set_translate(lower_left);
+        let width = rh_omega_xy_envelope.upper_right.x - rh_omega_xy_envelope.lower_left.x;
+
+        let width_scale = 1.0 / width;
+
+        self.rh_omega.set_zoom_factor(width_scale);
 
         self.skew_t.bound_view();
-        self.rh_omega.set_translate(self.skew_t.get_translate());
+        self.rh_omega.set_translate_y(self.skew_t.get_translate());
         self.hodo.bound_view();
     }
 

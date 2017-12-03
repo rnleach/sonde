@@ -62,7 +62,7 @@ pub fn scroll_event(
         new_zoom = MAX_ZOOM;
     }
     ac.skew_t.set_zoom_factor(new_zoom);
-    ac.rh_omega.set_zoom_factor(new_zoom);
+    // ac.rh_omega.set_zoom_factor(new_zoom);
 
     let translate = ac.skew_t.get_translate();
     let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
@@ -76,7 +76,7 @@ pub fn scroll_event(
     // Bound the xy-coords to always be on screen.
     ac.skew_t.bound_view();
     let translate = ac.skew_t.get_translate();
-    ac.rh_omega.set_translate(translate);
+    ac.rh_omega.set_translate_y(translate);
 
     ac.update_all_gui();
 
@@ -163,7 +163,7 @@ pub fn mouse_motion_event(
             // Bound the xy-coords to always be on screen.
             ac.skew_t.bound_view();
             let translate = ac.skew_t.get_translate();
-            ac.rh_omega.set_translate(translate);
+            ac.rh_omega.set_translate_y(translate);
 
             ac.set_sample(None);
             ac.update_all_gui();

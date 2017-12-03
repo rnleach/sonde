@@ -1,8 +1,8 @@
 use cairo::{Context, Matrix};
 use gtk::Inhibit;
 
-use app::{AppContext, AppContextPointer, RHOmegaContext, config};
-use coords::{XYCoords, WPCoords, ScreenCoords};
+use app::{AppContext, AppContextPointer, PlotContext, config};
+use coords::{XYCoords, WPCoords, ScreenCoords, Rect};
 use gui::plot_curve_from_points;
 
 mod background;
@@ -25,9 +25,11 @@ pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     use app::PlotContext;
 
+    // FIXME: Needs removed in favor of allocation event callback
     ac.update_plot_context_allocations();
     let scale_factor = ac.skew_t.scale_factor();
     ac.rh_omega.skew_t_scale_factor = scale_factor;
+    ac.rh_omega.skew_t_zoom_factor = ac.skew_t.get_zoom_factor();
 
     // Fill with backgound color
     cr.rectangle(
@@ -100,9 +102,12 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
             .filter_map(|pair| {
                 let (p, rh) = pair;
                 if p > config::MINP {
-                    let XYCoords { y, .. } =
-                        RHOmegaContext::convert_wp_to_xy(WPCoords { w: 0.0, p });
-                    Some(ac.rh_omega.convert_xy_to_screen(XYCoords { x: rh, y }))
+                    let ScreenCoords { y, .. } =
+                        ac.rh_omega.convert_wp_to_screen(WPCoords { w: 0.0, p });
+                    let bb = ac.rh_omega.bounding_box_in_screen_coords();
+                    let x = bb.lower_left.x + bb.width() * rh;
+
+                    Some(ScreenCoords { x, y })
                 } else {
                     None
                 }

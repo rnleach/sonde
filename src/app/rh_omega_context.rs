@@ -6,6 +6,7 @@ use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords, XYRect};
 
 pub struct RHOmegaContext {
     pub skew_t_scale_factor: f64,
+    pub skew_t_zoom_factor: f64,
 
     generic: GenericContext,
 }
@@ -14,7 +15,7 @@ impl RHOmegaContext {
     pub fn new() -> Self {
         RHOmegaContext {
             skew_t_scale_factor: 1.0,
-
+            skew_t_zoom_factor: 1.0,
             generic: GenericContext::new(),
         }
     }
@@ -60,8 +61,13 @@ impl RHOmegaContext {
     /// Conversion from omega/pressure to screen coordinates.
     pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
         let xy = RHOmegaContext::convert_wp_to_xy(coords);
-
         self.convert_xy_to_screen(xy)
+    }
+
+    pub fn set_translate_y(&mut self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.generic.set_translate(translate);
     }
 }
 
@@ -69,12 +75,12 @@ impl PlotContext for RHOmegaContext {
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
         // Apply translation first
-        let x = coords.x;
+        let x = coords.x - self.generic.get_translate().x;
         let y = coords.y - self.generic.get_translate().y;
 
         // Apply scaling
-        let x = x / self.skew_t_scale_factor * self.scale_factor();
-        let y = self.get_zoom_factor() * y;
+        let x = x * self.get_zoom_factor() / self.skew_t_scale_factor * self.scale_factor();
+        let y = self.skew_t_zoom_factor * y;
         ScreenCoords { x, y }
     }
 
@@ -92,11 +98,11 @@ impl PlotContext for RHOmegaContext {
     /// Conversion from screen coords to xy
     fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Unapply scaling first
-        let x = coords.x * self.skew_t_scale_factor / self.scale_factor();
-        let y = coords.y / self.get_zoom_factor();
+        let x = coords.x / self.get_zoom_factor() / self.scale_factor() * self.skew_t_scale_factor;
+        let y = coords.y / self.skew_t_zoom_factor;
 
         // Unapply translation
-        let x = x;
+        let x = x + self.generic.get_translate().x;
         let y = y + self.generic.get_translate().y;
 
         XYCoords { x, y }

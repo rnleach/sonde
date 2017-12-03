@@ -164,8 +164,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     if ac.config.show_iso_omega_lines {
         let WPCoords { p: screen_max_p, .. } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
-        // FIXME:: Use better algorithm to get labels, this works fine, just add more values to try
-        for &w in &[0.0, -config::MAX_ABS_W, config::MAX_ABS_W] {
+        for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
 
             let label = format!("{:.0}", w * 10.0);
 
@@ -186,11 +185,8 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                 upper_right: ScreenCoords { x: xmax, .. },
             } = screen_edges;
 
-            if xpos < xmin {
-                xpos = xmin;
-            }
-            if xpos + extents.width > xmax {
-                xpos = xmax - extents.width;
+            if xpos < xmin || xpos + extents.width > xmax {
+                continue;
             }
 
             let label_lower_left = ScreenCoords { x: xpos, y: ypos };
