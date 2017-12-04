@@ -10,7 +10,7 @@ use sounding_base::{Sounding, DataRow};
 
 use errors::*;
 use gui::Gui;
-use coords::{TPCoords, WPCoords, XYCoords, XYRect};
+use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
 
 // Module for configuring application
 pub mod config;
@@ -89,14 +89,17 @@ impl AppContext {
         self.currently_displayed_index = 0;
         self.source_description = None;
 
-        self.hodo.max_speed = config::MAX_SPEED; // FIXME: Use static bounds
-
         let mut skew_t_xy_envelope = XYRect {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
             upper_right: XYCoords { x: 0.55, y: 0.55 },
         };
 
         let mut rh_omega_xy_envelope = XYRect {
+            lower_left: XYCoords { x: 0.45, y: 0.45 },
+            upper_right: XYCoords { x: 0.55, y: 0.55 },
+        };
+
+        let mut hodo_xy_envelope = XYRect {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
             upper_right: XYCoords { x: 0.55, y: 0.55 },
         };
@@ -201,26 +204,34 @@ impl AppContext {
                 }
             }
 
-            for speed in snd.get_profile(Pressure)
-                .iter()
-                .zip(snd.get_profile(WindSpeed))
-                .filter_map(|p| if let (Some(p), Some(s)) =
-                    (p.0.as_option(), p.1.as_option())
+            for pair in izip!(snd.get_profile(Pressure), snd.get_profile(WindSpeed), snd.get_profile(WindDirection))
+                .filter_map(|tuple| if let (Some(p), Some(s), Some(d)) =
+                    (tuple.0.as_option(), tuple.1.as_option(), tuple.2.as_option())
                 {
-                    if p < config::MINP { None } else { Some(s) }
+                    if p < config::MINP { None } else { Some(SDCoords{speed: s, dir: d}) }
                 } else {
                     None
                 })
             {
-                if speed > self.hodo.max_speed {
-                    self.hodo.max_speed = speed;
+                let XYCoords { x, y } = HodoContext::convert_sd_to_xy(pair);
+                if x < hodo_xy_envelope.lower_left.x {
+                    hodo_xy_envelope.lower_left.x = x;
+                }
+                if y < hodo_xy_envelope.lower_left.y {
+                    hodo_xy_envelope.lower_left.y = y;
+                }
+                if x > hodo_xy_envelope.upper_right.x {
+                    hodo_xy_envelope.upper_right.x = x;
+                }
+                if y > hodo_xy_envelope.upper_right.y {
+                    hodo_xy_envelope.upper_right.y = y;
                 }
             }
         }
 
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
         self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
-        self.hodo.max_speed = (self.hodo.max_speed / 10.0).ceil() * 10.0;
+        self.hodo.set_xy_envelope(hodo_xy_envelope);
 
         self.fit_to_data();
 
@@ -327,7 +338,7 @@ impl AppContext {
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&mut self) {
 
-        // FIXME: Add fit for hodograph - once envelope is set up properly
+        // FIXME: Move logic to PlotContext as a method there. Then call those methods here.
 
         use std::f64;
 
@@ -354,6 +365,21 @@ impl AppContext {
         let width_scale = 1.0 / width;
 
         self.rh_omega.set_zoom_factor(width_scale);
+
+        let hodo_xy_envelope = self.hodo.get_xy_envelope();
+
+        let lower_left = hodo_xy_envelope.lower_left;
+        self.hodo.set_translate(lower_left);
+
+        let width = hodo_xy_envelope.upper_right.x - hodo_xy_envelope.lower_left.x;
+        let height = hodo_xy_envelope.upper_right.y - hodo_xy_envelope.lower_left.y;
+
+        let width_scale = 1.0 / width;
+        let height_scale = 1.0 / height;
+
+        self.hodo.set_zoom_factor(
+            f64::min(width_scale, height_scale),
+        );
 
         self.skew_t.bound_view();
         self.rh_omega.set_translate_y(self.skew_t.get_translate());
