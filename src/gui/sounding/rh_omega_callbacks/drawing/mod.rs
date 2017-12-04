@@ -1,7 +1,7 @@
 use cairo::{Context, Matrix};
 use gtk::Inhibit;
 
-use app::{AppContext, AppContextPointer, PlotContext, config};
+use app::{AppContext, AppContextPointer, config};
 use coords::{XYCoords, WPCoords, ScreenCoords, Rect};
 use gui::plot_curve_from_points;
 

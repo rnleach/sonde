@@ -226,6 +226,28 @@ pub trait PlotContext {
         }
         self.set_translate(translate);
     }
+
+    /// Zoom in the most possible while still keeping the whole envelope in view.
+    fn zoom_to_envelope(&mut self) {
+        use std::f64;
+
+        let xy_envelope = self.get_xy_envelope();
+
+        let lower_left = xy_envelope.lower_left;
+        self.set_translate(lower_left);
+
+        let width = xy_envelope.upper_right.x - xy_envelope.lower_left.x;
+        let height = xy_envelope.upper_right.y - xy_envelope.lower_left.y;
+
+        let width_scale = 1.0 / width;
+        let height_scale = 1.0 / height;
+
+        self.set_zoom_factor(
+            f64::min(width_scale, height_scale),
+        );
+
+        self.bound_view();
+    }
 }
 
 pub struct GenericContext {

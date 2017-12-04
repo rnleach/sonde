@@ -182,4 +182,17 @@ impl PlotContext for RHOmegaContext {
     fn set_edge_padding(&mut self, new_padding: f64) {
         self.generic.set_edge_padding(new_padding);
     }
+
+    fn zoom_to_envelope(&mut self) {
+        
+        let xy_envelope = self.get_xy_envelope();
+
+        let lower_left = xy_envelope.lower_left;
+        self.set_translate(lower_left);
+
+        let width = xy_envelope.upper_right.x - xy_envelope.lower_left.x;
+        let width_scale = 1.0 / width;
+
+        self.set_zoom_factor(width_scale);
+    }
 }

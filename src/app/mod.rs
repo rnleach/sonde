@@ -338,52 +338,11 @@ impl AppContext {
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&mut self) {
 
-        // FIXME: Move logic to PlotContext as a method there. Then call those methods here.
+        self.skew_t.zoom_to_envelope();
+        self.hodo.zoom_to_envelope();
+        self.rh_omega.zoom_to_envelope();
 
-        use std::f64;
-
-        let skew_t_xy_envelope = self.skew_t.get_xy_envelope();
-
-        let lower_left = skew_t_xy_envelope.lower_left;
-        self.skew_t.set_translate(lower_left);
-
-        let width = skew_t_xy_envelope.upper_right.x - skew_t_xy_envelope.lower_left.x;
-        let height = skew_t_xy_envelope.upper_right.y - skew_t_xy_envelope.lower_left.y;
-
-        let width_scale = 1.0 / width;
-        let height_scale = 1.0 / height;
-
-        self.skew_t.set_zoom_factor(
-            f64::min(width_scale, height_scale),
-        );
-
-        let rh_omega_xy_envelope = self.rh_omega.get_xy_envelope();
-        let lower_left = rh_omega_xy_envelope.lower_left;
-        self.rh_omega.set_translate(lower_left);
-        let width = rh_omega_xy_envelope.upper_right.x - rh_omega_xy_envelope.lower_left.x;
-
-        let width_scale = 1.0 / width;
-
-        self.rh_omega.set_zoom_factor(width_scale);
-
-        let hodo_xy_envelope = self.hodo.get_xy_envelope();
-
-        let lower_left = hodo_xy_envelope.lower_left;
-        self.hodo.set_translate(lower_left);
-
-        let width = hodo_xy_envelope.upper_right.x - hodo_xy_envelope.lower_left.x;
-        let height = hodo_xy_envelope.upper_right.y - hodo_xy_envelope.lower_left.y;
-
-        let width_scale = 1.0 / width;
-        let height_scale = 1.0 / height;
-
-        self.hodo.set_zoom_factor(
-            f64::min(width_scale, height_scale),
-        );
-
-        self.skew_t.bound_view();
         self.rh_omega.set_translate_y(self.skew_t.get_translate());
-        self.hodo.bound_view();
     }
 
     /// Update the dimensions of the skew-t drawing area
