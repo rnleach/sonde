@@ -6,6 +6,8 @@ use gtk::DrawingArea;
 
 use app::AppContextPointer;
 
+pub mod hodo_context;
+
 mod callbacks;
 
 pub fn set_up_hodograph_area(hodo_area: &DrawingArea, app_context: &AppContextPointer) {

@@ -6,7 +6,7 @@ use coords::{SDCoords, XYCoords};
 use gui::plot_curve_from_points;
 
 pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
-    use app::PlotContext;
+    use gui::plot_context::PlotContext;
 
     // Get the dimensions of the DrawingArea
     ac.update_plot_context_allocations();

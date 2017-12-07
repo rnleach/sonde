@@ -23,7 +23,7 @@ pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 }
 
 fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
-    use app::PlotContext;
+    use gui::plot_context::PlotContext;
 
     // FIXME: Needs removed in favor of allocation event callback
     ac.update_plot_context_allocations();
@@ -75,7 +75,7 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
 }
 
 fn draw_rh_profile(cr: &Context, ac: &AppContext) {
-    use app::PlotContext;
+    use gui::plot_context::PlotContext;
 
     if !ac.config.show_rh_profile {
         return;

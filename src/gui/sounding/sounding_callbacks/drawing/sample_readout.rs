@@ -1,6 +1,7 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
 use coords::{TPCoords, XYCoords, ScreenCoords, DeviceCoords, ScreenRect};
+use gui::plot_context::PlotContext;
 
 use cairo::Context;
 
@@ -172,7 +173,6 @@ fn calculate_screen_rect(
     strings: &[String],
     sample_p: f64,
 ) -> ScreenRect {
-    use app::PlotContext;
 
     let mut width: f64 = 0.0;
     let mut height: f64 = 0.0;

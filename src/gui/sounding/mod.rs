@@ -6,11 +6,15 @@ use cairo::{Context, Matrix};
 use gdk::EventMask;
 use gtk::{DrawingArea, WidgetExt};
 
+pub mod skew_t_context;
+pub mod rh_omega_context;
+
 mod sounding_callbacks;
 mod rh_omega_callbacks;
 
-use app::{AppContextPointer, AppContext, PlotContext};
+use app::{AppContextPointer, AppContext};
 use coords::{ScreenCoords, DeviceCoords};
+use gui::plot_context::PlotContext;
 
 /// Initialize the drawing area and connect signal handlers.
 pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContextPointer) {

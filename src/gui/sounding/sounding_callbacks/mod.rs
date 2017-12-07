@@ -5,8 +5,9 @@ use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection,
           keyval_from_name};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
-use app::{AppContextPointer, PlotContext};
+use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
+use gui::plot_context::PlotContext;
 
 mod drawing;
 

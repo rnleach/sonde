@@ -1,6 +1,6 @@
 
 
-use super::plot_context::{PlotContext, GenericContext, HasGenericContext};
+use ::gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
 
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
@@ -20,7 +20,6 @@ impl SkewTContext {
 
         let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
             (f64::log10(config::MAXP) - f64::log10(config::MINP));
-
         let x = (coords.temperature - config::MINT) / (config::MAXT - config::MINT);
 
         // do the skew

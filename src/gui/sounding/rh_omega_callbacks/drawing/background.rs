@@ -154,7 +154,7 @@ pub fn draw_labels(cr: &Context, ac: &AppContext) {
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
-    use app::PlotContext;
+    use gui::plot_context::PlotContext;
 
     let mut labels = vec![];
 

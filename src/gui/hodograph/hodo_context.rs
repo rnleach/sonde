@@ -1,5 +1,5 @@
 
-use super::plot_context::{PlotContext, GenericContext, HasGenericContext};
+use ::gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
 
 use app::config;
 use coords::{ScreenCoords, SDCoords, XYCoords};

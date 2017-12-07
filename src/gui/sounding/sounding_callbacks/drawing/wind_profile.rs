@@ -2,6 +2,7 @@ use cairo::Context;
 
 use app::AppContext;
 use coords::{ScreenCoords, TPCoords, ScreenRect, Rect, XYCoords};
+use gui::plot_context::PlotContext;
 
 pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
 
@@ -55,7 +56,6 @@ fn gather_wind_data(
 }
 
 fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBarbData> {
-    use app::PlotContext;
 
     // Remove overlapping barbs, or barbs not on the screen
     let mut keepers: Vec<WindBarbData> = vec![];
@@ -93,7 +93,6 @@ struct WindBarbConfig<'a> {
 
 impl<'a, 'b> WindBarbConfig<'a> {
     fn init(cr: &'b Context, ac: &'a AppContext) -> Self {
-        use app::PlotContext;
 
         let (shaft_length, barb_length) = cr.device_to_user_distance(
             ac.config.wind_barb_shaft_length,

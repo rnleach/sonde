@@ -4,6 +4,7 @@ use cairo::{Context, Matrix};
 
 use app::AppContext;
 use coords::XYCoords;
+use gui::plot_context::PlotContext;
 
 mod background;
 mod labeling;
@@ -12,7 +13,6 @@ mod temperature_profile;
 mod wind_profile;
 
 pub fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
-    use app::PlotContext;
 
     // Get the dimensions of the DrawingArea
     ac.update_plot_context_allocations();

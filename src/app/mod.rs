@@ -10,23 +10,15 @@ use sounding_base::{Sounding, DataRow};
 
 use errors::*;
 use gui::Gui;
+use gui::hodograph::hodo_context::HodoContext;
+use gui::sounding::skew_t_context::SkewTContext;
+use gui::sounding::rh_omega_context::RHOmegaContext;
+use gui::plot_context::PlotContext;
 use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
 
 // Module for configuring application
 pub mod config;
 use app::config::Config;
-
-mod plot_context;
-pub use self::plot_context::{PlotContext, GenericContext, HasGenericContext};
-
-mod skew_t_context;
-use self::skew_t_context::SkewTContext;
-
-mod rh_omega_context;
-pub use self::rh_omega_context::RHOmegaContext;
-
-mod hodo_context;
-use self::hodo_context::HodoContext;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<RefCell<AppContext>>;

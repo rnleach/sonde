@@ -3,6 +3,8 @@
 
 use std::rc::Rc;
 
+pub mod plot_context;
+
 pub mod hodograph;
 pub mod index_area;
 pub mod control_area;

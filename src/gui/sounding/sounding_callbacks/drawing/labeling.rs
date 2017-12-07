@@ -1,7 +1,8 @@
 //! Functions used for adding labels to the sounding plot
-use app::{AppContext, PlotContext, config};
+use app::{AppContext, config};
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
 use gui::check_overlap_then_add;
+use gui::plot_context::PlotContext;
 use gui::sounding::set_font_size;
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight};
@@ -21,7 +22,6 @@ pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
 }
 
 fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
-    use app::PlotContext;
 
     let mut labels = vec![];
 
@@ -129,7 +129,6 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
 
 // Add a description box
 pub fn draw_legend(cr: &Context, ac: &AppContext) {
-    use app::PlotContext;
 
     if !(ac.plottable() && ac.config.show_legend) {
         return;
