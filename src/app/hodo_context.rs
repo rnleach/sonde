@@ -11,9 +11,7 @@ pub struct HodoContext {
 impl HodoContext {
     // Create a new instance of HodoContext
     pub fn new() -> Self {
-        HodoContext {
-            generic: GenericContext::new(),
-        }
+        HodoContext { generic: GenericContext::new() }
     }
 
     /// Conversion from speed and direction to (x,y) coords

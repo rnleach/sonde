@@ -204,14 +204,25 @@ impl AppContext {
                 }
             }
 
-            for pair in izip!(snd.get_profile(Pressure), snd.get_profile(WindSpeed), snd.get_profile(WindDirection))
-                .filter_map(|tuple| if let (Some(p), Some(s), Some(d)) =
-                    (tuple.0.as_option(), tuple.1.as_option(), tuple.2.as_option())
-                {
-                    if p < config::MINP { None } else { Some(SDCoords{speed: s, dir: d}) }
-                } else {
+            for pair in izip!(
+                snd.get_profile(Pressure),
+                snd.get_profile(WindSpeed),
+                snd.get_profile(WindDirection)
+            ).filter_map(|tuple| if let (Some(p), Some(s), Some(d)) =
+                (
+                    tuple.0.as_option(),
+                    tuple.1.as_option(),
+                    tuple.2.as_option(),
+                )
+            {
+                if p < config::MINP {
                     None
-                })
+                } else {
+                    Some(SDCoords { speed: s, dir: d })
+                }
+            } else {
+                None
+            })
             {
                 let XYCoords { x, y } = HodoContext::convert_sd_to_xy(pair);
                 if x < hodo_xy_envelope.lower_left.x {

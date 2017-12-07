@@ -242,9 +242,7 @@ pub trait PlotContext {
         let width_scale = 1.0 / width;
         let height_scale = 1.0 / height;
 
-        self.set_zoom_factor(
-            f64::min(width_scale, height_scale),
-        );
+        self.set_zoom_factor(f64::min(width_scale, height_scale));
 
         self.bound_view();
     }

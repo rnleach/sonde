@@ -184,7 +184,7 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn zoom_to_envelope(&mut self) {
-        
+
         let xy_envelope = self.get_xy_envelope();
 
         let lower_left = xy_envelope.lower_left;
