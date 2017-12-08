@@ -58,6 +58,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
     sounding_area.connect_key_press_event(move |da, ev| {
         sounding_callbacks::key_press_event(da, ev, &ac)
     });
+
     sounding_area.set_can_focus(true);
 
     sounding_area.add_events(

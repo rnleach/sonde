@@ -25,7 +25,6 @@ pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
 fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     use gui::plot_context::PlotContext;
 
-    // FIXME: Needs removed in favor of allocation event callback
     ac.update_plot_context_allocations();
     let scale_factor = ac.skew_t.scale_factor();
     ac.rh_omega.skew_t_scale_factor = scale_factor;

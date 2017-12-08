@@ -1,5 +1,5 @@
 
-use ::gui::plot_context::{PlotContext, GenericContext};
+use gui::plot_context::{PlotContext, GenericContext};
 use app::config;
 
 use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords, XYRect};

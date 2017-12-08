@@ -352,9 +352,6 @@ impl AppContext {
     pub fn update_plot_context_allocations(&mut self) {
         if let Some(ref gui) = self.gui {
 
-            // FIXME: This functionality should be removed, instead use a callback on the
-            // connect_size_allocate method.
-
             let alloc = gui.get_sounding_area().get_allocation();
             self.skew_t.set_device_width(alloc.width);
             self.skew_t.set_device_height(alloc.height);

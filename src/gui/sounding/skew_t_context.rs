@@ -1,6 +1,6 @@
 
 
-use ::gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
+use gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
 
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 

@@ -41,7 +41,7 @@ pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
 
     // Clip the drawing area
     let upper_right_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-    let lower_left_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: -1.0, y: -1.0 });
+    let lower_left_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
     cr.rectangle(
         lower_left_xy.x,
         lower_left_xy.y,
@@ -51,7 +51,6 @@ pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
     cr.clip();
 
     // Calculate the various padding values
-    // FIXME: These should also be set in the connect_allocate callback.
     ac.hodo.set_label_padding(
         cr.device_to_user_distance(
             ac.config.label_padding,
