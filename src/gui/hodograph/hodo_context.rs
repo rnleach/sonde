@@ -1,3 +1,4 @@
+use gtk::DrawingArea;
 
 use gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
 
@@ -25,9 +26,9 @@ impl HodoContext {
     }
 
     /// Conversion from speed and direction to (x,y) coords
-    pub fn convert_sd_to_screen(&self, coords: SDCoords) -> ScreenCoords {
+    pub fn convert_sd_to_screen(&self, da: &DrawingArea, coords: SDCoords) -> ScreenCoords {
         let xy = HodoContext::convert_sd_to_xy(coords);
-        self.convert_xy_to_screen(xy)
+        self.convert_xy_to_screen(da, xy)
     }
 }
 

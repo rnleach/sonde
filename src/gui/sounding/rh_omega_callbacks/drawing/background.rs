@@ -1,21 +1,16 @@
-use cairo::{Context, FontFace, FontSlant, FontWeight};
+use cairo::{FontFace, FontSlant, FontWeight};
 
-use app::{AppContext, config};
+use app::config;
 use coords::{WPCoords, TPCoords, ScreenRect, ScreenCoords};
 use gui::{plot_curve_from_points, check_overlap_then_add};
-use gui::sounding::set_font_size;
+use gui::{DrawingArgs, set_font_size};
 
-pub fn draw_background(cr: &Context, ac: &AppContext) {
 
-    if ac.config.show_dendritic_zone {
-        draw_dendtritic_snow_growth_zone(cr, ac);
-    }
 
-    draw_background_lines(cr, ac);
-    draw_labels(cr, ac);
-}
+pub fn draw_background_lines(args: DrawingArgs) {
 
-fn draw_background_lines(cr: &Context, ac: &AppContext) {
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
@@ -32,14 +27,14 @@ fn draw_background_lines(cr: &Context, ac: &AppContext) {
                 },
             ];
             let pnts = pnts.iter().map(|wp_coords| {
-                ac.rh_omega.convert_wp_to_screen(*wp_coords)
+                ac.rh_omega.convert_wp_to_screen(da, *wp_coords)
             });
-            plot_curve_from_points(
-                cr,
-                ac.config.background_line_width,
-                ac.config.isobar_rgba,
-                pnts,
-            );
+
+            let mut line_width = ac.config.background_line_width;
+            line_width = line_width / cr.device_to_user_distance(line_width, 0.0).0 *
+                -cr.device_to_user_distance(0.0, line_width).1;
+
+            plot_curve_from_points(cr, line_width, ac.config.isobar_rgba, pnts);
         }
     }
 
@@ -52,7 +47,7 @@ fn draw_background_lines(cr: &Context, ac: &AppContext) {
                 ac.config.background_line_width,
                 ac.config.isobar_rgba,
                 v_line.iter().map(|wp_coords| {
-                    ac.rh_omega.convert_wp_to_screen(*wp_coords)
+                    ac.rh_omega.convert_wp_to_screen(da, *wp_coords)
                 }),
             );
         }
@@ -72,13 +67,15 @@ fn draw_background_lines(cr: &Context, ac: &AppContext) {
                     p: config::MINP,
                 },
             ]).iter()
-                .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(*wp_coords)),
+                .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(da, *wp_coords)),
         );
     }
 }
 
-fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
+pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
     use sounding_base::Profile::Pressure;
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     // If is plottable, draw snow growth zones
     if let Some(snd) = ac.get_sounding_for_display() {
@@ -96,10 +93,13 @@ fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
 
             // Convert points to screen coords
             for coord in &mut coords {
-                let screen_coords = ac.rh_omega.convert_wp_to_screen(WPCoords {
-                    w: coord.0,
-                    p: coord.1,
-                });
+                let screen_coords = ac.rh_omega.convert_wp_to_screen(
+                    da,
+                    WPCoords {
+                        w: coord.0,
+                        p: coord.1,
+                    },
+                );
                 coord.0 = screen_coords.x;
                 coord.1 = screen_coords.y;
             }
@@ -118,18 +118,22 @@ fn draw_dendtritic_snow_growth_zone(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_labels(cr: &Context, ac: &AppContext) {
+pub fn draw_labels(args: DrawingArgs) {
     use coords::Rect;
+    use gui::LazyDrawingCacheVar::OmegaLabelPadding;
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     if ac.config.show_labels {
         let font_face =
             FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
-        set_font_size(ac.config.label_font_size, cr, ac);
 
-        let labels = collect_labels(cr, ac);
-        let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+        set_font_size(&ac.rh_omega, da, ac.config.label_font_size, cr, ac);
+
+        let labels = collect_labels(args);
+        let padding = ac.drawing_cache.get(OmegaLabelPadding, args);
 
         for (label, rect) in labels {
             let ScreenRect { lower_left, .. } = rect;
@@ -153,12 +157,14 @@ pub fn draw_labels(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
+pub fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
     use gui::plot_context::PlotContext;
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     let mut labels = vec![];
 
-    let screen_edges = ac.rh_omega.calculate_plot_edges(cr, ac);
+    let screen_edges = ac.rh_omega.calculate_plot_edges(da, cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
     if ac.config.show_iso_omega_lines {
@@ -174,6 +180,7 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
                 x: mut xpos,
                 y: mut ypos,
             } = ac.rh_omega.convert_wp_to_screen(
+                da,
                 WPCoords { w, p: screen_max_p },
             );
             xpos -= extents.width / 2.0; // Center

@@ -1,8 +1,7 @@
-use cairo::Context;
 
-use app::{AppContext, config};
+use app::config;
 use coords::TPCoords;
-use gui::plot_curve_from_points;
+use gui::{DrawingArgs, plot_curve_from_points};
 
 #[derive(Clone, Copy, Debug)]
 pub enum TemperatureType {
@@ -12,7 +11,8 @@ pub enum TemperatureType {
 }
 
 // Draw the temperature profile
-pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppContext) {
+pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     use sounding_base::Profile::{Pressure, Temperature, WetBulb, DewPoint};
 
@@ -47,7 +47,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, cr: &Context, ac: &AppC
                             temperature,
                             pressure,
                         };
-                        Some(ac.skew_t.convert_tp_to_screen(tp_coords))
+                        Some(ac.skew_t.convert_tp_to_screen(da, tp_coords))
                     } else {
                         None
                     }

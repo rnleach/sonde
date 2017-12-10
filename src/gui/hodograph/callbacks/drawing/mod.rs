@@ -1,24 +1,22 @@
 
 use cairo::{Context, Matrix};
 
+use gtk::prelude::*;
+use gtk::DrawingArea;
+
 use app::{AppContext, config};
 use coords::{SDCoords, XYCoords};
 use gui::plot_curve_from_points;
+use gui::hodograph::hodo_context::HodoContext;
 
-pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
+pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &mut AppContext) {
     use gui::plot_context::PlotContext;
 
-    // Get the dimensions of the DrawingArea
-    ac.update_plot_context_allocations();
-    let scale_factor = ac.hodo.scale_factor();
+    let alloc = da.get_allocation();
+    let scale_factor = HodoContext::scale_factor(da);
 
     // Fill with backgound color
-    cr.rectangle(
-        0.0,
-        0.0,
-        f64::from(ac.hodo.get_device_width()),
-        f64::from(ac.hodo.get_device_height()),
-    );
+    cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
     cr.set_source_rgba(
         ac.config.background_rgba.0,
         ac.config.background_rgba.1,
@@ -36,12 +34,18 @@ pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: f64::from(ac.hodo.get_device_height()) / scale_factor,
+        y0: f64::from(alloc.height) / scale_factor,
     });
 
     // Clip the drawing area
-    let upper_right_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-    let lower_left_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let upper_right_xy = ac.hodo.convert_xy_to_screen(
+        da,
+        XYCoords { x: 1.0, y: 1.0 },
+    );
+    let lower_left_xy = ac.hodo.convert_xy_to_screen(
+        da,
+        XYCoords { x: 0.0, y: 0.0 },
+    );
     cr.rectangle(
         lower_left_xy.x,
         lower_left_xy.y,
@@ -50,36 +54,21 @@ pub fn prepare_to_draw_hodo(cr: &Context, ac: &mut AppContext) {
     );
     cr.clip();
 
-    // Calculate the various padding values
-    ac.hodo.set_label_padding(
-        cr.device_to_user_distance(
-            ac.config.label_padding,
-            0.0,
-        ).0,
-    );
-    ac.hodo.set_edge_padding(
-        cr.device_to_user_distance(
-            ac.config.edge_padding,
-            0.0,
-        ).0,
-    );
-
-    ac.hodo.bound_view();
-
+    ac.hodo.bound_view(da);
 }
 
-pub fn draw_hodo_background(cr: &Context, ac: &AppContext) {
+pub fn draw_hodo_background(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
     if ac.config.show_background_bands {
-        draw_background_fill(cr, ac);
+        draw_background_fill(da, cr, ac);
     }
 
     if ac.config.show_iso_speed {
-        draw_background_lines(cr, ac);
+        draw_background_lines(da, cr, ac);
     }
 }
 
-fn draw_background_fill(cr: &Context, ac: &AppContext) {
+fn draw_background_fill(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
     let mut do_draw = true;
     let rgba = ac.config.background_band_rgba;
@@ -87,7 +76,7 @@ fn draw_background_fill(cr: &Context, ac: &AppContext) {
 
     for pnts in config::ISO_SPEED_PNTS.iter() {
         let mut pnts = pnts.iter().map(|sd_coords| {
-            ac.hodo.convert_sd_to_screen(*sd_coords)
+            ac.hodo.convert_sd_to_screen(da, *sd_coords)
         });
 
         if let Some(pnt) = pnts.by_ref().next() {
@@ -110,10 +99,10 @@ fn draw_background_fill(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_background_lines(cr: &Context, ac: &AppContext) {
+fn draw_background_lines(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     for pnts in config::ISO_SPEED_PNTS.iter() {
         let pnts = pnts.iter().map(|sd_coords| {
-            ac.hodo.convert_sd_to_screen(*sd_coords)
+            ac.hodo.convert_sd_to_screen(da, *sd_coords)
         });
         plot_curve_from_points(
             cr,
@@ -130,7 +119,7 @@ pub fn draw_hodo_labels(_cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
+pub fn draw_hodo_line(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
     use sounding_base::Profile::{Pressure, WindSpeed, WindDirection};
 
@@ -151,7 +140,7 @@ pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
                 {
                     if p > config::MINP {
                         let sd_coords = SDCoords { speed, dir };
-                        Some(ac.hodo.convert_sd_to_screen(sd_coords))
+                        Some(ac.hodo.convert_sd_to_screen(da, sd_coords))
                     } else {
                         None
                     }
@@ -170,7 +159,7 @@ pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_active_readout(cr: &Context, ac: &AppContext) {
+pub fn draw_active_readout(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     if !ac.config.show_active_readout {
         return;
     }
@@ -186,7 +175,7 @@ pub fn draw_active_readout(cr: &Context, ac: &AppContext) {
     };
 
     let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
-    let coords = ac.hodo.convert_sd_to_screen(SDCoords { speed, dir });
+    let coords = ac.hodo.convert_sd_to_screen(da, SDCoords { speed, dir });
 
     let rgba = ac.config.active_readout_line_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);

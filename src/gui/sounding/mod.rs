@@ -2,7 +2,6 @@
 
 use std::rc::Rc;
 
-use cairo::{Context, Matrix};
 use gdk::EventMask;
 use gtk::{DrawingArea, WidgetExt};
 
@@ -12,9 +11,7 @@ pub mod rh_omega_context;
 mod sounding_callbacks;
 mod rh_omega_callbacks;
 
-use app::{AppContextPointer, AppContext};
-use coords::{ScreenCoords, DeviceCoords};
-use gui::plot_context::PlotContext;
+use app::AppContextPointer;
 
 /// Initialize the drawing area and connect signal handlers.
 pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContextPointer) {
@@ -24,7 +21,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
     sounding_area.set_vexpand(true);
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_draw(move |_da, cr| sounding_callbacks::draw_sounding(cr, &ac));
+    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &ac));
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));
@@ -80,8 +77,8 @@ pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &AppContextPo
     omega_area.set_property_width_request(80);
 
     let acp = Rc::clone(app_context);
-    omega_area.connect_draw(move |_da, cr| {
-        rh_omega_callbacks::drawing::draw_rh_omega(cr, &acp)
+    omega_area.connect_draw(move |da, cr| {
+        rh_omega_callbacks::draw_rh_omega(da, cr, &acp)
     });
 
     let ac = Rc::clone(app_context);
@@ -101,28 +98,4 @@ pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &AppContextPo
              EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
             .bits() as i32,
     );
-}
-
-fn set_font_size(size_in_pnts: f64, cr: &Context, ac: &AppContext) {
-
-    let dpi = match ac.get_dpi() {
-        None => 72.0,
-        Some(value) => value,
-    };
-
-    let font_size = size_in_pnts / 72.0 * dpi;
-    let ScreenCoords { x: font_size, .. } = ac.skew_t.convert_device_to_screen(DeviceCoords {
-        col: font_size,
-        row: 0.0,
-    });
-
-    // Flip the y-coordinate so it displays the font right side up
-    cr.set_font_matrix(Matrix {
-        xx: 1.0 * font_size,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0 * font_size, // Reflect it to be right side up!
-        x0: 0.0,
-        y0: 0.0,
-    });
 }

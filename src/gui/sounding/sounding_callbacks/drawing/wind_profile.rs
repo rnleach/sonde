@@ -1,10 +1,12 @@
 use cairo::Context;
 
-use app::AppContext;
 use coords::{ScreenCoords, TPCoords, ScreenRect, Rect, XYCoords};
 use gui::plot_context::PlotContext;
+use gui::DrawingArgs;
 
-pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
+pub fn draw_wind_profile(args: DrawingArgs) {
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let snd = if let Some(snd) = ac.get_sounding_for_display() {
         snd
@@ -12,9 +14,9 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
         return;
     };
 
-    let barb_config = WindBarbConfig::init(cr, ac);
-    let barb_data = gather_wind_data(snd, &barb_config);
-    let barb_data = filter_wind_data(barb_data, ac);
+    let barb_config = WindBarbConfig::init(args);
+    let barb_data = gather_wind_data(snd, &barb_config, args);
+    let barb_data = filter_wind_data(args, barb_data);
 
     let rgba = ac.config.wind_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
@@ -31,6 +33,7 @@ pub fn draw_wind_profile(cr: &Context, ac: &AppContext) {
 fn gather_wind_data(
     snd: &::sounding_base::Sounding,
     barb_config: &WindBarbConfig,
+    args: DrawingArgs,
 ) -> Vec<WindBarbData> {
 
     use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
@@ -50,16 +53,18 @@ fn gather_wind_data(
         })
         .map(|tuple| {
             let (p, d, s) = tuple;
-            WindBarbData::create(p, d, s, barb_config)
+            WindBarbData::create(p, d, s, barb_config, args)
         })
         .collect()
 }
 
-fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBarbData> {
+fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
+
+    let (ac, da) = (args.ac, args.da);
 
     // Remove overlapping barbs, or barbs not on the screen
     let mut keepers: Vec<WindBarbData> = vec![];
-    let screen_box = ac.skew_t.bounding_box_in_screen_coords();
+    let screen_box = ac.skew_t.bounding_box_in_screen_coords(da);
     let mut last_added_bbox: ScreenRect = ScreenRect {
         lower_left: ScreenCoords {
             x: ::std::f64::MAX,
@@ -82,17 +87,19 @@ fn filter_wind_data(barb_data: Vec<WindBarbData>, ac: &AppContext) -> Vec<WindBa
     keepers
 }
 
-struct WindBarbConfig<'a> {
+struct WindBarbConfig {
     shaft_length: f64,
     barb_length: f64,
     pennant_width: f64,
     xcoord: f64,
     dot_size: f64,
-    ac: &'a AppContext,
 }
 
-impl<'a, 'b> WindBarbConfig<'a> {
-    fn init(cr: &'b Context, ac: &'a AppContext) -> Self {
+impl WindBarbConfig {
+    fn init(args: DrawingArgs) -> Self {
+        use gui::LazyDrawingCacheVar::SkewTEdgePadding;
+
+        let (ac, cr, da) = (args.ac, args.cr, args.da);
 
         let (shaft_length, barb_length) = cr.device_to_user_distance(
             ac.config.wind_barb_shaft_length,
@@ -103,9 +110,9 @@ impl<'a, 'b> WindBarbConfig<'a> {
             ac.config.wind_barb_dot_radius,
             -ac.config.wind_barb_pennant_width,
         );
-        let padding = ac.skew_t.get_edge_padding();
+        let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
 
-        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
+        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords(da);
         let XYCoords { x: mut xmax, .. } =
             ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
@@ -113,8 +120,10 @@ impl<'a, 'b> WindBarbConfig<'a> {
             xmax = 1.0;
         }
 
-        let ScreenCoords { x: xmax, .. } =
-            ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
+        let ScreenCoords { x: xmax, .. } = ac.skew_t.convert_xy_to_screen(
+            da,
+            XYCoords { x: xmax, y: 0.0 },
+        );
 
         let xcoord = xmax - padding - shaft_length;
 
@@ -124,7 +133,6 @@ impl<'a, 'b> WindBarbConfig<'a> {
             pennant_width,
             xcoord,
             dot_size,
-            ac,
         }
     }
 }
@@ -136,14 +144,19 @@ struct WindBarbData {
     pennant_coords: [(ScreenCoords, ScreenCoords, ScreenCoords); 5],
     num_barbs: usize,
     barb_coords: [(ScreenCoords, ScreenCoords); 5],
-    direction_radians: f64,
     point_radius: f64,
 }
 
 impl WindBarbData {
-    fn create(pressure: f64, direction: f64, speed: f64, barb_config: &WindBarbConfig) -> Self {
+    fn create(
+        pressure: f64,
+        direction: f64,
+        speed: f64,
+        barb_config: &WindBarbConfig,
+        args: DrawingArgs,
+    ) -> Self {
 
-        let center = get_wind_barb_center(pressure, barb_config.xcoord, barb_config.ac);
+        let center = get_wind_barb_center(pressure, barb_config.xcoord, args);
 
         // Convert angle to traditional XY coordinate plane
         let direction_radians = ::std::f64::consts::FRAC_PI_2 - direction.to_radians();
@@ -250,7 +263,6 @@ impl WindBarbData {
             pennant_coords,
             num_barbs,
             barb_coords,
-            direction_radians,
             point_radius,
         }
     }
@@ -321,12 +333,17 @@ impl WindBarbData {
     }
 }
 
-fn get_wind_barb_center(pressure: f64, xcenter: f64, ac: &AppContext) -> ScreenCoords {
+fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> ScreenCoords {
 
-    let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 0.0,
-        pressure,
-    });
+    let (ac, da) = (args.ac, args.da);
+
+    let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(
+        da,
+        TPCoords {
+            temperature: 0.0,
+            pressure,
+        },
+    );
 
     ScreenCoords { x: xcenter, y: yc }
 }

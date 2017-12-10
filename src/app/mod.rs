@@ -8,13 +8,13 @@ use gtk::prelude::*;
 
 use sounding_base::{Sounding, DataRow};
 
+use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
 use errors::*;
 use gui::Gui;
 use gui::hodograph::hodo_context::HodoContext;
 use gui::sounding::skew_t_context::SkewTContext;
 use gui::sounding::rh_omega_context::RHOmegaContext;
-use gui::plot_context::PlotContext;
-use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
+use gui::{PlotContext, LazyDrawingCache};
 
 // Module for configuring application
 pub mod config;
@@ -38,7 +38,7 @@ pub struct AppContext {
     last_sample: Option<DataRow>,
 
     // Handle to the GUI
-    gui: Option<Gui>,
+    pub gui: Option<Gui>,
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
@@ -48,6 +48,9 @@ pub struct AppContext {
 
     // Handle to Hodograph context
     pub hodo: HodoContext,
+
+    // Cache for values when drawing
+    pub drawing_cache: LazyDrawingCache,
 }
 
 impl AppContext {
@@ -66,6 +69,7 @@ impl AppContext {
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             hodo: HodoContext::new(),
+            drawing_cache: LazyDrawingCache::default(),
         }))
     }
 
@@ -341,28 +345,13 @@ impl AppContext {
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&mut self) {
 
-        self.skew_t.zoom_to_envelope();
-        self.hodo.zoom_to_envelope();
-        self.rh_omega.zoom_to_envelope();
-
-        self.rh_omega.set_translate_y(self.skew_t.get_translate());
-    }
-
-    /// Update the dimensions of the skew-t drawing area
-    pub fn update_plot_context_allocations(&mut self) {
         if let Some(ref gui) = self.gui {
 
-            let alloc = gui.get_sounding_area().get_allocation();
-            self.skew_t.set_device_width(alloc.width);
-            self.skew_t.set_device_height(alloc.height);
+            self.skew_t.zoom_to_envelope(&gui.get_sounding_area());
+            self.hodo.zoom_to_envelope(&gui.get_hodograph_area());
+            self.rh_omega.zoom_to_envelope(&gui.get_omega_area());
 
-            let alloc = gui.get_omega_area().get_allocation();
-            self.rh_omega.set_device_width(alloc.width);
-            self.rh_omega.set_device_height(alloc.height);
-
-            let alloc = gui.get_hodograph_area().get_allocation();
-            self.hodo.set_device_width(alloc.width);
-            self.hodo.set_device_height(alloc.height);
+            self.rh_omega.set_translate_y(self.skew_t.get_translate());
         }
     }
 

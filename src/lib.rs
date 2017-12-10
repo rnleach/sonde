@@ -20,6 +20,8 @@ extern crate sounding_analysis;
 extern crate sounding_base;
 extern crate sounding_bufkit;
 
+use std::rc::Rc;
+
 // Module for maintaining application state
 mod app;
 
@@ -35,6 +37,7 @@ mod formula;
 
 // GUI module
 mod gui;
+use gui::LazyDrawingCache;
 
 pub fn run() -> Result<()> {
 
@@ -43,6 +46,15 @@ pub fn run() -> Result<()> {
 
     // Set up data context
     let app_context = app::AppContext::new();
+    {
+        // Clear the drawing cache each time through the event loop.
+        let acp = Rc::clone(&app_context);
+        gtk::idle_add(move || {
+            let mut ac = acp.borrow_mut();
+            ac.drawing_cache = LazyDrawingCache::default();
+            gtk::Continue(true)
+        });
+    }
 
     // Build the GUI
     let gui = gui::Gui::new(&app_context);

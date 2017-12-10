@@ -8,27 +8,30 @@ use gtk::{DrawingArea, Inhibit, WidgetExt};
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
 use gui::plot_context::PlotContext;
+use gui::DrawingArgs;
 
 mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_sounding(cr: &Context, ac: &AppContextPointer) -> Inhibit {
+pub fn draw_sounding(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
-    let mut ac = ac.borrow_mut();
+    let ac = &ac.borrow();
 
-    drawing::prepare_to_draw(cr, &mut ac);
-    drawing::draw_background(cr, &ac);
-    drawing::draw_labels(cr, &ac);
-    drawing::draw_temperature_profiles(cr, &ac);
-    drawing::draw_wind_profile(cr, &ac);
-    drawing::draw_active_sample(cr, &ac);
+    let args = DrawingArgs::new(ac, cr, da);
+
+    drawing::prepare_to_draw(args);
+    drawing::draw_background(args);
+    drawing::draw_labels(args);
+    drawing::draw_temperature_profiles(args);
+    drawing::draw_wind_profile(args);
+    drawing::draw_active_sample(args);
 
     Inhibit(false)
 }
 
 /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
 pub fn scroll_event(
-    _sounding_area: &DrawingArea,
+    sounding_area: &DrawingArea,
     event: &EventScroll,
     ac: &AppContextPointer,
 ) -> Inhibit {
@@ -40,6 +43,7 @@ pub fn scroll_event(
     let mut ac = ac.borrow_mut();
 
     let pos = ac.skew_t.convert_device_to_xy(
+        sounding_area,
         DeviceCoords::from(event.get_position()),
     );
     let dir = event.get_direction();
@@ -63,7 +67,6 @@ pub fn scroll_event(
         new_zoom = MAX_ZOOM;
     }
     ac.skew_t.set_zoom_factor(new_zoom);
-    // ac.rh_omega.set_zoom_factor(new_zoom);
 
     let translate = ac.skew_t.get_translate();
     let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
@@ -75,7 +78,7 @@ pub fn scroll_event(
     ac.skew_t.set_translate(translate);
 
     // Bound the xy-coords to always be on screen.
-    ac.skew_t.bound_view();
+    ac.skew_t.bound_view(sounding_area);
     let translate = ac.skew_t.get_translate();
     ac.rh_omega.set_translate_y(translate);
 
@@ -147,11 +150,11 @@ pub fn mouse_motion_event(
     let mut ac = ac.borrow_mut();
     if ac.skew_t.get_left_button_pressed() {
         if let Some(last_position) = ac.skew_t.get_last_cursor_position() {
-            let old_position = ac.skew_t.convert_device_to_xy(last_position);
+            let old_position = ac.skew_t.convert_device_to_xy(sounding_area, last_position);
             let new_position = DeviceCoords::from(event.get_position());
             ac.skew_t.set_last_cursor_position(Some(new_position));
 
-            let new_position = ac.skew_t.convert_device_to_xy(new_position);
+            let new_position = ac.skew_t.convert_device_to_xy(sounding_area, new_position);
             let delta = (
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,
@@ -162,7 +165,7 @@ pub fn mouse_motion_event(
             ac.skew_t.set_translate(translate);
 
             // Bound the xy-coords to always be on screen.
-            ac.skew_t.bound_view();
+            ac.skew_t.bound_view(sounding_area);
             let translate = ac.skew_t.get_translate();
             ac.rh_omega.set_translate_y(translate);
 
@@ -173,7 +176,7 @@ pub fn mouse_motion_event(
         let position: DeviceCoords = event.get_position().into();
 
         ac.skew_t.set_last_cursor_position(Some(position));
-        let tp_position = ac.skew_t.convert_device_to_tp(position);
+        let tp_position = ac.skew_t.convert_device_to_tp(sounding_area, position);
         let sample = ::sounding_analysis::linear_interpolate(
             ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
             tp_position.pressure,

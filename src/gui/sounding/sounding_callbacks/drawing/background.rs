@@ -1,33 +1,35 @@
-use cairo::Context;
 
-use app::{AppContext, config};
+use app::config;
 use coords::TPCoords;
-use gui::{plot_curve_from_points, plot_dashed_curve_from_points};
+use gui::{DrawingArgs, plot_curve_from_points, plot_dashed_curve_from_points};
 
-pub fn draw_background_fill(cr: &Context, ac: &AppContext) {
+pub fn draw_background_fill(args: DrawingArgs) {
+    let ac = args.ac;
 
     if ac.config.show_background_bands {
-        draw_temperature_banding(cr, ac);
+        draw_temperature_banding(args);
     }
 
     if ac.config.show_hail_zone {
-        draw_hail_growth_zone(cr, ac);
+        draw_hail_growth_zone(args);
     }
 
     if ac.config.show_dendritic_zone {
-        draw_dendtritic_growth_zone(cr, ac);
+        draw_dendtritic_growth_zone(args);
     }
 }
 
 // Draw isentrops, isotherms, isobars, ...
-pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
+pub fn draw_background_lines(args: DrawingArgs) {
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
     // Draws background lines from the bottom up.
 
     // Draw isentrops
     if ac.config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_tp_to_screen(*tp_coords)
+                ac.skew_t.convert_tp_to_screen(da, *tp_coords)
             });
             plot_curve_from_points(
                 cr,
@@ -42,7 +44,7 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     if ac.config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_tp_to_screen(*tp_coords)
+                ac.skew_t.convert_tp_to_screen(da, *tp_coords)
             });
             plot_curve_from_points(
                 cr,
@@ -57,7 +59,7 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     if ac.config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_tp_to_screen(*tp_coords)
+                ac.skew_t.convert_tp_to_screen(da, *tp_coords)
             });
             plot_dashed_curve_from_points(
                 cr,
@@ -72,7 +74,7 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     if ac.config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_tp_to_screen(*tp_coords)
+                ac.skew_t.convert_tp_to_screen(da, *tp_coords)
             });
             plot_curve_from_points(
                 cr,
@@ -87,7 +89,7 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_tp_to_screen(*tp_coords)
+                ac.skew_t.convert_tp_to_screen(da, *tp_coords)
             });
             plot_curve_from_points(
                 cr,
@@ -111,7 +113,7 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
             },
         ];
         let pnts = pnts.iter().map(|tp_coords| {
-            ac.skew_t.convert_tp_to_screen(*tp_coords)
+            ac.skew_t.convert_tp_to_screen(da, *tp_coords)
         });
         plot_curve_from_points(
             cr,
@@ -122,7 +124,8 @@ pub fn draw_background_lines(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
+fn draw_temperature_banding(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
 
     let rgba = ac.config.background_band_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
@@ -131,28 +134,32 @@ fn draw_temperature_banding(cr: &Context, ac: &AppContext) {
         let t1 = f64::from(start_line);
         let t2 = t1 + 10.0;
 
-        draw_temperature_band(t1, t2, cr, ac);
+        draw_temperature_band(t1, t2, args);
 
         start_line += 20;
     }
 }
 
-fn draw_hail_growth_zone(cr: &Context, ac: &AppContext) {
+fn draw_hail_growth_zone(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
 
     let rgba = ac.config.hail_zone_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    draw_temperature_band(-30.0, -10.0, cr, ac);
+    draw_temperature_band(-30.0, -10.0, args);
 }
 
-fn draw_dendtritic_growth_zone(cr: &Context, ac: &AppContext) {
+fn draw_dendtritic_growth_zone(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
 
     let rgba = ac.config.dendritic_zone_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-    draw_temperature_band(-18.0, -12.0, cr, ac);
+    draw_temperature_band(-18.0, -12.0, args);
 }
 
-fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext) {
+fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
     // Assume color has already been set up for us.
 
     const MAXP: f64 = config::MAXP;
@@ -167,10 +174,13 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, cr: &Context, ac: &AppContext
 
     // Convert points to screen coords
     for coord in &mut coords {
-        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
-            temperature: coord.0,
-            pressure: coord.1,
-        });
+        let screen_coords = ac.skew_t.convert_tp_to_screen(
+            da,
+            TPCoords {
+                temperature: coord.0,
+                pressure: coord.1,
+            },
+        );
         coord.0 = screen_coords.x;
         coord.1 = screen_coords.y;
     }

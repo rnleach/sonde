@@ -1,42 +1,28 @@
-use cairo::{Context, Matrix};
-use gtk::Inhibit;
+use cairo::Matrix;
 
-use app::{AppContext, AppContextPointer, config};
+use gtk::prelude::*;
+
+use app::config;
 use coords::{XYCoords, WPCoords, ScreenCoords, Rect};
-use gui::plot_curve_from_points;
+use gui::{DrawingArgs, plot_curve_from_points};
 
 mod background;
 
-/// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_rh_omega(cr: &Context, ac: &AppContextPointer) -> Inhibit {
-
-    let mut ac = ac.borrow_mut();
-
-    prepare_to_draw(cr, &mut ac);
-    background::draw_background(cr, &ac);
-    background::draw_labels(cr, &ac);
-    draw_rh_profile(cr, &ac);
-    draw_omega_profile(cr, &ac);
-    draw_active_readout(cr, &ac);
-
-    Inhibit(false)
-}
-
-fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
+pub fn prepare_to_draw(args: DrawingArgs) {
     use gui::plot_context::PlotContext;
+    use gui::LazyDrawingCacheVar::{SkewTScaleFactor, SkewTZoomFactor};
 
-    ac.update_plot_context_allocations();
-    let scale_factor = ac.skew_t.scale_factor();
-    ac.rh_omega.skew_t_scale_factor = scale_factor;
-    ac.rh_omega.skew_t_zoom_factor = ac.skew_t.get_zoom_factor();
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
+    let scale_factor = ac.drawing_cache.get(SkewTScaleFactor, args);
+    let skew_t_zoom_factor = ac.drawing_cache.get(SkewTZoomFactor, args);
+    ac.rh_omega.skew_t_scale_factor.set(scale_factor);
+    ac.rh_omega.skew_t_zoom_factor.set(skew_t_zoom_factor);
+
+    let alloc = da.get_allocation();
 
     // Fill with backgound color
-    cr.rectangle(
-        0.0,
-        0.0,
-        f64::from(ac.rh_omega.get_device_width()),
-        f64::from(ac.rh_omega.get_device_height()),
-    );
+    cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
     cr.set_source_rgba(
         ac.config.background_rgba.0,
         ac.config.background_rgba.1,
@@ -54,14 +40,16 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: f64::from(ac.rh_omega.get_device_height()) / scale_factor,
+        y0: f64::from(alloc.height) / scale_factor,
     });
 
     // Clip the drawing area
     let upper_right_xy = ac.rh_omega.convert_xy_to_screen(
+        da,
         XYCoords { x: 1.0, y: 1.0 },
     );
     let lower_left_xy = ac.rh_omega.convert_xy_to_screen(
+        da,
         XYCoords { x: 0.0, y: 0.0 },
     );
     cr.rectangle(
@@ -73,8 +61,20 @@ fn prepare_to_draw(cr: &Context, ac: &mut AppContext) {
     cr.clip();
 }
 
-fn draw_rh_profile(cr: &Context, ac: &AppContext) {
+pub fn draw_background(args: DrawingArgs) {
+
+    if args.ac.config.show_dendritic_zone {
+        background::draw_dendtritic_snow_growth_zone(args);
+    }
+
+    background::draw_background_lines(args);
+    background::draw_labels(args);
+}
+
+pub fn draw_rh_profile(args: DrawingArgs) {
     use gui::plot_context::PlotContext;
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     if !ac.config.show_rh_profile {
         return;
@@ -102,8 +102,8 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
                 let (p, rh) = pair;
                 if p > config::MINP {
                     let ScreenCoords { y, .. } =
-                        ac.rh_omega.convert_wp_to_screen(WPCoords { w: 0.0, p });
-                    let bb = ac.rh_omega.bounding_box_in_screen_coords();
+                        ac.rh_omega.convert_wp_to_screen(da, WPCoords { w: 0.0, p });
+                    let bb = ac.rh_omega.bounding_box_in_screen_coords(da);
                     let x = bb.lower_left.x + bb.width() * rh;
 
                     Some(ScreenCoords { x, y })
@@ -170,7 +170,9 @@ fn draw_rh_profile(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_omega_profile(cr: &Context, ac: &AppContext) {
+pub fn draw_omega_profile(args: DrawingArgs) {
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     if !ac.config.show_omega_profile {
         return;
@@ -189,7 +191,7 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
                 if let (Some(p), Some(w)) = (val_pair.0.as_option(), val_pair.1.as_option()) {
                     if p > config::MINP {
                         let wp_coords = WPCoords { w, p };
-                        Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
+                        Some(ac.rh_omega.convert_wp_to_screen(da, wp_coords))
                     } else {
                         None
                     }
@@ -203,7 +205,10 @@ fn draw_omega_profile(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_active_readout(cr: &Context, ac: &AppContext) {
+pub fn draw_active_readout(args: DrawingArgs) {
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
     if ac.config.show_active_readout {
         let sample_p = if let Some(sample) = ac.get_sample() {
             if let Some(sample_p) = sample.pressure.as_option() {
@@ -221,14 +226,20 @@ fn draw_active_readout(cr: &Context, ac: &AppContext) {
             cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
                 .0,
         );
-        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: -1000.0,
-            p: sample_p,
-        });
-        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: 1000.0,
-            p: sample_p,
-        });
+        let start = ac.rh_omega.convert_wp_to_screen(
+            da,
+            WPCoords {
+                w: -1000.0,
+                p: sample_p,
+            },
+        );
+        let end = ac.rh_omega.convert_wp_to_screen(
+            da,
+            WPCoords {
+                w: 1000.0,
+                p: sample_p,
+            },
+        );
         cr.move_to(start.x, start.y);
         cr.line_to(end.x, end.y);
         cr.stroke();

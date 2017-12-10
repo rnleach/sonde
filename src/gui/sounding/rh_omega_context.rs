@@ -1,12 +1,17 @@
 
+use std::cell::Cell;
+
+use gtk::prelude::*;
+use gtk::DrawingArea;
+
 use gui::plot_context::{PlotContext, GenericContext};
 use app::config;
 
 use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords, XYRect};
 
 pub struct RHOmegaContext {
-    pub skew_t_scale_factor: f64,
-    pub skew_t_zoom_factor: f64,
+    pub skew_t_scale_factor: Cell<f64>,
+    pub skew_t_zoom_factor: Cell<f64>,
 
     generic: GenericContext,
 }
@@ -14,8 +19,8 @@ pub struct RHOmegaContext {
 impl RHOmegaContext {
     pub fn new() -> Self {
         RHOmegaContext {
-            skew_t_scale_factor: 1.0,
-            skew_t_zoom_factor: 1.0,
+            skew_t_scale_factor: Cell::new(1.0),
+            skew_t_zoom_factor: Cell::new(1.0),
             generic: GenericContext::new(),
         }
     }
@@ -53,15 +58,16 @@ impl RHOmegaContext {
     }
 
     /// Conversion from `DeviceCoords` to `WPCoords`
-    pub fn convert_device_to_wp(&self, coords: DeviceCoords) -> WPCoords {
-        let screen = self.convert_device_to_screen(coords);
+    pub fn convert_device_to_wp(&self, da: &DrawingArea, coords: DeviceCoords) -> WPCoords {
+        let mut screen = self.convert_device_to_screen(da, coords);
+        screen.y = screen.y * Self::scale_factor(da) / self.skew_t_scale_factor.get();
         self.convert_screen_to_wp(screen)
     }
 
     /// Conversion from omega/pressure to screen coordinates.
-    pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
+    pub fn convert_wp_to_screen(&self, da: &DrawingArea, coords: WPCoords) -> ScreenCoords {
         let xy = RHOmegaContext::convert_wp_to_xy(coords);
-        self.convert_xy_to_screen(xy)
+        self.convert_xy_to_screen(da, xy)
     }
 
     pub fn set_translate_y(&mut self, new_translate: XYCoords) {
@@ -72,56 +78,40 @@ impl RHOmegaContext {
 }
 
 impl PlotContext for RHOmegaContext {
-    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+    fn convert_xy_to_screen(&self, da: &DrawingArea, coords: XYCoords) -> ScreenCoords {
 
         // Apply translation first
         let x = coords.x - self.generic.get_translate().x;
         let y = coords.y - self.generic.get_translate().y;
 
         // Apply scaling
-        let x = x * self.get_zoom_factor() / self.skew_t_scale_factor * self.scale_factor();
-        let y = self.skew_t_zoom_factor * y;
+        let x = x * self.get_zoom_factor() / self.skew_t_scale_factor.get() *
+            Self::scale_factor(da);
+        let y = self.skew_t_zoom_factor.get() * y;
         ScreenCoords { x, y }
     }
 
-    /// Conversion from device to screen coordinates.
-    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = self.skew_t_scale_factor;
+    fn convert_device_to_screen(&self, da: &DrawingArea, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = self.skew_t_scale_factor.get();
+        let height = da.get_allocation().height;
+
         ScreenCoords {
             x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) +
-                f64::from(self.generic.get_device_height()) / scale_factor,
+            y: -(coords.row / scale_factor) + f64::from(height) / scale_factor,
         }
     }
 
-    /// Conversion from screen coords to xy
     fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Unapply scaling first
-        let x = coords.x / self.get_zoom_factor() / self.scale_factor() * self.skew_t_scale_factor;
-        let y = coords.y / self.skew_t_zoom_factor;
+        let x = coords.x / self.get_zoom_factor();
+        let y = coords.y / self.skew_t_zoom_factor.get();
 
         // Unapply translation
         let x = x + self.generic.get_translate().x;
         let y = y + self.generic.get_translate().y;
 
         XYCoords { x, y }
-    }
-
-    fn set_device_width(&mut self, new_width: i32) {
-        self.generic.set_device_width(new_width);
-    }
-
-    fn set_device_height(&mut self, new_height: i32) {
-        self.generic.set_device_height(new_height);
-    }
-
-    fn get_device_width(&self) -> i32 {
-        self.generic.get_device_width()
-    }
-
-    fn get_device_height(&self) -> i32 {
-        self.generic.get_device_height()
     }
 
     fn get_xy_envelope(&self) -> XYRect {
@@ -167,23 +157,7 @@ impl PlotContext for RHOmegaContext {
         self.generic.set_last_cursor_position(new_position);
     }
 
-    fn get_label_padding(&self) -> f64 {
-        self.generic.get_label_padding()
-    }
-
-    fn set_label_padding(&mut self, new_padding: f64) {
-        self.generic.set_label_padding(new_padding);
-    }
-
-    fn get_edge_padding(&self) -> f64 {
-        self.generic.get_edge_padding()
-    }
-
-    fn set_edge_padding(&mut self, new_padding: f64) {
-        self.generic.set_edge_padding(new_padding);
-    }
-
-    fn zoom_to_envelope(&mut self) {
+    fn zoom_to_envelope(&mut self, _da: &DrawingArea) {
 
         let xy_envelope = self.get_xy_envelope();
 

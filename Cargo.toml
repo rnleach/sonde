@@ -15,3 +15,7 @@ gdk = "^0.7"
 lazy_static = "^1"
 chrono = "0.4"
 itertools = "^0.7.0"
+
+[profile.release]
+lto = true
+panic = 'abort'

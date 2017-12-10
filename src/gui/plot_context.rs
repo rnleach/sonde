@@ -1,23 +1,12 @@
 
 use cairo::Context;
-
+use gtk::prelude::*;
+use gtk::DrawingArea;
 use coords::{DeviceCoords, ScreenCoords, XYCoords, ScreenRect, XYRect};
 
 use super::AppContext;
 
 pub trait PlotContext {
-    /// Get the device width
-    fn get_device_width(&self) -> i32;
-
-    /// Set the device width
-    fn set_device_width(&mut self, new_width: i32);
-
-    /// Get device height
-    fn get_device_height(&self) -> i32;
-
-    /// Set device height
-    fn set_device_height(&mut self, new_height: i32);
-
     /// Get a bounding box in XYCoords around all the data in this plot.
     fn get_xy_envelope(&self) -> XYRect;
 
@@ -50,22 +39,8 @@ pub trait PlotContext {
     where
         Option<DeviceCoords>: From<T>;
 
-    /// Get the distance used for adding padding around labels in `ScreenCoords`
-    fn get_label_padding(&self) -> f64;
-
-    /// Set the distance used for adding padding around labels in `ScreenCoords`
-    fn set_label_padding(&mut self, new_padding: f64);
-
-    /// Get the distance using for keeping things too close to the edge of the window in
-    ///  `ScreenCoords`
-    fn get_edge_padding(&self) -> f64;
-
-    /// Set the distance using for keeping things too close to the edge of the window in
-    ///  `ScreenCoords`
-    fn set_edge_padding(&mut self, new_padding: f64);
-
     /// Conversion from (x,y) coords to screen coords
-    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+    fn convert_xy_to_screen(&self, _da: &DrawingArea, coords: XYCoords) -> ScreenCoords {
 
         let translate = self.get_translate();
 
@@ -80,12 +55,13 @@ pub trait PlotContext {
     }
 
     /// Conversion from device coordinates to `ScreenCoords`
-    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = self.scale_factor();
+    fn convert_device_to_screen(&self, da: &DrawingArea, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = Self::scale_factor(da);
+        let height = da.get_allocation().height;
         ScreenCoords {
             x: coords.col / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) + f64::from(self.get_device_height()) / scale_factor,
+            y: -(coords.row / scale_factor) + f64::from(height) / scale_factor,
         }
     }
 
@@ -93,16 +69,15 @@ pub trait PlotContext {
     ///
     /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
     /// 1 in `ScreenCoords` when the zoom factor is 1.
-    fn scale_factor(&self) -> f64 {
-        f64::from(::std::cmp::min(
-            self.get_device_height(),
-            self.get_device_width(),
-        ))
+    fn scale_factor(da: &DrawingArea) -> f64 {
+        let alloc = da.get_allocation();
+
+        f64::from(::std::cmp::min(alloc.height, alloc.width))
     }
 
     /// Convert device coords to (x,y) coords
-    fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
-        let screen_coords = self.convert_device_to_screen(coords);
+    fn convert_device_to_xy(&self, da: &DrawingArea, coords: DeviceCoords) -> XYCoords {
+        let screen_coords = self.convert_device_to_screen(da, coords);
         self.convert_screen_to_xy(screen_coords)
     }
 
@@ -118,12 +93,12 @@ pub trait PlotContext {
     }
 
     /// Get the edges of the X-Y plot area in `ScreenCoords`, may or may not be on the screen.
-    fn calculate_plot_edges(&self, cr: &Context, ac: &AppContext) -> ScreenRect {
+    fn calculate_plot_edges(&self, da: &DrawingArea, cr: &Context, ac: &AppContext) -> ScreenRect {
 
         let ScreenRect {
             lower_left,
             upper_right,
-        } = self.bounding_box_in_screen_coords();
+        } = self.bounding_box_in_screen_coords(da);
         let ScreenCoords {
             x: mut screen_x_min,
             y: mut screen_y_min,
@@ -135,9 +110,9 @@ pub trait PlotContext {
 
         // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
         let ScreenCoords { x: xmin, y: ymin } =
-            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+            self.convert_xy_to_screen(da, XYCoords { x: 0.0, y: 0.0 });
         let ScreenCoords { x: xmax, y: ymax } =
-            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+            self.convert_xy_to_screen(da, XYCoords { x: 1.0, y: 1.0 });
 
         if xmin > screen_x_min {
             screen_x_min = xmin;
@@ -172,15 +147,23 @@ pub trait PlotContext {
     }
 
     /// Get a bounding box in screen coords
-    fn bounding_box_in_screen_coords(&self) -> ScreenRect {
-        let lower_left = self.convert_device_to_screen(DeviceCoords {
-            col: 0.0,
-            row: f64::from(self.get_device_height()),
-        });
-        let upper_right = self.convert_device_to_screen(DeviceCoords {
-            col: f64::from(self.get_device_width()),
-            row: 0.0,
-        });
+    fn bounding_box_in_screen_coords(&self, da: &DrawingArea) -> ScreenRect {
+        let alloc = da.get_allocation();
+
+        let lower_left = self.convert_device_to_screen(
+            da,
+            DeviceCoords {
+                col: 0.0,
+                row: f64::from(alloc.height),
+            },
+        );
+        let upper_right = self.convert_device_to_screen(
+            da,
+            DeviceCoords {
+                col: f64::from(alloc.width),
+                row: 0.0,
+            },
+        );
 
         ScreenRect {
             lower_left,
@@ -190,14 +173,16 @@ pub trait PlotContext {
 
     /// Left justify the plot in the view if zoomed out, and if zoomed in don't let it view
     /// beyond the edges of the plot.
-    fn bound_view(&mut self) {
+    fn bound_view(&mut self, da: &DrawingArea) {
+
+        let alloc = da.get_allocation();
 
         let bounds = DeviceCoords {
-            col: f64::from(self.get_device_width()),
-            row: f64::from(self.get_device_height()),
+            col: f64::from(alloc.width),
+            row: f64::from(alloc.height),
         };
-        let lower_right = self.convert_device_to_xy(bounds);
-        let upper_left = self.convert_device_to_xy(DeviceCoords { col: 0.0, row: 0.0 });
+        let lower_right = self.convert_device_to_xy(da, bounds);
+        let upper_left = self.convert_device_to_xy(da, DeviceCoords { col: 0.0, row: 0.0 });
         let width = lower_right.x - upper_left.x;
         let height = upper_left.y - lower_right.y;
 
@@ -228,7 +213,7 @@ pub trait PlotContext {
     }
 
     /// Zoom in the most possible while still keeping the whole envelope in view.
-    fn zoom_to_envelope(&mut self) {
+    fn zoom_to_envelope(&mut self, da: &DrawingArea) {
         use std::f64;
 
         let xy_envelope = self.get_xy_envelope();
@@ -244,7 +229,7 @@ pub trait PlotContext {
 
         self.set_zoom_factor(f64::min(width_scale, height_scale));
 
-        self.bound_view();
+        self.bound_view(da);
     }
 }
 
@@ -256,20 +241,11 @@ pub struct GenericContext {
     zoom_factor: f64, // Multiply by this after translating
     translate: XYCoords,
 
-    // device dimensions
-    device_height: i32,
-    device_width: i32,
-
     // state of input for left button press and panning.
     left_button_pressed: bool,
 
     // last cursor position in skew_t widget, used for sampling and panning
     last_cursor_position: Option<DeviceCoords>,
-
-    // Distance used for adding padding around labels in `ScreenCoords`
-    label_padding: f64,
-    // Distance using for keeping things too close to the edge of the window in `ScreenCoords`
-    edge_padding: f64,
 }
 
 impl GenericContext {
@@ -283,35 +259,13 @@ impl GenericContext {
             // Sounding Area GUI state
             zoom_factor: 1.0,
             translate: XYCoords::origin(),
-            device_height: 100,
-            device_width: 100,
             last_cursor_position: None,
             left_button_pressed: false,
-
-            // Drawing cache
-            edge_padding: 0.0,
-            label_padding: 0.0,
         }
     }
 }
 
 impl PlotContext for GenericContext {
-    fn set_device_width(&mut self, new_width: i32) {
-        self.device_width = new_width;
-    }
-
-    fn set_device_height(&mut self, new_height: i32) {
-        self.device_height = new_height;
-    }
-
-    fn get_device_width(&self) -> i32 {
-        self.device_width
-    }
-
-    fn get_device_height(&self) -> i32 {
-        self.device_height
-    }
-
     fn get_xy_envelope(&self) -> XYRect {
         self.xy_envelope
     }
@@ -354,22 +308,6 @@ impl PlotContext for GenericContext {
     {
         self.last_cursor_position = Option::from(new_position);
     }
-
-    fn get_label_padding(&self) -> f64 {
-        self.label_padding
-    }
-
-    fn set_label_padding(&mut self, new_padding: f64) {
-        self.label_padding = new_padding;
-    }
-
-    fn get_edge_padding(&self) -> f64 {
-        self.edge_padding
-    }
-
-    fn set_edge_padding(&mut self, new_padding: f64) {
-        self.edge_padding = new_padding;
-    }
 }
 
 pub trait HasGenericContext {
@@ -381,22 +319,6 @@ impl<T> PlotContext for T
 where
     T: HasGenericContext,
 {
-    fn set_device_width(&mut self, new_width: i32) {
-        self.get_generic_context_mut().set_device_width(new_width);
-    }
-
-    fn set_device_height(&mut self, new_height: i32) {
-        self.get_generic_context_mut().set_device_height(new_height);
-    }
-
-    fn get_device_width(&self) -> i32 {
-        self.get_generic_context().get_device_width()
-    }
-
-    fn get_device_height(&self) -> i32 {
-        self.get_generic_context().get_device_height()
-    }
-
     fn get_xy_envelope(&self) -> XYRect {
         self.get_generic_context().get_xy_envelope()
     }
@@ -444,23 +366,5 @@ where
         self.get_generic_context_mut().set_last_cursor_position(
             new_position,
         );
-    }
-
-    fn get_label_padding(&self) -> f64 {
-        self.get_generic_context().get_label_padding()
-    }
-
-    fn set_label_padding(&mut self, new_padding: f64) {
-        self.get_generic_context_mut().set_label_padding(
-            new_padding,
-        );
-    }
-
-    fn get_edge_padding(&self) -> f64 {
-        self.get_generic_context().get_edge_padding()
-    }
-
-    fn set_edge_padding(&mut self, new_padding: f64) {
-        self.get_generic_context_mut().set_edge_padding(new_padding);
     }
 }

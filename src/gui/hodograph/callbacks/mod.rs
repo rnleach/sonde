@@ -13,22 +13,22 @@ use gui::plot_context::PlotContext;
 
 mod drawing;
 
-pub fn draw_hodo(cr: &Context, acp: &AppContextPointer) -> Inhibit {
+pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
 
     let ac = &mut acp.borrow_mut();
 
-    drawing::prepare_to_draw_hodo(cr, ac);
-    drawing::draw_hodo_background(cr, ac);
+    drawing::prepare_to_draw_hodo(da, cr, ac);
+    drawing::draw_hodo_background(da, cr, ac);
     drawing::draw_hodo_labels(cr, ac);
-    drawing::draw_hodo_line(cr, ac);
-    drawing::draw_active_readout(cr, ac);
+    drawing::draw_hodo_line(da, cr, ac);
+    drawing::draw_active_readout(da, cr, ac);
 
     Inhibit(false)
 }
 
 /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
 pub fn scroll_event(
-    _hodo_area: &DrawingArea,
+    hodo_area: &DrawingArea,
     event: &EventScroll,
     ac: &AppContextPointer,
 ) -> Inhibit {
@@ -40,6 +40,7 @@ pub fn scroll_event(
     let mut ac = ac.borrow_mut();
 
     let pos = ac.hodo.convert_device_to_xy(
+        hodo_area,
         DeviceCoords::from(event.get_position()),
     );
     let dir = event.get_direction();
@@ -139,11 +140,11 @@ pub fn mouse_motion_event(
     let mut ac = ac.borrow_mut();
     if ac.hodo.get_left_button_pressed() {
         if let Some(last_position) = ac.hodo.get_last_cursor_position() {
-            let old_position = ac.hodo.convert_device_to_xy(last_position);
+            let old_position = ac.hodo.convert_device_to_xy(hodo_area, last_position);
             let new_position = DeviceCoords::from(event.get_position());
             ac.hodo.set_last_cursor_position(Some(new_position));
 
-            let new_position = ac.hodo.convert_device_to_xy(new_position);
+            let new_position = ac.hodo.convert_device_to_xy(hodo_area, new_position);
             let delta = (
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,

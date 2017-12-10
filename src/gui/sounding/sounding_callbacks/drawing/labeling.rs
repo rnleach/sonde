@@ -1,31 +1,34 @@
 //! Functions used for adding labels to the sounding plot
 use app::{AppContext, config};
 use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, DeviceCoords, Rect};
-use gui::check_overlap_then_add;
+use gui::{DrawingArgs, check_overlap_then_add, set_font_size};
 use gui::plot_context::PlotContext;
-use gui::sounding::set_font_size;
 
-use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight};
+use cairo::{FontExtents, FontFace, FontSlant, FontWeight};
 
-pub fn prepare_to_label(cr: &Context, ac: &AppContext) {
+pub fn prepare_to_label(args: DrawingArgs) {
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    set_font_size(ac.config.label_font_size, cr, ac);
+    set_font_size(&ac.skew_t, da, ac.config.label_font_size, cr, ac);
 }
 
 // Label the pressure, temperatures, etc lines.
-pub fn draw_background_labels(cr: &Context, ac: &AppContext) {
-    let labels = collect_labels(cr, ac);
-    draw_labels(cr, ac, labels);
+pub fn draw_background_labels(args: DrawingArgs) {
+    let labels = collect_labels(args);
+    draw_labels(args, labels);
 }
 
-fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
+fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     let mut labels = vec![];
 
-    let screen_edges = ac.skew_t.calculate_plot_edges(cr, ac);
+    let screen_edges = ac.skew_t.calculate_plot_edges(da, cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
     if ac.config.show_isobars {
@@ -35,10 +38,13 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
 
             let extents = cr.text_extents(&label);
 
-            let ScreenCoords { y: screen_y, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-                temperature: 0.0,
-                pressure: p,
-            });
+            let ScreenCoords { y: screen_y, .. } = ac.skew_t.convert_tp_to_screen(
+                da,
+                TPCoords {
+                    temperature: 0.0,
+                    pressure: p,
+                },
+            );
             let screen_y = screen_y - extents.height / 2.0;
 
             let label_lower_left = ScreenCoords {
@@ -73,10 +79,13 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.skew_t.convert_tp_to_screen(TPCoords {
-                temperature: t,
-                pressure: screen_max_p,
-            });
+            } = ac.skew_t.convert_tp_to_screen(
+                da,
+                TPCoords {
+                    temperature: t,
+                    pressure: screen_max_p,
+                },
+            );
             xpos -= extents.width / 2.0; // Center
             ypos -= extents.height / 2.0; // Center
             ypos += extents.height; // Move up off bottom axis.
@@ -102,9 +111,12 @@ fn collect_labels(cr: &Context, ac: &AppContext) -> Vec<(String, ScreenRect)> {
     labels
 }
 
-fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>) {
+fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
+    use gui::LazyDrawingCacheVar::SkewTLabelPadding;
 
-    let padding = ac.skew_t.get_label_padding();
+    let (ac, cr) = (args.ac, args.cr);
+
+    let padding = ac.drawing_cache.get(SkewTLabelPadding, args);
 
     for (label, rect) in labels {
         let ScreenRect { lower_left, .. } = rect;
@@ -128,19 +140,28 @@ fn draw_labels(cr: &Context, ac: &AppContext, labels: Vec<(String, ScreenRect)>)
 }
 
 // Add a description box
-pub fn draw_legend(cr: &Context, ac: &AppContext) {
+pub fn draw_legend(args: DrawingArgs) {
+    use gui::LazyDrawingCacheVar::SkewTEdgePadding;
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     if !(ac.plottable() && ac.config.show_legend) {
         return;
     }
 
-    let mut upper_left = ac.skew_t.convert_device_to_screen(DeviceCoords::origin());
-    upper_left.x += ac.skew_t.get_edge_padding();
-    upper_left.y -= ac.skew_t.get_edge_padding();
+    let mut upper_left = ac.skew_t.convert_device_to_screen(
+        da,
+        DeviceCoords::origin(),
+    );
+    let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
+    upper_left.x += padding;
+    upper_left.y -= padding;
 
     // Make sure we stay on the x-y coords domain
-    let ScreenCoords { x: xmin, y: ymax } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+    let ScreenCoords { x: xmin, y: ymax } = ac.skew_t.convert_xy_to_screen(
+        da,
+        XYCoords { x: 0.0, y: 1.0 },
+    );
     let edge_offset = upper_left.x; // This distance is used to push off the edge by 5 pixels
     if ymax - edge_offset < upper_left.y {
         upper_left.y = ymax - edge_offset;
@@ -155,8 +176,7 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
     let (source_description, valid_time, location) = build_legend_strings(ac);
 
     let (box_width, box_height) = calculate_legend_box_size(
-        cr,
-        ac,
+        args,
         &font_extents,
         &source_description,
         &valid_time,
@@ -174,11 +194,10 @@ pub fn draw_legend(cr: &Context, ac: &AppContext) {
         },
     };
 
-    draw_legend_rectangle(cr, ac, &legend_rect);
+    draw_legend_rectangle(args, &legend_rect);
 
     draw_legend_text(
-        cr,
-        ac,
+        args,
         &upper_left,
         &font_extents,
         &source_description,
@@ -246,13 +265,16 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 }
 
 fn calculate_legend_box_size(
-    cr: &Context,
-    ac: &AppContext,
+    args: DrawingArgs,
     font_extents: &FontExtents,
     source_description: &Option<String>,
     valid_time: &Option<String>,
     location: &Option<String>,
 ) -> (f64, f64) {
+
+    use gui::LazyDrawingCacheVar::SkewTEdgePadding;
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let mut box_width: f64 = 0.0;
     let mut box_height: f64 = 0.0;
@@ -293,14 +315,17 @@ fn calculate_legend_box_size(
     box_height += font_extents.descent;
 
     // Add padding last
-    let padding = ac.skew_t.get_edge_padding();
+    let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
     box_height += 2.0 * padding;
     box_width += 2.0 * padding;
 
     (box_width, box_height)
 }
 
-fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect) {
+fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
+
+    let (ac, cr) = (args.ac, args.cr);
+
     let ScreenRect { lower_left, .. } = *screen_rect;
 
     cr.rectangle(
@@ -320,18 +345,21 @@ fn draw_legend_rectangle(cr: &Context, ac: &AppContext, screen_rect: &ScreenRect
 }
 
 fn draw_legend_text(
-    cr: &Context,
-    ac: &AppContext,
+    args: DrawingArgs,
     upper_left: &ScreenCoords,
     font_extents: &FontExtents,
     source_description: &Option<String>,
     valid_time: &Option<String>,
     location: &Option<String>,
 ) {
+    use gui::LazyDrawingCacheVar::SkewTEdgePadding;
+
+    let (ac, cr) = (args.ac, args.cr);
+
     let rgb = ac.config.label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
-    let padding = ac.skew_t.get_edge_padding();
+    let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
 
     // Remember how many lines we have drawn so far for setting position of the next line.
     let mut num_lines_drawn = 0;

@@ -80,7 +80,6 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     }
 
     const BOX_SPACING: i32 = 3;
-    const BOX_PADDING: u32 = 1;
 
     let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
 

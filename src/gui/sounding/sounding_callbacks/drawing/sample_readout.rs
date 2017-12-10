@@ -2,12 +2,15 @@
 use app::AppContext;
 use coords::{TPCoords, XYCoords, ScreenCoords, DeviceCoords, ScreenRect};
 use gui::plot_context::PlotContext;
+use gui::DrawingArgs;
 
 use cairo::Context;
 
 use sounding_base::{DataRow, Sounding};
 
-pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
+pub fn draw_active_sample(args: DrawingArgs) {
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let vals = if let Some(vals) = ac.get_sample() {
         vals
@@ -29,9 +32,9 @@ pub fn draw_active_sample(cr: &Context, ac: &AppContext) {
 
     let lines = create_text(&vals, snd, ac);
 
-    draw_sample_line(cr, ac, sample_p);
+    draw_sample_line(args, sample_p);
 
-    let box_rect = calculate_screen_rect(cr, ac, &lines, sample_p);
+    let box_rect = calculate_screen_rect(args, &lines, sample_p);
 
     draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
 }
@@ -147,32 +150,37 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
     results
 }
 
-fn draw_sample_line(cr: &Context, ac: &AppContext, sample_p: f64) {
+fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
+
     let rgba = ac.config.active_readout_line_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(
         cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
             .0,
     );
-    let start = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: -200.0,
-        pressure: sample_p,
-    });
-    let end = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 60.0,
-        pressure: sample_p,
-    });
+    let start = ac.skew_t.convert_tp_to_screen(
+        da,
+        TPCoords {
+            temperature: -200.0,
+            pressure: sample_p,
+        },
+    );
+    let end = ac.skew_t.convert_tp_to_screen(
+        da,
+        TPCoords {
+            temperature: 60.0,
+            pressure: sample_p,
+        },
+    );
     cr.move_to(start.x, start.y);
     cr.line_to(end.x, end.y);
     cr.stroke();
 }
 
-fn calculate_screen_rect(
-    cr: &Context,
-    ac: &AppContext,
-    strings: &[String],
-    sample_p: f64,
-) -> ScreenRect {
+fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -> ScreenRect {
+
+    let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     let mut width: f64 = 0.0;
     let mut height: f64 = 0.0;
@@ -193,18 +201,26 @@ fn calculate_screen_rect(
     height += 2.0 * padding;
 
     let ScreenCoords { x: mut left, .. } = ac.skew_t.convert_device_to_screen(
+        da,
         DeviceCoords { col: 5.0, row: 5.0 },
     );
-    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 0.0,
-        pressure: sample_p,
-    });
+    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(
+        da,
+        TPCoords {
+            temperature: 0.0,
+            pressure: sample_p,
+        },
+    );
     let mut bottom = top - height;
 
-    let ScreenCoords { x: xmin, y: ymin } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    let ScreenCoords { x: xmax, y: ymax } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+    let ScreenCoords { x: xmin, y: ymin } = ac.skew_t.convert_xy_to_screen(
+        da,
+        XYCoords { x: 0.0, y: 0.0 },
+    );
+    let ScreenCoords { x: xmax, y: ymax } = ac.skew_t.convert_xy_to_screen(
+        da,
+        XYCoords { x: 1.0, y: 1.0 },
+    );
 
     // Prevent clipping
     if left < xmin {
@@ -224,7 +240,7 @@ fn calculate_screen_rect(
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },
         upper_right: ScreenCoords { x: xmax, y: ymax },
-    } = ac.skew_t.bounding_box_in_screen_coords();
+    } = ac.skew_t.bounding_box_in_screen_coords(da);
     if left < xmin {
         left = xmin;
     }
