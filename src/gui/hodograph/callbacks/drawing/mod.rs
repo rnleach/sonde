@@ -6,7 +6,7 @@ use gtk::DrawingArea;
 
 use app::{AppContext, config};
 use coords::{SDCoords, XYCoords};
-use gui::plot_curve_from_points;
+use gui::{PlotContext, plot_curve_from_points};
 use gui::hodograph::hodo_context::HodoContext;
 
 pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &mut AppContext) {
@@ -75,8 +75,8 @@ fn draw_background_fill(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     for pnts in config::ISO_SPEED_PNTS.iter() {
-        let mut pnts = pnts.iter().map(|sd_coords| {
-            ac.hodo.convert_sd_to_screen(da, *sd_coords)
+        let mut pnts = pnts.iter().map(|xy_coords| {
+            ac.hodo.convert_xy_to_screen(da, *xy_coords)
         });
 
         if let Some(pnt) = pnts.by_ref().next() {
@@ -101,8 +101,8 @@ fn draw_background_fill(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
 fn draw_background_lines(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     for pnts in config::ISO_SPEED_PNTS.iter() {
-        let pnts = pnts.iter().map(|sd_coords| {
-            ac.hodo.convert_sd_to_screen(da, *sd_coords)
+        let pnts = pnts.iter().map(|xy_coords| {
+            ac.hodo.convert_xy_to_screen(da, *xy_coords)
         });
         plot_curve_from_points(
             cr,

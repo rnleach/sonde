@@ -5,6 +5,8 @@ use std::rc::Rc;
 mod plot_context;
 pub use self::plot_context::{PlotContext, HasGenericContext};
 pub use self::sounding::skew_t_context::SkewTContext;
+pub use self::sounding::rh_omega_context::RHOmegaContext;
+pub use self::hodograph::hodo_context::HodoContext;
 
 pub mod hodograph;
 pub mod index_area;

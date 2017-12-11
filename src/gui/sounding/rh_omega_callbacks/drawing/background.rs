@@ -1,9 +1,9 @@
 use cairo::{FontFace, FontSlant, FontWeight};
 
 use app::config;
-use coords::{WPCoords, TPCoords, ScreenRect, ScreenCoords};
+use coords::{WPCoords, ScreenRect, ScreenCoords};
 use gui::{plot_curve_from_points, check_overlap_then_add};
-use gui::{DrawingArgs, set_font_size};
+use gui::{PlotContext, DrawingArgs, set_font_size};
 
 
 
@@ -14,27 +14,15 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw isobars
     if ac.config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
-            let TPCoords { pressure: p, .. } = pnts[0];
-
-            let pnts = [
-                WPCoords {
-                    w: -config::MAX_ABS_W,
-                    p,
-                },
-                WPCoords {
-                    w: config::MAX_ABS_W,
-                    p,
-                },
-            ];
-            let pnts = pnts.iter().map(|wp_coords| {
-                ac.rh_omega.convert_wp_to_screen(da, *wp_coords)
+            let pnts = pnts.iter().map(|xy_coords| {
+                ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
             });
-
-            let mut line_width = ac.config.background_line_width;
-            line_width = line_width / cr.device_to_user_distance(line_width, 0.0).0 *
-                -cr.device_to_user_distance(0.0, line_width).1;
-
-            plot_curve_from_points(cr, line_width, ac.config.isobar_rgba, pnts);
+            plot_curve_from_points(
+                cr,
+                ac.config.background_line_width,
+                ac.config.isobar_rgba,
+                pnts,
+            );
         }
     }
 
@@ -46,8 +34,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
                 cr,
                 ac.config.background_line_width,
                 ac.config.isobar_rgba,
-                v_line.iter().map(|wp_coords| {
-                    ac.rh_omega.convert_wp_to_screen(da, *wp_coords)
+                v_line.iter().map(|xy_coords| {
+                    ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
                 }),
             );
         }

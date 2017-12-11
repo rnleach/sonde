@@ -1,6 +1,7 @@
 //! Keep configuration data in this module.
 
-use coords::{TPCoords, WPCoords, SDCoords};
+use coords::{TPCoords, WPCoords, SDCoords, XYCoords};
+use gui::{SkewTContext, RHOmegaContext, HodoContext};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -517,7 +518,8 @@ should not be altered.
 lazy_static! {
 
     /// Compute points for background isotherms only once
-    pub static ref ISOTHERM_PNTS: Vec<[TPCoords; 2]> = {
+    pub static ref ISOTHERM_PNTS: Vec<[XYCoords; 2]> = {
+
         ISOTHERMS
         .into_iter()
         .map(|t| {
@@ -526,24 +528,36 @@ lazy_static! {
                 TPCoords{temperature:*t, pressure:MINP}
             ]
         })
+        .map(|tp| {
+            [
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
+            ]
+        })
         .collect()
     };
 
     /// Compute points for background isobars only once
-    pub static ref ISOBAR_PNTS: Vec<[TPCoords; 2]> = {
+    pub static ref ISOBAR_PNTS: Vec<[XYCoords; 2]> = {
         ISOBARS
-            .into_iter()
-            .map(|p| {
-                [
-                    TPCoords{temperature:-150.0, pressure:*p},
-                    TPCoords{temperature:60.0, pressure:*p}
-                ]
-            })
-            .collect()
+        .into_iter()
+        .map(|p| {
+            [
+                TPCoords{temperature:-150.0, pressure:*p},
+                TPCoords{temperature:60.0, pressure:*p}
+            ]
+        })
+        .map(|tp| {
+            [
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
+            ]
+        })
+        .collect()
     };
 
     /// Compute points for background isentrops only once
-    pub static ref ISENTROP_PNTS: Vec<Vec<TPCoords>> = {
+    pub static ref ISENTROP_PNTS: Vec<Vec<XYCoords>> = {
         ISENTROPS
         .into_iter()
         .map(|theta| generate_isentrop(*theta))
@@ -551,7 +565,7 @@ lazy_static! {
     };
 
     /// Compute points for background mixing ratio only once
-    pub static ref ISO_MIXING_RATIO_PNTS: Vec<[TPCoords; 2]> = {
+    pub static ref ISO_MIXING_RATIO_PNTS: Vec<[XYCoords; 2]> = {
         use formula::*;
 
         ISO_MIXING_RATIO
@@ -568,11 +582,17 @@ lazy_static! {
                 },
             ]
         })
+        .map(|tp| {
+            [
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
+            ]
+        })
         .collect()
     };
 
     /// Compute points for background theta-e
-    pub static ref ISO_THETA_E_PNTS: Vec<Vec<TPCoords>> = {
+    pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
         use formula::{find_root, theta_e_saturated_kelvin};
 
         ISO_THETA_E_C
@@ -585,7 +605,7 @@ lazy_static! {
             while p < MAXP + 1.0001 * dp {
                 let t = find_root(&|t| {theta_e_saturated_kelvin(p,t)- theta_e_k},
                     -150.0, 60.0);
-                v.push(TPCoords{temperature:t, pressure: p});
+                v.push(SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p}));
                 p += dp;
             }
             v
@@ -594,7 +614,7 @@ lazy_static! {
     };
 
     /// Compute points for background omega
-    pub static ref ISO_OMEGA_PNTS: Vec<[WPCoords; 2]> = {
+    pub static ref ISO_OMEGA_PNTS: Vec<[XYCoords; 2]> = {
         ISO_OMEGA
             .into_iter()
             .map(|w| {
@@ -609,11 +629,17 @@ lazy_static! {
                 },
             ]
             })
+        .map(|tp| {
+            [
+                RHOmegaContext::convert_wp_to_xy(tp[0]),
+                RHOmegaContext::convert_wp_to_xy(tp[1])
+            ]
+        })
             .collect()
     };
 
     /// Compute points for background speed
-    pub static ref ISO_SPEED_PNTS: Vec<Vec<SDCoords>> = {
+    pub static ref ISO_SPEED_PNTS: Vec<Vec<XYCoords>> = {
 
         ISO_SPEED
         .iter()
@@ -621,7 +647,7 @@ lazy_static! {
             let mut v = vec![];
             let mut dir = 0.0;
             while dir <= 361.0 {
-                v.push(SDCoords{speed, dir});
+                v.push(HodoContext::convert_sd_to_xy(SDCoords{speed, dir}));
                 dir += 1.0;
             }
             v
@@ -631,7 +657,7 @@ lazy_static! {
 }
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
-fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
+fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     use std::f64;
     use app::config::{MAXP, ISENTROPS_TOP_P, POINTS_PER_ISENTROP};
 
@@ -640,17 +666,18 @@ fn generate_isentrop(theta: f64) -> Vec<TPCoords> {
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
         let t = ::formula::temperature_c_from_theta(theta, p);
-        result.push(TPCoords {
+        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
-        });
+        }));
         p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
     }
     let t = ::formula::temperature_c_from_theta(theta, ISENTROPS_TOP_P);
-    result.push(TPCoords {
+
+    result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,
         pressure: ISENTROPS_TOP_P,
-    });
+    }));
 
     result
 }
