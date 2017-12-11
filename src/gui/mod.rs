@@ -296,7 +296,9 @@ fn set_font_size<T: PlotContext>(
 ) {
 
     let dpi = match ac.get_dpi() {
-        None => 72.0,
+        None => {
+            72.0
+        },
         Some(value) => value,
     };
 
