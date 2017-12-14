@@ -30,7 +30,7 @@ pub fn draw_active_sample(args: DrawingArgs) {
         return;
     };
 
-    let lines = create_text(&vals, snd, ac);
+    let lines = create_text(&vals, &snd, ac);
 
     draw_sample_line(args, sample_p);
 
@@ -152,11 +152,12 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
 
 fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    let rgba = ac.config.active_readout_line_rgba;
+    let rgba = config.active_readout_line_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(
-        cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
+        cr.device_to_user_distance(config.active_readout_line_width, 0.0)
             .0,
     );
     let start = ac.skew_t.convert_tp_to_screen(
@@ -181,6 +182,7 @@ fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
 fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -> ScreenRect {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     let mut width: f64 = 0.0;
     let mut height: f64 = 0.0;
@@ -195,7 +197,7 @@ fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -
         height += font_extents.height;
     }
 
-    let (padding, _) = cr.device_to_user_distance(ac.config.edge_padding, 0.0);
+    let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
 
     width += 2.0 * padding;
     height += 2.0 * padding;
@@ -272,21 +274,23 @@ fn draw_sample_readout_text_box(
     ac: &AppContext,
     lines: &[String],
 ) {
+    let config = ac.config.borrow();
+
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },
         upper_right: ScreenCoords { x: xmax, y: ymax },
     } = *rect;
 
-    let rgba = ac.config.background_rgba;
+    let rgba = config.background_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
     cr.fill_preserve();
-    let rgba = ac.config.label_rgba;
+    let rgba = config.label_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke();
 
-    let (padding, _) = cr.device_to_user_distance(ac.config.edge_padding, 0.0);
+    let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
 
     let font_extents = cr.font_extents();
     let mut lines_drawn = 0.0;

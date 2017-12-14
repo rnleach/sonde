@@ -15,13 +15,11 @@ mod drawing;
 
 pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
 
-    let ac = &mut acp.borrow_mut();
-
-    drawing::prepare_to_draw_hodo(da, cr, ac);
-    drawing::draw_hodo_background(da, cr, ac);
-    drawing::draw_hodo_labels(cr, ac);
-    drawing::draw_hodo_line(da, cr, ac);
-    drawing::draw_active_readout(da, cr, ac);
+    drawing::prepare_to_draw_hodo(da, cr, acp);
+    drawing::draw_hodo_background(da, cr, acp);
+    drawing::draw_hodo_labels(cr, acp);
+    drawing::draw_hodo_line(da, cr, acp);
+    drawing::draw_active_readout(da, cr, acp);
 
     Inhibit(false)
 }
@@ -36,8 +34,6 @@ pub fn scroll_event(
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
-
-    let mut ac = ac.borrow_mut();
 
     let pos = ac.hodo.convert_device_to_xy(
         hodo_area,
@@ -88,7 +84,6 @@ pub fn button_press_event(
 
     // Left mouse button
     if event.get_button() == 1 {
-        let mut ac = ac.borrow_mut();
         ac.hodo.set_last_cursor_position(
             Some(event.get_position().into()),
         );
@@ -106,7 +101,6 @@ pub fn button_release_event(
     ac: &AppContextPointer,
 ) -> Inhibit {
     if event.get_button() == 1 {
-        let mut ac = ac.borrow_mut();
         ac.hodo.set_last_cursor_position(None);
         ac.hodo.set_left_button_pressed(false);
         Inhibit(true)
@@ -121,7 +115,6 @@ pub fn leave_event(
     _event: &EventCrossing,
     ac: &AppContextPointer,
 ) -> Inhibit {
-    let mut ac = ac.borrow_mut();
 
     ac.hodo.set_last_cursor_position(None);
 
@@ -137,7 +130,6 @@ pub fn mouse_motion_event(
 
     hodo_area.grab_focus();
 
-    let mut ac = ac.borrow_mut();
     if ac.hodo.get_left_button_pressed() {
         if let Some(last_position) = ac.hodo.get_last_cursor_position() {
             let old_position = ac.hodo.convert_device_to_xy(hodo_area, last_position);
@@ -177,11 +169,9 @@ pub fn key_press_event(
 
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
-        let mut ac = ac.borrow_mut();
         ac.display_next();
         Inhibit(true)
     } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
-        let mut ac = ac.borrow_mut();
         ac.display_previous();
         Inhibit(true)
     } else {

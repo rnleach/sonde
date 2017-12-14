@@ -9,7 +9,7 @@ use gui::control_area::{BOX_SPACING, PADDING};
 
 use app::AppContextPointer;
 
-pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
+pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
     f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
@@ -28,7 +28,7 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
     build_config_color_and_check!(
         sample_box,
         "Sampling",
-        acp,
+        ac,
         show_active_readout,
         active_readout_line_rgba
     );
@@ -37,25 +37,18 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let rh_omega = CheckButton::new();
 
-    // Inner scope to borrow acp
-    {
-        let ac = acp.borrow();
-        rh_omega.set_active(ac.config.show_rh_omega_frame);
-    }
+    rh_omega.set_active(ac.config.borrow().show_rh_omega_frame);
 
     // Create rh_omega callback
-    let acp1 = Rc::clone(acp);
+    let acp = Rc::clone(ac);
     rh_omega.connect_toggled(move |button| {
 
-        let mut ac = acp1.borrow_mut();
+        acp.config.borrow_mut().show_rh_omega_frame = button.get_active();
+        acp.show_hide_rh_omega();
 
-        ac.config.show_rh_omega_frame = button.get_active();
-        ac.show_hide_rh_omega();
-
-        let acp2 = Rc::clone(&acp1);
+        let acp2 = Rc::clone(&acp);
         ::gtk::idle_add(move || {
-            let ac = acp2.borrow_mut();
-            ac.update_all_gui();
+            acp2.update_all_gui();
             Continue(false)
         });
     });
@@ -71,6 +64,7 @@ pub fn make_data_option_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let data_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     data_frame.add(&data_box);
 
+    let acp = Rc::clone(ac);
     build_config_color_and_check!(data_box, "Wet Bulb", acp, show_wet_bulb, wet_bulb_rgba);
     build_config_color_and_check!(data_box, "Dew Point", acp, show_dew_point, dew_point_rgba);
     build_config_color_and_check!(

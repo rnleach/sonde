@@ -1,3 +1,4 @@
+use std::cell::Cell;
 
 use cairo::Context;
 use gtk::prelude::*;
@@ -11,31 +12,31 @@ pub trait PlotContext {
     fn get_xy_envelope(&self) -> XYRect;
 
     /// Set the bounding box in XYCoords around all the data in this plot.
-    fn set_xy_envelope(&mut self, XYRect);
+    fn set_xy_envelope(&self, XYRect);
 
     /// Get zoom factor
     fn get_zoom_factor(&self) -> f64;
 
     /// Set zoom factor
-    fn set_zoom_factor(&mut self, new_zoom_factor: f64);
+    fn set_zoom_factor(&self, new_zoom_factor: f64);
 
     /// Get the translation between screen and  `XYCoords`
     fn get_translate(&self) -> XYCoords;
 
     /// Set the translation between screen and `XYCoords`
-    fn set_translate(&mut self, new_translate: XYCoords);
+    fn set_translate(&self, new_translate: XYCoords);
 
     /// Get whether or not the left mouse button is pressed over this widget.
     fn get_left_button_pressed(&self) -> bool;
 
     /// Set whether or not the left mouse button is pressed over this widget
-    fn set_left_button_pressed(&mut self, pressed: bool);
+    fn set_left_button_pressed(&self, pressed: bool);
 
     /// Get the last position of the cursor over this widget.
     fn get_last_cursor_position(&self) -> Option<DeviceCoords>;
 
     /// Set the last position of the cursor over this widget.
-    fn set_last_cursor_position<T>(&mut self, new_position: T)
+    fn set_last_cursor_position<T>(&self, new_position: T)
     where
         Option<DeviceCoords>: From<T>;
 
@@ -128,7 +129,8 @@ pub trait PlotContext {
         }
 
         // Add some padding to keep away from the window edge
-        let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+        let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+            .0;
         screen_x_max -= padding;
         screen_y_max -= padding;
         screen_x_min += padding;
@@ -173,7 +175,7 @@ pub trait PlotContext {
 
     /// Left justify the plot in the view if zoomed out, and if zoomed in don't let it view
     /// beyond the edges of the plot.
-    fn bound_view(&mut self, da: &DrawingArea) {
+    fn bound_view(&self, da: &DrawingArea) {
 
         let alloc = da.get_allocation();
 
@@ -213,7 +215,7 @@ pub trait PlotContext {
     }
 
     /// Zoom in the most possible while still keeping the whole envelope in view.
-    fn zoom_to_envelope(&mut self, da: &DrawingArea) {
+    fn zoom_to_envelope(&self, da: &DrawingArea) {
         use std::f64;
 
         let xy_envelope = self.get_xy_envelope();
@@ -235,84 +237,83 @@ pub trait PlotContext {
 
 pub struct GenericContext {
     // Rectangle that bounds all the values to be plotted in `XYCoords`.
-    xy_envelope: XYRect,
+    xy_envelope: Cell<XYRect>,
 
     // Standard x-y coords, used for zooming and panning.
-    zoom_factor: f64, // Multiply by this after translating
-    translate: XYCoords,
+    zoom_factor: Cell<f64>, // Multiply by this after translating
+    translate: Cell<XYCoords>,
 
     // state of input for left button press and panning.
-    left_button_pressed: bool,
+    left_button_pressed: Cell<bool>,
 
     // last cursor position in skew_t widget, used for sampling and panning
-    last_cursor_position: Option<DeviceCoords>,
+    last_cursor_position: Cell<Option<DeviceCoords>>,
 }
 
 impl GenericContext {
     pub fn new() -> Self {
         GenericContext {
-            xy_envelope: XYRect {
+            xy_envelope: Cell::new(XYRect {
                 lower_left: XYCoords { x: 0.0, y: 0.0 },
                 upper_right: XYCoords { x: 1.0, y: 1.0 },
-            },
+            }),
 
             // Sounding Area GUI state
-            zoom_factor: 1.0,
-            translate: XYCoords::origin(),
-            last_cursor_position: None,
-            left_button_pressed: false,
+            zoom_factor: Cell::new(1.0),
+            translate: Cell::new(XYCoords::origin()),
+            last_cursor_position: Cell::new(None),
+            left_button_pressed: Cell::new(false),
         }
     }
 }
 
 impl PlotContext for GenericContext {
     fn get_xy_envelope(&self) -> XYRect {
-        self.xy_envelope
+        self.xy_envelope.get()
     }
 
-    fn set_xy_envelope(&mut self, new_envelope: XYRect) {
-        self.xy_envelope = new_envelope;
+    fn set_xy_envelope(&self, new_envelope: XYRect) {
+        self.xy_envelope.set(new_envelope);
     }
 
     fn get_zoom_factor(&self) -> f64 {
-        self.zoom_factor
+        self.zoom_factor.get()
     }
 
-    fn set_zoom_factor(&mut self, new_zoom_factor: f64) {
-        self.zoom_factor = new_zoom_factor;
+    fn set_zoom_factor(&self, new_zoom_factor: f64) {
+        self.zoom_factor.set(new_zoom_factor);
     }
 
     fn get_translate(&self) -> XYCoords {
-        self.translate
+        self.translate.get()
     }
 
-    fn set_translate(&mut self, new_translate: XYCoords) {
-        self.translate = new_translate;
+    fn set_translate(&self, new_translate: XYCoords) {
+        self.translate.set(new_translate);
     }
 
     fn get_left_button_pressed(&self) -> bool {
-        self.left_button_pressed
+        self.left_button_pressed.get()
     }
 
-    fn set_left_button_pressed(&mut self, pressed: bool) {
-        self.left_button_pressed = pressed;
+    fn set_left_button_pressed(&self, pressed: bool) {
+        self.left_button_pressed.set(pressed);
     }
 
     fn get_last_cursor_position(&self) -> Option<DeviceCoords> {
-        self.last_cursor_position
+        self.last_cursor_position.get()
     }
 
-    fn set_last_cursor_position<T>(&mut self, new_position: T)
+    fn set_last_cursor_position<T>(&self, new_position: T)
     where
         Option<DeviceCoords>: From<T>,
     {
-        self.last_cursor_position = Option::from(new_position);
+        self.last_cursor_position.set(Option::from(new_position));
     }
 }
 
 pub trait HasGenericContext {
     fn get_generic_context(&self) -> &GenericContext;
-    fn get_generic_context_mut(&mut self) -> &mut GenericContext;
 }
 
 impl<T> PlotContext for T
@@ -323,47 +324,43 @@ where
         self.get_generic_context().get_xy_envelope()
     }
 
-    fn set_xy_envelope(&mut self, new_envelope: XYRect) {
-        self.get_generic_context_mut().set_xy_envelope(new_envelope);
+    fn set_xy_envelope(&self, new_envelope: XYRect) {
+        self.get_generic_context().set_xy_envelope(new_envelope);
     }
 
     fn get_zoom_factor(&self) -> f64 {
         self.get_generic_context().get_zoom_factor()
     }
 
-    fn set_zoom_factor(&mut self, new_zoom_factor: f64) {
-        self.get_generic_context_mut().set_zoom_factor(
-            new_zoom_factor,
-        );
+    fn set_zoom_factor(&self, new_zoom_factor: f64) {
+        self.get_generic_context().set_zoom_factor(new_zoom_factor);
     }
 
     fn get_translate(&self) -> XYCoords {
         self.get_generic_context().get_translate()
     }
 
-    fn set_translate(&mut self, new_translate: XYCoords) {
-        self.get_generic_context_mut().set_translate(new_translate);
+    fn set_translate(&self, new_translate: XYCoords) {
+        self.get_generic_context().set_translate(new_translate);
     }
 
     fn get_left_button_pressed(&self) -> bool {
         self.get_generic_context().get_left_button_pressed()
     }
 
-    fn set_left_button_pressed(&mut self, pressed: bool) {
-        self.get_generic_context_mut().set_left_button_pressed(
-            pressed,
-        );
+    fn set_left_button_pressed(&self, pressed: bool) {
+        self.get_generic_context().set_left_button_pressed(pressed);
     }
 
     fn get_last_cursor_position(&self) -> Option<DeviceCoords> {
         self.get_generic_context().get_last_cursor_position()
     }
 
-    fn set_last_cursor_position<U>(&mut self, new_position: U)
+    fn set_last_cursor_position<U>(&self, new_position: U)
     where
         Option<DeviceCoords>: From<U>,
     {
-        self.get_generic_context_mut().set_last_cursor_position(
+        self.get_generic_context().set_last_cursor_position(
             new_position,
         );
     }

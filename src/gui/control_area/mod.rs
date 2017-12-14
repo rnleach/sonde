@@ -1,40 +1,41 @@
 #![macro_use]
+
 use gtk::prelude::*;
 use gtk::Notebook;
 
 use app::AppContextPointer;
 
 macro_rules! build_config_color_and_check {
-    ($v_box:ident, $label:expr, $acp:ident, $show_var:ident, $color_var:ident) => {
+    ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let check = CheckButton::new_with_label($label);
         let color = ColorButton::new();
 
         // Inner scope to borrow acp
         {
-            let ac = $acp.borrow();
-            check.set_active(ac.config.$show_var);
+            let config = $acp_in.config.borrow();
+            check.set_active(config.$show_var);
 
-            let rgba = ac.config.$color_var;
+            let rgba = config.$color_var;
             color.set_rgba(&RGBA{red:rgba.0, green:rgba.1, blue:rgba.2, alpha:rgba.3});
         }
 
         // Create check button callback
-        let acp1 = $acp.clone();
+        let acp = Rc::clone(&$acp_in);
         check.connect_toggled(move|button|{
-            let mut ac = acp1.borrow_mut();
-            ac.config.$show_var = button.get_active();
-            ac.update_all_gui();
+            let mut config = acp.config.borrow_mut();
+            config.$show_var = button.get_active();
+            acp.update_all_gui();
         });
 
         // Create color button callback
-        let acp2 = $acp.clone();
+        let acp = Rc::clone(&$acp_in);
         ColorButtonExt::connect_property_rgba_notify(&color, move|button|{
-            let mut ac = acp2.borrow_mut();
+            let mut config = acp.config.borrow_mut();
             let rgba = button.get_rgba();
 
-            ac.config.$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-            ac.update_all_gui();
+            config.$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+            acp.update_all_gui();
         });
 
         // Layout
@@ -49,18 +50,13 @@ macro_rules! build_config_check{
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let check = CheckButton::new_with_label($label);
 
-        // Inner scope to borrow acp
-        {
-            let ac = $acp.borrow();
-            check.set_active(ac.config.$show_var);
-        }
+        check.set_active($acp.config.borrow().$show_var);
 
         // Create check button callback
-        let acp1 = $acp.clone();
+        let acp = $acp.clone();
         check.connect_toggled(move|button|{
-            let mut ac = acp1.borrow_mut();
-            ac.config.$show_var = button.get_active();
-            ac.update_all_gui();
+            acp.config.borrow_mut().$show_var = button.get_active();
+            acp.update_all_gui();
         });
 
         // Layout

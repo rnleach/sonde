@@ -13,6 +13,7 @@ pub fn prepare_to_draw(args: DrawingArgs) {
     use gui::LazyDrawingCacheVar::{SkewTScaleFactor, SkewTZoomFactor};
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     let scale_factor = ac.drawing_cache.get(SkewTScaleFactor, args);
     let skew_t_zoom_factor = ac.drawing_cache.get(SkewTZoomFactor, args);
@@ -24,10 +25,10 @@ pub fn prepare_to_draw(args: DrawingArgs) {
     // Fill with backgound color
     cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
     cr.set_source_rgba(
-        ac.config.background_rgba.0,
-        ac.config.background_rgba.1,
-        ac.config.background_rgba.2,
-        ac.config.background_rgba.3,
+        config.background_rgba.0,
+        config.background_rgba.1,
+        config.background_rgba.2,
+        config.background_rgba.3,
     );
     cr.fill();
 
@@ -63,7 +64,7 @@ pub fn prepare_to_draw(args: DrawingArgs) {
 
 pub fn draw_background(args: DrawingArgs) {
 
-    if args.ac.config.show_dendritic_zone {
+    if args.ac.config.borrow().show_dendritic_zone {
         background::draw_dendtritic_snow_growth_zone(args);
     }
 
@@ -75,8 +76,9 @@ pub fn draw_rh_profile(args: DrawingArgs) {
     use gui::plot_context::PlotContext;
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    if !ac.config.show_rh_profile {
+    if !config.show_rh_profile {
         return;
     }
 
@@ -112,8 +114,8 @@ pub fn draw_rh_profile(args: DrawingArgs) {
                 }
             });
 
-        let line_width = ac.config.omega_line_width;
-        let mut rgba = ac.config.rh_rgba;
+        let line_width = config.omega_line_width;
+        let mut rgba = config.rh_rgba;
         rgba.3 *= 0.75;
 
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
@@ -173,8 +175,9 @@ pub fn draw_rh_profile(args: DrawingArgs) {
 pub fn draw_omega_profile(args: DrawingArgs) {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    if !ac.config.show_omega_profile {
+    if !config.show_omega_profile {
         return;
     }
 
@@ -183,8 +186,8 @@ pub fn draw_omega_profile(args: DrawingArgs) {
 
         let pres_data = sndg.get_profile(Pressure);
         let omega_data = sndg.get_profile(PressureVerticalVelocity);
-        let line_width = ac.config.omega_line_width;
-        let line_rgba = ac.config.omega_rgba;
+        let line_width = config.omega_line_width;
+        let line_rgba = config.omega_rgba;
 
         let profile_data = pres_data.iter().zip(omega_data.iter()).filter_map(
             |val_pair| {
@@ -208,8 +211,9 @@ pub fn draw_omega_profile(args: DrawingArgs) {
 pub fn draw_active_readout(args: DrawingArgs) {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    if ac.config.show_active_readout {
+    if config.show_active_readout {
         let sample_p = if let Some(sample) = ac.get_sample() {
             if let Some(sample_p) = sample.pressure.as_option() {
                 sample_p
@@ -220,10 +224,10 @@ pub fn draw_active_readout(args: DrawingArgs) {
             return;
         };
 
-        let rgba = ac.config.active_readout_line_rgba;
+        let rgba = config.active_readout_line_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.set_line_width(
-            cr.device_to_user_distance(ac.config.active_readout_line_width, 0.0)
+            cr.device_to_user_distance(config.active_readout_line_width, 0.0)
                 .0,
         );
         let start = ac.rh_omega.convert_wp_to_screen(

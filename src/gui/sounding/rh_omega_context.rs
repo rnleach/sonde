@@ -70,7 +70,7 @@ impl RHOmegaContext {
         self.convert_xy_to_screen(da, xy)
     }
 
-    pub fn set_translate_y(&mut self, new_translate: XYCoords) {
+    pub fn set_translate_y(&self, new_translate: XYCoords) {
         let mut translate = self.get_translate();
         translate.y = new_translate.y;
         self.generic.set_translate(translate);
@@ -118,7 +118,7 @@ impl PlotContext for RHOmegaContext {
         self.generic.get_xy_envelope()
     }
 
-    fn set_xy_envelope(&mut self, new_envelope: XYRect) {
+    fn set_xy_envelope(&self, new_envelope: XYRect) {
         self.generic.set_xy_envelope(new_envelope);
     }
 
@@ -126,7 +126,7 @@ impl PlotContext for RHOmegaContext {
         self.generic.get_zoom_factor()
     }
 
-    fn set_zoom_factor(&mut self, new_zoom_factor: f64) {
+    fn set_zoom_factor(&self, new_zoom_factor: f64) {
         self.generic.set_zoom_factor(new_zoom_factor);
     }
 
@@ -134,7 +134,7 @@ impl PlotContext for RHOmegaContext {
         self.generic.get_translate()
     }
 
-    fn set_translate(&mut self, new_translate: XYCoords) {
+    fn set_translate(&self, new_translate: XYCoords) {
         self.generic.set_translate(new_translate);
     }
 
@@ -142,7 +142,7 @@ impl PlotContext for RHOmegaContext {
         self.generic.get_left_button_pressed()
     }
 
-    fn set_left_button_pressed(&mut self, pressed: bool) {
+    fn set_left_button_pressed(&self, pressed: bool) {
         self.generic.set_left_button_pressed(pressed);
     }
 
@@ -150,14 +150,14 @@ impl PlotContext for RHOmegaContext {
         self.generic.get_last_cursor_position()
     }
 
-    fn set_last_cursor_position<U>(&mut self, new_position: U)
+    fn set_last_cursor_position<U>(&self, new_position: U)
     where
         Option<DeviceCoords>: From<U>,
     {
         self.generic.set_last_cursor_position(new_position);
     }
 
-    fn zoom_to_envelope(&mut self, _da: &DrawingArea) {
+    fn zoom_to_envelope(&self, _da: &DrawingArea) {
 
         let xy_envelope = self.get_xy_envelope();
 

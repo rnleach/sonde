@@ -5,16 +5,17 @@ use gui::{PlotContext, DrawingArgs, plot_curve_from_points, plot_dashed_curve_fr
 
 pub fn draw_background_fill(args: DrawingArgs) {
     let ac = args.ac;
+    let config = ac.config.borrow();
 
-    if ac.config.show_background_bands {
+    if config.show_background_bands {
         draw_temperature_banding(args);
     }
 
-    if ac.config.show_hail_zone {
+    if config.show_hail_zone {
         draw_hail_growth_zone(args);
     }
 
-    if ac.config.show_dendritic_zone {
+    if config.show_dendritic_zone {
         draw_dendtritic_growth_zone(args);
     }
 }
@@ -22,86 +23,73 @@ pub fn draw_background_fill(args: DrawingArgs) {
 // Draw isentrops, isotherms, isobars, ...
 pub fn draw_background_lines(args: DrawingArgs) {
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     // Draws background lines from the bottom up.
 
     // Draw isentrops
-    if ac.config.show_isentrops {
+    if config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
                 ac.skew_t.convert_xy_to_screen(da, *xy_coords)
             });
-            plot_curve_from_points(
-                cr,
-                ac.config.background_line_width,
-                ac.config.isentrop_rgba,
-                pnts,
-            );
+            plot_curve_from_points(cr, config.background_line_width, config.isentrop_rgba, pnts);
         }
     }
 
     // Draw theta-e lines
-    if ac.config.show_iso_theta_e {
+    if config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
                 ac.skew_t.convert_xy_to_screen(da, *xy_coords)
             });
             plot_curve_from_points(
                 cr,
-                ac.config.background_line_width,
-                ac.config.iso_theta_e_rgba,
+                config.background_line_width,
+                config.iso_theta_e_rgba,
                 pnts,
             );
         }
     }
 
     // Draw mixing ratio lines
-    if ac.config.show_iso_mixing_ratio {
+    if config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
                 ac.skew_t.convert_xy_to_screen(da, *xy_coords)
             });
             plot_dashed_curve_from_points(
                 cr,
-                ac.config.background_line_width,
-                ac.config.iso_mixing_ratio_rgba,
+                config.background_line_width,
+                config.iso_mixing_ratio_rgba,
                 pnts,
             );
         }
     }
 
     // Draw isotherms
-    if ac.config.show_isotherms {
+    if config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
                 ac.skew_t.convert_xy_to_screen(da, *tp_coords)
             });
-            plot_curve_from_points(
-                cr,
-                ac.config.background_line_width,
-                ac.config.isotherm_rgba,
-                pnts,
-            );
+            plot_curve_from_points(cr, config.background_line_width, config.isotherm_rgba, pnts);
         }
     }
 
     // Draw isobars
-    if ac.config.show_isobars {
+    if config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
                 ac.skew_t.convert_xy_to_screen(da, *xy_coords)
             });
-            plot_curve_from_points(
-                cr,
-                ac.config.background_line_width,
-                ac.config.isobar_rgba,
-                pnts,
-            );
+
+            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
     }
 
     // Draw the freezing line
-    if ac.config.show_freezing_line {
+    if config.show_freezing_line {
         let pnts = &[
             TPCoords {
                 temperature: 0.0,
@@ -117,8 +105,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
         });
         plot_curve_from_points(
             cr,
-            ac.config.freezing_line_width,
-            ac.config.freezing_line_color,
+            config.freezing_line_width,
+            config.freezing_line_color,
             pnts,
         );
     }
@@ -127,7 +115,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
 fn draw_temperature_banding(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
 
-    let rgba = ac.config.background_band_rgba;
+    let rgba = ac.config.borrow().background_band_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     let mut start_line = -160i32;
     while start_line < 100 {
@@ -143,7 +131,7 @@ fn draw_temperature_banding(args: DrawingArgs) {
 fn draw_hail_growth_zone(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
 
-    let rgba = ac.config.hail_zone_rgba;
+    let rgba = ac.config.borrow().hail_zone_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     draw_temperature_band(-30.0, -10.0, args);
 }
@@ -151,7 +139,7 @@ fn draw_hail_growth_zone(args: DrawingArgs) {
 fn draw_dendtritic_growth_zone(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
 
-    let rgba = ac.config.dendritic_zone_rgba;
+    let rgba = ac.config.borrow().dendritic_zone_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     draw_temperature_band(-18.0, -12.0, args);

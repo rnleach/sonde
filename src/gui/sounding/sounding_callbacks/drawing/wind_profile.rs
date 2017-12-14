@@ -7,6 +7,7 @@ use gui::DrawingArgs;
 pub fn draw_wind_profile(args: DrawingArgs) {
 
     let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
 
     let snd = if let Some(snd) = ac.get_sounding_for_display() {
         snd
@@ -15,13 +16,13 @@ pub fn draw_wind_profile(args: DrawingArgs) {
     };
 
     let barb_config = WindBarbConfig::init(args);
-    let barb_data = gather_wind_data(snd, &barb_config, args);
+    let barb_data = gather_wind_data(&snd, &barb_config, args);
     let barb_data = filter_wind_data(args, barb_data);
 
-    let rgba = ac.config.wind_rgba;
+    let rgba = config.wind_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.set_line_width(
-        cr.device_to_user_distance(ac.config.wind_barb_line_width, 0.0)
+        cr.device_to_user_distance(config.wind_barb_line_width, 0.0)
             .0,
     );
 
@@ -100,15 +101,16 @@ impl WindBarbConfig {
         use gui::LazyDrawingCacheVar::SkewTEdgePadding;
 
         let (ac, cr, da) = (args.ac, args.cr, args.da);
+        let config = ac.config.borrow();
 
         let (shaft_length, barb_length) = cr.device_to_user_distance(
-            ac.config.wind_barb_shaft_length,
-            -ac.config.wind_barb_barb_length,
+            config.wind_barb_shaft_length,
+            -config.wind_barb_barb_length,
         );
 
         let (dot_size, pennant_width) = cr.device_to_user_distance(
-            ac.config.wind_barb_dot_radius,
-            -ac.config.wind_barb_pennant_width,
+            config.wind_barb_dot_radius,
+            -config.wind_barb_pennant_width,
         );
         let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
 

@@ -13,6 +13,7 @@ pub enum TemperatureType {
 // Draw the temperature profile
 pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     use sounding_base::Profile::{Pressure, Temperature, WetBulb, DewPoint};
 
@@ -26,15 +27,15 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
         };
 
         let line_width = match t_type {
-            TemperatureType::DryBulb => ac.config.temperature_line_width,
-            TemperatureType::WetBulb => ac.config.wet_bulb_line_width,
-            TemperatureType::DewPoint => ac.config.dew_point_line_width,
+            TemperatureType::DryBulb => config.temperature_line_width,
+            TemperatureType::WetBulb => config.wet_bulb_line_width,
+            TemperatureType::DewPoint => config.dew_point_line_width,
         };
 
         let line_rgba = match t_type {
-            TemperatureType::DryBulb => ac.config.temperature_rgba,
-            TemperatureType::WetBulb => ac.config.wet_bulb_rgba,
-            TemperatureType::DewPoint => ac.config.dew_point_rgba,
+            TemperatureType::DryBulb => config.temperature_rgba,
+            TemperatureType::WetBulb => config.wet_bulb_rgba,
+            TemperatureType::DewPoint => config.dew_point_rgba,
         };
 
         let profile_data = pres_data.iter().zip(temp_data.iter()).filter_map(

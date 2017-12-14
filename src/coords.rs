@@ -63,7 +63,7 @@ pub trait Rect {
 
 /// Temperature-Pressure coordinates.
 /// Origin lower left. (Temperature, Pressure)
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct TPCoords {
     /// Temperature in Celsius
     pub temperature: f64,
@@ -75,7 +75,7 @@ impl TPCoords {}
 
 /// Speed-Direction coordinates for the hodograph.
 /// Origin center. (Speed, Direction wind is from)
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct SDCoords {
     /// Speed in knots
     pub speed: f64,
@@ -87,7 +87,7 @@ impl TPCoords {}
 
 /// Omega-Pressure coordinates.
 /// Origin lower left. (Omega, Pressure)
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct WPCoords {
     /// Omega in Pa/s
     pub w: f64,
@@ -100,7 +100,7 @@ impl WPCoords {}
 /// XY coordinates of the skew-t graph, range 0.0 to 1.0. This coordinate system is dependend on
 /// settings for the maximum/minimum plottable pressure and temperatures in the config module.
 /// Origin lower left, (x,y)
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct XYCoords {
     pub x: f64,
     pub y: f64,
@@ -115,7 +115,7 @@ impl XYCoords {
 /// On screen coordinates. Meant to scale and translate `XYCoords` to fit on the screen.
 /// Origin lower left, (x,y).
 /// When drawing using cairo functions, use these coordinates.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct ScreenCoords {
     pub x: f64,
     pub y: f64,

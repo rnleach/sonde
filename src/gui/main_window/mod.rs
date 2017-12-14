@@ -14,16 +14,15 @@ use gui::Gui;
 
 mod menu_callbacks;
 
-pub fn layout(gui: &Gui, app_context: &AppContextPointer) {
+pub fn layout(gui: &Gui, ac: &AppContextPointer) {
 
-    let ac = app_context.borrow();
     let window = gui.get_window();
 
     // Build the menu bar
-    let menu_bar = build_menu_bar(app_context, &window);
+    let menu_bar = build_menu_bar(ac, &window);
 
     // Layout main gui areas
-    let frames = layout_frames(gui, &ac);
+    let frames = layout_frames(gui, ac);
 
     // Layout everything else
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -31,7 +30,7 @@ pub fn layout(gui: &Gui, app_context: &AppContextPointer) {
     v_box.pack_start(&frames, true, true, 0);
     window.add(&v_box);
 
-    configure_main_window(&window, &ac);
+    configure_main_window(&window, ac);
 }
 
 fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
@@ -149,9 +148,12 @@ fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
 }
 
 fn get_preferred_window_size<T: WidgetExt>(widget: &T, ac: &AppContext) -> (i32, i32) {
-    if let Some(screen) = widget.get_screen(){
+
+    let config = ac.config.borrow();
+
+    if let Some(screen) = widget.get_screen() {
         (screen.get_width() * 2 / 3, screen.get_height() * 2 / 3)
     } else {
-        (ac.config.window_width, ac.config.window_height)
+        (config.window_width, config.window_height)
     }
 }

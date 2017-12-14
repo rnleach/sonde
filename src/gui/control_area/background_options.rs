@@ -80,18 +80,13 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let omega = CheckButton::new();
 
-    // Inner scope to borrow acp
-    {
-        let ac = acp.borrow();
-        omega.set_active(ac.config.show_iso_omega_lines);
-    }
+    omega.set_active(acp.config.borrow().show_iso_omega_lines);
 
     // Create rh_omega callback
-    let acp1 = Rc::clone(acp);
+    let ac = Rc::clone(acp);
     omega.connect_toggled(move |button| {
-        let mut ac = acp1.borrow_mut();
 
-        ac.config.show_iso_omega_lines = button.get_active();
+        ac.config.borrow_mut().show_iso_omega_lines = button.get_active();
         ac.update_all_gui();
     });
 
@@ -147,26 +142,20 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let color = ColorButton::new();
 
-    // Inner scope to borrow acp
-    {
-        let ac = acp.borrow();
-
-        let rgba = ac.config.background_rgba;
-        color.set_rgba(&RGBA {
-            red: rgba.0,
-            green: rgba.1,
-            blue: rgba.2,
-            alpha: rgba.3,
-        });
-    }
+    let rgba = acp.config.borrow().background_rgba;
+    color.set_rgba(&RGBA {
+        red: rgba.0,
+        green: rgba.1,
+        blue: rgba.2,
+        alpha: rgba.3,
+    });
 
     // Create color button callback
-    let acp1 = Rc::clone(acp);
+    let ac = Rc::clone(acp);
     ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
-        let mut ac = acp1.borrow_mut();
         let rgba = button.get_rgba();
 
-        ac.config.background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+        ac.config.borrow_mut().background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
         ac.update_all_gui();
     });
 

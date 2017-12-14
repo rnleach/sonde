@@ -112,7 +112,7 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
             // I don't totally understand this, but after quite a lot of experimentation this works
             // well at keeping the scroll of the text view in the same area as you step through
             // time.
-            if !ac.config.show_active_readout {
+            if !ac.config.borrow().show_active_readout {
                 if let Some(adj) = text_area.get_vadjustment() {
                     if let Some(val) = old_adj {
                         let val =
@@ -179,8 +179,9 @@ pub fn make_header_text_area() -> TextView {
 
 pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
     use std::str::FromStr;
+    let config = ac.config.borrow();
 
-    if !ac.config.show_active_readout {
+    if !config.show_active_readout {
         return;
     }
 
@@ -224,7 +225,7 @@ pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
                 if let Some(tt) = tb.get_tag_table() {
 
                     // Set line colors
-                    let rgba = ac.config.active_readout_line_rgba;
+                    let rgba = config.active_readout_line_rgba;
                     let range = below_val - above_val;
                     let alpha_below = (tp - above_val) / range;
                     let alpha_above = 1.0 - alpha_below;

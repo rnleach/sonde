@@ -72,8 +72,4 @@ impl HasGenericContext for SkewTContext {
     fn get_generic_context(&self) -> &GenericContext {
         &self.generic
     }
-
-    fn get_generic_context_mut(&mut self) -> &mut GenericContext {
-        &mut self.generic
-    }
 }

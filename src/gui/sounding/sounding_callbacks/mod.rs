@@ -15,8 +15,6 @@ mod drawing;
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw_sounding(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
-    let ac = &ac.borrow();
-
     let args = DrawingArgs::new(ac, cr, da);
 
     drawing::prepare_to_draw(args);
@@ -39,8 +37,6 @@ pub fn scroll_event(
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
-
-    let mut ac = ac.borrow_mut();
 
     let pos = ac.skew_t.convert_device_to_xy(
         sounding_area,
@@ -96,7 +92,6 @@ pub fn button_press_event(
 
     // Left mouse button
     if event.get_button() == 1 {
-        let mut ac = ac.borrow_mut();
         ac.skew_t.set_last_cursor_position(
             Some(event.get_position().into()),
         );
@@ -114,7 +109,6 @@ pub fn button_release_event(
     ac: &AppContextPointer,
 ) -> Inhibit {
     if event.get_button() == 1 {
-        let mut ac = ac.borrow_mut();
         ac.skew_t.set_last_cursor_position(None);
         ac.skew_t.set_left_button_pressed(false);
         Inhibit(true)
@@ -129,7 +123,6 @@ pub fn leave_event(
     _event: &EventCrossing,
     ac: &AppContextPointer,
 ) -> Inhibit {
-    let mut ac = ac.borrow_mut();
 
     ac.skew_t.set_last_cursor_position(None);
     ac.set_sample(None);
@@ -147,7 +140,6 @@ pub fn mouse_motion_event(
 
     sounding_area.grab_focus();
 
-    let mut ac = ac.borrow_mut();
     if ac.skew_t.get_left_button_pressed() {
         if let Some(last_position) = ac.skew_t.get_last_cursor_position() {
             let old_position = ac.skew_t.convert_device_to_xy(sounding_area, last_position);
@@ -178,7 +170,7 @@ pub fn mouse_motion_event(
         ac.skew_t.set_last_cursor_position(Some(position));
         let tp_position = ac.skew_t.convert_device_to_tp(sounding_area, position);
         let sample = ::sounding_analysis::linear_interpolate(
-            ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+            &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
             tp_position.pressure,
         );
         ac.set_sample(Some(sample));
@@ -205,11 +197,9 @@ pub fn key_press_event(
 
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
-        let mut ac = ac.borrow_mut();
         ac.display_next();
         Inhibit(true)
     } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
-        let mut ac = ac.borrow_mut();
         ac.display_previous();
         Inhibit(true)
     } else {

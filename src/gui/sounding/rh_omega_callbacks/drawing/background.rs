@@ -10,30 +10,26 @@ use gui::{PlotContext, DrawingArgs, set_font_size};
 pub fn draw_background_lines(args: DrawingArgs) {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     // Draw isobars
-    if ac.config.show_isobars {
+    if config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
                 ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
             });
-            plot_curve_from_points(
-                cr,
-                ac.config.background_line_width,
-                ac.config.isobar_rgba,
-                pnts,
-            );
+            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
     }
 
     // Draw w-lines
-    if ac.config.show_iso_omega_lines {
+    if config.show_iso_omega_lines {
         for v_line in config::ISO_OMEGA_PNTS.iter() {
 
             plot_curve_from_points(
                 cr,
-                ac.config.background_line_width,
-                ac.config.isobar_rgba,
+                config.background_line_width,
+                config.isobar_rgba,
                 v_line.iter().map(|xy_coords| {
                     ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
                 }),
@@ -43,8 +39,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
         // Make a thicker zero line
         plot_curve_from_points(
             cr,
-            ac.config.background_line_width * 2.6,
-            ac.config.isobar_rgba,
+            config.background_line_width * 2.6,
+            config.isobar_rgba,
             ([
                 WPCoords {
                     w: 0.0,
@@ -66,9 +62,9 @@ pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
     let (ac, cr, da) = (args.ac, args.cr, args.da);
 
     // If is plottable, draw snow growth zones
-    if let Some(snd) = ac.get_sounding_for_display() {
+    if let Some(ref snd) = ac.get_sounding_for_display() {
 
-        let rgba = ac.config.dendritic_zone_rgba;
+        let rgba = ac.config.borrow().dendritic_zone_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
         for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
@@ -111,14 +107,15 @@ pub fn draw_labels(args: DrawingArgs) {
     use gui::LazyDrawingCacheVar::OmegaLabelPadding;
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    if ac.config.show_labels {
+    if config.show_labels {
         let font_face =
-            FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
+            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
 
-        set_font_size(&ac.rh_omega, da, ac.config.label_font_size, cr, ac);
+        set_font_size(&ac.rh_omega, da, config.label_font_size, cr, ac);
 
         let labels = collect_labels(args);
         let padding = ac.drawing_cache.get(OmegaLabelPadding, args);
@@ -126,7 +123,7 @@ pub fn draw_labels(args: DrawingArgs) {
         for (label, rect) in labels {
             let ScreenRect { lower_left, .. } = rect;
 
-            let mut rgba = ac.config.background_rgba;
+            let mut rgba = config.background_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.rectangle(
                 lower_left.x - padding,
@@ -137,7 +134,7 @@ pub fn draw_labels(args: DrawingArgs) {
             cr.fill();
 
             // Setup label colors
-            rgba = ac.config.label_rgba;
+            rgba = config.label_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.move_to(lower_left.x, lower_left.y);
             cr.show_text(&label);
@@ -149,13 +146,14 @@ pub fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
     use gui::plot_context::PlotContext;
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     let mut labels = vec![];
 
     let screen_edges = ac.rh_omega.calculate_plot_edges(da, cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
-    if ac.config.show_iso_omega_lines {
+    if config.show_iso_omega_lines {
         let WPCoords { p: screen_max_p, .. } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
         for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {

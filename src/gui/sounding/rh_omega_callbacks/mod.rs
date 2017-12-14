@@ -3,7 +3,7 @@ use gtk::prelude::*;
 use gtk::{DrawingArea, Inhibit};
 use gdk::{EventMotion, EventCrossing};
 
-use app::AppContextPointer;
+use app::AppContext;
 use coords::DeviceCoords;
 use gui::DrawingArgs;
 
@@ -13,9 +13,8 @@ pub mod drawing;
 pub fn leave_event(
     _sounding_area: &DrawingArea,
     _event: &EventCrossing,
-    ac: &AppContextPointer,
+    ac: &AppContext,
 ) -> Inhibit {
-    let mut ac = ac.borrow_mut();
 
     ac.set_sample(None);
     ac.update_all_gui();
@@ -27,18 +26,17 @@ pub fn leave_event(
 pub fn mouse_motion_event(
     rh_omega_area: &DrawingArea,
     event: &EventMotion,
-    ac: &AppContextPointer,
+    ac: &AppContext,
 ) -> Inhibit {
 
     rh_omega_area.grab_focus();
 
-    let mut ac = ac.borrow_mut();
     if ac.plottable() {
         let position: DeviceCoords = event.get_position().into();
 
         let wp_position = ac.rh_omega.convert_device_to_wp(rh_omega_area, position);
         let sample = ::sounding_analysis::linear_interpolate(
-            ac.get_sounding_for_display().unwrap(),
+            &ac.get_sounding_for_display().unwrap(),
             wp_position.p,
         );
         ac.set_sample(Some(sample));
@@ -48,9 +46,7 @@ pub fn mouse_motion_event(
     Inhibit(false)
 }
 
-pub fn draw_rh_omega(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
-
-    let ac = &ac.borrow();
+pub fn draw_rh_omega(da: &DrawingArea, cr: &Context, ac: &AppContext) -> Inhibit {
 
     let args = DrawingArgs::new(ac, cr, da);
 

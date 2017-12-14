@@ -162,7 +162,8 @@ fn check_overlap_then_add(
     label_pair: (String, ScreenRect),
 ) {
 
-    let padding = cr.device_to_user_distance(ac.config.label_padding, 0.0).0;
+    let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+        .0;
     let padded_rect = label_pair.1.add_padding(padding);
 
     // Make sure it is on screen - but don't add padding to this check cause the screen already
@@ -194,6 +195,7 @@ impl<'a, 'b, 'c> DrawingArgs<'a, 'b, 'c> {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum LazyDrawingCacheVar {
     SkewTLabelPadding,
     SkewTEdgePadding,
@@ -220,7 +222,9 @@ pub struct LazyDrawingCache {
 impl LazyDrawingCache {
     pub fn get(&self, var: LazyDrawingCacheVar, args: DrawingArgs) -> f64 {
         use self::LazyDrawingCacheVar::*;
+
         let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
 
         macro_rules! make_cache_getter {
             ($var:ident, $val:expr) => {
@@ -239,19 +243,19 @@ impl LazyDrawingCache {
             SkewTLabelPadding => {
                 make_cache_getter!(
                     skew_t_label_padding,
-                    cr.device_to_user_distance(ac.config.label_padding, 0.0).0
+                    cr.device_to_user_distance(config.label_padding, 0.0).0
                 )
             }
             SkewTEdgePadding => {
                 make_cache_getter!(
                     skew_t_edge_padding,
-                    cr.device_to_user_distance(ac.config.edge_padding, 0.0).0
+                    cr.device_to_user_distance(config.edge_padding, 0.0).0
                 )
             }
             SkewTZoomFactor => make_cache_getter!(skew_t_zoom_factor, ac.skew_t.get_zoom_factor()),
             SkewTScaleFactor => {
                 make_cache_getter!(skew_t_scale_factor, {
-                    if let Some(ref gui) = ac.gui {
+                    if let Some(ref gui) = *ac.gui.borrow() {
                         let da = &gui.get_sounding_area();
                         SkewTContext::scale_factor(da)
                     } else {
@@ -262,28 +266,39 @@ impl LazyDrawingCache {
             OmegaLabelPadding => {
                 make_cache_getter!(
                     omega_label_padding,
-                    cr.device_to_user_distance(ac.config.label_padding, 0.0).0
+                    cr.device_to_user_distance(config.label_padding, 0.0).0
                 )
             }
             // OmegaEdgePadding => {
             //     make_cache_getter!(
             //         omega_edge_padding,
-            //         cr.device_to_user_distance(ac.config.edge_padding, 0.0).0
+            //         cr.device_to_user_distance(config.edge_padding, 0.0).0
             //     )
             // }
             // HodoLabelPadding => {
             //     make_cache_getter!(
             //         hodo_label_padding,
-            //         cr.device_to_user_distance(ac.config.label_padding, 0.0).0
+            //         cr.device_to_user_distance(config.label_padding, 0.0).0
             //     )
             // }
             // HodoEdgePadding => {
             //     make_cache_getter!(
             //         hodo_edge_padding,
-            //         cr.device_to_user_distance(ac.config.edge_padding, 0.0).0
+            //         cr.device_to_user_distance(config.edge_padding, 0.0).0
             //     )
             // }
         }
+    }
+
+    pub fn reset(&self) {
+        self.skew_t_label_padding.set(None);
+        self.skew_t_edge_padding.set(None);
+        self.skew_t_zoom_factor.set(None);
+        self.skew_t_scale_factor.set(None);
+        self.omega_label_padding.set(None);
+        self.omega_edge_padding.set(None);
+        self.hodo_label_padding.set(None);
+        self.hodo_edge_padding.set(None);
     }
 }
 
@@ -296,9 +311,7 @@ fn set_font_size<T: PlotContext>(
 ) {
 
     let dpi = match ac.get_dpi() {
-        None => {
-            72.0
-        },
+        None => 72.0,
         Some(value) => value,
     };
 

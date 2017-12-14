@@ -9,11 +9,12 @@ use cairo::{FontExtents, FontFace, FontSlant, FontWeight};
 pub fn prepare_to_label(args: DrawingArgs) {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
-    let font_face = FontFace::toy_create(&ac.config.font_name, FontSlant::Normal, FontWeight::Bold);
+    let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    set_font_size(&ac.skew_t, da, ac.config.label_font_size, cr, ac);
+    set_font_size(&ac.skew_t, da, config.label_font_size, cr, ac);
 }
 
 // Label the pressure, temperatures, etc lines.
@@ -25,13 +26,14 @@ pub fn draw_background_labels(args: DrawingArgs) {
 fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let config = ac.config.borrow();
 
     let mut labels = vec![];
 
     let screen_edges = ac.skew_t.calculate_plot_edges(da, cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
-    if ac.config.show_isobars {
+    if config.show_isobars {
         for &p in &config::ISOBARS {
 
             let label = format!("{}", p);
@@ -68,7 +70,7 @@ fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
         }
     }
 
-    if ac.config.show_isotherms {
+    if config.show_isotherms {
         let TPCoords { pressure: screen_max_p, .. } = ac.skew_t.convert_screen_to_tp(lower_left);
         for &t in &config::ISOTHERMS {
 
@@ -115,13 +117,14 @@ fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
     use gui::LazyDrawingCacheVar::SkewTLabelPadding;
 
     let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
 
     let padding = ac.drawing_cache.get(SkewTLabelPadding, args);
 
     for (label, rect) in labels {
         let ScreenRect { lower_left, .. } = rect;
 
-        let mut rgba = ac.config.background_rgba;
+        let mut rgba = config.background_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.rectangle(
             lower_left.x - padding,
@@ -132,7 +135,7 @@ fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
         cr.fill();
 
         // Setup label colors
-        rgba = ac.config.label_rgba;
+        rgba = config.label_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.move_to(lower_left.x, lower_left.y);
         cr.show_text(&label);
@@ -145,7 +148,7 @@ pub fn draw_legend(args: DrawingArgs) {
 
     let (ac, cr, da) = (args.ac, args.cr, args.da);
 
-    if !(ac.plottable() && ac.config.show_legend) {
+    if !(ac.plottable() && ac.config.borrow().show_legend) {
         return;
     }
 
@@ -325,6 +328,7 @@ fn calculate_legend_box_size(
 fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
 
     let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
 
     let ScreenRect { lower_left, .. } = *screen_rect;
 
@@ -335,11 +339,11 @@ fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
         screen_rect.height(),
     );
 
-    let rgb = ac.config.label_rgba;
+    let rgb = config.label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
     cr.stroke_preserve();
-    let rgba = ac.config.background_rgba;
+    let rgba = config.background_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.fill();
 }
@@ -356,7 +360,7 @@ fn draw_legend_text(
 
     let (ac, cr) = (args.ac, args.cr);
 
-    let rgb = ac.config.label_rgba;
+    let rgb = ac.config.borrow().label_rgba;
     cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
     let padding = ac.drawing_cache.get(SkewTEdgePadding, args);

@@ -9,19 +9,21 @@ use coords::{SDCoords, XYCoords};
 use gui::{PlotContext, plot_curve_from_points};
 use gui::hodograph::hodo_context::HodoContext;
 
-pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &mut AppContext) {
+pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     use gui::plot_context::PlotContext;
 
     let alloc = da.get_allocation();
     let scale_factor = HodoContext::scale_factor(da);
 
+    let config = ac.config.borrow();
+
     // Fill with backgound color
     cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
     cr.set_source_rgba(
-        ac.config.background_rgba.0,
-        ac.config.background_rgba.1,
-        ac.config.background_rgba.2,
-        ac.config.background_rgba.3,
+        config.background_rgba.0,
+        config.background_rgba.1,
+        config.background_rgba.2,
+        config.background_rgba.3,
     );
     cr.fill();
 
@@ -59,11 +61,13 @@ pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &mut AppContext)
 
 pub fn draw_hodo_background(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
-    if ac.config.show_background_bands {
+    let config = ac.config.borrow();
+
+    if config.show_background_bands {
         draw_background_fill(da, cr, ac);
     }
 
-    if ac.config.show_iso_speed {
+    if config.show_iso_speed {
         draw_background_lines(da, cr, ac);
     }
 }
@@ -71,7 +75,7 @@ pub fn draw_hodo_background(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 fn draw_background_fill(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
     let mut do_draw = true;
-    let rgba = ac.config.background_band_rgba;
+    let rgba = ac.config.borrow().background_band_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     for pnts in config::ISO_SPEED_PNTS.iter() {
@@ -100,21 +104,26 @@ fn draw_background_fill(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 }
 
 fn draw_background_lines(da: &DrawingArea, cr: &Context, ac: &AppContext) {
+
+    let config = ac.config.borrow();
+
     for pnts in config::ISO_SPEED_PNTS.iter() {
         let pnts = pnts.iter().map(|xy_coords| {
             ac.hodo.convert_xy_to_screen(da, *xy_coords)
         });
         plot_curve_from_points(
             cr,
-            ac.config.background_line_width,
-            ac.config.iso_speed_rgba,
+            config.background_line_width,
+            config.iso_speed_rgba,
             pnts,
         );
     }
 }
 
 pub fn draw_hodo_labels(_cr: &Context, ac: &AppContext) {
-    if ac.config.show_labels {
+    let config = ac.config.borrow();
+
+    if config.show_labels {
         // TODO:
     }
 }
@@ -122,6 +131,8 @@ pub fn draw_hodo_labels(_cr: &Context, ac: &AppContext) {
 pub fn draw_hodo_line(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
     use sounding_base::Profile::{Pressure, WindSpeed, WindDirection};
+
+    let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
 
@@ -152,15 +163,17 @@ pub fn draw_hodo_line(da: &DrawingArea, cr: &Context, ac: &AppContext) {
 
         plot_curve_from_points(
             cr,
-            ac.config.velocity_line_width,
-            ac.config.veclocity_rgba,
+            config.velocity_line_width,
+            config.veclocity_rgba,
             profile_data,
         );
     }
 }
 
 pub fn draw_active_readout(da: &DrawingArea, cr: &Context, ac: &AppContext) {
-    if !ac.config.show_active_readout {
+    let config = ac.config.borrow();
+
+    if !config.show_active_readout {
         return;
     }
 
@@ -177,7 +190,7 @@ pub fn draw_active_readout(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
     let coords = ac.hodo.convert_sd_to_screen(da, SDCoords { speed, dir });
 
-    let rgba = ac.config.active_readout_line_rgba;
+    let rgba = config.active_readout_line_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     cr.arc(
         coords.x,

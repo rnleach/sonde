@@ -24,6 +24,7 @@ use std::rc::Rc;
 
 // Module for maintaining application state
 mod app;
+use app::AppContext;
 
 // Module for coordinate systems
 mod coords;
@@ -37,7 +38,6 @@ mod formula;
 
 // GUI module
 mod gui;
-use gui::LazyDrawingCache;
 
 pub fn run() -> Result<()> {
 
@@ -45,26 +45,20 @@ pub fn run() -> Result<()> {
     gtk::init().chain_err(|| "Error intializing Gtk+3")?;
 
     // Set up data context
-    let app_context = app::AppContext::new();
-    {
-        // Clear the drawing cache each time through the event loop.
-        let acp = Rc::clone(&app_context);
-        gtk::idle_add(move || {
-            let mut ac = acp.borrow_mut();
-            ac.drawing_cache = LazyDrawingCache::default();
-            gtk::Continue(true)
-        });
-    }
+    let app = AppContext::new();
+
+    // Clear the cache every time through the event loop.
+    let ac = Rc::clone(&app);
+    gtk::idle_add(move || {
+        ac.drawing_cache.reset();
+        gtk::Continue(true)
+    });
 
     // Build the GUI
-    let gui = gui::Gui::new(&app_context);
+    let gui = gui::Gui::new(&app);
 
-    // Connect the gui back to the app_context
-    {
-        let mut app = app_context.borrow_mut();
-        app.set_gui(gui.clone());
-        app.show_hide_rh_omega(); // Hide this widget if defaulted in config.
-    }
+    app.set_gui(gui.clone());
+    app.show_hide_rh_omega(); // Hide this widget if defaulted in config.
 
     // Initialize the main loop.
     gtk::main();

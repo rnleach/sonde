@@ -40,7 +40,6 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
 }
 
 fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
-    let mut ac = ac.borrow_mut();
 
     let file = BufkitFile::load(path).chain_err(|| {
         format!("Error loading file {:?}", path)
