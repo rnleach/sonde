@@ -64,18 +64,17 @@ pub fn scroll_event(
     }
     ac.skew_t.set_zoom_factor(new_zoom);
 
-    let translate = ac.skew_t.get_translate();
-    let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
-    let translate_y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
-    let translate = XYCoords {
-        x: translate_x,
-        y: translate_y,
+    let mut translate = ac.skew_t.get_translate();
+    translate = XYCoords {
+        x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+        y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
     };
     ac.skew_t.set_translate(translate);
+    ac.rh_omega.set_translate_y(translate);
 
     // Bound the xy-coords to always be on screen.
     ac.skew_t.bound_view(sounding_area);
-    let translate = ac.skew_t.get_translate();
+    translate = ac.skew_t.get_translate();
     ac.rh_omega.set_translate_y(translate);
 
     ac.update_all_gui();
@@ -158,7 +157,7 @@ pub fn mouse_motion_event(
 
             // Bound the xy-coords to always be on screen.
             ac.skew_t.bound_view(sounding_area);
-            let translate = ac.skew_t.get_translate();
+            translate = ac.skew_t.get_translate();
             ac.rh_omega.set_translate_y(translate);
 
             ac.set_sample(None);

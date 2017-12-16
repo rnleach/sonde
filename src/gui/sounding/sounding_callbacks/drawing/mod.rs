@@ -5,7 +5,6 @@ use gtk::prelude::*;
 
 use coords::XYCoords;
 use gui::plot_context::PlotContext;
-use gui::sounding::skew_t_context::SkewTContext;
 use gui::DrawingArgs;
 
 mod background;
@@ -15,13 +14,14 @@ mod temperature_profile;
 mod wind_profile;
 
 pub fn prepare_to_draw(args: DrawingArgs) {
+    use gui::LazyDrawingCacheVar::SkewTScaleFactor;
 
     let ac = args.ac;
     let cr = args.cr;
     let da = args.da;
     let config = ac.config.borrow();
 
-    let scale_factor = SkewTContext::scale_factor(da);
+    let scale_factor = ac.drawing_cache.get(SkewTScaleFactor, args);
     let alloc = da.get_allocation();
 
     // Fill with backgound color

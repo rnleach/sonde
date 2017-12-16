@@ -169,4 +169,31 @@ impl PlotContext for RHOmegaContext {
 
         self.set_zoom_factor(width_scale);
     }
+
+    fn bound_view(&self, da: &DrawingArea) {
+
+        let alloc = da.get_allocation();
+
+        let bounds = DeviceCoords {
+            col: f64::from(alloc.width),
+            row: f64::from(alloc.height),
+        };
+        let lower_right = self.convert_device_to_xy(da, bounds);
+        let upper_left = self.convert_device_to_xy(da, DeviceCoords { col: 0.0, row: 0.0 });
+        let height = upper_left.y - lower_right.y;
+
+        let mut translate = self.get_translate();
+        if height < 1.0 {
+            if translate.y < 0.0 {
+                translate.y = 0.0;
+            }
+            let max_y = 1.0 - height;
+            if translate.y > max_y {
+                translate.y = max_y;
+            }
+        } else {
+            translate.y = -(height - 1.0) / 2.0;
+        }
+        self.set_translate(translate);
+    }
 }
