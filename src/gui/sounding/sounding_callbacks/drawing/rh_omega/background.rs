@@ -5,18 +5,16 @@ use coords::{WPCoords, ScreenRect, ScreenCoords};
 use gui::{plot_curve_from_points, check_overlap_then_add};
 use gui::{PlotContext, DrawingArgs, set_font_size};
 
-
-
 pub fn draw_background_lines(args: DrawingArgs) {
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     // Draw isobars
     if config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
-                ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
+                ac.rh_omega.convert_xy_to_screen(*xy_coords)
             });
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
@@ -31,7 +29,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
                 config.background_line_width,
                 config.isobar_rgba,
                 v_line.iter().map(|xy_coords| {
-                    ac.rh_omega.convert_xy_to_screen(da, *xy_coords)
+                    ac.rh_omega.convert_xy_to_screen(*xy_coords)
                 }),
             );
         }
@@ -51,7 +49,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
                     p: config::MINP,
                 },
             ]).iter()
-                .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(da, *wp_coords)),
+                .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(*wp_coords)),
         );
     }
 }
@@ -59,7 +57,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
 pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
     use sounding_base::Profile::Pressure;
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
 
     // If is plottable, draw snow growth zones
     if let Some(ref snd) = ac.get_sounding_for_display() {
@@ -77,13 +75,10 @@ pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
 
             // Convert points to screen coords
             for coord in &mut coords {
-                let screen_coords = ac.rh_omega.convert_wp_to_screen(
-                    da,
-                    WPCoords {
-                        w: coord.0,
-                        p: coord.1,
-                    },
-                );
+                let screen_coords = ac.rh_omega.convert_wp_to_screen(WPCoords {
+                    w: coord.0,
+                    p: coord.1,
+                });
                 coord.0 = screen_coords.x;
                 coord.1 = screen_coords.y;
             }
@@ -104,9 +99,8 @@ pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
 
 pub fn draw_labels(args: DrawingArgs) {
     use coords::Rect;
-    use gui::LazyDrawingCacheVar::OmegaLabelPadding;
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if config.show_labels {
@@ -115,10 +109,10 @@ pub fn draw_labels(args: DrawingArgs) {
         cr.set_font_face(font_face);
 
 
-        set_font_size(&ac.rh_omega, da, config.label_font_size, cr, ac);
+        set_font_size(&ac.rh_omega, config.label_font_size, cr);
 
         let labels = collect_labels(args);
-        let padding = ac.drawing_cache.get(OmegaLabelPadding, args);
+        let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
 
         for (label, rect) in labels {
             let ScreenRect { lower_left, .. } = rect;
@@ -145,12 +139,12 @@ pub fn draw_labels(args: DrawingArgs) {
 pub fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
     use gui::plot_context::PlotContext;
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     let mut labels = vec![];
 
-    let screen_edges = ac.rh_omega.calculate_plot_edges(da, cr, ac);
+    let screen_edges = ac.rh_omega.calculate_plot_edges(cr, ac);
     let ScreenRect { lower_left, .. } = screen_edges;
 
     if config.show_iso_omega_lines {
@@ -166,7 +160,6 @@ pub fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
                 x: mut xpos,
                 y: mut ypos,
             } = ac.rh_omega.convert_wp_to_screen(
-                da,
                 WPCoords { w, p: screen_max_p },
             );
             xpos -= extents.width / 2.0; // Center

@@ -4,8 +4,6 @@
 use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
-use gtk::prelude::*;
-
 use sounding_base::{Sounding, DataRow};
 
 use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
@@ -14,7 +12,7 @@ use gui::Gui;
 use gui::hodograph::hodo_context::HodoContext;
 use gui::sounding::skew_t_context::SkewTContext;
 use gui::sounding::rh_omega_context::RHOmegaContext;
-use gui::{PlotContext, LazyDrawingCache};
+use gui::PlotContext;
 
 // Module for configuring application
 pub mod config;
@@ -48,9 +46,6 @@ pub struct AppContext {
 
     // Handle to Hodograph context
     pub hodo: HodoContext,
-
-    // Cache for values when drawing
-    pub drawing_cache: LazyDrawingCache,
 }
 
 impl AppContext {
@@ -69,7 +64,6 @@ impl AppContext {
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             hodo: HodoContext::new(),
-            drawing_cache: LazyDrawingCache::default(),
         })
     }
 
@@ -336,48 +330,17 @@ impl AppContext {
         }
     }
 
-    /// Get the screen resolution in dpi
-    pub fn get_dpi(&self) -> Option<f64> {
-        use gtk::WidgetExt;
-        use gdk::ScreenExt;
-
-        match *self.gui.borrow() {
-            None => None,
-            Some(ref gui) => {
-                match gui.get_sounding_area().get_screen() {
-                    None => None,
-                    Some(ref screen) => Some(screen.get_resolution()),
-                }
-            }
-        }
-    }
-
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
     fn fit_to_data(&self) {
+        self.skew_t.zoom_to_envelope();
+        self.hodo.zoom_to_envelope();
 
-        if let Some(ref gui) = *self.gui.borrow() {
-
-            self.skew_t.zoom_to_envelope(&gui.get_sounding_area());
-            self.hodo.zoom_to_envelope(&gui.get_hodograph_area());
-            self.rh_omega.zoom_to_envelope(&gui.get_omega_area());
-
-            self.rh_omega.set_translate_y(self.skew_t.get_translate());
-        }
+        self.rh_omega.set_translate_y(self.skew_t.get_translate());
     }
 
     /// Get the zoom factor
     pub fn get_zoom_factor(&self) -> f64 {
         self.skew_t.get_zoom_factor()
-    }
-
-    pub fn show_hide_rh_omega(&self) {
-        if let Some(ref gui) = *self.gui.borrow() {
-            if self.config.borrow().show_rh_omega_frame {
-                gui.get_omega_area().show();
-            } else {
-                gui.get_omega_area().hide();
-            }
-        }
     }
 
     pub fn get_sample(&self) -> Option<DataRow> {

@@ -1,39 +1,23 @@
 use cairo::Matrix;
 
-use gtk::prelude::*;
-
 use app::config;
-use coords::{XYCoords, WPCoords, ScreenCoords, Rect};
-use gui::{DrawingArgs, plot_curve_from_points};
+use coords::{WPCoords, ScreenCoords, Rect};
+use gui::{PlotContext, DrawingArgs, plot_curve_from_points};
 
 mod background;
 
 pub fn prepare_to_draw(args: DrawingArgs) {
-    use gui::plot_context::PlotContext;
-    use gui::LazyDrawingCacheVar::{SkewTScaleFactor, SkewTZoomFactor};
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
-    let config = ac.config.borrow();
+    let ac = args.ac;
+    let cr = args.cr;
 
-    let scale_factor = ac.drawing_cache.get(SkewTScaleFactor, args);
-    let skew_t_zoom_factor = ac.drawing_cache.get(SkewTZoomFactor, args);
-    ac.rh_omega.skew_t_scale_factor.set(scale_factor);
-    ac.rh_omega.skew_t_zoom_factor.set(skew_t_zoom_factor);
+    let scale_factor = ac.rh_omega.scale_factor();
+    ac.rh_omega.set_zoom_factor(ac.skew_t.get_zoom_factor());
+    ac.rh_omega.set_translate_y(ac.skew_t.get_translate());
+    ac.rh_omega.set_skew_t_scale(ac.skew_t.scale_factor());
 
-    let alloc = da.get_allocation();
-
-    // Fill with backgound color
-    cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
-    cr.set_source_rgba(
-        config.background_rgba.0,
-        config.background_rgba.1,
-        config.background_rgba.2,
-        config.background_rgba.3,
-    );
-    cr.fill();
-
-    // Set the scale factor
     cr.scale(scale_factor, scale_factor);
+
     // Set origin at lower left.
     cr.transform(Matrix {
         xx: 1.0,
@@ -41,25 +25,8 @@ pub fn prepare_to_draw(args: DrawingArgs) {
         xy: 0.0,
         yy: -1.0,
         x0: 0.0,
-        y0: f64::from(alloc.height) / scale_factor,
+        y0: ac.rh_omega.get_device_rect().height / scale_factor,
     });
-
-    // Clip the drawing area
-    let upper_right_xy = ac.rh_omega.convert_xy_to_screen(
-        da,
-        XYCoords { x: 1.0, y: 1.0 },
-    );
-    let lower_left_xy = ac.rh_omega.convert_xy_to_screen(
-        da,
-        XYCoords { x: 0.0, y: 0.0 },
-    );
-    cr.rectangle(
-        lower_left_xy.x,
-        lower_left_xy.y,
-        upper_right_xy.x - lower_left_xy.x,
-        upper_right_xy.y - lower_left_xy.y,
-    );
-    cr.clip();
 }
 
 pub fn draw_background(args: DrawingArgs) {
@@ -75,7 +42,7 @@ pub fn draw_background(args: DrawingArgs) {
 pub fn draw_rh_profile(args: DrawingArgs) {
     use gui::plot_context::PlotContext;
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if !config.show_rh_profile {
@@ -104,8 +71,8 @@ pub fn draw_rh_profile(args: DrawingArgs) {
                 let (p, rh) = pair;
                 if p > config::MINP {
                     let ScreenCoords { y, .. } =
-                        ac.rh_omega.convert_wp_to_screen(da, WPCoords { w: 0.0, p });
-                    let bb = ac.rh_omega.bounding_box_in_screen_coords(da);
+                        ac.rh_omega.convert_wp_to_screen(WPCoords { w: 0.0, p });
+                    let bb = ac.rh_omega.bounding_box_in_screen_coords();
                     let x = bb.lower_left.x + bb.width() * rh;
 
                     Some(ScreenCoords { x, y })
@@ -174,7 +141,7 @@ pub fn draw_rh_profile(args: DrawingArgs) {
 
 pub fn draw_omega_profile(args: DrawingArgs) {
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if !config.show_omega_profile {
@@ -194,7 +161,7 @@ pub fn draw_omega_profile(args: DrawingArgs) {
                 if let (Some(p), Some(w)) = (val_pair.0.as_option(), val_pair.1.as_option()) {
                     if p > config::MINP {
                         let wp_coords = WPCoords { w, p };
-                        Some(ac.rh_omega.convert_wp_to_screen(da, wp_coords))
+                        Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
                     } else {
                         None
                     }
@@ -210,7 +177,7 @@ pub fn draw_omega_profile(args: DrawingArgs) {
 
 pub fn draw_active_readout(args: DrawingArgs) {
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if config.show_active_readout {
@@ -230,20 +197,14 @@ pub fn draw_active_readout(args: DrawingArgs) {
             cr.device_to_user_distance(config.active_readout_line_width, 0.0)
                 .0,
         );
-        let start = ac.rh_omega.convert_wp_to_screen(
-            da,
-            WPCoords {
-                w: -1000.0,
-                p: sample_p,
-            },
-        );
-        let end = ac.rh_omega.convert_wp_to_screen(
-            da,
-            WPCoords {
-                w: 1000.0,
-                p: sample_p,
-            },
-        );
+        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: -1000.0,
+            p: sample_p,
+        });
+        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
+            w: 1000.0,
+            p: sample_p,
+        });
         cr.move_to(start.x, start.y);
         cr.line_to(end.x, end.y);
         cr.stroke();

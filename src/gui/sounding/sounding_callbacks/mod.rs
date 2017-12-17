@@ -13,33 +13,21 @@ use gui::DrawingArgs;
 mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
-pub fn draw_sounding(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
+pub fn draw(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
-    let args = DrawingArgs::new(ac, cr, da);
-
-    drawing::prepare_to_draw(args);
-    drawing::draw_background(args);
-    drawing::draw_labels(args);
-    drawing::draw_temperature_profiles(args);
-    drawing::draw_wind_profile(args);
-    drawing::draw_active_sample(args);
-
+    let args = DrawingArgs::new(ac, cr);
+    drawing::draw(args, da);
     Inhibit(false)
 }
 
 /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-pub fn scroll_event(
-    sounding_area: &DrawingArea,
-    event: &EventScroll,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
 
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
     let pos = ac.skew_t.convert_device_to_xy(
-        sounding_area,
         DeviceCoords::from(event.get_position()),
     );
     let dir = event.get_direction();
@@ -70,12 +58,9 @@ pub fn scroll_event(
         y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
     };
     ac.skew_t.set_translate(translate);
-    ac.rh_omega.set_translate_y(translate);
 
     // Bound the xy-coords to always be on screen.
-    ac.skew_t.bound_view(sounding_area);
-    translate = ac.skew_t.get_translate();
-    ac.rh_omega.set_translate_y(translate);
+    ac.skew_t.bound_view();
 
     ac.update_all_gui();
 
@@ -84,7 +69,7 @@ pub fn scroll_event(
 
 /// Handles button press events
 pub fn button_press_event(
-    _sounding_area: &DrawingArea,
+    _da: &DrawingArea,
     event: &EventButton,
     ac: &AppContextPointer,
 ) -> Inhibit {
@@ -103,7 +88,7 @@ pub fn button_press_event(
 
 /// Handles button release events
 pub fn button_release_event(
-    _sounding_area: &DrawingArea,
+    _da: &DrawingArea,
     event: &EventButton,
     ac: &AppContextPointer,
 ) -> Inhibit {
@@ -117,11 +102,7 @@ pub fn button_release_event(
 }
 
 /// Handles leave notify
-pub fn leave_event(
-    _sounding_area: &DrawingArea,
-    _event: &EventCrossing,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn leave_event(_da: &DrawingArea, _event: &EventCrossing, ac: &AppContextPointer) -> Inhibit {
 
     ac.skew_t.set_last_cursor_position(None);
     ac.set_sample(None);
@@ -132,20 +113,20 @@ pub fn leave_event(
 
 /// Handles motion events
 pub fn mouse_motion_event(
-    sounding_area: &DrawingArea,
+    da: &DrawingArea,
     event: &EventMotion,
     ac: &AppContextPointer,
 ) -> Inhibit {
 
-    sounding_area.grab_focus();
+    da.grab_focus();
 
     if ac.skew_t.get_left_button_pressed() {
         if let Some(last_position) = ac.skew_t.get_last_cursor_position() {
-            let old_position = ac.skew_t.convert_device_to_xy(sounding_area, last_position);
+            let old_position = ac.skew_t.convert_device_to_xy(last_position);
             let new_position = DeviceCoords::from(event.get_position());
             ac.skew_t.set_last_cursor_position(Some(new_position));
 
-            let new_position = ac.skew_t.convert_device_to_xy(sounding_area, new_position);
+            let new_position = ac.skew_t.convert_device_to_xy(new_position);
             let delta = (
                 new_position.x - old_position.x,
                 new_position.y - old_position.y,
@@ -156,9 +137,7 @@ pub fn mouse_motion_event(
             ac.skew_t.set_translate(translate);
 
             // Bound the xy-coords to always be on screen.
-            ac.skew_t.bound_view(sounding_area);
-            translate = ac.skew_t.get_translate();
-            ac.rh_omega.set_translate_y(translate);
+            ac.skew_t.bound_view();
 
             ac.set_sample(None);
             ac.update_all_gui();
@@ -167,32 +146,25 @@ pub fn mouse_motion_event(
         let position: DeviceCoords = event.get_position().into();
 
         ac.skew_t.set_last_cursor_position(Some(position));
-        let tp_position = ac.skew_t.convert_device_to_tp(sounding_area, position);
+        let tp_position = ac.skew_t.convert_device_to_tp(position);
         let sample = ::sounding_analysis::linear_interpolate(
             &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
             tp_position.pressure,
         );
         ac.set_sample(Some(sample));
         ac.update_all_gui();
+
     }
     Inhibit(false)
 }
 
 /// Handles key-release events, display next or previous sounding in a series.
-pub fn key_release_event(
-    _sounding_area: &DrawingArea,
-    _event: &EventKey,
-    _ac: &AppContextPointer,
-) -> Inhibit {
+pub fn key_release_event(_da: &DrawingArea, _event: &EventKey, _ac: &AppContextPointer) -> Inhibit {
     Inhibit(false)
 }
 
 /// Handles key-press events
-pub fn key_press_event(
-    _sounding_area: &DrawingArea,
-    event: &EventKey,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn key_press_event(_da: &DrawingArea, event: &EventKey, ac: &AppContextPointer) -> Inhibit {
 
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {

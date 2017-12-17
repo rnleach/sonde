@@ -151,7 +151,7 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
 }
 
 fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     let rgba = config.active_readout_line_rgba;
@@ -160,20 +160,14 @@ fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
         cr.device_to_user_distance(config.active_readout_line_width, 0.0)
             .0,
     );
-    let start = ac.skew_t.convert_tp_to_screen(
-        da,
-        TPCoords {
-            temperature: -200.0,
-            pressure: sample_p,
-        },
-    );
-    let end = ac.skew_t.convert_tp_to_screen(
-        da,
-        TPCoords {
-            temperature: 60.0,
-            pressure: sample_p,
-        },
-    );
+    let start = ac.skew_t.convert_tp_to_screen(TPCoords {
+        temperature: -200.0,
+        pressure: sample_p,
+    });
+    let end = ac.skew_t.convert_tp_to_screen(TPCoords {
+        temperature: 60.0,
+        pressure: sample_p,
+    });
     cr.move_to(start.x, start.y);
     cr.line_to(end.x, end.y);
     cr.stroke();
@@ -181,7 +175,7 @@ fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
 
 fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -> ScreenRect {
 
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     let mut width: f64 = 0.0;
@@ -203,26 +197,18 @@ fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -
     height += 2.0 * padding;
 
     let ScreenCoords { x: mut left, .. } = ac.skew_t.convert_device_to_screen(
-        da,
         DeviceCoords { col: 5.0, row: 5.0 },
     );
-    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(
-        da,
-        TPCoords {
-            temperature: 0.0,
-            pressure: sample_p,
-        },
-    );
+    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
+        temperature: 0.0,
+        pressure: sample_p,
+    });
     let mut bottom = top - height;
 
-    let ScreenCoords { x: xmin, y: ymin } = ac.skew_t.convert_xy_to_screen(
-        da,
-        XYCoords { x: 0.0, y: 0.0 },
-    );
-    let ScreenCoords { x: xmax, y: ymax } = ac.skew_t.convert_xy_to_screen(
-        da,
-        XYCoords { x: 1.0, y: 1.0 },
-    );
+    let ScreenCoords { x: xmin, y: ymin } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+    let ScreenCoords { x: xmax, y: ymax } =
+        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
     // Prevent clipping
     if left < xmin {
@@ -242,7 +228,7 @@ fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -
     let ScreenRect {
         lower_left: ScreenCoords { x: xmin, y: ymin },
         upper_right: ScreenCoords { x: xmax, y: ymax },
-    } = ac.skew_t.bounding_box_in_screen_coords(da);
+    } = ac.skew_t.bounding_box_in_screen_coords();
     if left < xmin {
         left = xmin;
     }

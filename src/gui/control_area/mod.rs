@@ -23,18 +23,16 @@ macro_rules! build_config_color_and_check {
         // Create check button callback
         let acp = Rc::clone(&$acp_in);
         check.connect_toggled(move|button|{
-            let mut config = acp.config.borrow_mut();
-            config.$show_var = button.get_active();
+            acp.config.borrow_mut().$show_var = button.get_active();
             acp.update_all_gui();
         });
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
         ColorButtonExt::connect_property_rgba_notify(&color, move|button|{
-            let mut config = acp.config.borrow_mut();
             let rgba = button.get_rgba();
 
-            config.$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+            acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.update_all_gui();
         });
 

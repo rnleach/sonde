@@ -86,10 +86,8 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
 
     // Left pane
     let skew_t = gui.get_sounding_area();
-    let rh_omega = gui.get_omega_area();
     let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     h_box.set_property_margin(config::WIDGET_MARGIN);
-    h_box.pack_start(&rh_omega, false, true, 0);
     h_box.pack_start(&skew_t, true, true, 0);
 
     // Set up scrolled window for text area.

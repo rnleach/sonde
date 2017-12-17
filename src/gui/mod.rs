@@ -1,5 +1,5 @@
 //! Module for the GUI components of the application.
-use std::cell::Cell;
+
 use std::rc::Rc;
 
 mod plot_context;
@@ -20,7 +20,7 @@ use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, Window, WindowType, TextView};
 
 use app::{AppContextPointer, AppContext};
-use coords::{DeviceCoords, ScreenCoords, ScreenRect, Rect};
+use coords::{ScreenCoords, ScreenRect, Rect};
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -31,7 +31,6 @@ use coords::{DeviceCoords, ScreenCoords, ScreenRect, Rect};
 pub struct Gui {
     // Left pane
     sounding_area: DrawingArea,
-    omega_area: DrawingArea,
 
     // Right pane
     hodograph_area: DrawingArea,
@@ -50,7 +49,6 @@ impl Gui {
     pub fn new(acp: &AppContextPointer) -> Gui {
         let gui = Gui {
             sounding_area: DrawingArea::new(),
-            omega_area: DrawingArea::new(),
 
             hodograph_area: DrawingArea::new(),
             index_area: DrawingArea::new(),
@@ -62,7 +60,6 @@ impl Gui {
         };
 
         sounding::set_up_sounding_area(&gui.get_sounding_area(), acp);
-        sounding::set_up_rh_omega_area(&gui.get_omega_area(), acp);
         hodograph::set_up_hodograph_area(&gui.get_hodograph_area(), acp);
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
@@ -75,10 +72,6 @@ impl Gui {
 
     pub fn get_sounding_area(&self) -> DrawingArea {
         self.sounding_area.clone()
-    }
-
-    pub fn get_omega_area(&self) -> DrawingArea {
-        self.omega_area.clone()
     }
 
     pub fn get_hodograph_area(&self) -> DrawingArea {
@@ -103,10 +96,7 @@ impl Gui {
 
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
-        self.omega_area.queue_draw();
         self.hodograph_area.queue_draw();
-
-        // TODO: Add here as needed.
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {
@@ -183,146 +173,23 @@ fn check_overlap_then_add(
 }
 
 #[derive(Clone, Copy)]
-pub struct DrawingArgs<'a, 'b, 'c> {
+pub struct DrawingArgs<'a, 'b> {
     pub ac: &'a AppContext,
     pub cr: &'b Context,
-    pub da: &'c DrawingArea,
 }
 
-impl<'a, 'b, 'c> DrawingArgs<'a, 'b, 'c> {
-    pub fn new(ac: &'a AppContext, cr: &'b Context, da: &'c DrawingArea) -> Self {
-        DrawingArgs { ac, cr, da }
+impl<'a, 'b> DrawingArgs<'a, 'b> {
+    pub fn new(ac: &'a AppContext, cr: &'b Context) -> Self {
+        DrawingArgs { ac, cr }
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum LazyDrawingCacheVar {
-    SkewTLabelPadding,
-    SkewTEdgePadding,
-    SkewTZoomFactor,
-    SkewTScaleFactor,
-    OmegaLabelPadding,
-    // OmegaEdgePadding,
-    // HodoLabelPadding,
-    // HodoEdgePadding,
-}
+fn set_font_size<T: PlotContext>(pc: &T, size_in_pct: f64, cr: &Context) {
 
-#[derive(Clone, Default)]
-pub struct LazyDrawingCache {
-    skew_t_label_padding: Cell<Option<f64>>,
-    skew_t_edge_padding: Cell<Option<f64>>,
-    skew_t_zoom_factor: Cell<Option<f64>>,
-    skew_t_scale_factor: Cell<Option<f64>>,
-    omega_label_padding: Cell<Option<f64>>,
-    omega_edge_padding: Cell<Option<f64>>,
-    hodo_label_padding: Cell<Option<f64>>,
-    hodo_edge_padding: Cell<Option<f64>>,
-}
+    let height = pc.get_device_rect().height();
 
-impl LazyDrawingCache {
-    pub fn get(&self, var: LazyDrawingCacheVar, args: DrawingArgs) -> f64 {
-        use self::LazyDrawingCacheVar::*;
-
-        let (ac, cr) = (args.ac, args.cr);
-        let config = ac.config.borrow();
-
-        macro_rules! make_cache_getter {
-            ($var:ident, $val:expr) => {
-                match self.$var.get() {
-                    Some(val) => val,
-                    None => {
-                        let val = $val;
-                        self.$var.set(Some(val));
-                        val
-                    }
-                }
-            }
-        }
-
-        match var {
-            SkewTLabelPadding => {
-                make_cache_getter!(
-                    skew_t_label_padding,
-                    cr.device_to_user_distance(config.label_padding, 0.0).0
-                )
-            }
-            SkewTEdgePadding => {
-                make_cache_getter!(
-                    skew_t_edge_padding,
-                    cr.device_to_user_distance(config.edge_padding, 0.0).0
-                )
-            }
-            SkewTZoomFactor => make_cache_getter!(skew_t_zoom_factor, ac.skew_t.get_zoom_factor()),
-            SkewTScaleFactor => {
-                make_cache_getter!(skew_t_scale_factor, {
-                    if let Some(ref gui) = *ac.gui.borrow() {
-                        let da = &gui.get_sounding_area();
-                        SkewTContext::scale_factor(da)
-                    } else {
-                        1.0
-                    }
-                })
-            }
-            OmegaLabelPadding => {
-                make_cache_getter!(
-                    omega_label_padding,
-                    cr.device_to_user_distance(config.label_padding, 0.0).0
-                )
-            }
-            // OmegaEdgePadding => {
-            //     make_cache_getter!(
-            //         omega_edge_padding,
-            //         cr.device_to_user_distance(config.edge_padding, 0.0).0
-            //     )
-            // }
-            // HodoLabelPadding => {
-            //     make_cache_getter!(
-            //         hodo_label_padding,
-            //         cr.device_to_user_distance(config.label_padding, 0.0).0
-            //     )
-            // }
-            // HodoEdgePadding => {
-            //     make_cache_getter!(
-            //         hodo_edge_padding,
-            //         cr.device_to_user_distance(config.edge_padding, 0.0).0
-            //     )
-            // }
-        }
-    }
-
-    pub fn reset(&self) {
-        self.skew_t_label_padding.set(None);
-        self.skew_t_edge_padding.set(None);
-        self.skew_t_zoom_factor.set(None);
-        self.skew_t_scale_factor.set(None);
-        self.omega_label_padding.set(None);
-        self.omega_edge_padding.set(None);
-        self.hodo_label_padding.set(None);
-        self.hodo_edge_padding.set(None);
-    }
-}
-
-fn set_font_size<T: PlotContext>(
-    pc: &T,
-    da: &DrawingArea,
-    size_in_pnts: f64,
-    cr: &Context,
-    ac: &AppContext,
-) {
-
-    let dpi = match ac.get_dpi() {
-        None => 72.0,
-        Some(value) => value,
-    };
-
-    let font_size = size_in_pnts / 72.0 * dpi;
-    let ScreenCoords { x: font_size, .. } = pc.convert_device_to_screen(
-        da,
-        DeviceCoords {
-            col: font_size,
-            row: 0.0,
-        },
-    );
+    let mut font_size = size_in_pct / 100.0 * height;
+    font_size = cr.device_to_user_distance(font_size, 0.0).0;
 
     // Flip the y-coordinate so it displays the font right side up
     cr.set_font_matrix(Matrix {

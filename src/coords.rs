@@ -61,6 +61,9 @@ pub trait Rect {
     }
 }
 
+/***************************************************************************************************
+ *                   Temperature - Pressure Coordinates for Skew-T Log-P plot.
+ * ************************************************************************************************/
 /// Temperature-Pressure coordinates.
 /// Origin lower left. (Temperature, Pressure)
 #[derive(Clone, Copy, Debug)]
@@ -71,8 +74,9 @@ pub struct TPCoords {
     pub pressure: f64,
 }
 
-impl TPCoords {}
-
+/***************************************************************************************************
+ *                      Speed - Direction Coordinates for the Hodograph
+ * ************************************************************************************************/
 /// Speed-Direction coordinates for the hodograph.
 /// Origin center. (Speed, Direction wind is from)
 #[derive(Clone, Copy, Debug)]
@@ -83,8 +87,9 @@ pub struct SDCoords {
     pub dir: f64,
 }
 
-impl TPCoords {}
-
+/***************************************************************************************************
+ *                   Omega(W) - Pressure coords for the vertical velocity and RH plot
+ * ************************************************************************************************/
 /// Omega-Pressure coordinates.
 /// Origin lower left. (Omega, Pressure)
 #[derive(Clone, Copy, Debug)]
@@ -95,7 +100,9 @@ pub struct WPCoords {
     pub p: f64,
 }
 
-impl WPCoords {}
+/***************************************************************************************************
+ *                 X - Y Coords for a default plot area that can be zoomed and panned
+ * ************************************************************************************************/
 
 /// XY coordinates of the skew-t graph, range 0.0 to 1.0. This coordinate system is dependend on
 /// settings for the maximum/minimum plottable pressure and temperatures in the config module.
@@ -112,6 +119,34 @@ impl XYCoords {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct XYRect {
+    pub lower_left: XYCoords,
+    pub upper_right: XYCoords,
+}
+
+impl Rect for XYRect {
+    fn min_x(&self) -> f64 {
+        self.lower_left.x
+    }
+
+    fn max_x(&self) -> f64 {
+        self.upper_right.x
+    }
+
+    fn min_y(&self) -> f64 {
+        self.lower_left.y
+    }
+
+    fn max_y(&self) -> f64 {
+        self.upper_right.y
+    }
+}
+
+
+/***************************************************************************************************
+ *                   Screen Coords - the coordinate system to actually draw in.
+ * ************************************************************************************************/
 /// On screen coordinates. Meant to scale and translate `XYCoords` to fit on the screen.
 /// Origin lower left, (x,y).
 /// When drawing using cairo functions, use these coordinates.
@@ -124,29 +159,6 @@ pub struct ScreenCoords {
 impl ScreenCoords {
     pub fn origin() -> Self {
         ScreenCoords { x: 0.0, y: 0.0 }
-    }
-}
-
-/// Device coordinates (pixels positions).
-///  Origin upper left, (Column, Row)
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct DeviceCoords {
-    pub col: f64,
-    pub row: f64,
-}
-
-impl DeviceCoords {
-    pub fn origin() -> Self {
-        DeviceCoords { col: 0.0, row: 0.0 }
-    }
-}
-
-impl From<(f64, f64)> for DeviceCoords {
-    fn from(src: (f64, f64)) -> Self {
-        DeviceCoords {
-            col: src.0,
-            row: src.1,
-        }
     }
 }
 
@@ -209,26 +221,48 @@ impl Rect for ScreenRect {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct XYRect {
-    pub lower_left: XYCoords,
-    pub upper_right: XYCoords,
+
+/***************************************************************************************************
+ *                   Device Coords - the coordinate system of the device before
+ * ************************************************************************************************/
+/// Device coordinates (pixels positions).
+///  Origin upper left, (Column, Row)
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DeviceCoords {
+    pub col: f64,
+    pub row: f64,
 }
 
-impl Rect for XYRect {
+impl From<(f64, f64)> for DeviceCoords {
+    fn from(src: (f64, f64)) -> Self {
+        DeviceCoords {
+            col: src.0,
+            row: src.1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct DeviceRect {
+    pub upper_left: DeviceCoords,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl Rect for DeviceRect {
     fn min_x(&self) -> f64 {
-        self.lower_left.x
+        self.upper_left.col
     }
 
     fn max_x(&self) -> f64 {
-        self.upper_right.x
+        self.upper_left.col + self.width
     }
 
     fn min_y(&self) -> f64 {
-        self.lower_left.y
+        self.upper_left.row
     }
 
     fn max_y(&self) -> f64 {
-        self.upper_right.y
+        self.upper_left.row + self.height
     }
 }

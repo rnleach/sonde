@@ -61,11 +61,11 @@ fn gather_wind_data(
 
 fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
 
-    let (ac, da) = (args.ac, args.da);
+    let ac = args.ac;
 
     // Remove overlapping barbs, or barbs not on the screen
     let mut keepers: Vec<WindBarbData> = vec![];
-    let screen_box = ac.skew_t.bounding_box_in_screen_coords(da);
+    let screen_box = ac.skew_t.bounding_box_in_screen_coords();
     let mut last_added_bbox: ScreenRect = ScreenRect {
         lower_left: ScreenCoords {
             x: ::std::f64::MAX,
@@ -98,9 +98,8 @@ struct WindBarbConfig {
 
 impl WindBarbConfig {
     fn init(args: DrawingArgs) -> Self {
-        use gui::LazyDrawingCacheVar::SkewTEdgePadding;
 
-        let (ac, cr, da) = (args.ac, args.cr, args.da);
+        let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
         let (shaft_length, barb_length) = cr.device_to_user_distance(
@@ -112,9 +111,9 @@ impl WindBarbConfig {
             config.wind_barb_dot_radius,
             -config.wind_barb_pennant_width,
         );
-        let padding = ac.drawing_cache.get(SkewTEdgePadding, args);
+        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
 
-        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords(da);
+        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
         let XYCoords { x: mut xmax, .. } =
             ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
@@ -122,10 +121,8 @@ impl WindBarbConfig {
             xmax = 1.0;
         }
 
-        let ScreenCoords { x: xmax, .. } = ac.skew_t.convert_xy_to_screen(
-            da,
-            XYCoords { x: xmax, y: 0.0 },
-        );
+        let ScreenCoords { x: xmax, .. } =
+            ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
 
         let xcoord = xmax - padding - shaft_length;
 
@@ -337,15 +334,12 @@ impl WindBarbData {
 
 fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> ScreenCoords {
 
-    let (ac, da) = (args.ac, args.da);
+    let ac = args.ac;
 
-    let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(
-        da,
-        TPCoords {
-            temperature: 0.0,
-            pressure,
-        },
-    );
+    let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
+        temperature: 0.0,
+        pressure,
+    });
 
     ScreenCoords { x: xcenter, y: yc }
 }

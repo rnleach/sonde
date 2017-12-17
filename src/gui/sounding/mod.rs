@@ -9,7 +9,6 @@ pub mod skew_t_context;
 pub mod rh_omega_context;
 
 mod sounding_callbacks;
-mod rh_omega_callbacks;
 
 use app::AppContextPointer;
 
@@ -21,7 +20,7 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
     sounding_area.set_vexpand(true);
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw_sounding(da, cr, &ac));
+    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw(da, cr, &ac));
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));
@@ -67,35 +66,4 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
             .bits() as i32,
     );
 
-}
-
-pub fn set_up_rh_omega_area(omega_area: &DrawingArea, app_context: &AppContextPointer) {
-
-    // Layout
-    omega_area.set_hexpand(false);
-    omega_area.set_vexpand(true);
-    omega_area.set_property_width_request(80);
-
-    let acp = Rc::clone(app_context);
-    omega_area.connect_draw(move |da, cr| {
-        rh_omega_callbacks::draw_rh_omega(da, cr, &acp)
-    });
-
-    let ac = Rc::clone(app_context);
-    omega_area.connect_motion_notify_event(move |da, ev| {
-        rh_omega_callbacks::mouse_motion_event(da, ev, &ac)
-    });
-
-    let ac = Rc::clone(app_context);
-    omega_area.connect_leave_notify_event(move |da, ev| {
-        rh_omega_callbacks::leave_event(da, ev, &ac)
-    });
-
-    omega_area.add_events(
-        (EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK | EventMask::BUTTON_RELEASE_MASK |
-             EventMask::POINTER_MOTION_HINT_MASK |
-             EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK |
-             EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
-            .bits() as i32,
-    );
 }

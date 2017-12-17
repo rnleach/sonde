@@ -1,13 +1,17 @@
 use std::cell::Cell;
 
 use cairo::Context;
-use gtk::prelude::*;
-use gtk::DrawingArea;
-use coords::{DeviceCoords, ScreenCoords, XYCoords, ScreenRect, XYRect};
+use coords::{DeviceCoords, ScreenCoords, XYCoords, ScreenRect, XYRect, DeviceRect, Rect};
 
 use super::AppContext;
 
 pub trait PlotContext {
+    /// Set the width and height of the plot in device
+    fn set_device_rect(&self, rect: DeviceRect);
+
+    /// Get the device dimensions
+    fn get_device_rect(&self) -> DeviceRect;
+
     /// Get a bounding box in XYCoords around all the data in this plot.
     fn get_xy_envelope(&self) -> XYRect;
 
@@ -41,7 +45,7 @@ pub trait PlotContext {
         Option<DeviceCoords>: From<T>;
 
     /// Conversion from (x,y) coords to screen coords
-    fn convert_xy_to_screen(&self, _da: &DrawingArea, coords: XYCoords) -> ScreenCoords {
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
 
         let translate = self.get_translate();
 
@@ -56,13 +60,15 @@ pub trait PlotContext {
     }
 
     /// Conversion from device coordinates to `ScreenCoords`
-    fn convert_device_to_screen(&self, da: &DrawingArea, coords: DeviceCoords) -> ScreenCoords {
-        let scale_factor = Self::scale_factor(da);
-        let height = da.get_allocation().height;
+    fn convert_device_to_screen(&self, coords: DeviceCoords) -> ScreenCoords {
+        let scale_factor = self.scale_factor();
+        let device_rect = self.get_device_rect();
+        let height = device_rect.height();
+        let upper_left = device_rect.upper_left;
         ScreenCoords {
-            x: coords.col / scale_factor,
+            x: (coords.col - upper_left.col) / scale_factor,
             // Flip y coordinate vertically and translate so origin is upper left corner.
-            y: -(coords.row / scale_factor) + f64::from(height) / scale_factor,
+            y: -((coords.row - upper_left.row) / scale_factor) + height / scale_factor,
         }
     }
 
@@ -70,15 +76,18 @@ pub trait PlotContext {
     ///
     /// By using this scale factor, it makes a distance of 1 in `XYCoords` equal to a distance of
     /// 1 in `ScreenCoords` when the zoom factor is 1.
-    fn scale_factor(da: &DrawingArea) -> f64 {
-        let alloc = da.get_allocation();
-
-        f64::from(::std::cmp::min(alloc.height, alloc.width))
+    fn scale_factor(&self) -> f64 {
+        let device_rect = self.get_device_rect();
+        if device_rect.width() < device_rect.height() {
+            device_rect.width()
+        } else {
+            device_rect.height()
+        }
     }
 
     /// Convert device coords to (x,y) coords
-    fn convert_device_to_xy(&self, da: &DrawingArea, coords: DeviceCoords) -> XYCoords {
-        let screen_coords = self.convert_device_to_screen(da, coords);
+    fn convert_device_to_xy(&self, coords: DeviceCoords) -> XYCoords {
+        let screen_coords = self.convert_device_to_screen(coords);
         self.convert_screen_to_xy(screen_coords)
     }
 
@@ -94,12 +103,12 @@ pub trait PlotContext {
     }
 
     /// Get the edges of the X-Y plot area in `ScreenCoords`, may or may not be on the screen.
-    fn calculate_plot_edges(&self, da: &DrawingArea, cr: &Context, ac: &AppContext) -> ScreenRect {
+    fn calculate_plot_edges(&self, cr: &Context, ac: &AppContext) -> ScreenRect {
 
         let ScreenRect {
             lower_left,
             upper_right,
-        } = self.bounding_box_in_screen_coords(da);
+        } = self.bounding_box_in_screen_coords();
         let ScreenCoords {
             x: mut screen_x_min,
             y: mut screen_y_min,
@@ -111,9 +120,9 @@ pub trait PlotContext {
 
         // If screen area is bigger than plot area, labels will be clipped, keep them on the plot
         let ScreenCoords { x: xmin, y: ymin } =
-            self.convert_xy_to_screen(da, XYCoords { x: 0.0, y: 0.0 });
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
         let ScreenCoords { x: xmax, y: ymax } =
-            self.convert_xy_to_screen(da, XYCoords { x: 1.0, y: 1.0 });
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
 
         if xmin > screen_x_min {
             screen_x_min = xmin;
@@ -149,23 +158,17 @@ pub trait PlotContext {
     }
 
     /// Get a bounding box in screen coords
-    fn bounding_box_in_screen_coords(&self, da: &DrawingArea) -> ScreenRect {
-        let alloc = da.get_allocation();
+    fn bounding_box_in_screen_coords(&self) -> ScreenRect {
+        let device_rect = self.get_device_rect();
 
-        let lower_left = self.convert_device_to_screen(
-            da,
-            DeviceCoords {
-                col: 0.0,
-                row: f64::from(alloc.height),
-            },
-        );
-        let upper_right = self.convert_device_to_screen(
-            da,
-            DeviceCoords {
-                col: f64::from(alloc.width),
-                row: 0.0,
-            },
-        );
+        let lower_left = self.convert_device_to_screen(DeviceCoords {
+            col: device_rect.upper_left.col,
+            row: device_rect.height + device_rect.upper_left.row,
+        });
+        let upper_right = self.convert_device_to_screen(DeviceCoords {
+            col: device_rect.upper_left.col + device_rect.width,
+            row: device_rect.upper_left.row,
+        });
 
         ScreenRect {
             lower_left,
@@ -175,16 +178,16 @@ pub trait PlotContext {
 
     /// Left justify the plot in the view if zoomed out, and if zoomed in don't let it view
     /// beyond the edges of the plot.
-    fn bound_view(&self, da: &DrawingArea) {
-
-        let alloc = da.get_allocation();
+    fn bound_view(&self) {
+        let device_rect = self.get_device_rect();
 
         let bounds = DeviceCoords {
-            col: f64::from(alloc.width),
-            row: f64::from(alloc.height),
+            col: device_rect.width,
+            row: device_rect.height,
         };
-        let lower_right = self.convert_device_to_xy(da, bounds);
-        let upper_left = self.convert_device_to_xy(da, DeviceCoords { col: 0.0, row: 0.0 });
+
+        let lower_right = self.convert_device_to_xy(bounds);
+        let upper_left = self.convert_device_to_xy(device_rect.upper_left);
         let width = lower_right.x - upper_left.x;
         let height = upper_left.y - lower_right.y;
 
@@ -215,7 +218,7 @@ pub trait PlotContext {
     }
 
     /// Zoom in the most possible while still keeping the whole envelope in view.
-    fn zoom_to_envelope(&self, da: &DrawingArea) {
+    fn zoom_to_envelope(&self) {
         use std::f64;
 
         let xy_envelope = self.get_xy_envelope();
@@ -231,11 +234,14 @@ pub trait PlotContext {
 
         self.set_zoom_factor(f64::min(width_scale, height_scale));
 
-        self.bound_view(da);
+        self.bound_view();
     }
 }
 
 pub struct GenericContext {
+    // Area to draw in
+    device_rect: Cell<DeviceRect>,
+
     // Rectangle that bounds all the values to be plotted in `XYCoords`.
     xy_envelope: Cell<XYRect>,
 
@@ -253,6 +259,11 @@ pub struct GenericContext {
 impl GenericContext {
     pub fn new() -> Self {
         GenericContext {
+            device_rect: Cell::new(DeviceRect {
+                upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+                width: 1.0,
+                height: 1.0,
+            }),
             xy_envelope: Cell::new(XYRect {
                 lower_left: XYCoords { x: 0.0, y: 0.0 },
                 upper_right: XYCoords { x: 1.0, y: 1.0 },
@@ -268,6 +279,14 @@ impl GenericContext {
 }
 
 impl PlotContext for GenericContext {
+    fn set_device_rect(&self, rect: DeviceRect) {
+        self.device_rect.set(rect)
+    }
+
+    fn get_device_rect(&self) -> DeviceRect {
+        self.device_rect.get()
+    }
+
     fn get_xy_envelope(&self) -> XYRect {
         self.xy_envelope.get()
     }
@@ -320,6 +339,14 @@ impl<T> PlotContext for T
 where
     T: HasGenericContext,
 {
+    fn set_device_rect(&self, rect: DeviceRect) {
+        self.get_generic_context().set_device_rect(rect);
+    }
+
+    fn get_device_rect(&self) -> DeviceRect {
+        self.get_generic_context().get_device_rect()
+    }
+
     fn get_xy_envelope(&self) -> XYRect {
         self.get_generic_context().get_xy_envelope()
     }

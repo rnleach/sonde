@@ -1,5 +1,4 @@
 
-use gtk::DrawingArea;
 
 use gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
 
@@ -50,9 +49,9 @@ impl SkewTContext {
     }
 
     /// Conversion from temperature/pressure to screen coordinates.
-    pub fn convert_tp_to_screen(&self, da: &DrawingArea, coords: TPCoords) -> ScreenCoords {
+    pub fn convert_tp_to_screen(&self, coords: TPCoords) -> ScreenCoords {
         let xy = Self::convert_tp_to_xy(coords);
-        self.convert_xy_to_screen(da, xy)
+        self.convert_xy_to_screen(xy)
     }
 
     /// Conversion from screen coordinates to temperature, pressure.
@@ -62,8 +61,8 @@ impl SkewTContext {
     }
 
     /// Convert from device coords to temperature, pressure.
-    pub fn convert_device_to_tp(&self, da: &DrawingArea, coords: DeviceCoords) -> TPCoords {
-        let xy = self.convert_device_to_xy(da, coords);
+    pub fn convert_device_to_tp(&self, coords: DeviceCoords) -> TPCoords {
+        let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_tp(xy)
     }
 }

@@ -222,7 +222,7 @@ impl Default for Config {
             show_labels: true,
             show_legend: true,
             font_name: "Courier New".to_owned(),
-            label_font_size: 12.0,
+            label_font_size: 2.0,
             edge_padding: 5.0,
             label_padding: 3.0,
             label_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
@@ -295,6 +295,8 @@ pub const MINP: f64 = 99.0; // mb
 pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
+/// Width of the RH-Omega plot area as the decimal fraction of the `DrawingArea` width.
+pub const RH_OMEGA_WIDTH: f64 = 0.10;
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: f64 = 10.0;

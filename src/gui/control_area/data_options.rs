@@ -33,32 +33,6 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         active_readout_line_rgba
     );
 
-    // Show hide rh-omega
-    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-    let rh_omega = CheckButton::new();
-
-    rh_omega.set_active(ac.config.borrow().show_rh_omega_frame);
-
-    // Create rh_omega callback
-    let acp = Rc::clone(ac);
-    rh_omega.connect_toggled(move |button| {
-
-        acp.config.borrow_mut().show_rh_omega_frame = button.get_active();
-        acp.show_hide_rh_omega();
-
-        let acp2 = Rc::clone(&acp);
-        ::gtk::idle_add(move || {
-            acp2.update_all_gui();
-            Continue(false)
-        });
-    });
-
-    // Layout
-    hbox.pack_start(&rh_omega, false, true, PADDING);
-    hbox.pack_start(&gtk::Label::new("RH-Omega"), false, true, PADDING);
-
-    sample_box.pack_start(&hbox, false, true, PADDING);
-
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));
     let data_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);

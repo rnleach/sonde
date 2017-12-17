@@ -1,31 +1,25 @@
 //! Helper functions for the draw callback.
 
-use cairo::Matrix;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
-use coords::XYCoords;
+use app::config;
+use coords::{DeviceCoords, DeviceRect};
 use gui::plot_context::PlotContext;
 use gui::DrawingArgs;
 
-mod background;
-mod labeling;
-mod sample_readout;
-mod temperature_profile;
-mod wind_profile;
+mod skew_t;
+mod rh_omega;
 
-pub fn prepare_to_draw(args: DrawingArgs) {
-    use gui::LazyDrawingCacheVar::SkewTScaleFactor;
-
-    let ac = args.ac;
-    let cr = args.cr;
-    let da = args.da;
+pub fn draw(args: DrawingArgs, da: &DrawingArea) {
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    let scale_factor = ac.drawing_cache.get(SkewTScaleFactor, args);
     let alloc = da.get_allocation();
+    let (width, height) = (f64::from(alloc.width), f64::from(alloc.height));
 
     // Fill with backgound color
-    cr.rectangle(0.0, 0.0, f64::from(alloc.width), f64::from(alloc.height));
+    cr.rectangle(0.0, 0.0, width, height);
     cr.set_source_rgba(
         config.background_rgba.0,
         config.background_rgba.1,
@@ -34,80 +28,66 @@ pub fn prepare_to_draw(args: DrawingArgs) {
     );
     cr.fill();
 
-    // Set the scale factor
-    cr.scale(scale_factor, scale_factor);
-    // Set origin at lower left.
-    cr.transform(Matrix {
-        xx: 1.0,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0,
-        x0: 0.0,
-        y0: f64::from(alloc.height) / scale_factor,
-    });
+    cr.save();
+
+    //
+    // Draw the Skew-T area.
+    //
 
     // Clip the drawing area
-    let upper_right_xy = ac.skew_t.convert_xy_to_screen(
-        da,
-        XYCoords { x: 1.0, y: 1.0 },
-    );
-    let lower_left_xy = ac.skew_t.convert_xy_to_screen(
-        da,
-        XYCoords { x: 0.0, y: 0.0 },
-    );
-    cr.rectangle(
-        lower_left_xy.x,
-        lower_left_xy.y,
-        upper_right_xy.x - lower_left_xy.x,
-        upper_right_xy.y - lower_left_xy.y,
-    );
+    let rh_width = width * config::RH_OMEGA_WIDTH;
+    cr.rectangle(rh_width, 0.0, width - rh_width, height);
     cr.clip();
+
+    // Set the drawing area in the plot context
+    let skew_t_rect = DeviceRect {
+        upper_left: DeviceCoords {
+            col: rh_width,
+            row: 0.0,
+        },
+        width: width - rh_width,
+        height: height,
+    };
+    ac.skew_t.set_device_rect(skew_t_rect);
+    cr.translate(rh_width, 0.0);
+    draw_skew_t(args);
+
+    // Reset the matrix when done for the next sub-plot
+    cr.restore();
+
+    //
+    // Draw the RH-Omega plot area
+    //
+
+    // Clip the drawing area
+    cr.rectangle(0.0, 0.0, rh_width, height);
+    cr.clip();
+
+    // Set the drawing area in the plot context
+    let rh_omega_rect = DeviceRect {
+        upper_left: DeviceCoords { col: 0.0, row: 0.0 },
+        width: rh_width,
+        height: height,
+    };
+    ac.rh_omega.set_device_rect(rh_omega_rect);
+
+    draw_rh_omega(args);
 }
 
-pub fn draw_background(args: DrawingArgs) {
+fn draw_skew_t(args: DrawingArgs) {
 
-    background::draw_background_fill(args);
-    background::draw_background_lines(args);
+    skew_t::prepare_to_draw(args);
+    skew_t::draw_background(args);
+    skew_t::draw_labels(args);
+    skew_t::draw_temperature_profiles(args);
+    skew_t::draw_wind_profile(args);
+    skew_t::draw_active_sample(args);
 }
 
-pub fn draw_temperature_profiles(args: DrawingArgs) {
-    let config = args.ac.config.borrow();
-
-    use self::temperature_profile::TemperatureType::{DewPoint, DryBulb, WetBulb};
-
-    if config.show_wet_bulb {
-        temperature_profile::draw_temperature_profile(WetBulb, args);
-    }
-
-    if config.show_dew_point {
-        temperature_profile::draw_temperature_profile(DewPoint, args);
-    }
-
-    if config.show_temperature {
-        temperature_profile::draw_temperature_profile(DryBulb, args);
-    }
-}
-
-pub fn draw_wind_profile(args: DrawingArgs) {
-    if args.ac.config.borrow().show_wind_profile {
-        wind_profile::draw_wind_profile(args);
-    }
-}
-
-pub fn draw_labels(args: DrawingArgs) {
-    let config = args.ac.config.borrow();
-
-    labeling::prepare_to_label(args);
-    if config.show_labels {
-        labeling::draw_background_labels(args);
-    }
-    if config.show_legend {
-        labeling::draw_legend(args);
-    }
-}
-
-pub fn draw_active_sample(args: DrawingArgs) {
-    if args.ac.config.borrow().show_active_readout {
-        sample_readout::draw_active_sample(args);
-    }
+fn draw_rh_omega(args: DrawingArgs) {
+    rh_omega::prepare_to_draw(args);
+    rh_omega::draw_background(args);
+    rh_omega::draw_rh_profile(args);
+    rh_omega::draw_omega_profile(args);
+    rh_omega::draw_active_readout(args);
 }

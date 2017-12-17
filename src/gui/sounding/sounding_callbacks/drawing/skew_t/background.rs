@@ -22,7 +22,7 @@ pub fn draw_background_fill(args: DrawingArgs) {
 
 // Draw isentrops, isotherms, isobars, ...
 pub fn draw_background_lines(args: DrawingArgs) {
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     // Draws background lines from the bottom up.
@@ -31,7 +31,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
     if config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(da, *xy_coords)
+                ac.skew_t.convert_xy_to_screen(*xy_coords)
             });
             plot_curve_from_points(cr, config.background_line_width, config.isentrop_rgba, pnts);
         }
@@ -41,7 +41,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
     if config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(da, *xy_coords)
+                ac.skew_t.convert_xy_to_screen(*xy_coords)
             });
             plot_curve_from_points(
                 cr,
@@ -56,7 +56,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
     if config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(da, *xy_coords)
+                ac.skew_t.convert_xy_to_screen(*xy_coords)
             });
             plot_dashed_curve_from_points(
                 cr,
@@ -71,7 +71,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
     if config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
             let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_xy_to_screen(da, *tp_coords)
+                ac.skew_t.convert_xy_to_screen(*tp_coords)
             });
             plot_curve_from_points(cr, config.background_line_width, config.isotherm_rgba, pnts);
         }
@@ -81,7 +81,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
     if config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
             let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(da, *xy_coords)
+                ac.skew_t.convert_xy_to_screen(*xy_coords)
             });
 
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
@@ -101,7 +101,7 @@ pub fn draw_background_lines(args: DrawingArgs) {
             },
         ];
         let pnts = pnts.iter().map(|tp_coords| {
-            ac.skew_t.convert_tp_to_screen(da, *tp_coords)
+            ac.skew_t.convert_tp_to_screen(*tp_coords)
         });
         plot_curve_from_points(
             cr,
@@ -146,7 +146,7 @@ fn draw_dendtritic_growth_zone(args: DrawingArgs) {
 }
 
 fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
 
     // Assume color has already been set up for us.
 
@@ -162,13 +162,10 @@ fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
 
     // Convert points to screen coords
     for coord in &mut coords {
-        let screen_coords = ac.skew_t.convert_tp_to_screen(
-            da,
-            TPCoords {
-                temperature: coord.0,
-                pressure: coord.1,
-            },
-        );
+        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
+            temperature: coord.0,
+            pressure: coord.1,
+        });
         coord.0 = screen_coords.x;
         coord.1 = screen_coords.y;
     }

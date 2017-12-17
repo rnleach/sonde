@@ -12,7 +12,7 @@ pub enum TemperatureType {
 
 // Draw the temperature profile
 pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
-    let (ac, cr, da) = (args.ac, args.cr, args.da);
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     use sounding_base::Profile::{Pressure, Temperature, WetBulb, DewPoint};
@@ -48,7 +48,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
                             temperature,
                             pressure,
                         };
-                        Some(ac.skew_t.convert_tp_to_screen(da, tp_coords))
+                        Some(ac.skew_t.convert_tp_to_screen(tp_coords))
                     } else {
                         None
                     }

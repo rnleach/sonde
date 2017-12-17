@@ -20,8 +20,6 @@ extern crate sounding_analysis;
 extern crate sounding_base;
 extern crate sounding_bufkit;
 
-use std::rc::Rc;
-
 // Module for maintaining application state
 mod app;
 use app::AppContext;
@@ -48,17 +46,12 @@ pub fn run() -> Result<()> {
     let app = AppContext::new();
 
     // Clear the cache every time through the event loop.
-    let ac = Rc::clone(&app);
-    gtk::idle_add(move || {
-        ac.drawing_cache.reset();
-        gtk::Continue(true)
-    });
+    gtk::idle_add(move || gtk::Continue(true));
 
     // Build the GUI
     let gui = gui::Gui::new(&app);
 
     app.set_gui(gui.clone());
-    app.show_hide_rh_omega(); // Hide this widget if defaulted in config.
 
     // Initialize the main loop.
     gtk::main();
