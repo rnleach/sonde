@@ -70,10 +70,6 @@ impl RHOmegaContext {
         self.generic.set_translate(translate);
     }
 
-    pub fn set_x_zoom(&self, zoom: f64) {
-        self.x_zoom.set(zoom);
-    }
-
     pub fn set_skew_t_scale(&self, scale: f64) {
         self.skew_t_scale.set(scale);
     }

@@ -9,17 +9,20 @@ use gtk::{DrawingArea, Inhibit};
 
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
+use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
 mod drawing;
 
 pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
 
-    drawing::prepare_to_draw_hodo(da, cr, acp);
-    drawing::draw_hodo_background(cr, acp);
-    drawing::draw_hodo_labels(cr, acp);
-    drawing::draw_hodo_line(cr, acp);
-    drawing::draw_active_readout(cr, acp);
+    let args = DrawingArgs::new(acp, cr);
+
+    drawing::prepare_to_draw_hodo(da, args);
+    drawing::draw_hodo_background(args);
+    drawing::draw_hodo_labels(args);
+    drawing::draw_hodo_line(args);
+    drawing::draw_active_readout(args);
 
     Inhibit(false)
 }

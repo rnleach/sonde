@@ -1,15 +1,17 @@
 
-use cairo::{Context, Matrix};
+use cairo::{FontFace, FontSlant, FontWeight, Matrix};
 
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use app::{AppContext, config};
-use coords::{SDCoords, XYCoords, DeviceCoords, DeviceRect};
-use gui::{PlotContext, plot_curve_from_points};
+use app::config;
+use coords::{SDCoords, XYCoords, DeviceCoords, DeviceRect, ScreenRect, ScreenCoords, Rect};
+use gui::{PlotContext, DrawingArgs, plot_curve_from_points, check_overlap_then_add, set_font_size};
 
-pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &AppContext) {
+pub fn prepare_to_draw_hodo(da: &DrawingArea, args: DrawingArgs) {
     use gui::plot_context::PlotContext;
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let alloc = da.get_allocation();
     let device_rect = DeviceRect {
@@ -58,20 +60,24 @@ pub fn prepare_to_draw_hodo(da: &DrawingArea, cr: &Context, ac: &AppContext) {
     ac.hodo.bound_view();
 }
 
-pub fn draw_hodo_background(cr: &Context, ac: &AppContext) {
+pub fn draw_hodo_background(args: DrawingArgs) {
+
+    let ac = args.ac;
 
     let config = ac.config.borrow();
 
     if config.show_background_bands {
-        draw_background_fill(cr, ac);
+        draw_background_fill(args);
     }
 
     if config.show_iso_speed {
-        draw_background_lines(cr, ac);
+        draw_background_lines(args);
     }
 }
 
-fn draw_background_fill(cr: &Context, ac: &AppContext) {
+fn draw_background_fill(args: DrawingArgs) {
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let mut do_draw = true;
     let rgba = ac.config.borrow().background_band_rgba;
@@ -102,7 +108,9 @@ fn draw_background_fill(cr: &Context, ac: &AppContext) {
     }
 }
 
-fn draw_background_lines(cr: &Context, ac: &AppContext) {
+fn draw_background_lines(args: DrawingArgs) {
+
+    let (ac, cr) = (args.ac, args.cr);
 
     let config = ac.config.borrow();
 
@@ -117,20 +125,142 @@ fn draw_background_lines(cr: &Context, ac: &AppContext) {
             pnts,
         );
     }
+
+    let origin = ac.hodo.convert_sd_to_screen(SDCoords {
+        speed: 0.0,
+        dir: 360.0,
+    });
+    for pnts in [
+        30.0,
+        60.0,
+        90.0,
+        120.0,
+        150.0,
+        180.0,
+        210.0,
+        240.0,
+        270.0,
+        300.0,
+        330.0,
+        360.0,
+    ].iter()
+        .map(|d| {
+            let end_point = ac.hodo.convert_sd_to_screen(SDCoords {
+                speed: config::MAX_SPEED,
+                dir: *d,
+            });
+            [origin, end_point]
+        })
+    {
+        plot_curve_from_points(
+            cr,
+            config.background_line_width,
+            config.iso_speed_rgba,
+            pnts.iter().cloned(),
+        );
+    }
+
 }
 
-pub fn draw_hodo_labels(_cr: &Context, ac: &AppContext) {
-    let config = ac.config.borrow();
+pub fn draw_hodo_labels(args: DrawingArgs) {
+
+    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+    let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+    cr.set_font_face(font_face);
+
+    set_font_size(&ac.hodo, config.label_font_size * 0.70, cr);
 
     if config.show_labels {
-        // TODO:
+        let labels = collect_labels(args);
+        draw_labels(args, labels);
     }
 }
 
-pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
+fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    let mut labels = vec![];
+
+    let screen_edges = ac.hodo.calculate_plot_edges(cr, ac);
+
+    if config.show_iso_speed {
+        for &s in &config::ISO_SPEED {
+            for direction in &[240.0] {
+
+                let label = format!("{:.0}", s);
+
+                let extents = cr.text_extents(&label);
+
+                let ScreenCoords {
+                    x: mut screen_x,
+                    y: mut screen_y,
+                } = ac.hodo.convert_sd_to_screen(SDCoords {
+                    speed: s,
+                    dir: *direction,
+                });
+                screen_y -= extents.height / 2.0;
+                screen_x -= extents.width / 2.0;
+
+                let label_lower_left = ScreenCoords {
+                    x: screen_x,
+                    y: screen_y,
+                };
+                let label_upper_right = ScreenCoords {
+                    x: screen_x + extents.width,
+                    y: screen_y + extents.height,
+                };
+
+                let pair = (
+                    label,
+                    ScreenRect {
+                        lower_left: label_lower_left,
+                        upper_right: label_upper_right,
+                    },
+                );
+
+                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+            }
+        }
+    }
+
+    labels
+}
+
+fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
+
+    let (cr, config) = (args.cr, args.ac.config.borrow());
+
+    let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
+
+    for (label, rect) in labels {
+        let ScreenRect { lower_left, .. } = rect;
+
+        let mut rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.rectangle(
+            lower_left.x - padding,
+            lower_left.y - padding,
+            rect.width() + 2.0 * padding,
+            rect.height() + 2.0 * padding,
+        );
+        cr.fill();
+
+        // Setup label colors
+        rgba = config.label_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.move_to(lower_left.x, lower_left.y);
+        cr.show_text(&label);
+    }
+}
+
+pub fn draw_hodo_line(args: DrawingArgs) {
 
     use sounding_base::Profile::{Pressure, WindSpeed, WindDirection};
 
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
@@ -169,7 +299,9 @@ pub fn draw_hodo_line(cr: &Context, ac: &AppContext) {
     }
 }
 
-pub fn draw_active_readout(cr: &Context, ac: &AppContext) {
+pub fn draw_active_readout(args: DrawingArgs) {
+
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if !config.show_active_readout {
