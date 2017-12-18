@@ -49,6 +49,7 @@ pub fn draw(args: DrawingArgs, da: &DrawingArea) {
         height: height,
     };
     ac.skew_t.set_device_rect(skew_t_rect);
+    ac.skew_t.bound_view();
     cr.translate(rh_width, 0.0);
     draw_skew_t(args);
 

@@ -334,8 +334,7 @@ impl AppContext {
     fn fit_to_data(&self) {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
-
-        self.rh_omega.set_translate_y(self.skew_t.get_translate());
+        self.rh_omega.zoom_to_envelope();
     }
 
     /// Get the zoom factor

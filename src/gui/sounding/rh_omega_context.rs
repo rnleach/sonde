@@ -70,9 +70,9 @@ impl RHOmegaContext {
         self.generic.set_translate(translate);
     }
 
-    // pub fn set_x_zoom(&self, zoom: f64) {
-    //     self.x_zoom.set(zoom);
-    // }
+    pub fn set_x_zoom(&self, zoom: f64) {
+        self.x_zoom.set(zoom);
+    }
 
     pub fn set_skew_t_scale(&self, scale: f64) {
         self.skew_t_scale.set(scale);
@@ -104,7 +104,7 @@ impl PlotContext for RHOmegaContext {
     fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Unapply scaling first
         let x = coords.x / self.x_zoom.get();
-        let y = coords.y / self.get_zoom_factor();
+        let y = coords.y / self.get_zoom_factor() * self.scale_factor() / self.skew_t_scale.get();
 
         // Unapply translation
         let x = x + self.generic.get_translate().x;

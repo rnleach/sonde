@@ -1,5 +1,6 @@
 use cairo::Context;
 
+use app::config;
 use coords::{ScreenCoords, TPCoords, ScreenRect, Rect, XYCoords};
 use gui::plot_context::PlotContext;
 use gui::DrawingArgs;
@@ -45,9 +46,17 @@ fn gather_wind_data(
 
     izip!(pres, dir, spd)
         .filter_map(|tuple| {
-            let (p, d, s) = tuple;
-            if p.as_option().is_some() && d.as_option().is_some() && s.as_option().is_some() {
-                Some((p.unwrap(), d.unwrap(), s.unwrap()))
+            let (p, d, s) = (
+                tuple.0.as_option(),
+                tuple.1.as_option(),
+                tuple.2.as_option(),
+            );
+            if let (Some(p), Some(d), Some(s)) = (p, d, s) {
+                if p > config::MINP {
+                    Some((p, d, s))
+                } else {
+                    None
+                }
             } else {
                 None
             }
