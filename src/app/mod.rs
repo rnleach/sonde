@@ -207,7 +207,7 @@ impl AppContext {
                     tuple.2.as_option(),
                 )
             {
-                if p < config::MINP {
+                if p < self.config.borrow().min_hodo_pressure {
                     None
                 } else {
                     Some(SDCoords { speed: s, dir: d })

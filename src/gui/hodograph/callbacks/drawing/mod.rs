@@ -278,7 +278,7 @@ pub fn draw_hodo_line(args: DrawingArgs) {
                         triplet.2.as_option(),
                     )
                 {
-                    if p > config::MINP {
+                    if p >= config.min_hodo_pressure {
                         let sd_coords = SDCoords { speed, dir };
                         Some(ac.hodo.convert_sd_to_screen(sd_coords))
                     } else {
@@ -309,8 +309,18 @@ pub fn draw_active_readout(args: DrawingArgs) {
     }
 
     let (speed, dir) = if let Some(sample) = ac.get_sample() {
-        if let (Some(speed), Some(dir)) = (sample.speed.as_option(), sample.direction.as_option()) {
-            (speed, dir)
+        if let (Some(pressure), Some(speed), Some(dir)) =
+            (
+                sample.pressure.as_option(),
+                sample.speed.as_option(),
+                sample.direction.as_option(),
+            )
+        {
+            if pressure >= config.min_hodo_pressure {
+                (speed, dir)
+            } else {
+                return;
+            }
         } else {
             return;
         }

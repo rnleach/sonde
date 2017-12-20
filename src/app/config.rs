@@ -161,6 +161,8 @@ pub struct Config {
     pub veclocity_rgba: (f64, f64, f64, f64),
     /// Show or hide the velocity plot.
     pub show_velocity: bool,
+    /// Plot hodograph for winds up to a minimum pressure.
+    pub min_hodo_pressure: f64,
 }
 
 impl Config {}
@@ -268,6 +270,7 @@ impl Default for Config {
             velocity_line_width: 2.0,
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
+            min_hodo_pressure: 300.0,
         }
     }
 }
