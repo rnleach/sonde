@@ -264,6 +264,8 @@ impl AppContext {
             self.update_sample();
         }
 
+        self.mark_data_dirty();
+
         self.update_all_gui();
     }
 
@@ -279,6 +281,8 @@ impl AppContext {
             self.currently_displayed_index.set(curr_index);
             self.update_sample();
         }
+
+        self.mark_data_dirty();
 
         self.update_all_gui();
     }
@@ -297,6 +301,7 @@ impl AppContext {
                 self.last_sample.set(None);
             }
         }
+        self.mark_overlay_dirty();
     }
 
     // Update all the gui elements
@@ -335,6 +340,8 @@ impl AppContext {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
+        self.mark_background_dirty();
+
     }
 
     /// Get the zoom factor
@@ -356,5 +363,22 @@ impl AppContext {
             let ta = gui.get_text_area();
             ::gui::text_area::update_text_highlight(&ta, self);
         }
+
+        self.mark_overlay_dirty();
+    }
+
+    fn mark_data_dirty(&self) {
+        self.hodo.mark_data_dirty();
+        // TODO: Mark others as I can
+    }
+
+    fn mark_overlay_dirty(&self) {
+        self.hodo.mark_overlay_dirty();
+        // TODO: Mark others as I can
+    }
+
+    fn mark_background_dirty(&self) {
+        self.hodo.mark_background_dirty();
+        // TODO: Mark others as I can
     }
 }

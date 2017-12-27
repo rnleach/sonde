@@ -4,7 +4,7 @@ use gtk::prelude::*;
 
 
 use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
-          keyval_from_name};
+          EventConfigure, keyval_from_name};
 use gtk::{DrawingArea, Inhibit};
 
 use app::AppContextPointer;
@@ -12,17 +12,18 @@ use coords::{DeviceCoords, XYCoords};
 use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
-mod drawing;
-
 pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
 
     let args = DrawingArgs::new(acp, cr);
 
-    drawing::prepare_to_draw_hodo(da, args);
-    drawing::draw_hodo_background(args);
-    drawing::draw_hodo_labels(args);
-    drawing::draw_hodo_line(args);
-    drawing::draw_active_readout(args);
+    if acp.hodo.reset_allocation.get() {
+        acp.hodo.update_cache_allocations(da);
+    }
+
+    acp.hodo.init_matrix(args);
+    acp.hodo.draw_background_cached(args);
+    acp.hodo.draw_data_cached(args);
+    acp.hodo.draw_overlay_cached(args);
 
     Inhibit(false)
 }
@@ -71,6 +72,8 @@ pub fn scroll_event(
         y: translate_y,
     };
     ac.hodo.set_translate(translate);
+    ac.hodo.bound_view();
+    ac.hodo.mark_background_dirty();
 
     ac.update_all_gui();
 
@@ -147,6 +150,8 @@ pub fn mouse_motion_event(
             translate.x -= delta.0;
             translate.y -= delta.1;
             ac.hodo.set_translate(translate);
+            ac.hodo.bound_view();
+            ac.hodo.mark_background_dirty();
             ac.update_all_gui();
         }
     }
@@ -179,4 +184,18 @@ pub fn key_press_event(
     } else {
         Inhibit(false)
     }
+}
+
+pub fn configure_event(
+    _hodo_area: &DrawingArea,
+    event: &EventConfigure,
+    ac: &AppContextPointer,
+) -> bool {
+
+    let rect = ac.hodo.get_device_rect();
+    let (width, height) = event.get_size();
+    if rect.width != f64::from(width) || rect.height != f64::from(height) {
+        ac.hodo.reset_allocation();
+    }
+    false
 }

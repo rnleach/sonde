@@ -9,6 +9,7 @@ use app::AppContextPointer;
 pub mod hodo_context;
 
 mod callbacks;
+mod drawing;
 
 pub fn set_up_hodograph_area(hodo_area: &DrawingArea, app_context: &AppContextPointer) {
 
@@ -40,6 +41,9 @@ pub fn set_up_hodograph_area(hodo_area: &DrawingArea, app_context: &AppContextPo
 
     let ac = Rc::clone(app_context);
     hodo_area.connect_key_press_event(move |da, ev| callbacks::key_press_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    hodo_area.connect_configure_event(move |da, ev| callbacks::configure_event(da, ev, &ac));
 
     hodo_area.set_can_focus(true);
 

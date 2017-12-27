@@ -1,64 +1,9 @@
 
-use cairo::{FontFace, FontSlant, FontWeight, Matrix};
-
-use gtk::prelude::*;
-use gtk::DrawingArea;
+use cairo::{FontFace, FontSlant, FontWeight};
 
 use app::config;
-use coords::{SDCoords, XYCoords, DeviceCoords, DeviceRect, ScreenRect, ScreenCoords, Rect};
+use coords::{SDCoords, ScreenRect, ScreenCoords, Rect};
 use gui::{PlotContext, DrawingArgs, plot_curve_from_points, check_overlap_then_add, set_font_size};
-
-pub fn prepare_to_draw_hodo(da: &DrawingArea, args: DrawingArgs) {
-    use gui::plot_context::PlotContext;
-
-    let (ac, cr) = (args.ac, args.cr);
-
-    let alloc = da.get_allocation();
-    let device_rect = DeviceRect {
-        upper_left: DeviceCoords { row: 0.0, col: 0.0 },
-        width: f64::from(alloc.width),
-        height: f64::from(alloc.height),
-    };
-    ac.hodo.set_device_rect(device_rect);
-    let scale_factor = ac.hodo.scale_factor();
-
-    let config = ac.config.borrow();
-
-    // Fill with backgound color
-    cr.rectangle(0.0, 0.0, device_rect.width, device_rect.height);
-    cr.set_source_rgba(
-        config.background_rgba.0,
-        config.background_rgba.1,
-        config.background_rgba.2,
-        config.background_rgba.3,
-    );
-    cr.fill();
-
-    // Set the scale factor
-    cr.scale(scale_factor, scale_factor);
-    // Set origin at lower left.
-    cr.transform(Matrix {
-        xx: 1.0,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0,
-        x0: 0.0,
-        y0: device_rect.height / scale_factor,
-    });
-
-    // Clip the drawing area
-    let upper_right_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-    let lower_left_xy = ac.hodo.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    cr.rectangle(
-        lower_left_xy.x,
-        lower_left_xy.y,
-        upper_right_xy.x - lower_left_xy.x,
-        upper_right_xy.y - lower_left_xy.y,
-    );
-    cr.clip();
-
-    ac.hodo.bound_view();
-}
 
 pub fn draw_hodo_background(args: DrawingArgs) {
 
@@ -73,14 +18,29 @@ pub fn draw_hodo_background(args: DrawingArgs) {
     if config.show_iso_speed {
         draw_background_lines(args);
     }
+
+    if config.show_labels {
+        draw_background_labels(args);
+    }
 }
 
 fn draw_background_fill(args: DrawingArgs) {
 
     let (ac, cr) = (args.ac, args.cr);
 
+    let mut rgba = ac.config.borrow().background_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    let rect = ac.hodo.bounding_box_in_screen_coords();
+    cr.rectangle(
+        rect.lower_left.x,
+        rect.lower_left.y,
+        rect.width(),
+        rect.height(),
+    );
+    cr.fill();
+
     let mut do_draw = true;
-    let rgba = ac.config.borrow().background_band_rgba;
+    rgba = ac.config.borrow().background_band_rgba;
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     for pnts in config::ISO_SPEED_PNTS.iter() {
@@ -162,7 +122,7 @@ fn draw_background_lines(args: DrawingArgs) {
 
 }
 
-pub fn draw_hodo_labels(args: DrawingArgs) {
+fn draw_background_labels(args: DrawingArgs) {
 
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -171,10 +131,8 @@ pub fn draw_hodo_labels(args: DrawingArgs) {
 
     set_font_size(&ac.hodo, config.label_font_size * 0.70, cr);
 
-    if config.show_labels {
-        let labels = collect_labels(args);
-        draw_labels(args, labels);
-    }
+    let labels = collect_labels(args);
+    draw_labels(args, labels);
 }
 
 fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
