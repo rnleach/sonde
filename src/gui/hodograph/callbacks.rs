@@ -186,6 +186,7 @@ pub fn key_press_event(
     }
 }
 
+// TODO: remove this when size allocate is connected.
 pub fn configure_event(
     _hodo_area: &DrawingArea,
     event: &EventConfigure,
@@ -194,8 +195,12 @@ pub fn configure_event(
 
     let rect = ac.hodo.get_device_rect();
     let (width, height) = event.get_size();
-    if rect.width != f64::from(width) || rect.height != f64::from(height) {
+    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON ||
+        (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+    {
         ac.hodo.reset_allocation();
     }
     false
 }
+
+// TODO: connect_size_allocate to update bound_view anc create the matrix

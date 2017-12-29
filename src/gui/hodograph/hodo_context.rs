@@ -87,7 +87,7 @@ impl HodoContext {
 
     pub fn mark_data_dirty(&self) {
         self.dirty_background.set(true);
-        self.dirty_overlay.set(true);
+        self.dirty_data.set(true);
     }
 
     pub fn mark_overlay_dirty(&self) {
@@ -152,15 +152,25 @@ impl HodoContext {
 
     pub fn draw_background_cached(&self, args: DrawingArgs) {
 
-        let (ac, cr) = (args.ac, args.cr);
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if self.dirty_background.get() {
 
             let tmp_cr = Context::new(&self.background_layer.borrow().clone());
+
+            // Clear the previous drawing from the cache
+            tmp_cr.save();
+            let rgba = config.background_rgba;
+            tmp_cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            tmp_cr.set_operator(Operator::Source);
+            tmp_cr.paint();
+            tmp_cr.restore();
             tmp_cr.transform(self.matrix.get());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
             super::drawing::draw_hodo_background(tmp_args);
+
+            self.dirty_background.set(false);
         }
 
         cr.set_source_surface(&self.background_layer.borrow().clone(), 0.0, 0.0);
@@ -185,6 +195,8 @@ impl HodoContext {
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
             super::drawing::draw_hodo_line(tmp_args);
+
+            self.dirty_data.set(false);
         }
 
         cr.set_source_surface(&self.data_layer.borrow().clone(), 0.0, 0.0);
@@ -210,6 +222,8 @@ impl HodoContext {
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
             super::drawing::draw_active_readout(tmp_args);
+
+            self.dirty_overlay.set(false);
         }
 
         cr.set_source_surface(&self.overlay_layer.borrow().clone(), 0.0, 0.0);
