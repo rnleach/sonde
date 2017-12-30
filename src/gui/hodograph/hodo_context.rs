@@ -1,16 +1,15 @@
-
 use std::cell::{Cell, RefCell};
 
-use cairo::{Format, ImageSurface, Matrix, MatrixTrait, Context, Operator};
+use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait, Operator};
 
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
 use gui::DrawingArgs;
-use gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
+use gui::plot_context::{GenericContext, HasGenericContext, PlotContext};
 
 use app::config;
-use coords::{ScreenCoords, SDCoords, XYCoords, DeviceRect, DeviceCoords};
+use coords::{DeviceCoords, DeviceRect, SDCoords, ScreenCoords, XYCoords};
 
 pub struct HodoContext {
     generic: GenericContext,
@@ -74,11 +73,6 @@ impl HasGenericContext for HodoContext {
 }
 
 impl HodoContext {
-    pub fn reset_allocation(&self) {
-        self.reset_allocation.set(true);
-        self.mark_background_dirty();
-    }
-
     pub fn mark_background_dirty(&self) {
         self.dirty_background.set(true);
         self.dirty_data.set(true);
@@ -139,23 +133,21 @@ impl HodoContext {
         let (width, height) = (da.get_allocation().width, da.get_allocation().height);
 
         // Make the new allocations
-        *self.background_layer.borrow_mut() = ImageSurface::create(Format::ARgb32, width, height)
-            .unwrap();
-        *self.data_layer.borrow_mut() = ImageSurface::create(Format::ARgb32, width, height)
-            .unwrap();
-        *self.overlay_layer.borrow_mut() = ImageSurface::create(Format::ARgb32, width, height)
-            .unwrap();
+        *self.background_layer.borrow_mut() =
+            ImageSurface::create(Format::ARgb32, width, height).unwrap();
+        *self.data_layer.borrow_mut() =
+            ImageSurface::create(Format::ARgb32, width, height).unwrap();
+        *self.overlay_layer.borrow_mut() =
+            ImageSurface::create(Format::ARgb32, width, height).unwrap();
 
         // Mark allocations as updated.
         self.reset_allocation.set(false);
     }
 
     pub fn draw_background_cached(&self, args: DrawingArgs) {
-
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if self.dirty_background.get() {
-
             let tmp_cr = Context::new(&self.background_layer.borrow().clone());
 
             // Clear the previous drawing from the cache
@@ -180,11 +172,9 @@ impl HodoContext {
     }
 
     pub fn draw_data_cached(&self, args: DrawingArgs) {
-
         let (ac, cr) = (args.ac, args.cr);
 
         if self.dirty_data.get() {
-
             let tmp_cr = Context::new(&self.data_layer.borrow().clone());
 
             // Clear the previous drawing from the cache
@@ -203,15 +193,12 @@ impl HodoContext {
 
         cr.set_source_surface(&self.data_layer.borrow().clone(), 0.0, 0.0);
         cr.paint();
-
     }
 
     pub fn draw_overlay_cached(&self, args: DrawingArgs) {
-
         let (ac, cr) = (args.ac, args.cr);
 
         if self.dirty_overlay.get() {
-
             let tmp_cr = Context::new(&self.overlay_layer.borrow().clone());
 
             // Clear the previous drawing from the cache
@@ -230,6 +217,5 @@ impl HodoContext {
 
         cr.set_source_surface(&self.overlay_layer.borrow().clone(), 0.0, 0.0);
         cr.paint();
-
     }
 }

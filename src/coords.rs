@@ -14,7 +14,6 @@ pub trait Rect {
 
     /// Check if two rectangles overlap
     fn overlaps(&self, other: &Self) -> bool {
-
         if self.min_x() > other.max_x() {
             return false;
         }
@@ -33,7 +32,6 @@ pub trait Rect {
 
     // Check if this rectangle is inside another.
     fn inside(&self, big_rect: &Self) -> bool {
-
         if self.min_x() < big_rect.min_x() {
             return false;
         }
@@ -143,7 +141,6 @@ impl Rect for XYRect {
     }
 }
 
-
 /***************************************************************************************************
  *                   Screen Coords - the coordinate system to actually draw in.
  * ************************************************************************************************/
@@ -220,7 +217,6 @@ impl Rect for ScreenRect {
         self.upper_right.y
     }
 }
-
 
 /***************************************************************************************************
  *                   Device Coords - the coordinate system of the device before

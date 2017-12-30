@@ -1,13 +1,12 @@
 use cairo::Matrix;
 
 use app::config;
-use coords::{WPCoords, ScreenCoords, Rect};
-use gui::{PlotContext, DrawingArgs, plot_curve_from_points};
+use coords::{Rect, ScreenCoords, WPCoords};
+use gui::{plot_curve_from_points, DrawingArgs, PlotContext};
 
 mod background;
 
 pub fn prepare_to_draw(args: DrawingArgs) {
-
     let ac = args.ac;
     let cr = args.cr;
 
@@ -30,7 +29,6 @@ pub fn prepare_to_draw(args: DrawingArgs) {
 }
 
 pub fn draw_background(args: DrawingArgs) {
-
     if args.ac.config.borrow().show_dendritic_zone {
         background::draw_dendtritic_snow_growth_zone(args);
     }
@@ -50,22 +48,22 @@ pub fn draw_rh_profile(args: DrawingArgs) {
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        use sounding_base::Profile::{Pressure, Temperature, DewPoint};
+        use sounding_base::Profile::{DewPoint, Pressure, Temperature};
 
         let pres_data = sndg.get_profile(Pressure);
         let t_data = sndg.get_profile(Temperature);
         let td_data = sndg.get_profile(DewPoint);
         let mut profile = izip!(pres_data, t_data, td_data)
-            .filter_map(|triplet| if let (Some(p), Some(t), Some(td)) =
-                (
+            .filter_map(|triplet| {
+                if let (Some(p), Some(t), Some(td)) = (
                     triplet.0.as_option(),
                     triplet.1.as_option(),
                     triplet.2.as_option(),
-                )
-            {
-                Some((p, ::formula::rh(t, td)))
-            } else {
-                None
+                ) {
+                    Some((p, ::formula::rh(t, td)))
+                } else {
+                    None
+                }
             })
             .filter_map(|pair| {
                 let (p, rh) = pair;
@@ -140,7 +138,6 @@ pub fn draw_rh_profile(args: DrawingArgs) {
 }
 
 pub fn draw_omega_profile(args: DrawingArgs) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -156,8 +153,10 @@ pub fn draw_omega_profile(args: DrawingArgs) {
         let line_width = config.omega_line_width;
         let line_rgba = config.omega_rgba;
 
-        let profile_data = pres_data.iter().zip(omega_data.iter()).filter_map(
-            |val_pair| {
+        let profile_data = pres_data
+            .iter()
+            .zip(omega_data.iter())
+            .filter_map(|val_pair| {
                 if let (Some(p), Some(w)) = (val_pair.0.as_option(), val_pair.1.as_option()) {
                     if p > config::MINP {
                         let wp_coords = WPCoords { w, p };
@@ -168,15 +167,13 @@ pub fn draw_omega_profile(args: DrawingArgs) {
                 } else {
                     None
                 }
-            },
-        );
+            });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
 }
 
 pub fn draw_active_readout(args: DrawingArgs) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

@@ -70,7 +70,6 @@ const PADDING: u32 = 2;
 const BOX_SPACING: i32 = 5;
 
 pub fn set_up_control_area(control_area: &Notebook, acp: &AppContextPointer) {
-
     control_area.set_hexpand(true);
     control_area.set_vexpand(true);
     control_area.set_scrollable(true);

@@ -1,6 +1,6 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
-use coords::{TPCoords, XYCoords, ScreenCoords, DeviceCoords, ScreenRect};
+use coords::{DeviceCoords, ScreenCoords, ScreenRect, TPCoords, XYCoords};
 use gui::plot_context::PlotContext;
 use gui::DrawingArgs;
 
@@ -9,7 +9,6 @@ use cairo::Context;
 use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(args: DrawingArgs) {
-
     let (ac, cr) = (args.ac, args.cr);
 
     let vals = if let Some(vals) = ac.get_sample() {
@@ -40,7 +39,6 @@ pub fn draw_active_sample(args: DrawingArgs) {
 }
 
 fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> {
-
     let mut results = vec![];
 
     let t_c = vals.temperature.as_option();
@@ -174,7 +172,6 @@ fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
 }
 
 fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -> ScreenRect {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -196,9 +193,8 @@ fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -
     width += 2.0 * padding;
     height += 2.0 * padding;
 
-    let ScreenCoords { x: mut left, .. } = ac.skew_t.convert_device_to_screen(
-        DeviceCoords { col: 5.0, row: 5.0 },
-    );
+    let ScreenCoords { x: mut left, .. } = ac.skew_t
+        .convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
     let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
         temperature: 0.0,
         pressure: sample_p,

@@ -10,7 +10,6 @@ mod temperature_profile;
 mod wind_profile;
 
 pub fn prepare_to_draw(args: DrawingArgs) {
-
     let ac = args.ac;
     let cr = args.cr;
 
@@ -30,7 +29,6 @@ pub fn prepare_to_draw(args: DrawingArgs) {
 }
 
 pub fn draw_background(args: DrawingArgs) {
-
     background::draw_background_fill(args);
     background::draw_background_lines(args);
 }

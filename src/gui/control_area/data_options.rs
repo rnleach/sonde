@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Frame, ScrolledWindow, ColorButton, CheckButton};
+use gtk::{CheckButton, ColorButton, Frame, ScrolledWindow};
 use gdk::RGBA;
 
 use gui::control_area::{BOX_SPACING, PADDING};

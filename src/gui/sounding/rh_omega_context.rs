@@ -1,10 +1,9 @@
-
 use std::cell::Cell;
 
-use gui::plot_context::{PlotContext, GenericContext};
+use gui::plot_context::{GenericContext, PlotContext};
 use app::config;
 
-use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords, XYRect, DeviceRect};
+use coords::{DeviceCoords, DeviceRect, ScreenCoords, WPCoords, XYCoords, XYRect};
 
 pub struct RHOmegaContext {
     x_zoom: Cell<f64>,
@@ -25,8 +24,8 @@ impl RHOmegaContext {
     pub fn convert_wp_to_xy(coords: WPCoords) -> XYCoords {
         use std::f64;
 
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.p)) /
-            (f64::log10(config::MAXP) - f64::log10(config::MINP));
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.p))
+            / (f64::log10(config::MAXP) - f64::log10(config::MINP));
 
         // The + sign below looks weird, but is correct.
         let x = (coords.w + config::MAX_ABS_W) / (2.0 * config::MAX_ABS_W);
@@ -39,8 +38,8 @@ impl RHOmegaContext {
         use std::f64;
 
         let p = 10.0f64.powf(
-            -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP)) +
-                f64::log10(config::MAXP),
+            -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP))
+                + f64::log10(config::MAXP),
         );
         let w = coords.x * (2.0 * config::MAX_ABS_W) - config::MAX_ABS_W;
 
@@ -85,7 +84,6 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-
         // Apply translation first
         let x = coords.x - self.generic.get_translate().x;
         let y = coords.y - self.generic.get_translate().y;
@@ -153,7 +151,6 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn zoom_to_envelope(&self) {
-
         let xy_envelope = self.get_xy_envelope();
 
         let lower_left = xy_envelope.lower_left;
@@ -166,7 +163,6 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn bound_view(&self) {
-
         let device_rect = self.get_device_rect();
 
         let bounds = DeviceCoords {

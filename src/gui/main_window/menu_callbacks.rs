@@ -1,4 +1,3 @@
-
 use std::path::PathBuf;
 
 use gtk::{DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt,
@@ -10,15 +9,12 @@ use app::AppContextPointer;
 use errors::*;
 
 pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
-
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
-    dialog.add_buttons(
-        &[
-            ("Open", ResponseType::Ok.into()),
-            ("Cancel", ResponseType::Cancel.into()),
-        ],
-    );
+    dialog.add_buttons(&[
+        ("Open", ResponseType::Ok.into()),
+        ("Cancel", ResponseType::Cancel.into()),
+    ]);
 
     let filter = FileFilter::new();
     filter.add_pattern("*.buf");
@@ -26,7 +22,6 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     dialog.add_filter(&filter);
 
     if dialog.run() == ResponseType::Ok.into() {
-
         if let Some(filename) = dialog.get_filename() {
             if let Err(ref err) = load_file(&filename, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
@@ -40,10 +35,7 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
 }
 
 fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
-
-    let file = BufkitFile::load(path).chain_err(|| {
-        format!("Error loading file {:?}", path)
-    })?;
+    let file = BufkitFile::load(path).chain_err(|| format!("Error loading file {:?}", path))?;
     let data = file.data()?;
 
     ac.load_data(&mut data.into_iter())?;
@@ -58,7 +50,7 @@ fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
 }
 
 fn show_error_dialog(message: &str, win: &Window) {
-    use gtk::{MessageType, ButtonsType, DialogFlags};
+    use gtk::{ButtonsType, DialogFlags, MessageType};
     let dialog = MessageDialog::new(
         Some(win),
         DialogFlags::MODAL | DialogFlags::DESTROY_WITH_PARENT,

@@ -1,11 +1,9 @@
-
 use cairo::Context;
 use gtk::prelude::*;
 
-
-use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
-          EventConfigure, keyval_from_name};
-use gtk::{DrawingArea, Inhibit, Allocation};
+use gdk::{keyval_from_name, EventButton, EventConfigure, EventCrossing, EventKey, EventMotion,
+          EventScroll, ScrollDirection};
+use gtk::{Allocation, DrawingArea, Inhibit};
 
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
@@ -13,7 +11,6 @@ use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
 pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
-
     let args = DrawingArgs::new(acp, cr);
 
     if acp.hodo.reset_allocation.get() {
@@ -34,14 +31,12 @@ pub fn scroll_event(
     event: &EventScroll,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.hodo.convert_device_to_xy(
-        DeviceCoords::from(event.get_position()),
-    );
+    let pos = ac.hodo
+        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.hodo.get_zoom_factor();
@@ -86,12 +81,10 @@ pub fn button_press_event(
     event: &EventButton,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     // Left mouse button
     if event.get_button() == 1 {
-        ac.hodo.set_last_cursor_position(
-            Some(event.get_position().into()),
-        );
+        ac.hodo
+            .set_last_cursor_position(Some(event.get_position().into()));
         ac.hodo.set_left_button_pressed(true);
         Inhibit(true)
     } else {
@@ -120,7 +113,6 @@ pub fn leave_event(
     _event: &EventCrossing,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     ac.hodo.set_last_cursor_position(None);
 
     Inhibit(false)
@@ -132,7 +124,6 @@ pub fn mouse_motion_event(
     event: &EventMotion,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     hodo_area.grab_focus();
 
     if ac.hodo.get_left_button_pressed() {
@@ -173,7 +164,6 @@ pub fn key_press_event(
     event: &EventKey,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
         ac.display_next();
@@ -186,9 +176,8 @@ pub fn key_press_event(
     }
 }
 
-pub fn size_allocate_event(_hodo_area: &DrawingArea, _alloc: &Allocation, ac: &AppContextPointer) {
-    // FIXME: Actually move the allocation code here to take it out of the drawing method.
-    ac.hodo.reset_allocation();
+pub fn size_allocate_event(hodo_area: &DrawingArea, _alloc: &Allocation, ac: &AppContextPointer) {
+    ac.hodo.update_cache_allocations(hodo_area);
 }
 
 pub fn configure_event(
@@ -196,11 +185,10 @@ pub fn configure_event(
     event: &EventConfigure,
     ac: &AppContextPointer,
 ) -> bool {
-
     let rect = ac.hodo.get_device_rect();
     let (width, height) = event.get_size();
-    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON ||
-        (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
+        || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
     {
         ac.hodo.mark_background_dirty();
     }

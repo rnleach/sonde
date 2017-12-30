@@ -1,8 +1,8 @@
 //! Event callbacks.
 
 use cairo::Context;
-use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
-          keyval_from_name};
+use gdk::{keyval_from_name, EventButton, EventCrossing, EventKey, EventMotion, EventScroll,
+          ScrollDirection};
 use gtk::{DrawingArea, Inhibit, WidgetExt};
 
 use app::AppContextPointer;
@@ -14,7 +14,6 @@ mod drawing;
 
 /// Draws the sounding, connected to the on-draw event signal.
 pub fn draw(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
-
     let args = DrawingArgs::new(ac, cr);
     drawing::draw(args, da);
     Inhibit(false)
@@ -22,14 +21,12 @@ pub fn draw(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
 
 /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
 pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.skew_t.convert_device_to_xy(
-        DeviceCoords::from(event.get_position()),
-    );
+    let pos = ac.skew_t
+        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.get_zoom_factor();
@@ -73,12 +70,10 @@ pub fn button_press_event(
     event: &EventButton,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     // Left mouse button
     if event.get_button() == 1 {
-        ac.skew_t.set_last_cursor_position(
-            Some(event.get_position().into()),
-        );
+        ac.skew_t
+            .set_last_cursor_position(Some(event.get_position().into()));
         ac.skew_t.set_left_button_pressed(true);
         Inhibit(true)
     } else {
@@ -103,7 +98,6 @@ pub fn button_release_event(
 
 /// Handles leave notify
 pub fn leave_event(_da: &DrawingArea, _event: &EventCrossing, ac: &AppContextPointer) -> Inhibit {
-
     ac.skew_t.set_last_cursor_position(None);
     ac.set_sample(None);
     ac.update_all_gui();
@@ -117,7 +111,6 @@ pub fn mouse_motion_event(
     event: &EventMotion,
     ac: &AppContextPointer,
 ) -> Inhibit {
-
     da.grab_focus();
 
     if ac.skew_t.get_left_button_pressed() {
@@ -153,7 +146,6 @@ pub fn mouse_motion_event(
         );
         ac.set_sample(Some(sample));
         ac.update_all_gui();
-
     }
     Inhibit(false)
 }
@@ -165,7 +157,6 @@ pub fn key_release_event(_da: &DrawingArea, _event: &EventKey, _ac: &AppContextP
 
 /// Handles key-press events
 pub fn key_press_event(_da: &DrawingArea, event: &EventKey, ac: &AppContextPointer) -> Inhibit {
-
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
         ac.display_next();

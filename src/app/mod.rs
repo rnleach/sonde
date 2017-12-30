@@ -4,9 +4,9 @@
 use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
-use sounding_base::{Sounding, DataRow};
+use sounding_base::{DataRow, Sounding};
 
-use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
+use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
 use gui::Gui;
 use gui::hodograph::hodo_context::HodoContext;
@@ -100,21 +100,20 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(Temperature))
-                .filter_map(|p| if let (Some(p), Some(t)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(TPCoords {
+                                temperature: t,
+                                pressure: p,
+                            })
+                        }
                     } else {
-                        Some(TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -135,21 +134,20 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(DewPoint))
-                .filter_map(|p| if let (Some(p), Some(t)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(TPCoords {
+                                temperature: t,
+                                pressure: p,
+                            })
+                        }
                     } else {
-                        Some(TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -170,18 +168,17 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
-                .filter_map(|p| if let (Some(p), Some(o)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(o)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(WPCoords { w: o.abs(), p })
+                        }
                     } else {
-                        Some(WPCoords { w: o.abs(), p })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
                 if x > rh_omega_xy_envelope.upper_right.x {
                     rh_omega_xy_envelope.upper_right.x = x;
@@ -200,22 +197,21 @@ impl AppContext {
                 snd.get_profile(Pressure),
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
-            ).filter_map(|tuple| if let (Some(p), Some(s), Some(d)) =
-                (
+            ).filter_map(|tuple| {
+                if let (Some(p), Some(s), Some(d)) = (
                     tuple.0.as_option(),
                     tuple.1.as_option(),
                     tuple.2.as_option(),
-                )
-            {
-                if p < self.config.borrow().min_hodo_pressure {
-                    None
+                ) {
+                    if p < self.config.borrow().min_hodo_pressure {
+                        None
+                    } else {
+                        Some(SDCoords { speed: s, dir: d })
+                    }
                 } else {
-                    Some(SDCoords { speed: s, dir: d })
+                    None
                 }
-            } else {
-                None
-            })
-            {
+            }) {
                 let XYCoords { x, y } = HodoContext::convert_sd_to_xy(pair);
                 if x < hodo_xy_envelope.lower_left.x {
                     hodo_xy_envelope.lower_left.x = x;
@@ -290,13 +286,11 @@ impl AppContext {
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure.as_option() {
-                self.last_sample.set(Some(
-                    ::sounding_analysis::linear_interpolate(
-                        &self.list.borrow()
-                            [self.currently_displayed_index.get()],
+                self.last_sample
+                    .set(Some(::sounding_analysis::linear_interpolate(
+                        &self.list.borrow()[self.currently_displayed_index.get()],
                         p,
-                    ),
-                ));
+                    )));
             } else {
                 self.last_sample.set(None);
             }
@@ -341,7 +335,6 @@ impl AppContext {
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
         self.mark_background_dirty();
-
     }
 
     /// Get the zoom factor

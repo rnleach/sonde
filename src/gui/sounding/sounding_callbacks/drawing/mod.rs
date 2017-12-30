@@ -76,7 +76,6 @@ pub fn draw(args: DrawingArgs, da: &DrawingArea) {
 }
 
 fn draw_skew_t(args: DrawingArgs) {
-
     skew_t::prepare_to_draw(args);
     skew_t::draw_background(args);
     skew_t::draw_labels(args);

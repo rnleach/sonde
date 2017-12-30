@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use cairo::Context;
-use coords::{DeviceCoords, ScreenCoords, XYCoords, ScreenRect, XYRect, DeviceRect, Rect};
+use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
 
 use super::AppContext;
 
@@ -46,7 +46,6 @@ pub trait PlotContext {
 
     /// Conversion from (x,y) coords to screen coords
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-
         let translate = self.get_translate();
 
         // Apply translation first
@@ -104,7 +103,6 @@ pub trait PlotContext {
 
     /// Get the edges of the X-Y plot area in `ScreenCoords`, may or may not be on the screen.
     fn calculate_plot_edges(&self, cr: &Context, ac: &AppContext) -> ScreenRect {
-
         let ScreenRect {
             lower_left,
             upper_right,
@@ -387,8 +385,7 @@ where
     where
         Option<DeviceCoords>: From<U>,
     {
-        self.get_generic_context().set_last_cursor_position(
-            new_position,
-        );
+        self.get_generic_context()
+            .set_last_cursor_position(new_position);
     }
 }

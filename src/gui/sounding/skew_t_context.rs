@@ -1,6 +1,4 @@
-
-
-use gui::plot_context::{PlotContext, GenericContext, HasGenericContext};
+use gui::plot_context::{GenericContext, HasGenericContext, PlotContext};
 
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
@@ -10,7 +8,9 @@ pub struct SkewTContext {
 
 impl SkewTContext {
     pub fn new() -> Self {
-        SkewTContext { generic: GenericContext::new() }
+        SkewTContext {
+            generic: GenericContext::new(),
+        }
     }
 
     /// Conversion from temperature (t) and pressure (p) to (x,y) coords
@@ -18,8 +18,8 @@ impl SkewTContext {
         use app::config;
         use std::f64;
 
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure)) /
-            (f64::log10(config::MAXP) - f64::log10(config::MINP));
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure))
+            / (f64::log10(config::MAXP) - f64::log10(config::MINP));
         let x = (coords.temperature - config::MINT) / (config::MAXT - config::MINT);
 
         // do the skew
@@ -38,8 +38,7 @@ impl SkewTContext {
 
         let t = x * (config::MAXT - config::MINT) + config::MINT;
         let p = 10.0f64.powf(
-            f64::log10(config::MAXP) -
-                y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
+            f64::log10(config::MAXP) - y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
         );
 
         TPCoords {

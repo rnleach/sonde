@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 mod plot_context;
-pub use self::plot_context::{PlotContext, HasGenericContext};
+pub use self::plot_context::{HasGenericContext, PlotContext};
 pub use self::sounding::skew_t_context::SkewTContext;
 pub use self::sounding::rh_omega_context::RHOmegaContext;
 pub use self::hodograph::hodo_context::HodoContext;
@@ -17,10 +17,10 @@ pub mod text_area;
 
 use cairo::{Context, Matrix};
 use gtk::prelude::*;
-use gtk::{DrawingArea, Notebook, Window, WindowType, TextView};
+use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
 
-use app::{AppContextPointer, AppContext};
-use coords::{ScreenCoords, ScreenRect, Rect};
+use app::{AppContext, AppContextPointer};
+use coords::{Rect, ScreenCoords, ScreenRect};
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -151,7 +151,6 @@ fn check_overlap_then_add(
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
-
     let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
         .0;
     let padded_rect = label_pair.1.add_padding(padding);
@@ -185,7 +184,6 @@ impl<'a, 'b> DrawingArgs<'a, 'b> {
 }
 
 fn set_font_size<T: PlotContext>(pc: &T, size_in_pct: f64, cr: &Context) {
-
     let height = pc.get_device_rect().height();
 
     let mut font_size = size_in_pct / 100.0 * height;

@@ -1,13 +1,12 @@
 //! Functions used for adding labels to the sounding plot
-use app::{AppContext, config};
-use coords::{ScreenCoords, ScreenRect, TPCoords, XYCoords, Rect};
-use gui::{DrawingArgs, check_overlap_then_add, set_font_size};
+use app::{config, AppContext};
+use coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords};
+use gui::{check_overlap_then_add, set_font_size, DrawingArgs};
 use gui::plot_context::PlotContext;
 
 use cairo::{FontExtents, FontFace, FontSlant, FontWeight};
 
 pub fn prepare_to_label(args: DrawingArgs) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -24,7 +23,6 @@ pub fn draw_background_labels(args: DrawingArgs) {
 }
 
 fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -35,7 +33,6 @@ fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
 
     if config.show_isobars {
         for &p in &config::ISOBARS {
-
             let label = format!("{}", p);
 
             let extents = cr.text_extents(&label);
@@ -68,9 +65,11 @@ fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
     }
 
     if config.show_isotherms {
-        let TPCoords { pressure: screen_max_p, .. } = ac.skew_t.convert_screen_to_tp(lower_left);
+        let TPCoords {
+            pressure: screen_max_p,
+            ..
+        } = ac.skew_t.convert_screen_to_tp(lower_left);
         for &t in &config::ISOTHERMS {
-
             let label = format!("{}", t);
 
             let extents = cr.text_extents(&label);
@@ -108,7 +107,6 @@ fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
 }
 
 fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -137,16 +135,14 @@ fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
 
 // Add a description box
 pub fn draw_legend(args: DrawingArgs) {
-
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
     if !(ac.plottable() && config.show_legend) {
         return;
     }
 
-    let mut upper_left = ac.skew_t.convert_device_to_screen(
-        ac.skew_t.get_device_rect().upper_left,
-    );
+    let mut upper_left = ac.skew_t
+        .convert_device_to_screen(ac.skew_t.get_device_rect().upper_left);
 
     let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
     upper_left.x += padding;
@@ -236,8 +232,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 
         // Build location part.
         let (lat, lon, elevation) = snd.get_location();
-        if lat.as_option().is_some() || lon.as_option().is_some() ||
-            elevation.as_option().is_some()
+        if lat.as_option().is_some() || lon.as_option().is_some() || elevation.as_option().is_some()
         {
             location = Some("".to_owned());
             if let Some(ref mut loc) = location {
@@ -264,7 +259,6 @@ fn calculate_legend_box_size(
     valid_time: &Option<String>,
     location: &Option<String>,
 ) -> (f64, f64) {
-
     let (ac, cr) = (args.ac, args.cr);
 
     let mut box_width: f64 = 0.0;
@@ -315,7 +309,6 @@ fn calculate_legend_box_size(
 }
 
 fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -367,8 +360,8 @@ fn draw_legend_text(
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
-            upper_left.y - padding - font_extents.ascent -
-                f64::from(num_lines_drawn) * font_extents.height,
+            upper_left.y - padding - font_extents.ascent
+                - f64::from(num_lines_drawn) * font_extents.height,
         );
     }
     if let Some(ref vt) = *valid_time {
@@ -376,8 +369,8 @@ fn draw_legend_text(
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
-            upper_left.y - padding - font_extents.ascent -
-                f64::from(num_lines_drawn) * font_extents.height,
+            upper_left.y - padding - font_extents.ascent
+                - f64::from(num_lines_drawn) * font_extents.height,
         );
     }
     if let Some(ref loc) = *location {
@@ -385,8 +378,8 @@ fn draw_legend_text(
         num_lines_drawn += 1;
         cr.move_to(
             upper_left.x + padding,
-            upper_left.y - padding - font_extents.ascent -
-                f64::from(num_lines_drawn) * font_extents.height,
+            upper_left.y - padding - font_extents.ascent
+                - f64::from(num_lines_drawn) * font_extents.height,
         );
     }
 }

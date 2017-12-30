@@ -1,7 +1,6 @@
-
 use app::config;
 use coords::TPCoords;
-use gui::{PlotContext, DrawingArgs, plot_curve_from_points, plot_dashed_curve_from_points};
+use gui::{plot_curve_from_points, plot_dashed_curve_from_points, DrawingArgs, PlotContext};
 
 pub fn draw_background_fill(args: DrawingArgs) {
     let ac = args.ac;
@@ -30,9 +29,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw isentrops
     if config.show_isentrops {
         for pnts in config::ISENTROP_PNTS.iter() {
-            let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(*xy_coords)
-            });
+            let pnts = pnts.iter()
+                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
             plot_curve_from_points(cr, config.background_line_width, config.isentrop_rgba, pnts);
         }
     }
@@ -40,9 +38,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw theta-e lines
     if config.show_iso_theta_e {
         for pnts in config::ISO_THETA_E_PNTS.iter() {
-            let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(*xy_coords)
-            });
+            let pnts = pnts.iter()
+                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
             plot_curve_from_points(
                 cr,
                 config.background_line_width,
@@ -55,9 +52,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw mixing ratio lines
     if config.show_iso_mixing_ratio {
         for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
-            let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(*xy_coords)
-            });
+            let pnts = pnts.iter()
+                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
             plot_dashed_curve_from_points(
                 cr,
                 config.background_line_width,
@@ -70,9 +66,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw isotherms
     if config.show_isotherms {
         for pnts in config::ISOTHERM_PNTS.iter() {
-            let pnts = pnts.iter().map(|tp_coords| {
-                ac.skew_t.convert_xy_to_screen(*tp_coords)
-            });
+            let pnts = pnts.iter()
+                .map(|tp_coords| ac.skew_t.convert_xy_to_screen(*tp_coords));
             plot_curve_from_points(cr, config.background_line_width, config.isotherm_rgba, pnts);
         }
     }
@@ -80,9 +75,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
     // Draw isobars
     if config.show_isobars {
         for pnts in config::ISOBAR_PNTS.iter() {
-            let pnts = pnts.iter().map(|xy_coords| {
-                ac.skew_t.convert_xy_to_screen(*xy_coords)
-            });
+            let pnts = pnts.iter()
+                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
 
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
@@ -100,9 +94,8 @@ pub fn draw_background_lines(args: DrawingArgs) {
                 pressure: config::MINP,
             },
         ];
-        let pnts = pnts.iter().map(|tp_coords| {
-            ac.skew_t.convert_tp_to_screen(*tp_coords)
-        });
+        let pnts = pnts.iter()
+            .map(|tp_coords| ac.skew_t.convert_tp_to_screen(*tp_coords));
         plot_curve_from_points(
             cr,
             config.freezing_line_width,

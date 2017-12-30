@@ -1,12 +1,11 @@
 use cairo::Context;
 
 use app::config;
-use coords::{ScreenCoords, TPCoords, ScreenRect, Rect, XYCoords};
+use coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords};
 use gui::plot_context::PlotContext;
 use gui::DrawingArgs;
 
 pub fn draw_wind_profile(args: DrawingArgs) {
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -37,7 +36,6 @@ fn gather_wind_data(
     barb_config: &WindBarbConfig,
     args: DrawingArgs,
 ) -> Vec<WindBarbData> {
-
     use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
 
     let dir = snd.get_profile(WindDirection);
@@ -69,7 +67,6 @@ fn gather_wind_data(
 }
 
 fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
-
     let ac = args.ac;
 
     // Remove overlapping barbs, or barbs not on the screen
@@ -107,7 +104,6 @@ struct WindBarbConfig {
 
 impl WindBarbConfig {
     fn init(args: DrawingArgs) -> Self {
-
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -163,7 +159,6 @@ impl WindBarbData {
         barb_config: &WindBarbConfig,
         args: DrawingArgs,
     ) -> Self {
-
         let center = get_wind_barb_center(pressure, barb_config.xcoord, args);
 
         // Convert angle to traditional XY coordinate plane
@@ -243,7 +238,6 @@ impl WindBarbData {
 
         // Add half barb if needed
         if rounded_speed >= 5.0 && num_barbs < barb_coords.len() {
-
             let mut pos = shaft_end;
             pos.x -= num_pennants as f64 * barb_config.pennant_width * direction_radians.cos();
             pos.y -= num_pennants as f64 * barb_config.pennant_width * direction_radians.sin();
@@ -342,7 +336,6 @@ impl WindBarbData {
 }
 
 fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> ScreenCoords {
-
     let ac = args.ac;
 
     let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
