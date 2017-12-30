@@ -146,8 +146,6 @@ impl HodoContext {
         *self.overlay_layer.borrow_mut() = ImageSurface::create(Format::ARgb32, width, height)
             .unwrap();
 
-        self.bound_view();
-
         // Mark allocations as updated.
         self.reset_allocation.set(false);
     }
@@ -169,6 +167,8 @@ impl HodoContext {
             tmp_cr.restore();
             tmp_cr.transform(self.matrix.get());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
+
+            self.bound_view();
 
             super::drawing::draw_hodo_background(tmp_args);
 

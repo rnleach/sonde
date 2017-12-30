@@ -4,11 +4,11 @@ use gtk::prelude::*;
 
 
 use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
-          keyval_from_name};
+          EventConfigure, keyval_from_name};
 use gtk::{DrawingArea, Inhibit, Allocation};
 
 use app::AppContextPointer;
-use coords::{DeviceCoords, DeviceRect, XYCoords};
+use coords::{DeviceCoords, XYCoords};
 use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
@@ -186,15 +186,23 @@ pub fn key_press_event(
     }
 }
 
-pub fn size_allocate_event(_hodo_area: &DrawingArea, alloc: &Allocation, ac: &AppContextPointer) {
-    
-    let (width, height) = (f64::from(alloc.width), f64::from(alloc.height));
-
-    let device_rect = DeviceRect {
-        upper_left: DeviceCoords { row: 0.0, col: 0.0 },
-        width,
-        height,
-    };
-    ac.hodo.set_device_rect(device_rect);
+pub fn size_allocate_event(_hodo_area: &DrawingArea, _alloc: &Allocation, ac: &AppContextPointer) {
+    // FIXME: Actually move the allocation code here to take it out of the drawing method.
     ac.hodo.reset_allocation();
+}
+
+pub fn configure_event(
+    _hodo_area: &DrawingArea,
+    event: &EventConfigure,
+    ac: &AppContextPointer,
+) -> bool {
+
+    let rect = ac.hodo.get_device_rect();
+    let (width, height) = event.get_size();
+    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON ||
+        (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+    {
+        ac.hodo.mark_background_dirty();
+    }
+    false
 }
