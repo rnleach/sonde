@@ -4,11 +4,11 @@ use gtk::prelude::*;
 
 
 use gdk::{EventButton, EventMotion, EventScroll, EventCrossing, ScrollDirection, EventKey,
-          EventConfigure, keyval_from_name};
-use gtk::{DrawingArea, Inhibit};
+          keyval_from_name};
+use gtk::{DrawingArea, Inhibit, Allocation};
 
 use app::AppContextPointer;
-use coords::{DeviceCoords, XYCoords};
+use coords::{DeviceCoords, DeviceRect, XYCoords};
 use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
@@ -186,21 +186,15 @@ pub fn key_press_event(
     }
 }
 
-// TODO: remove this when size allocate is connected.
-pub fn configure_event(
-    _hodo_area: &DrawingArea,
-    event: &EventConfigure,
-    ac: &AppContextPointer,
-) -> bool {
+pub fn size_allocate_event(_hodo_area: &DrawingArea, alloc: &Allocation, ac: &AppContextPointer) {
+    
+    let (width, height) = (f64::from(alloc.width), f64::from(alloc.height));
 
-    let rect = ac.hodo.get_device_rect();
-    let (width, height) = event.get_size();
-    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON ||
-        (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
-    {
-        ac.hodo.reset_allocation();
-    }
-    false
+    let device_rect = DeviceRect {
+        upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+        width,
+        height,
+    };
+    ac.hodo.set_device_rect(device_rect);
+    ac.hodo.reset_allocation();
 }
-
-// TODO: connect_size_allocate to update bound_view anc create the matrix

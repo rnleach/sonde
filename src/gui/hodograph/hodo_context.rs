@@ -146,6 +146,8 @@ impl HodoContext {
         *self.overlay_layer.borrow_mut() = ImageSurface::create(Format::ARgb32, width, height)
             .unwrap();
 
+        self.bound_view();
+
         // Mark allocations as updated.
         self.reset_allocation.set(false);
     }
