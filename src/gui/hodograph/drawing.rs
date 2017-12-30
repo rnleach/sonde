@@ -4,7 +4,7 @@ use app::config;
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect};
 use gui::{check_overlap_then_add, plot_curve_from_points, set_font_size, DrawingArgs, PlotContext};
 
-pub fn draw_hodo_background(args: DrawingArgs) {
+pub fn draw_background(args: DrawingArgs) {
     let ac = args.ac;
 
     let config = ac.config.borrow();
@@ -109,10 +109,31 @@ fn draw_background_labels(args: DrawingArgs) {
     let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    set_font_size(&ac.hodo, config.label_font_size * 0.70, cr);
+    set_font_size(&ac.hodo, config.label_font_size, cr);
 
     let labels = collect_labels(args);
-    draw_labels(args, labels);
+    
+    let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
+
+    for (label, rect) in labels {
+        let ScreenRect { lower_left, .. } = rect;
+
+        let mut rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.rectangle(
+            lower_left.x - padding,
+            lower_left.y - padding,
+            rect.width() + 2.0 * padding,
+            rect.height() + 2.0 * padding,
+        );
+        cr.fill();
+
+        // Setup label colors
+        rgba = config.label_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.move_to(lower_left.x, lower_left.y);
+        cr.show_text(&label);
+    }
 }
 
 fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -165,33 +186,7 @@ fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
     labels
 }
 
-fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
-    let (cr, config) = (args.cr, args.ac.config.borrow());
-
-    let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
-
-    for (label, rect) in labels {
-        let ScreenRect { lower_left, .. } = rect;
-
-        let mut rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.rectangle(
-            lower_left.x - padding,
-            lower_left.y - padding,
-            rect.width() + 2.0 * padding,
-            rect.height() + 2.0 * padding,
-        );
-        cr.fill();
-
-        // Setup label colors
-        rgba = config.label_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.move_to(lower_left.x, lower_left.y);
-        cr.show_text(&label);
-    }
-}
-
-pub fn draw_hodo_line(args: DrawingArgs) {
+pub fn draw_data(args: DrawingArgs) {
     use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
 
     let (ac, cr) = (args.ac, args.cr);
@@ -228,7 +223,7 @@ pub fn draw_hodo_line(args: DrawingArgs) {
     }
 }
 
-pub fn draw_active_readout(args: DrawingArgs) {
+pub fn draw_overlays(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

@@ -162,7 +162,7 @@ impl HodoContext {
 
             self.bound_view();
 
-            super::drawing::draw_hodo_background(tmp_args);
+            super::drawing::draw_background(tmp_args);
 
             self.dirty_background.set(false);
         }
@@ -186,7 +186,7 @@ impl HodoContext {
             tmp_cr.transform(self.matrix.get());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
-            super::drawing::draw_hodo_line(tmp_args);
+            super::drawing::draw_data(tmp_args);
 
             self.dirty_data.set(false);
         }
@@ -210,7 +210,7 @@ impl HodoContext {
             tmp_cr.transform(self.matrix.get());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
-            super::drawing::draw_active_readout(tmp_args);
+            super::drawing::draw_overlays(tmp_args);
 
             self.dirty_overlay.set(false);
         }
