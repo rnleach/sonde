@@ -1,55 +1,64 @@
-use gui::DrawingArgs;
-use gtk::DrawingArea;
-use gtk::prelude::*;
+use std::rc::Rc;
 
-use app::config;
-use coords::{DeviceCoords, DeviceRect};
-use gui::PlotContext;
+use gdk::EventMask;
+use gtk::prelude::*;
+use gtk::DrawingArea;
+
+use app::AppContextPointer;
 
 pub mod rh_omega_context;
-mod rh_omega;
 
-fn draw_rh_omega(args: DrawingArgs) {
-    rh_omega::prepare_to_draw(args);
-    rh_omega::draw_background(args);
-    rh_omega::draw_rh_profile(args);
-    rh_omega::draw_omega_profile(args);
-    rh_omega::draw_active_readout(args);
-}
+mod drawing;
+mod callbacks;
 
-pub fn draw(args: DrawingArgs, da: &DrawingArea) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
+pub fn set_up_rh_omega_area(da: &DrawingArea, app_context: &AppContextPointer) {
+    da.set_hexpand(true);
+    da.set_vexpand(true);
 
-    let alloc = da.get_allocation();
-    let (width, height) = (f64::from(alloc.width), f64::from(alloc.height));
+    let ac = Rc::clone(app_context);
+    da.connect_draw(move |_da, cr| callbacks::draw_rh_omega(cr, &ac));
 
-    // Fill with backgound color
-    cr.rectangle(0.0, 0.0, width, height);
-    cr.set_source_rgba(
-        config.background_rgba.0,
-        config.background_rgba.1,
-        config.background_rgba.2,
-        config.background_rgba.3,
-    );
-    cr.fill();
+    let ac = Rc::clone(app_context);
+    da.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &ac));
 
-    cr.save();
+    let ac = Rc::clone(app_context);
+    da.connect_button_press_event(move |da, ev| {
+        callbacks::button_press_event(da, ev, &ac)
+    });
 
-    //
-    // Draw the RH-Omega plot area
-    //
+    let ac = Rc::clone(app_context);
+    da.connect_button_release_event(move |da, ev| {
+        callbacks::button_release_event(da, ev, &ac)
+    });
 
-    // Clip the drawing area
-    cr.clip();
+    let ac = Rc::clone(app_context);
+    da.connect_motion_notify_event(move |da, ev| {
+        callbacks::mouse_motion_event(da, ev, &ac)
+    });
 
-    // Set the drawing area in the plot context
-    let rh_omega_rect = DeviceRect {
-        upper_left: DeviceCoords { col: 0.0, row: 0.0 },
-        width: width,
-        height: height,
-    };
-    ac.rh_omega.set_device_rect(rh_omega_rect);
+    let ac = Rc::clone(app_context);
+    da
+        .connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
 
-    draw_rh_omega(args);
+    let ac = Rc::clone(app_context);
+    da.connect_key_release_event(move |da, ev| { callbacks::key_release_event(da, ev, &ac)});
+
+    let ac = Rc::clone(app_context);
+    da.connect_key_press_event(move |da, ev| callbacks::key_press_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    da.connect_configure_event(move |da, ev| callbacks::configure_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    da.connect_size_allocate(move |da, ev| callbacks::size_allocate_event(da, ev, &ac));
+
+    da.set_can_focus(true);
+
+    da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
+        | EventMask::BUTTON_RELEASE_MASK
+        | EventMask::POINTER_MOTION_HINT_MASK
+        | EventMask::POINTER_MOTION_MASK
+        | EventMask::LEAVE_NOTIFY_MASK | EventMask::KEY_RELEASE_MASK
+        | EventMask::KEY_PRESS_MASK)
+        .bits() as i32);
 }

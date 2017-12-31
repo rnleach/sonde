@@ -96,12 +96,17 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     v_text_box.pack_start(&::gui::text_area::make_header_text_area(), false, true, 0);
     v_text_box.pack_start(&text_win, true, true, 0);
 
+    // Set up hbox for profiles
+    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
+
     // Right pane
     let notebook = Notebook::new();
     add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
+    add_tab!(notebook, profile_box, "Profiles");
 
     main_pane.add1(&add_border_frame(&h_box));
     main_pane.add2(&notebook);

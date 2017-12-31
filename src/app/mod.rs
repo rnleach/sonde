@@ -358,18 +358,21 @@ impl AppContext {
     fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
         self.skew_t.mark_data_dirty();
+        self.rh_omega.mark_background_dirty();
         // TODO: Mark others as I can
     }
 
-    fn mark_overlay_dirty(&self) {
+    pub fn mark_overlay_dirty(&self) {
         self.hodo.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
+        self.rh_omega.mark_overlay_dirty();
         // TODO: Mark others as I can
     }
 
     fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
         self.skew_t.mark_background_dirty();
+        self.rh_omega.mark_data_dirty();
         // TODO: Mark others as I can
     }
 }

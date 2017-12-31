@@ -39,6 +39,9 @@ pub struct Gui {
     control_area: Notebook,
     text_area: TextView,
 
+    // Profiles
+    rh_omega_area: DrawingArea,
+
     // Main window
     window: Window,
 
@@ -56,6 +59,8 @@ impl Gui {
             control_area: Notebook::new(),
             text_area: TextView::new(),
 
+            rh_omega_area: DrawingArea::new(),
+
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
         };
@@ -65,6 +70,8 @@ impl Gui {
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
+
+        rh_omega::set_up_rh_omega_area(&gui.get_rh_omega_area(), acp);
 
         main_window::layout(&gui, acp);
 
@@ -91,6 +98,10 @@ impl Gui {
         self.text_area.clone()
     }
 
+    pub fn get_rh_omega_area(&self) -> DrawingArea {
+        self.rh_omega_area.clone()
+    }
+
     pub fn get_window(&self) -> Window {
         self.window.clone()
     }
@@ -98,6 +109,7 @@ impl Gui {
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
         self.hodograph_area.queue_draw();
+        self.rh_omega_area.queue_draw();
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {

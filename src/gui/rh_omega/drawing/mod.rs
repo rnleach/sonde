@@ -1,32 +1,8 @@
-use cairo::Matrix;
-
 use app::config;
 use coords::{Rect, ScreenCoords, WPCoords};
-use gui::{plot_curve_from_points, DrawingArgs, PlotContext};
+use gui::{plot_curve_from_points, DrawingArgs};
 
 mod background;
-
-pub fn prepare_to_draw(args: DrawingArgs) {
-    let ac = args.ac;
-    let cr = args.cr;
-
-    let scale_factor = ac.rh_omega.scale_factor();
-    ac.rh_omega.set_zoom_factor(ac.skew_t.get_zoom_factor());
-    ac.rh_omega.set_translate_y(ac.skew_t.get_translate());
-    ac.rh_omega.set_skew_t_scale(ac.skew_t.scale_factor());
-
-    cr.scale(scale_factor, scale_factor);
-
-    // Set origin at lower left.
-    cr.transform(Matrix {
-        xx: 1.0,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0,
-        x0: 0.0,
-        y0: ac.rh_omega.get_device_rect().height / scale_factor,
-    });
-}
 
 pub fn draw_background(args: DrawingArgs) {
     if args.ac.config.borrow().show_dendritic_zone {
@@ -37,7 +13,16 @@ pub fn draw_background(args: DrawingArgs) {
     background::draw_labels(args);
 }
 
-pub fn draw_rh_profile(args: DrawingArgs) {
+pub fn draw_data(args: DrawingArgs) {
+    draw_rh_profile(args);
+    draw_omega_profile(args);
+}
+
+pub fn draw_overlays(args: DrawingArgs) {
+    draw_active_readout(args);
+}
+
+fn draw_rh_profile(args: DrawingArgs) {
     use gui::plot_context::PlotContext;
 
     let (ac, cr) = (args.ac, args.cr);
@@ -137,7 +122,7 @@ pub fn draw_rh_profile(args: DrawingArgs) {
     }
 }
 
-pub fn draw_omega_profile(args: DrawingArgs) {
+fn draw_omega_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -173,7 +158,7 @@ pub fn draw_omega_profile(args: DrawingArgs) {
     }
 }
 
-pub fn draw_active_readout(args: DrawingArgs) {
+fn draw_active_readout(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
