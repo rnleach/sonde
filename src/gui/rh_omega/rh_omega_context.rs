@@ -102,12 +102,27 @@ impl PlotContext for RHOmegaContext {
     }
 
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-        // FIXME: use x_zoom
-        self.generic.convert_xy_to_screen(coords)
+        // Apply translation first
+        let x = coords.x - self.generic.get_translate().x;
+        let y = coords.y - self.generic.get_translate().y;
+
+        // Apply scaling
+        let x = x * self.x_zoom.get();
+        let y = y * self.get_zoom_factor();
+
+        ScreenCoords { x, y }
     }
 
     fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
-        self.generic.convert_screen_to_xy(coords)
+        // Unapply scaling first
+        let x = coords.x / self.x_zoom.get();
+        let y = coords.y / self.get_zoom_factor();
+
+        // Unapply translation
+        let x = x + self.generic.get_translate().x;
+        let y = y + self.generic.get_translate().y;
+
+XYCoords { x, y }
     }
 
     fn get_xy_envelope(&self) -> XYRect {
