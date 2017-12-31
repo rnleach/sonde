@@ -1,21 +1,24 @@
-//! Event callbacks.
-
 use cairo::Context;
+
 use gdk::{keyval_from_name, EventButton, EventCrossing, EventKey, EventMotion, EventScroll,
-          ScrollDirection};
-use gtk::{DrawingArea, Inhibit, WidgetExt};
+          EventConfigure, ScrollDirection};
+
+use gtk::prelude::*;
+use gtk::{DrawingArea, Allocation};
 
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
-use gui::plot_context::PlotContext;
 use gui::DrawingArgs;
+use gui::plot_context::PlotContext;
 
-mod drawing;
+pub fn draw_skew_t(cr: &Context, acp: &AppContextPointer) -> Inhibit {
+    let args = DrawingArgs::new(acp, cr);
 
-/// Draws the sounding, connected to the on-draw event signal.
-pub fn draw(da: &DrawingArea, cr: &Context, ac: &AppContextPointer) -> Inhibit {
-    let args = DrawingArgs::new(ac, cr);
-    drawing::draw(args, da);
+    acp.skew_t.init_matrix(args);
+    acp.skew_t.draw_background_cached(args);
+    acp.skew_t.draw_data_cached(args);
+    acp.skew_t.draw_overlay_cached(args);
+
     Inhibit(false)
 }
 
@@ -25,11 +28,10 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.skew_t
-        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
+    let pos = ac.skew_t.convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
-    let old_zoom = ac.get_zoom_factor();
+    let old_zoom = ac.skew_t.get_zoom_factor();
     let mut new_zoom = old_zoom;
 
     match dir {
@@ -55,25 +57,18 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
         y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
     };
     ac.skew_t.set_translate(translate);
-
-    // Bound the xy-coords to always be on screen.
     ac.skew_t.bound_view();
+    ac.skew_t.mark_background_dirty();
 
     ac.update_all_gui();
 
     Inhibit(true)
 }
 
-/// Handles button press events
-pub fn button_press_event(
-    _da: &DrawingArea,
-    event: &EventButton,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn button_press_event(_da: &DrawingArea, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
     // Left mouse button
     if event.get_button() == 1 {
-        ac.skew_t
-            .set_last_cursor_position(Some(event.get_position().into()));
+        ac.skew_t.set_last_cursor_position(Some(event.get_position().into()));
         ac.skew_t.set_left_button_pressed(true);
         Inhibit(true)
     } else {
@@ -81,7 +76,6 @@ pub fn button_press_event(
     }
 }
 
-/// Handles button release events
 pub fn button_release_event(
     _da: &DrawingArea,
     event: &EventButton,
@@ -96,7 +90,6 @@ pub fn button_release_event(
     }
 }
 
-/// Handles leave notify
 pub fn leave_event(_da: &DrawingArea, _event: &EventCrossing, ac: &AppContextPointer) -> Inhibit {
     ac.skew_t.set_last_cursor_position(None);
     ac.set_sample(None);
@@ -105,7 +98,6 @@ pub fn leave_event(_da: &DrawingArea, _event: &EventCrossing, ac: &AppContextPoi
     Inhibit(false)
 }
 
-/// Handles motion events
 pub fn mouse_motion_event(
     da: &DrawingArea,
     event: &EventMotion,
@@ -128,12 +120,11 @@ pub fn mouse_motion_event(
             translate.x -= delta.0;
             translate.y -= delta.1;
             ac.skew_t.set_translate(translate);
-
-            // Bound the xy-coords to always be on screen.
             ac.skew_t.bound_view();
+            ac.skew_t.mark_background_dirty();
+            ac.update_all_gui();
 
             ac.set_sample(None);
-            ac.update_all_gui();
         }
     } else if ac.plottable() {
         let position: DeviceCoords = event.get_position().into();
@@ -145,17 +136,16 @@ pub fn mouse_motion_event(
             tp_position.pressure,
         );
         ac.set_sample(Some(sample));
+        ac.skew_t.mark_overlay_dirty();
         ac.update_all_gui();
     }
     Inhibit(false)
 }
 
-/// Handles key-release events, display next or previous sounding in a series.
 pub fn key_release_event(_da: &DrawingArea, _event: &EventKey, _ac: &AppContextPointer) -> Inhibit {
     Inhibit(false)
 }
 
-/// Handles key-press events
 pub fn key_press_event(_da: &DrawingArea, event: &EventKey, ac: &AppContextPointer) -> Inhibit {
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
@@ -167,4 +157,19 @@ pub fn key_press_event(_da: &DrawingArea, event: &EventKey, ac: &AppContextPoint
     } else {
         Inhibit(false)
     }
+}
+
+pub fn size_allocate_event(da: &DrawingArea, _alloc: &Allocation, ac: &AppContextPointer) {
+    ac.skew_t.update_cache_allocations(da);
+}
+
+pub fn configure_event(_da: &DrawingArea, event: &EventConfigure, ac: &AppContextPointer) -> bool {
+    let rect = ac.skew_t.get_device_rect();
+    let (width, height) = event.get_size();
+    if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
+        || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+    {
+        ac.skew_t.mark_background_dirty();
+    }
+    false
 }

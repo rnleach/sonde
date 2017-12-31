@@ -1,21 +1,18 @@
 use cairo::Context;
-use gtk::prelude::*;
 
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventCrossing, EventKey, EventMotion,
           EventScroll, ScrollDirection};
-use gtk::{Allocation, DrawingArea, Inhibit};
+
+use gtk::prelude::*;
+use gtk::{Allocation, DrawingArea};
 
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
 use gui::DrawingArgs;
 use gui::plot_context::PlotContext;
 
-pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+pub fn draw_hodo(cr: &Context, acp: &AppContextPointer) -> Inhibit {
     let args = DrawingArgs::new(acp, cr);
-
-    if acp.hodo.reset_allocation.get() {
-        acp.hodo.update_cache_allocations(da);
-    }
 
     acp.hodo.init_matrix(args);
     acp.hodo.draw_background_cached(args);
@@ -26,17 +23,12 @@ pub fn draw_hodo(da: &DrawingArea, cr: &Context, acp: &AppContextPointer) -> Inh
 }
 
 /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-pub fn scroll_event(
-    _hodo_area: &DrawingArea,
-    event: &EventScroll,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
     const DELTA_SCALE: f64 = 1.05;
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.hodo
-        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
+    let pos = ac.hodo.convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.hodo.get_zoom_factor();
@@ -59,12 +51,10 @@ pub fn scroll_event(
     }
     ac.hodo.set_zoom_factor(new_zoom);
 
-    let translate = ac.hodo.get_translate();
-    let translate_x = pos.x - old_zoom / new_zoom * (pos.x - translate.x);
-    let translate_y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
-    let translate = XYCoords {
-        x: translate_x,
-        y: translate_y,
+    let mut translate = ac.hodo.get_translate();
+    translate = XYCoords {
+        x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+        y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
     };
     ac.hodo.set_translate(translate);
     ac.hodo.bound_view();
@@ -75,16 +65,10 @@ pub fn scroll_event(
     Inhibit(true)
 }
 
-/// Handles button press events
-pub fn button_press_event(
-    _hodo_area: &DrawingArea,
-    event: &EventButton,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn button_press_event(_da: &DrawingArea, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
     // Left mouse button
     if event.get_button() == 1 {
-        ac.hodo
-            .set_last_cursor_position(Some(event.get_position().into()));
+        ac.hodo.set_last_cursor_position(Some(event.get_position().into()));
         ac.hodo.set_left_button_pressed(true);
         Inhibit(true)
     } else {
@@ -92,9 +76,8 @@ pub fn button_press_event(
     }
 }
 
-/// Handles button release events
 pub fn button_release_event(
-    _hodo_area: &DrawingArea,
+    _da: &DrawingArea,
     event: &EventButton,
     ac: &AppContextPointer,
 ) -> Inhibit {
@@ -107,24 +90,18 @@ pub fn button_release_event(
     }
 }
 
-/// Handles leave notify
-pub fn leave_event(
-    _hodo_area: &DrawingArea,
-    _event: &EventCrossing,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn leave_event(_da: &DrawingArea, _event: &EventCrossing, ac: &AppContextPointer) -> Inhibit {
     ac.hodo.set_last_cursor_position(None);
 
     Inhibit(false)
 }
 
-/// Handles motion events
 pub fn mouse_motion_event(
-    hodo_area: &DrawingArea,
+    da: &DrawingArea,
     event: &EventMotion,
     ac: &AppContextPointer,
 ) -> Inhibit {
-    hodo_area.grab_focus();
+    da.grab_focus();
 
     if ac.hodo.get_left_button_pressed() {
         if let Some(last_position) = ac.hodo.get_last_cursor_position() {
@@ -149,21 +126,11 @@ pub fn mouse_motion_event(
     Inhibit(false)
 }
 
-/// Handles key-release events, display next or previous sounding in a series.
-pub fn key_release_event(
-    _hodo_area: &DrawingArea,
-    _event: &EventKey,
-    _dc: &AppContextPointer,
-) -> Inhibit {
+pub fn key_release_event(_da: &DrawingArea, _event: &EventKey, _ac: &AppContextPointer) -> Inhibit {
     Inhibit(false)
 }
 
-/// Handles key-press events
-pub fn key_press_event(
-    _hodo_area: &DrawingArea,
-    event: &EventKey,
-    ac: &AppContextPointer,
-) -> Inhibit {
+pub fn key_press_event(_da: &DrawingArea, event: &EventKey, ac: &AppContextPointer) -> Inhibit {
     let keyval = event.get_keyval();
     if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
         ac.display_next();
@@ -180,11 +147,7 @@ pub fn size_allocate_event(hodo_area: &DrawingArea, _alloc: &Allocation, ac: &Ap
     ac.hodo.update_cache_allocations(hodo_area);
 }
 
-pub fn configure_event(
-    _hodo_area: &DrawingArea,
-    event: &EventConfigure,
-    ac: &AppContextPointer,
-) -> bool {
+pub fn configure_event(_da: &DrawingArea, event: &EventConfigure, ac: &AppContextPointer) -> bool {
     let rect = ac.hodo.get_device_rect();
     let (width, height) = event.get_size();
     if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON

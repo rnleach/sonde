@@ -14,8 +14,6 @@ use coords::{DeviceCoords, DeviceRect, SDCoords, ScreenCoords, XYCoords};
 pub struct HodoContext {
     generic: GenericContext,
 
-    pub reset_allocation: Cell<bool>,
-
     pub matrix: Cell<Matrix>,
 
     dirty_background: Cell<bool>,
@@ -29,12 +27,10 @@ pub struct HodoContext {
 }
 
 impl HodoContext {
-    // Create a new instance of HodoContext
+
     pub fn new() -> Self {
         HodoContext {
             generic: GenericContext::new(),
-
-            reset_allocation: Cell::new(true),
 
             matrix: Cell::new(Matrix::identity()),
 
@@ -49,7 +45,6 @@ impl HodoContext {
         }
     }
 
-    /// Conversion from speed and direction to (x,y) coords
     pub fn convert_sd_to_xy(coords: SDCoords) -> XYCoords {
         let radius = coords.speed / 2.0 / config::MAX_SPEED;
         let angle = (270.0 - coords.dir).to_radians();
@@ -59,7 +54,6 @@ impl HodoContext {
         XYCoords { x, y }
     }
 
-    /// Conversion from speed and direction to (x,y) coords
     pub fn convert_sd_to_screen(&self, coords: SDCoords) -> ScreenCoords {
         let xy = HodoContext::convert_sd_to_xy(coords);
         self.convert_xy_to_screen(xy)
@@ -140,8 +134,6 @@ impl HodoContext {
         *self.overlay_layer.borrow_mut() =
             ImageSurface::create(Format::ARgb32, width, height).unwrap();
 
-        // Mark allocations as updated.
-        self.reset_allocation.set(false);
     }
 
     pub fn draw_background_cached(&self, args: DrawingArgs) {

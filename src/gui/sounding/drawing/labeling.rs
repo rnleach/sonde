@@ -6,7 +6,24 @@ use gui::plot_context::PlotContext;
 
 use cairo::{FontExtents, FontFace, FontSlant, FontWeight};
 
-pub fn prepare_to_label(args: DrawingArgs) {
+// Label the pressure, temperatures, etc lines.
+pub fn draw_background_labels(args: DrawingArgs) {
+    prepare_to_label(args);
+
+    let (ac, config) = (args.ac, args.ac.config.borrow());
+
+    if config.show_labels {
+        let labels = collect_labels(args);
+        draw_labels(args, labels);
+    }
+
+    if ac.plottable() && config.show_legend {
+        draw_legend(args);
+    }
+    
+}
+
+fn prepare_to_label(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -14,12 +31,6 @@ pub fn prepare_to_label(args: DrawingArgs) {
     cr.set_font_face(font_face);
 
     set_font_size(&ac.skew_t, config.label_font_size, cr);
-}
-
-// Label the pressure, temperatures, etc lines.
-pub fn draw_background_labels(args: DrawingArgs) {
-    let labels = collect_labels(args);
-    draw_labels(args, labels);
 }
 
 fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -134,12 +145,8 @@ fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
 }
 
 // Add a description box
-pub fn draw_legend(args: DrawingArgs) {
+fn draw_legend(args: DrawingArgs) {
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-    if !(ac.plottable() && config.show_legend) {
-        return;
-    }
 
     let mut upper_left = ac.skew_t
         .convert_device_to_screen(ac.skew_t.get_device_rect().upper_left);

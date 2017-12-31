@@ -16,7 +16,7 @@ pub fn set_up_hodograph_area(hodo_area: &DrawingArea, app_context: &AppContextPo
     hodo_area.set_vexpand(true);
 
     let ac = Rc::clone(app_context);
-    hodo_area.connect_draw(move |da, cr| callbacks::draw_hodo(da, cr, &ac));
+    hodo_area.connect_draw(move |_da, cr| callbacks::draw_hodo(cr, &ac));
 
     let ac = Rc::clone(app_context);
     hodo_area.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &ac));

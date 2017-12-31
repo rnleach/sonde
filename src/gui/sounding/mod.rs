@@ -1,56 +1,56 @@
-//! Module holds the code for drawing the skew-t plot.
-
 use std::rc::Rc;
 
 use gdk::EventMask;
-use gtk::{DrawingArea, WidgetExt};
-
-pub mod skew_t_context;
-pub mod rh_omega_context;
-
-mod sounding_callbacks;
+use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use app::AppContextPointer;
 
-/// Initialize the drawing area and connect signal handlers.
+pub mod skew_t_context;
+
+mod callbacks;
+mod drawing;
+
 pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContextPointer) {
-    // Layout
     sounding_area.set_hexpand(true);
     sounding_area.set_vexpand(true);
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_draw(move |da, cr| sounding_callbacks::draw(da, cr, &ac));
+    sounding_area.connect_draw(move |_da, cr| callbacks::draw_skew_t(cr, &ac));
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_scroll_event(move |da, ev| sounding_callbacks::scroll_event(da, ev, &ac));
+    sounding_area.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_button_press_event(move |da, ev| {
-        sounding_callbacks::button_press_event(da, ev, &ac)
+        callbacks::button_press_event(da, ev, &ac)
     });
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_button_release_event(move |da, ev| {
-        sounding_callbacks::button_release_event(da, ev, &ac)
+        callbacks::button_release_event(da, ev, &ac)
     });
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_motion_notify_event(move |da, ev| {
-        sounding_callbacks::mouse_motion_event(da, ev, &ac)
+        callbacks::mouse_motion_event(da, ev, &ac)
     });
 
     let ac = Rc::clone(app_context);
     sounding_area
-        .connect_leave_notify_event(move |da, ev| sounding_callbacks::leave_event(da, ev, &ac));
+        .connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_key_release_event(move |da, ev| {
-        sounding_callbacks::key_release_event(da, ev, &ac)
-    });
+    sounding_area.connect_key_release_event(move |da, ev| { callbacks::key_release_event(da, ev, &ac)});
 
     let ac = Rc::clone(app_context);
-    sounding_area
-        .connect_key_press_event(move |da, ev| sounding_callbacks::key_press_event(da, ev, &ac));
+    sounding_area.connect_key_press_event(move |da, ev| callbacks::key_press_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    sounding_area.connect_configure_event(move |da, ev| callbacks::configure_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    sounding_area.connect_size_allocate(move |da, ev| callbacks::size_allocate_event(da, ev, &ac));
 
     sounding_area.set_can_focus(true);
 

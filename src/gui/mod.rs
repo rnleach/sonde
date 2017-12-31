@@ -5,7 +5,7 @@ use std::rc::Rc;
 mod plot_context;
 pub use self::plot_context::{HasGenericContext, PlotContext};
 pub use self::sounding::skew_t_context::SkewTContext;
-pub use self::sounding::rh_omega_context::RHOmegaContext;
+pub use self::rh_omega::rh_omega_context::RHOmegaContext;
 pub use self::hodograph::hodo_context::HodoContext;
 
 pub mod hodograph;
@@ -13,6 +13,7 @@ pub mod index_area;
 pub mod control_area;
 pub mod main_window;
 pub mod sounding;
+pub mod rh_omega;
 pub mod text_area;
 
 use cairo::{Context, Matrix};

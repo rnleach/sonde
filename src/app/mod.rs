@@ -11,7 +11,7 @@ use errors::*;
 use gui::Gui;
 use gui::hodograph::hodo_context::HodoContext;
 use gui::sounding::skew_t_context::SkewTContext;
-use gui::sounding::rh_omega_context::RHOmegaContext;
+use gui::rh_omega::rh_omega_context::RHOmegaContext;
 use gui::PlotContext;
 
 // Module for configuring application
@@ -337,11 +337,6 @@ impl AppContext {
         self.mark_background_dirty();
     }
 
-    /// Get the zoom factor
-    pub fn get_zoom_factor(&self) -> f64 {
-        self.skew_t.get_zoom_factor()
-    }
-
     pub fn get_sample(&self) -> Option<DataRow> {
         self.last_sample.get()
     }
@@ -362,16 +357,19 @@ impl AppContext {
 
     fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
+        self.skew_t.mark_data_dirty();
         // TODO: Mark others as I can
     }
 
     fn mark_overlay_dirty(&self) {
         self.hodo.mark_overlay_dirty();
+        self.skew_t.mark_overlay_dirty();
         // TODO: Mark others as I can
     }
 
     fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
+        self.skew_t.mark_background_dirty();
         // TODO: Mark others as I can
     }
 }

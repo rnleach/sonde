@@ -5,9 +5,7 @@ use coords::{Rect, SDCoords, ScreenCoords, ScreenRect};
 use gui::{check_overlap_then_add, plot_curve_from_points, set_font_size, DrawingArgs, PlotContext};
 
 pub fn draw_background(args: DrawingArgs) {
-    let ac = args.ac;
-
-    let config = ac.config.borrow();
+    let config = args.ac.config.borrow();
 
     if config.show_background_bands {
         draw_background_fill(args);

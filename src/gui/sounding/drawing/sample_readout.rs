@@ -2,14 +2,20 @@
 use app::AppContext;
 use coords::{DeviceCoords, ScreenCoords, ScreenRect, TPCoords, XYCoords};
 use gui::plot_context::PlotContext;
-use gui::DrawingArgs;
+use gui::{DrawingArgs, set_font_size};
 
-use cairo::Context;
+use cairo::{Context, FontFace, FontSlant, FontWeight};
 
 use sounding_base::{DataRow, Sounding};
 
 pub fn draw_active_sample(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
+
+    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+    let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+    cr.set_font_face(font_face);
+
+    set_font_size(&ac.skew_t, config.label_font_size, cr);
 
     let vals = if let Some(vals) = ac.get_sample() {
         vals
