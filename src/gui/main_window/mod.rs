@@ -103,10 +103,10 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     // Right pane
     let notebook = Notebook::new();
     add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
+    add_tab!(notebook, profile_box, "Profiles");
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
-    add_tab!(notebook, profile_box, "Profiles");
 
     main_pane.add1(&add_border_frame(&h_box));
     main_pane.add2(&notebook);

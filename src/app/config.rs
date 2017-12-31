@@ -298,8 +298,6 @@ pub const MINP: f64 = 99.0; // mb
 pub const MINT: f64 = -46.5; // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
 pub const MAXT: f64 = 50.5; // C - at MAXP
-/// Width of the RH-Omega plot area as the decimal fraction of the `DrawingArea` width.
-pub const RH_OMEGA_WIDTH: f64 = 0.10;
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: f64 = 10.0;
