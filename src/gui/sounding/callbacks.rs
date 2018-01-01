@@ -9,7 +9,7 @@ use gtk::{Allocation, DrawingArea};
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
 use gui::DrawingArgs;
-use gui::plot_context::PlotContext;
+use gui::plot_context::{PlotContext, Drawable};
 
 pub fn draw_skew_t(cr: &Context, acp: &AppContextPointer) -> Inhibit {
     let args = DrawingArgs::new(acp, cr);
