@@ -1,12 +1,10 @@
 use std::cell::Cell;
 
-use cairo::{ImageSurface, Matrix};
-
 use gui::DrawingArgs;
-use gui::plot_context::{GenericContext, PlotContext, Drawable};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 
 use app::config;
-use coords::{DeviceCoords, DeviceRect, ScreenCoords, WPCoords, XYCoords, XYRect};
+use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords};
 
 pub struct RHOmegaContext {
     x_zoom: Cell<f64>,
@@ -67,150 +65,13 @@ impl RHOmegaContext {
     }
 }
 
-impl PlotContext for RHOmegaContext {
-    fn set_device_rect(&self, rect: DeviceRect) {
-        self.generic.set_device_rect(rect)
+impl HasGenericContext for RHOmegaContext {
+    fn get_generic_context(&self) -> &GenericContext {
+        &self.generic
     }
+}
 
-    fn get_device_rect(&self) -> DeviceRect {
-        self.generic.get_device_rect()
-    }
-
-    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
-        // Apply translation first
-        let x = coords.x - self.generic.get_translate().x;
-        let y = coords.y - self.generic.get_translate().y;
-
-        // Apply scaling
-        let x = x * self.x_zoom.get();
-        let y = y * self.get_zoom_factor();
-
-        ScreenCoords { x, y }
-    }
-
-    fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
-        // Unapply scaling first
-        let x = coords.x / self.x_zoom.get();
-        let y = coords.y / self.get_zoom_factor();
-
-        // Unapply translation
-        let x = x + self.generic.get_translate().x;
-        let y = y + self.generic.get_translate().y;
-
-        XYCoords { x, y }
-    }
-
-    fn get_xy_envelope(&self) -> XYRect {
-        self.generic.get_xy_envelope()
-    }
-
-    fn set_xy_envelope(&self, new_envelope: XYRect) {
-        self.generic.set_xy_envelope(new_envelope);
-    }
-
-    fn get_zoom_factor(&self) -> f64 {
-        self.generic.get_zoom_factor()
-    }
-
-    fn set_zoom_factor(&self, new_zoom_factor: f64) {
-        self.generic.set_zoom_factor(new_zoom_factor);
-    }
-
-    fn get_translate(&self) -> XYCoords {
-        self.generic.get_translate()
-    }
-
-    fn set_translate(&self, new_translate: XYCoords) {
-        self.generic.set_translate(new_translate);
-    }
-
-    fn get_left_button_pressed(&self) -> bool {
-        self.generic.get_left_button_pressed()
-    }
-
-    fn set_left_button_pressed(&self, pressed: bool) {
-        self.generic.set_left_button_pressed(pressed);
-    }
-
-    fn get_last_cursor_position(&self) -> Option<DeviceCoords> {
-        self.generic.get_last_cursor_position()
-    }
-
-    fn set_last_cursor_position<U>(&self, new_position: U)
-    where
-        Option<DeviceCoords>: From<U>,
-    {
-        self.generic.set_last_cursor_position(new_position);
-    }
-
-    fn get_matrix(&self) -> Matrix {
-        self.generic.get_matrix()
-    }
-
-    fn set_matrix(&self, matrix: Matrix) {
-        self.generic.set_matrix(matrix);
-    }
-
-    fn mark_background_dirty(&self) {
-        self.generic.mark_background_dirty();
-    }
-
-    fn clear_background_dirty(&self) {
-        self.generic.clear_background_dirty();
-    }
-
-    fn is_background_dirty(&self) -> bool {
-        self.generic.is_background_dirty()
-    }
-
-    fn mark_data_dirty(&self) {
-        self.generic.mark_data_dirty();
-    }
-
-    fn clear_data_dirty(&self) {
-        self.generic.clear_data_dirty();
-    }
-
-    fn is_data_dirty(&self) -> bool {
-        self.generic.is_data_dirty()
-    }
-
-    fn mark_overlay_dirty(&self) {
-        self.generic.mark_overlay_dirty();
-    }
-
-    fn clear_overlay_dirty(&self) {
-        self.generic.clear_overlay_dirty();
-    }
-
-    fn is_overlay_dirty(&self) -> bool {
-        self.generic.is_overlay_dirty()
-    }
-
-    fn get_background_layer(&self) -> ImageSurface {
-        self.generic.get_background_layer()
-    }
-
-    fn set_background_layer(&self, new_surface: ImageSurface) {
-        self.generic.set_background_layer(new_surface);
-    }
-
-    fn get_data_layer(&self) -> ImageSurface {
-        self.generic.get_data_layer()
-    }
-
-    fn set_data_layer(&self, new_surface: ImageSurface) {
-        self.generic.set_data_layer(new_surface);
-    }
-
-    fn get_overlay_layer(&self) -> ImageSurface {
-        self.generic.get_overlay_layer()
-    }
-
-    fn set_overlay_layer(&self, new_surface: ImageSurface) {
-        self.generic.set_overlay_layer(new_surface);
-    }
-
+impl PlotContextExt for RHOmegaContext {
     fn zoom_to_envelope(&self) {
         let xy_envelope = self.get_xy_envelope();
 
@@ -248,6 +109,30 @@ impl PlotContext for RHOmegaContext {
         }
         self.set_translate(translate);
     }
+
+    fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
+        // Apply translation first
+        let x = coords.x - self.generic.get_translate().x;
+        let y = coords.y - self.generic.get_translate().y;
+
+        // Apply scaling
+        let x = x * self.x_zoom.get();
+        let y = y * self.get_zoom_factor();
+
+        ScreenCoords { x, y }
+    }
+
+    fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
+        // Unapply scaling first
+        let x = coords.x / self.x_zoom.get();
+        let y = coords.y / self.get_zoom_factor();
+
+        // Unapply translation
+        let x = x + self.generic.get_translate().x;
+        let y = y + self.generic.get_translate().y;
+
+        XYCoords { x, y }
+    }
 }
 
 impl Drawable for RHOmegaContext {
@@ -259,7 +144,7 @@ impl Drawable for RHOmegaContext {
         super::drawing::draw_data(args);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs){
+    fn draw_overlays(&self, args: DrawingArgs) {
         super::drawing::draw_overlays(args);
     }
 }

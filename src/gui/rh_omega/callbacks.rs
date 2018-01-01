@@ -9,7 +9,7 @@ use gtk::{Allocation, DrawingArea};
 use app::AppContextPointer;
 use coords::DeviceCoords;
 use gui::DrawingArgs;
-use gui::plot_context::{PlotContext, Drawable};
+use gui::plot_context::{Drawable, PlotContext, PlotContextExt};
 
 pub fn draw_rh_omega(cr: &Context, acp: &AppContextPointer) -> Inhibit {
     let args = DrawingArgs::new(acp, cr);

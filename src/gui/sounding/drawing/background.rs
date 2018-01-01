@@ -1,6 +1,6 @@
 use app::config;
 use coords::TPCoords;
-use gui::{plot_curve_from_points, plot_dashed_curve_from_points, DrawingArgs, PlotContext};
+use gui::{plot_curve_from_points, plot_dashed_curve_from_points, DrawingArgs, PlotContextExt};
 
 pub fn draw_background_fill(args: DrawingArgs) {
     let ac = args.ac;

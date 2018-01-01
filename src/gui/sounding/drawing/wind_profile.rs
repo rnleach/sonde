@@ -2,8 +2,7 @@ use cairo::Context;
 
 use app::config;
 use coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords};
-use gui::plot_context::PlotContext;
-use gui::DrawingArgs;
+use gui::{DrawingArgs, PlotContextExt};
 
 pub fn draw_wind_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);

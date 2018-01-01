@@ -2,7 +2,8 @@ use cairo::{FontFace, FontSlant, FontWeight};
 
 use app::config;
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect};
-use gui::{check_overlap_then_add, plot_curve_from_points, set_font_size, DrawingArgs, PlotContext};
+use gui::{check_overlap_then_add, plot_curve_from_points, set_font_size, DrawingArgs,
+          PlotContextExt};
 
 pub fn draw_background(args: DrawingArgs) {
     let config = args.ac.config.borrow();

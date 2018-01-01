@@ -1,5 +1,5 @@
 use gui::DrawingArgs;
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, Drawable};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContextExt};
 
 use app::config;
 use coords::{SDCoords, ScreenCoords, XYCoords};
@@ -36,6 +36,8 @@ impl HasGenericContext for HodoContext {
     }
 }
 
+impl PlotContextExt for HodoContext {}
+
 impl Drawable for HodoContext {
     fn draw_background(&self, args: DrawingArgs) {
         super::drawing::draw_background(args);
@@ -45,7 +47,7 @@ impl Drawable for HodoContext {
         super::drawing::draw_data(args);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs){
+    fn draw_overlays(&self, args: DrawingArgs) {
         super::drawing::draw_overlays(args);
     }
 }

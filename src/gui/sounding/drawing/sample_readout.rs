@@ -1,8 +1,7 @@
 //! Functions used for adding an active readout/sampling box.
 use app::AppContext;
 use coords::{DeviceCoords, ScreenCoords, ScreenRect, TPCoords, XYCoords};
-use gui::plot_context::PlotContext;
-use gui::{set_font_size, DrawingArgs};
+use gui::{set_font_size, DrawingArgs, PlotContextExt};
 
 use cairo::{Context, FontFace, FontSlant, FontWeight};
 

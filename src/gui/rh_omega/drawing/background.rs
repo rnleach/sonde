@@ -3,7 +3,7 @@ use cairo::{FontFace, FontSlant, FontWeight};
 use app::config;
 use coords::{ScreenCoords, ScreenRect, WPCoords};
 use gui::{check_overlap_then_add, plot_curve_from_points};
-use gui::{set_font_size, DrawingArgs, PlotContext};
+use gui::{set_font_size, DrawingArgs, PlotContextExt};
 
 pub fn draw_background_lines(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
@@ -132,8 +132,6 @@ pub fn draw_labels(args: DrawingArgs) {
 }
 
 pub fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-    use gui::plot_context::PlotContext;
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

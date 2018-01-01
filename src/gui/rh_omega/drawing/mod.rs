@@ -1,6 +1,6 @@
 use app::config;
 use coords::{Rect, ScreenCoords, WPCoords};
-use gui::{plot_curve_from_points, DrawingArgs};
+use gui::{plot_curve_from_points, DrawingArgs, PlotContextExt};
 
 mod background;
 
@@ -23,8 +23,6 @@ pub fn draw_overlays(args: DrawingArgs) {
 }
 
 fn draw_rh_profile(args: DrawingArgs) {
-    use gui::plot_context::PlotContext;
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

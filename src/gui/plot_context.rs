@@ -70,7 +70,9 @@ pub trait PlotContext {
     fn set_data_layer(&self, new_surface: ImageSurface);
     fn get_overlay_layer(&self) -> ImageSurface;
     fn set_overlay_layer(&self, new_surface: ImageSurface);
+}
 
+pub trait PlotContextExt: PlotContext {
     fn update_cache_allocations(&self, da: &DrawingArea) {
         // Mark everything as dirty
         self.mark_background_dirty(); // Marks everything
@@ -501,7 +503,7 @@ pub trait HasGenericContext {
     fn get_generic_context(&self) -> &GenericContext;
 }
 
-pub trait Drawable: PlotContext {
+pub trait Drawable: PlotContext + PlotContextExt {
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
     fn draw_overlays(&self, args: DrawingArgs);
@@ -584,7 +586,7 @@ pub trait Drawable: PlotContext {
 
 impl<T> PlotContext for T
 where
-    T: HasGenericContext
+    T: HasGenericContext,
 {
     fn set_device_rect(&self, rect: DeviceRect) {
         self.get_generic_context().set_device_rect(rect);

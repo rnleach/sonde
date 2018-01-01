@@ -2,7 +2,7 @@
 use app::{config, AppContext};
 use coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords};
 use gui::{check_overlap_then_add, set_font_size, DrawingArgs};
-use gui::plot_context::PlotContext;
+use gui::{PlotContext, PlotContextExt};
 
 use cairo::{FontExtents, FontFace, FontSlant, FontWeight};
 

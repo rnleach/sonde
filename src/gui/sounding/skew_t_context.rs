@@ -1,5 +1,5 @@
 use gui::DrawingArgs;
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, Drawable};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContextExt};
 
 use app::config;
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
@@ -68,6 +68,8 @@ impl HasGenericContext for SkewTContext {
     }
 }
 
+impl PlotContextExt for SkewTContext {}
+
 impl Drawable for SkewTContext {
     fn draw_background(&self, args: DrawingArgs) {
         super::drawing::draw_background(args);
@@ -77,7 +79,7 @@ impl Drawable for SkewTContext {
         super::drawing::draw_data(args);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs){
+    fn draw_overlays(&self, args: DrawingArgs) {
         super::drawing::draw_overlays(args);
     }
 }

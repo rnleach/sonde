@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 mod plot_context;
-pub use self::plot_context::{HasGenericContext, PlotContext};
+pub use self::plot_context::{HasGenericContext, PlotContext, PlotContextExt};
 pub use self::sounding::skew_t_context::SkewTContext;
 pub use self::rh_omega::rh_omega_context::RHOmegaContext;
 pub use self::hodograph::hodo_context::HodoContext;
