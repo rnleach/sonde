@@ -1,10 +1,10 @@
 use cairo::Context;
 
-use gdk::{keyval_from_name, EventButton, EventCrossing, EventKey, EventMotion, EventScroll,
-          EventConfigure, ScrollDirection};
+use gdk::{keyval_from_name, EventButton, EventConfigure, EventCrossing, EventKey, EventMotion,
+          EventScroll, ScrollDirection};
 
 use gtk::prelude::*;
-use gtk::{DrawingArea, Allocation};
+use gtk::{Allocation, DrawingArea};
 
 use app::AppContextPointer;
 use coords::{DeviceCoords, XYCoords};
@@ -27,7 +27,8 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.skew_t.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+    let pos = ac.skew_t
+        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.skew_t.get_zoom_factor();
@@ -64,10 +65,15 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
     Inhibit(true)
 }
 
-pub fn button_press_event(_da: &DrawingArea, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
+pub fn button_press_event(
+    _da: &DrawingArea,
+    event: &EventButton,
+    ac: &AppContextPointer,
+) -> Inhibit {
     // Left mouse button
     if event.get_button() == 1 {
-        ac.skew_t.set_last_cursor_position(Some(event.get_position().into()));
+        ac.skew_t
+            .set_last_cursor_position(Some(event.get_position().into()));
         ac.skew_t.set_left_button_pressed(true);
         Inhibit(true)
     } else {

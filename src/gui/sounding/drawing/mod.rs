@@ -7,7 +7,6 @@ mod temperature_profile;
 mod wind_profile;
 
 pub fn draw_background(args: DrawingArgs) {
-    
     background::draw_background_fill(args);
     background::draw_background_lines(args);
     labeling::draw_background_labels(args);

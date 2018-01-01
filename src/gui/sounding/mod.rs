@@ -22,26 +22,23 @@ pub fn set_up_sounding_area(sounding_area: &DrawingArea, app_context: &AppContex
     sounding_area.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_button_press_event(move |da, ev| {
-        callbacks::button_press_event(da, ev, &ac)
-    });
-
-    let ac = Rc::clone(app_context);
-    sounding_area.connect_button_release_event(move |da, ev| {
-        callbacks::button_release_event(da, ev, &ac)
-    });
-
-    let ac = Rc::clone(app_context);
-    sounding_area.connect_motion_notify_event(move |da, ev| {
-        callbacks::mouse_motion_event(da, ev, &ac)
-    });
+    sounding_area
+        .connect_button_press_event(move |da, ev| callbacks::button_press_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
     sounding_area
-        .connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
+        .connect_button_release_event(move |da, ev| callbacks::button_release_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    sounding_area.connect_key_release_event(move |da, ev| { callbacks::key_release_event(da, ev, &ac)});
+    sounding_area
+        .connect_motion_notify_event(move |da, ev| callbacks::mouse_motion_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    sounding_area.connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
+
+    let ac = Rc::clone(app_context);
+    sounding_area
+        .connect_key_release_event(move |da, ev| callbacks::key_release_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
     sounding_area.connect_key_press_event(move |da, ev| callbacks::key_press_event(da, ev, &ac));

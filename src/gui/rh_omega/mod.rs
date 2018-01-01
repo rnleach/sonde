@@ -22,26 +22,19 @@ pub fn set_up_rh_omega_area(da: &DrawingArea, app_context: &AppContextPointer) {
     da.connect_scroll_event(move |da, ev| callbacks::scroll_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    da.connect_button_press_event(move |da, ev| {
-        callbacks::button_press_event(da, ev, &ac)
-    });
+    da.connect_button_press_event(move |da, ev| callbacks::button_press_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    da.connect_button_release_event(move |da, ev| {
-        callbacks::button_release_event(da, ev, &ac)
-    });
+    da.connect_button_release_event(move |da, ev| callbacks::button_release_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    da.connect_motion_notify_event(move |da, ev| {
-        callbacks::mouse_motion_event(da, ev, &ac)
-    });
+    da.connect_motion_notify_event(move |da, ev| callbacks::mouse_motion_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    da
-        .connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
+    da.connect_leave_notify_event(move |da, ev| callbacks::leave_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
-    da.connect_key_release_event(move |da, ev| { callbacks::key_release_event(da, ev, &ac)});
+    da.connect_key_release_event(move |da, ev| callbacks::key_release_event(da, ev, &ac));
 
     let ac = Rc::clone(app_context);
     da.connect_key_press_event(move |da, ev| callbacks::key_press_event(da, ev, &ac));
@@ -55,10 +48,8 @@ pub fn set_up_rh_omega_area(da: &DrawingArea, app_context: &AppContextPointer) {
     da.set_can_focus(true);
 
     da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-        | EventMask::BUTTON_RELEASE_MASK
-        | EventMask::POINTER_MOTION_HINT_MASK
-        | EventMask::POINTER_MOTION_MASK
-        | EventMask::LEAVE_NOTIFY_MASK | EventMask::KEY_RELEASE_MASK
-        | EventMask::KEY_PRESS_MASK)
+        | EventMask::BUTTON_RELEASE_MASK | EventMask::POINTER_MOTION_HINT_MASK
+        | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
+        | EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
         .bits() as i32);
 }

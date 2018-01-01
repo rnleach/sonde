@@ -28,7 +28,8 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
     const MIN_ZOOM: f64 = 1.0;
     const MAX_ZOOM: f64 = 10.0;
 
-    let pos = ac.hodo.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+    let pos = ac.hodo
+        .convert_device_to_xy(DeviceCoords::from(event.get_position()));
     let dir = event.get_direction();
 
     let old_zoom = ac.hodo.get_zoom_factor();
@@ -65,10 +66,15 @@ pub fn scroll_event(_da: &DrawingArea, event: &EventScroll, ac: &AppContextPoint
     Inhibit(true)
 }
 
-pub fn button_press_event(_da: &DrawingArea, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
+pub fn button_press_event(
+    _da: &DrawingArea,
+    event: &EventButton,
+    ac: &AppContextPointer,
+) -> Inhibit {
     // Left mouse button
     if event.get_button() == 1 {
-        ac.hodo.set_last_cursor_position(Some(event.get_position().into()));
+        ac.hodo
+            .set_last_cursor_position(Some(event.get_position().into()));
         ac.hodo.set_left_button_pressed(true);
         Inhibit(true)
     } else {

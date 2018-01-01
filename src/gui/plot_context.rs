@@ -1,9 +1,11 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
-use cairo::Context;
+use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
+use gtk::DrawingArea;
+use gtk::prelude::*;
+
 use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
-
-use super::AppContext;
+use gui::{AppContext, DrawingArgs};
 
 pub trait PlotContext {
     /// Set the width and height of the plot in device
@@ -43,6 +45,44 @@ pub trait PlotContext {
     fn set_last_cursor_position<T>(&self, new_position: T)
     where
         Option<DeviceCoords>: From<T>;
+
+    /// Get the matrix used to transform `ScreenCoords` to `DeviceCoords`
+    fn get_matrix(&self) -> Matrix;
+
+    /// Set the matrix used to transform `ScreenCoords` to `DeviceCoords`
+    fn set_matrix(&self, matrix: Matrix);
+
+    fn mark_background_dirty(&self);
+    fn clear_background_dirty(&self);
+    fn is_background_dirty(&self) -> bool;
+
+    fn mark_data_dirty(&self);
+    fn clear_data_dirty(&self);
+    fn is_data_dirty(&self) -> bool;
+
+    fn mark_overlay_dirty(&self);
+    fn clear_overlay_dirty(&self);
+    fn is_overlay_dirty(&self) -> bool;
+
+    fn get_background_layer(&self) -> ImageSurface;
+    fn set_background_layer(&self, new_surface: ImageSurface);
+    fn get_data_layer(&self) -> ImageSurface;
+    fn set_data_layer(&self, new_surface: ImageSurface);
+    fn get_overlay_layer(&self) -> ImageSurface;
+    fn set_overlay_layer(&self, new_surface: ImageSurface);
+
+    fn update_cache_allocations(&self, da: &DrawingArea) {
+        // Mark everything as dirty
+        self.mark_background_dirty(); // Marks everything
+
+        // Get the size
+        let (width, height) = (da.get_allocation().width, da.get_allocation().height);
+
+        // Make the new allocations
+        self.set_background_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
+        self.set_data_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
+        self.set_overlay_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
+    }
 
     /// Conversion from (x,y) coords to screen coords
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
@@ -234,6 +274,41 @@ pub trait PlotContext {
 
         self.bound_view();
     }
+
+    fn init_matrix(&self, args: DrawingArgs) {
+        let cr = args.cr;
+
+        cr.save();
+
+        let (x1, y1, x2, y2) = cr.clip_extents();
+        let width = f64::abs(x2 - x1);
+        let height = f64::abs(y2 - y1);
+
+        let device_rect = DeviceRect {
+            upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+            width,
+            height,
+        };
+        self.set_device_rect(device_rect);
+        let scale_factor = self.scale_factor();
+
+        // Start fresh
+        cr.identity_matrix();
+        // Set the scale factor
+        cr.scale(scale_factor, scale_factor);
+        // Set origin at lower left.
+        cr.transform(Matrix {
+            xx: 1.0,
+            yx: 0.0,
+            xy: 0.0,
+            yy: -1.0,
+            x0: 0.0,
+            y0: device_rect.height / scale_factor,
+        });
+
+        self.set_matrix(cr.get_matrix());
+        cr.restore();
+    }
 }
 
 pub struct GenericContext {
@@ -252,6 +327,17 @@ pub struct GenericContext {
 
     // last cursor position in skew_t widget, used for sampling and panning
     last_cursor_position: Cell<Option<DeviceCoords>>,
+
+    matrix: Cell<Matrix>,
+
+    dirty_background: Cell<bool>,
+    background_layer: RefCell<ImageSurface>,
+
+    dirty_data: Cell<bool>,
+    data_layer: RefCell<ImageSurface>,
+
+    dirty_overlay: Cell<bool>,
+    overlay_layer: RefCell<ImageSurface>,
 }
 
 impl GenericContext {
@@ -272,6 +358,17 @@ impl GenericContext {
             translate: Cell::new(XYCoords::origin()),
             last_cursor_position: Cell::new(None),
             left_button_pressed: Cell::new(false),
+
+            matrix: Cell::new(Matrix::identity()),
+
+            dirty_background: Cell::new(true),
+            background_layer: RefCell::new(ImageSurface::create(Format::ARgb32, 5, 5).unwrap()),
+
+            dirty_data: Cell::new(true),
+            data_layer: RefCell::new(ImageSurface::create(Format::ARgb32, 5, 5).unwrap()),
+
+            dirty_overlay: Cell::new(true),
+            overlay_layer: RefCell::new(ImageSurface::create(Format::ARgb32, 5, 5).unwrap()),
         }
     }
 }
@@ -326,6 +423,77 @@ impl PlotContext for GenericContext {
         Option<DeviceCoords>: From<T>,
     {
         self.last_cursor_position.set(Option::from(new_position));
+    }
+
+    fn get_matrix(&self) -> Matrix {
+        self.matrix.get()
+    }
+
+    fn set_matrix(&self, matrix: Matrix) {
+        self.matrix.set(matrix);
+    }
+
+    fn mark_background_dirty(&self) {
+        self.dirty_background.set(true);
+        self.dirty_data.set(true);
+        self.dirty_overlay.set(true);
+    }
+
+    fn clear_background_dirty(&self) {
+        self.dirty_background.set(false);
+    }
+
+    fn is_background_dirty(&self) -> bool {
+        self.dirty_background.get()
+    }
+
+    fn mark_data_dirty(&self) {
+        self.dirty_background.set(true);
+        self.dirty_data.set(true);
+    }
+
+    fn clear_data_dirty(&self) {
+        self.dirty_data.set(false);
+    }
+
+    fn is_data_dirty(&self) -> bool {
+        self.dirty_data.get()
+    }
+
+    fn mark_overlay_dirty(&self) {
+        self.dirty_overlay.set(true);
+    }
+
+    fn clear_overlay_dirty(&self) {
+        self.dirty_overlay.set(false);
+    }
+
+    fn is_overlay_dirty(&self) -> bool {
+        self.dirty_overlay.get()
+    }
+
+    fn get_background_layer(&self) -> ImageSurface {
+        self.background_layer.borrow().clone()
+    }
+
+    fn set_background_layer(&self, new_surface: ImageSurface) {
+        *self.background_layer.borrow_mut() = new_surface;
+    }
+
+    fn get_data_layer(&self) -> ImageSurface {
+        self.data_layer.borrow().clone()
+    }
+
+    fn set_data_layer(&self, new_surface: ImageSurface) {
+        *self.data_layer.borrow_mut() = new_surface;
+    }
+
+    fn get_overlay_layer(&self) -> ImageSurface {
+        self.overlay_layer.borrow().clone()
+    }
+
+    fn set_overlay_layer(&self, new_surface: ImageSurface) {
+        *self.overlay_layer.borrow_mut() = new_surface;
     }
 }
 
@@ -387,5 +555,73 @@ where
     {
         self.get_generic_context()
             .set_last_cursor_position(new_position);
+    }
+
+    fn get_matrix(&self) -> Matrix {
+        self.get_generic_context().get_matrix()
+    }
+
+    fn set_matrix(&self, matrix: Matrix) {
+        self.get_generic_context().set_matrix(matrix);
+    }
+
+    fn mark_background_dirty(&self) {
+        self.get_generic_context().mark_background_dirty();
+    }
+
+    fn clear_background_dirty(&self) {
+        self.get_generic_context().clear_background_dirty();
+    }
+
+    fn is_background_dirty(&self) -> bool {
+        self.get_generic_context().is_background_dirty()
+    }
+
+    fn mark_data_dirty(&self) {
+        self.get_generic_context().mark_data_dirty();
+    }
+
+    fn clear_data_dirty(&self) {
+        self.get_generic_context().clear_data_dirty();
+    }
+
+    fn is_data_dirty(&self) -> bool {
+        self.get_generic_context().is_data_dirty()
+    }
+
+    fn mark_overlay_dirty(&self) {
+        self.get_generic_context().mark_overlay_dirty();
+    }
+
+    fn clear_overlay_dirty(&self) {
+        self.get_generic_context().clear_overlay_dirty();
+    }
+
+    fn is_overlay_dirty(&self) -> bool {
+        self.get_generic_context().is_overlay_dirty()
+    }
+
+    fn get_background_layer(&self) -> ImageSurface {
+        self.get_generic_context().get_background_layer()
+    }
+
+    fn set_background_layer(&self, new_surface: ImageSurface) {
+        self.get_generic_context().set_background_layer(new_surface);
+    }
+
+    fn get_data_layer(&self) -> ImageSurface {
+        self.get_generic_context().get_data_layer()
+    }
+
+    fn set_data_layer(&self, new_surface: ImageSurface) {
+        self.get_generic_context().set_data_layer(new_surface);
+    }
+
+    fn get_overlay_layer(&self) -> ImageSurface {
+        self.get_generic_context().get_overlay_layer()
+    }
+
+    fn set_overlay_layer(&self, new_surface: ImageSurface) {
+        self.get_generic_context().set_overlay_layer(new_surface);
     }
 }

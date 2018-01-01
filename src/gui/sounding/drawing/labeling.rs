@@ -20,7 +20,6 @@ pub fn draw_background_labels(args: DrawingArgs) {
     if ac.plottable() && config.show_legend {
         draw_legend(args);
     }
-    
 }
 
 fn prepare_to_label(args: DrawingArgs) {

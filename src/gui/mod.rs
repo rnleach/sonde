@@ -109,11 +109,11 @@ impl Gui {
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
 
-        if self.hodograph_area.is_visible(){
+        if self.hodograph_area.is_visible() {
             self.hodograph_area.queue_draw();
         }
 
-        if self.rh_omega_area.is_visible(){
+        if self.rh_omega_area.is_visible() {
             self.rh_omega_area.queue_draw();
         }
     }

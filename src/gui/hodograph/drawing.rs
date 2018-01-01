@@ -110,7 +110,7 @@ fn draw_background_labels(args: DrawingArgs) {
     set_font_size(&ac.hodo, config.label_font_size, cr);
 
     let labels = collect_labels(args);
-    
+
     let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
 
     for (label, rect) in labels {
