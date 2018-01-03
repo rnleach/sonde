@@ -3,24 +3,25 @@
 use std::rc::Rc;
 
 mod plot_context;
-pub use self::plot_context::{PlotContext, HasGenericContext};
-pub use self::sounding::skew_t_context::SkewTContext;
-pub use self::sounding::rh_omega_context::RHOmegaContext;
-pub use self::hodograph::hodo_context::HodoContext;
+pub use self::plot_context::{Drawable, HasGenericContext, PlotContext, PlotContextExt};
+pub use self::sounding::SkewTContext;
+pub use self::rh_omega::RHOmegaContext;
+pub use self::hodograph::HodoContext;
 
 pub mod hodograph;
 pub mod index_area;
 pub mod control_area;
 pub mod main_window;
 pub mod sounding;
+pub mod rh_omega;
 pub mod text_area;
 
 use cairo::{Context, Matrix};
 use gtk::prelude::*;
-use gtk::{DrawingArea, Notebook, Window, WindowType, TextView};
+use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
 
-use app::{AppContextPointer, AppContext};
-use coords::{ScreenCoords, ScreenRect, Rect};
+use app::{AppContext, AppContextPointer};
+use coords::{Rect, ScreenCoords, ScreenRect};
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -37,6 +38,9 @@ pub struct Gui {
     index_area: DrawingArea,
     control_area: Notebook,
     text_area: TextView,
+
+    // Profiles
+    rh_omega_area: DrawingArea,
 
     // Main window
     window: Window,
@@ -55,15 +59,18 @@ impl Gui {
             control_area: Notebook::new(),
             text_area: TextView::new(),
 
+            rh_omega_area: DrawingArea::new(),
+
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
         };
 
-        sounding::set_up_sounding_area(&gui.get_sounding_area(), acp);
-        hodograph::set_up_hodograph_area(&gui.get_hodograph_area(), acp);
+        sounding::SkewTContext::set_up_drawing_area(&gui.get_sounding_area(), acp);
+        hodograph::HodoContext::set_up_drawing_area(&gui.get_hodograph_area(), acp);
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
+        rh_omega::RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
 
         main_window::layout(&gui, acp);
 
@@ -90,13 +97,24 @@ impl Gui {
         self.text_area.clone()
     }
 
+    pub fn get_rh_omega_area(&self) -> DrawingArea {
+        self.rh_omega_area.clone()
+    }
+
     pub fn get_window(&self) -> Window {
         self.window.clone()
     }
 
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
-        self.hodograph_area.queue_draw();
+
+        if self.hodograph_area.is_visible() {
+            self.hodograph_area.queue_draw();
+        }
+
+        if self.rh_omega_area.is_visible() {
+            self.rh_omega_area.queue_draw();
+        }
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {
@@ -151,7 +169,6 @@ fn check_overlap_then_add(
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
-
     let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
         .0;
     let padded_rect = label_pair.1.add_padding(padding);
@@ -185,7 +202,6 @@ impl<'a, 'b> DrawingArgs<'a, 'b> {
 }
 
 fn set_font_size<T: PlotContext>(pc: &T, size_in_pct: f64, cr: &Context) {
-
     let height = pc.get_device_rect().height();
 
     let mut font_size = size_in_pct / 100.0 * height;

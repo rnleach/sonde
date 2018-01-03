@@ -6,16 +6,15 @@ use glib;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Window, MenuBar, MenuItem, Menu, Notebook, ScrolledWindow};
+use gtk::{Menu, MenuBar, MenuItem, Notebook, ScrolledWindow, Window};
 
-use app::{AppContextPointer, AppContext};
+use app::{AppContext, AppContextPointer};
 use app::config;
 use gui::Gui;
 
 mod menu_callbacks;
 
 pub fn layout(gui: &Gui, ac: &AppContextPointer) {
-
     let window = gui.get_window();
 
     // Build the menu bar
@@ -34,7 +33,6 @@ pub fn layout(gui: &Gui, ac: &AppContextPointer) {
 }
 
 fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
-
     //
     // The file menu.
     //
@@ -47,7 +45,9 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 
     // The quit item
     let quit_item = MenuItem::new_with_label("Quit");
-    quit_item.connect_activate(|_| { gtk::main_quit(); });
+    quit_item.connect_activate(|_| {
+        gtk::main_quit();
+    });
 
     // Build the file menu
     let file_menu = Menu::new();
@@ -71,7 +71,6 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
 }
 
 fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
-
     macro_rules! add_tab {
         ($notebook:ident, $widget:expr, $label:expr) => {
             $widget.set_property_margin(config::WIDGET_MARGIN);
@@ -97,9 +96,14 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     v_text_box.pack_start(&::gui::text_area::make_header_text_area(), false, true, 0);
     v_text_box.pack_start(&text_win, true, true, 0);
 
+    // Set up hbox for profiles
+    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
+    profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
+
     // Right pane
     let notebook = Notebook::new();
     add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
+    add_tab!(notebook, profile_box, "Profiles");
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
@@ -120,7 +124,6 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
 }
 
 fn configure_main_window(window: &Window, ac: &AppContext) {
-
     let (width, height) = get_preferred_window_size(window, ac);
 
     // Set up window title, size, etc
@@ -146,7 +149,6 @@ fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
 }
 
 fn get_preferred_window_size<T: WidgetExt>(widget: &T, ac: &AppContext) -> (i32, i32) {
-
     let config = ac.config.borrow();
 
     if let Some(screen) = widget.get_screen() {

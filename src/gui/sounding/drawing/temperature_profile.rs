@@ -1,7 +1,6 @@
-
 use app::config;
 use coords::TPCoords;
-use gui::{DrawingArgs, plot_curve_from_points};
+use gui::{plot_curve_from_points, DrawingArgs};
 
 #[derive(Clone, Copy, Debug)]
 pub enum TemperatureType {
@@ -15,10 +14,9 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    use sounding_base::Profile::{Pressure, Temperature, WetBulb, DewPoint};
+    use sounding_base::Profile::{DewPoint, Pressure, Temperature, WetBulb};
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-
         let pres_data = sndg.get_profile(Pressure);
         let temp_data = match t_type {
             TemperatureType::DryBulb => sndg.get_profile(Temperature),
@@ -38,8 +36,10 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
             TemperatureType::DewPoint => config.dew_point_rgba,
         };
 
-        let profile_data = pres_data.iter().zip(temp_data.iter()).filter_map(
-            |val_pair| {
+        let profile_data = pres_data
+            .iter()
+            .zip(temp_data.iter())
+            .filter_map(|val_pair| {
                 if let (Some(pressure), Some(temperature)) =
                     (val_pair.0.as_option(), val_pair.1.as_option())
                 {
@@ -55,8 +55,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
                 } else {
                     None
                 }
-            },
-        );
+            });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }

@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Frame, ScrolledWindow, ColorButton, CheckButton};
+use gtk::{CheckButton, ColorButton, Frame, ScrolledWindow};
 use gdk::RGBA;
 
 use gui::control_area::{BOX_SPACING, PADDING};
@@ -85,7 +85,6 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
     // Create rh_omega callback
     let ac = Rc::clone(acp);
     omega.connect_toggled(move |button| {
-
         ac.config.borrow_mut().show_iso_omega_lines = button.get_active();
         ac.update_all_gui();
     });

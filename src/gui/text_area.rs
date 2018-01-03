@@ -1,10 +1,9 @@
-
-use gtk::{TextView, ScrollablePolicy, TextTag};
+use gtk::{ScrollablePolicy, TextTag, TextView};
 use gtk::prelude::*;
 
 use app::config;
 
-use app::{AppContextPointer, AppContext};
+use app::{AppContext, AppContextPointer};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -29,7 +28,6 @@ macro_rules! set_text {
 }
 
 pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
-
     text_area.set_hexpand(true);
     text_area.set_vexpand(true);
     text_area.set_editable(false);
@@ -115,12 +113,11 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
             if !ac.config.borrow().show_active_readout {
                 if let Some(adj) = text_area.get_vadjustment() {
                     if let Some(val) = old_adj {
-                        let val =
-                            if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
-                                val.round()
-                            } else {
-                                (adj.get_upper() - adj.get_page_size() - 1.0).round()
-                            };
+                        let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
+                            val.round()
+                        } else {
+                            (adj.get_upper() - adj.get_page_size() - 1.0).round()
+                        };
                         adj.set_value(val);
                     }
                 }
@@ -139,36 +136,26 @@ pub fn make_header_text_area() -> TextView {
     header.set_margin_bottom(0);
     header.set_hscroll_policy(ScrollablePolicy::Minimum);
 
-
     if let Some(tb) = header.get_buffer() {
         let mut text = String::with_capacity(512);
 
         text.push_str(&format!(
-                "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}\n",
-                "Pres",
-                "Hgt",
-                "T",
-                "WB(C)",
-                "DP(C)",
-                "EPT(K)",
-                "DIR",
-                "SPD",
-                "\u{03C9}",
-                "CLD",
-            ));
+            "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}\n",
+            "Pres", "Hgt", "T", "WB(C)", "DP(C)", "EPT(K)", "DIR", "SPD", "\u{03C9}", "CLD",
+        ));
         text.push_str(&format!(
-                "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}",
-                "hPa",
-                "m",
-                "\u{00b0}C",
-                "\u{00b0}C",
-                "\u{00b0}C",
-                "\u{00b0}K",
-                "deg",
-                "KT",
-                "hPa/s",
-                "%",
-            ));
+            "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}",
+            "hPa",
+            "m",
+            "\u{00b0}C",
+            "\u{00b0}C",
+            "\u{00b0}C",
+            "\u{00b0}K",
+            "deg",
+            "KT",
+            "hPa/s",
+            "%",
+        ));
 
         make_default_tag!(tb);
         set_text!(tb, &text);
@@ -223,7 +210,6 @@ pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
 
             if tp > above_val && tp <= below_val {
                 if let Some(tt) = tb.get_tag_table() {
-
                     // Set line colors
                     let rgba = config.active_readout_line_rgba;
                     let range = below_val - above_val;

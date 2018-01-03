@@ -1,7 +1,6 @@
 extern crate sonde;
 
 fn main() {
-
     if let Err(ref e) = sonde::run() {
         println!("error: {}", e);
 

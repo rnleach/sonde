@@ -4,15 +4,15 @@
 use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
-use sounding_base::{Sounding, DataRow};
+use sounding_base::{DataRow, Sounding};
 
-use coords::{TPCoords, WPCoords, SDCoords, XYCoords, XYRect};
+use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
 use gui::Gui;
-use gui::hodograph::hodo_context::HodoContext;
-use gui::sounding::skew_t_context::SkewTContext;
-use gui::sounding::rh_omega_context::RHOmegaContext;
-use gui::PlotContext;
+use gui::hodograph::HodoContext;
+use gui::sounding::SkewTContext;
+use gui::rh_omega::RHOmegaContext;
+use gui::{PlotContext, PlotContextExt};
 
 // Module for configuring application
 pub mod config;
@@ -100,21 +100,20 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(Temperature))
-                .filter_map(|p| if let (Some(p), Some(t)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(TPCoords {
+                                temperature: t,
+                                pressure: p,
+                            })
+                        }
                     } else {
-                        Some(TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -135,21 +134,20 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(DewPoint))
-                .filter_map(|p| if let (Some(p), Some(t)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(TPCoords {
+                                temperature: t,
+                                pressure: p,
+                            })
+                        }
                     } else {
-                        Some(TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -170,18 +168,17 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
-                .filter_map(|p| if let (Some(p), Some(o)) =
-                    (p.0.as_option(), p.1.as_option())
-                {
-                    if p < config::MINP {
-                        None
+                .filter_map(|p| {
+                    if let (Some(p), Some(o)) = (p.0.as_option(), p.1.as_option()) {
+                        if p < config::MINP {
+                            None
+                        } else {
+                            Some(WPCoords { w: o.abs(), p })
+                        }
                     } else {
-                        Some(WPCoords { w: o.abs(), p })
+                        None
                     }
-                } else {
-                    None
-                })
-            {
+                }) {
                 let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
                 if x > rh_omega_xy_envelope.upper_right.x {
                     rh_omega_xy_envelope.upper_right.x = x;
@@ -200,22 +197,21 @@ impl AppContext {
                 snd.get_profile(Pressure),
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
-            ).filter_map(|tuple| if let (Some(p), Some(s), Some(d)) =
-                (
+            ).filter_map(|tuple| {
+                if let (Some(p), Some(s), Some(d)) = (
                     tuple.0.as_option(),
                     tuple.1.as_option(),
                     tuple.2.as_option(),
-                )
-            {
-                if p < self.config.borrow().min_hodo_pressure {
-                    None
+                ) {
+                    if p < self.config.borrow().min_hodo_pressure {
+                        None
+                    } else {
+                        Some(SDCoords { speed: s, dir: d })
+                    }
                 } else {
-                    Some(SDCoords { speed: s, dir: d })
+                    None
                 }
-            } else {
-                None
-            })
-            {
+            }) {
                 let XYCoords { x, y } = HodoContext::convert_sd_to_xy(pair);
                 if x < hodo_xy_envelope.lower_left.x {
                     hodo_xy_envelope.lower_left.x = x;
@@ -264,6 +260,8 @@ impl AppContext {
             self.update_sample();
         }
 
+        self.mark_data_dirty();
+
         self.update_all_gui();
     }
 
@@ -280,23 +278,24 @@ impl AppContext {
             self.update_sample();
         }
 
+        self.mark_data_dirty();
+
         self.update_all_gui();
     }
 
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure.as_option() {
-                self.last_sample.set(Some(
-                    ::sounding_analysis::linear_interpolate(
-                        &self.list.borrow()
-                            [self.currently_displayed_index.get()],
+                self.last_sample
+                    .set(Some(::sounding_analysis::linear_interpolate(
+                        &self.list.borrow()[self.currently_displayed_index.get()],
                         p,
-                    ),
-                ));
+                    )));
             } else {
                 self.last_sample.set(None);
             }
         }
+        self.mark_overlay_dirty();
     }
 
     // Update all the gui elements
@@ -335,11 +334,7 @@ impl AppContext {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
-    }
-
-    /// Get the zoom factor
-    pub fn get_zoom_factor(&self) -> f64 {
-        self.skew_t.get_zoom_factor()
+        self.mark_background_dirty();
     }
 
     pub fn get_sample(&self) -> Option<DataRow> {
@@ -356,5 +351,28 @@ impl AppContext {
             let ta = gui.get_text_area();
             ::gui::text_area::update_text_highlight(&ta, self);
         }
+
+        self.mark_overlay_dirty();
+    }
+
+    pub fn mark_data_dirty(&self) {
+        self.hodo.mark_data_dirty();
+        self.skew_t.mark_data_dirty();
+        self.rh_omega.mark_background_dirty();
+        // TODO: Mark others as I can
+    }
+
+    pub fn mark_overlay_dirty(&self) {
+        self.hodo.mark_overlay_dirty();
+        self.skew_t.mark_overlay_dirty();
+        self.rh_omega.mark_overlay_dirty();
+        // TODO: Mark others as I can
+    }
+
+    pub fn mark_background_dirty(&self) {
+        self.hodo.mark_background_dirty();
+        self.skew_t.mark_background_dirty();
+        self.rh_omega.mark_data_dirty();
+        // TODO: Mark others as I can
     }
 }

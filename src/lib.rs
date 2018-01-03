@@ -38,7 +38,6 @@ mod formula;
 mod gui;
 
 pub fn run() -> Result<()> {
-
     // Set up Gtk+
     gtk::init().chain_err(|| "Error intializing Gtk+3")?;
 

@@ -5,7 +5,6 @@ use cairo::Context;
 use cairo::enums::{FontSlant, FontWeight};
 
 pub fn set_up_index_area(index_area: &DrawingArea) {
-
     index_area.set_hexpand(true);
     index_area.set_vexpand(true);
 
