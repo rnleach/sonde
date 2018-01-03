@@ -9,3 +9,8 @@ Cargo.lock
 // Sublime editor
 //
 *.sublime-workspace
+
+//
+// OS specific
+//
+.DS_Store
