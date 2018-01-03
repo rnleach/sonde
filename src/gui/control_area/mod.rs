@@ -24,6 +24,7 @@ macro_rules! build_config_color_and_check {
         let acp = Rc::clone(&$acp_in);
         check.connect_toggled(move|button|{
             acp.config.borrow_mut().$show_var = button.get_active();
+            acp.mark_background_dirty();
             acp.update_all_gui();
         });
 
@@ -33,6 +34,7 @@ macro_rules! build_config_color_and_check {
             let rgba = button.get_rgba();
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+            acp.mark_background_dirty();
             acp.update_all_gui();
         });
 
@@ -54,6 +56,7 @@ macro_rules! build_config_check{
         let acp = $acp.clone();
         check.connect_toggled(move|button|{
             acp.config.borrow_mut().$show_var = button.get_active();
+            acp.mark_background_dirty();
             acp.update_all_gui();
         });
 

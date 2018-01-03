@@ -355,7 +355,7 @@ impl AppContext {
         self.mark_overlay_dirty();
     }
 
-    fn mark_data_dirty(&self) {
+    pub fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
         self.skew_t.mark_data_dirty();
         self.rh_omega.mark_background_dirty();
@@ -369,7 +369,7 @@ impl AppContext {
         // TODO: Mark others as I can
     }
 
-    fn mark_background_dirty(&self) {
+    pub fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
         self.skew_t.mark_background_dirty();
         self.rh_omega.mark_data_dirty();
