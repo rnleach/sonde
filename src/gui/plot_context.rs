@@ -375,132 +375,137 @@ impl GenericContext {
     }
 }
 
-impl PlotContext for GenericContext {
+pub trait HasGenericContext {
+    fn get_generic_context(&self) -> &GenericContext;
+}
+
+impl<T> PlotContext for T
+where
+    T: HasGenericContext,
+{
     fn set_device_rect(&self, rect: DeviceRect) {
-        self.device_rect.set(rect)
+        self.get_generic_context().device_rect.set(rect)
     }
 
     fn get_device_rect(&self) -> DeviceRect {
-        self.device_rect.get()
+        self.get_generic_context().device_rect.get()
     }
 
     fn get_xy_envelope(&self) -> XYRect {
-        self.xy_envelope.get()
+        self.get_generic_context().xy_envelope.get()
     }
 
     fn set_xy_envelope(&self, new_envelope: XYRect) {
-        self.xy_envelope.set(new_envelope);
+        self.get_generic_context().xy_envelope.set(new_envelope);
     }
 
     fn get_zoom_factor(&self) -> f64 {
-        self.zoom_factor.get()
+        self.get_generic_context().zoom_factor.get()
     }
 
     fn set_zoom_factor(&self, new_zoom_factor: f64) {
-        self.zoom_factor.set(new_zoom_factor);
+        self.get_generic_context().zoom_factor.set(new_zoom_factor);
     }
 
     fn get_translate(&self) -> XYCoords {
-        self.translate.get()
+        self.get_generic_context().translate.get()
     }
 
     fn set_translate(&self, new_translate: XYCoords) {
-        self.translate.set(new_translate);
+        self.get_generic_context().translate.set(new_translate);
     }
 
     fn get_left_button_pressed(&self) -> bool {
-        self.left_button_pressed.get()
+        self.get_generic_context().left_button_pressed.get()
     }
 
     fn set_left_button_pressed(&self, pressed: bool) {
-        self.left_button_pressed.set(pressed);
+        self.get_generic_context().left_button_pressed.set(pressed);
     }
 
     fn get_last_cursor_position(&self) -> Option<DeviceCoords> {
-        self.last_cursor_position.get()
+        self.get_generic_context().last_cursor_position.get()
     }
 
-    fn set_last_cursor_position<T>(&self, new_position: T)
+    fn set_last_cursor_position<U>(&self, new_position: U)
     where
-        Option<DeviceCoords>: From<T>,
+        Option<DeviceCoords>: From<U>,
     {
-        self.last_cursor_position.set(Option::from(new_position));
+        self.get_generic_context()
+            .last_cursor_position
+            .set(Option::from(new_position));
     }
 
     fn get_matrix(&self) -> Matrix {
-        self.matrix.get()
+        self.get_generic_context().matrix.get()
     }
 
     fn set_matrix(&self, matrix: Matrix) {
-        self.matrix.set(matrix);
+        self.get_generic_context().matrix.set(matrix);
     }
 
     fn mark_background_dirty(&self) {
-        self.dirty_background.set(true);
-        self.dirty_data.set(true);
-        self.dirty_overlay.set(true);
+        self.get_generic_context().dirty_background.set(true);
+        self.get_generic_context().dirty_data.set(true);
+        self.get_generic_context().dirty_overlay.set(true);
     }
 
     fn clear_background_dirty(&self) {
-        self.dirty_background.set(false);
+        self.get_generic_context().dirty_background.set(false);
     }
 
     fn is_background_dirty(&self) -> bool {
-        self.dirty_background.get()
+        self.get_generic_context().dirty_background.get()
     }
 
     fn mark_data_dirty(&self) {
-        self.dirty_background.set(true);
-        self.dirty_data.set(true);
+        self.get_generic_context().dirty_background.set(true);
+        self.get_generic_context().dirty_data.set(true);
     }
 
     fn clear_data_dirty(&self) {
-        self.dirty_data.set(false);
+        self.get_generic_context().dirty_data.set(false);
     }
 
     fn is_data_dirty(&self) -> bool {
-        self.dirty_data.get()
+        self.get_generic_context().dirty_data.get()
     }
 
     fn mark_overlay_dirty(&self) {
-        self.dirty_overlay.set(true);
+        self.get_generic_context().dirty_overlay.set(true);
     }
 
     fn clear_overlay_dirty(&self) {
-        self.dirty_overlay.set(false);
+        self.get_generic_context().dirty_overlay.set(false);
     }
 
     fn is_overlay_dirty(&self) -> bool {
-        self.dirty_overlay.get()
+        self.get_generic_context().dirty_overlay.get()
     }
 
     fn get_background_layer(&self) -> ImageSurface {
-        self.background_layer.borrow().clone()
+        self.get_generic_context().background_layer.borrow().clone()
     }
 
     fn set_background_layer(&self, new_surface: ImageSurface) {
-        *self.background_layer.borrow_mut() = new_surface;
+        *self.get_generic_context().background_layer.borrow_mut() = new_surface;
     }
 
     fn get_data_layer(&self) -> ImageSurface {
-        self.data_layer.borrow().clone()
+        self.get_generic_context().data_layer.borrow().clone()
     }
 
     fn set_data_layer(&self, new_surface: ImageSurface) {
-        *self.data_layer.borrow_mut() = new_surface;
+        *self.get_generic_context().data_layer.borrow_mut() = new_surface;
     }
 
     fn get_overlay_layer(&self) -> ImageSurface {
-        self.overlay_layer.borrow().clone()
+        self.get_generic_context().overlay_layer.borrow().clone()
     }
 
     fn set_overlay_layer(&self, new_surface: ImageSurface) {
-        *self.overlay_layer.borrow_mut() = new_surface;
+        *self.get_generic_context().overlay_layer.borrow_mut() = new_surface;
     }
-}
-
-pub trait HasGenericContext {
-    fn get_generic_context(&self) -> &GenericContext;
 }
 
 pub trait Drawable: PlotContext + PlotContextExt {
@@ -581,130 +586,5 @@ pub trait Drawable: PlotContext + PlotContextExt {
 
         cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
         cr.paint();
-    }
-}
-
-impl<T> PlotContext for T
-where
-    T: HasGenericContext,
-{
-    fn set_device_rect(&self, rect: DeviceRect) {
-        self.get_generic_context().set_device_rect(rect);
-    }
-
-    fn get_device_rect(&self) -> DeviceRect {
-        self.get_generic_context().get_device_rect()
-    }
-
-    fn get_xy_envelope(&self) -> XYRect {
-        self.get_generic_context().get_xy_envelope()
-    }
-
-    fn set_xy_envelope(&self, new_envelope: XYRect) {
-        self.get_generic_context().set_xy_envelope(new_envelope);
-    }
-
-    fn get_zoom_factor(&self) -> f64 {
-        self.get_generic_context().get_zoom_factor()
-    }
-
-    fn set_zoom_factor(&self, new_zoom_factor: f64) {
-        self.get_generic_context().set_zoom_factor(new_zoom_factor);
-    }
-
-    fn get_translate(&self) -> XYCoords {
-        self.get_generic_context().get_translate()
-    }
-
-    fn set_translate(&self, new_translate: XYCoords) {
-        self.get_generic_context().set_translate(new_translate);
-    }
-
-    fn get_left_button_pressed(&self) -> bool {
-        self.get_generic_context().get_left_button_pressed()
-    }
-
-    fn set_left_button_pressed(&self, pressed: bool) {
-        self.get_generic_context().set_left_button_pressed(pressed);
-    }
-
-    fn get_last_cursor_position(&self) -> Option<DeviceCoords> {
-        self.get_generic_context().get_last_cursor_position()
-    }
-
-    fn set_last_cursor_position<U>(&self, new_position: U)
-    where
-        Option<DeviceCoords>: From<U>,
-    {
-        self.get_generic_context()
-            .set_last_cursor_position(new_position);
-    }
-
-    fn get_matrix(&self) -> Matrix {
-        self.get_generic_context().get_matrix()
-    }
-
-    fn set_matrix(&self, matrix: Matrix) {
-        self.get_generic_context().set_matrix(matrix);
-    }
-
-    fn mark_background_dirty(&self) {
-        self.get_generic_context().mark_background_dirty();
-    }
-
-    fn clear_background_dirty(&self) {
-        self.get_generic_context().clear_background_dirty();
-    }
-
-    fn is_background_dirty(&self) -> bool {
-        self.get_generic_context().is_background_dirty()
-    }
-
-    fn mark_data_dirty(&self) {
-        self.get_generic_context().mark_data_dirty();
-    }
-
-    fn clear_data_dirty(&self) {
-        self.get_generic_context().clear_data_dirty();
-    }
-
-    fn is_data_dirty(&self) -> bool {
-        self.get_generic_context().is_data_dirty()
-    }
-
-    fn mark_overlay_dirty(&self) {
-        self.get_generic_context().mark_overlay_dirty();
-    }
-
-    fn clear_overlay_dirty(&self) {
-        self.get_generic_context().clear_overlay_dirty();
-    }
-
-    fn is_overlay_dirty(&self) -> bool {
-        self.get_generic_context().is_overlay_dirty()
-    }
-
-    fn get_background_layer(&self) -> ImageSurface {
-        self.get_generic_context().get_background_layer()
-    }
-
-    fn set_background_layer(&self, new_surface: ImageSurface) {
-        self.get_generic_context().set_background_layer(new_surface);
-    }
-
-    fn get_data_layer(&self) -> ImageSurface {
-        self.get_generic_context().get_data_layer()
-    }
-
-    fn set_data_layer(&self, new_surface: ImageSurface) {
-        self.get_generic_context().set_data_layer(new_surface);
-    }
-
-    fn get_overlay_layer(&self) -> ImageSurface {
-        self.get_generic_context().get_overlay_layer()
-    }
-
-    fn set_overlay_layer(&self, new_surface: ImageSurface) {
-        self.get_generic_context().set_overlay_layer(new_surface);
     }
 }

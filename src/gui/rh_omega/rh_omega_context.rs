@@ -61,7 +61,7 @@ impl RHOmegaContext {
     pub fn set_translate_y(&self, new_translate: XYCoords) {
         let mut translate = self.get_translate();
         translate.y = new_translate.y;
-        self.generic.set_translate(translate);
+        self.set_translate(translate);
     }
 }
 
@@ -112,8 +112,8 @@ impl PlotContextExt for RHOmegaContext {
 
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
         // Apply translation first
-        let x = coords.x - self.generic.get_translate().x;
-        let y = coords.y - self.generic.get_translate().y;
+        let x = coords.x - self.get_translate().x;
+        let y = coords.y - self.get_translate().y;
 
         // Apply scaling
         let x = x * self.x_zoom.get();
@@ -128,8 +128,8 @@ impl PlotContextExt for RHOmegaContext {
         let y = coords.y / self.get_zoom_factor();
 
         // Unapply translation
-        let x = x + self.generic.get_translate().x;
-        let y = y + self.generic.get_translate().y;
+        let x = x + self.get_translate().x;
+        let y = y + self.get_translate().y;
 
         XYCoords { x, y }
     }
