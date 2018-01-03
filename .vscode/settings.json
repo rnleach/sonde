@@ -8,5 +8,11 @@
 
     // Shell program for integrated shell
   "terminal.integrated.shell.windows": "C:\\Program Files\\Git\\bin\\bash.exe",
-  "terminal.integrated.shellArgs.windows": ["--login"]
+"terminal.integrated.shellArgs.windows": [
+    "--login"
+],
+"cSpell.words": [
+    "adiabats",
+    "hodograph"
+]
 }
