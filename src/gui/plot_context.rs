@@ -1,6 +1,8 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait, Operator};
+use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
+          ScrollDirection};
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
@@ -514,6 +516,148 @@ pub trait Drawable: PlotContext + PlotContextExt {
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
     fn draw_overlays(&self, args: DrawingArgs);
+
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
+    }
+
+    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
+    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+        const DELTA_SCALE: f64 = 1.05;
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+        let dir = event.get_direction();
+
+        let old_zoom = self.get_zoom_factor();
+        let mut new_zoom = old_zoom;
+
+        match dir {
+            ScrollDirection::Up => {
+                new_zoom *= DELTA_SCALE;
+            }
+            ScrollDirection::Down => {
+                new_zoom /= DELTA_SCALE;
+            }
+            _ => {}
+        }
+
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        self.set_zoom_factor(new_zoom);
+
+        let mut translate = self.get_translate();
+        translate = XYCoords {
+            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+        };
+        self.set_translate(translate);
+        self.bound_view();
+        self.mark_background_dirty();
+
+        ac.update_all_gui();
+
+        Inhibit(true)
+    }
+
+    fn button_press_event(&self, event: &EventButton) -> Inhibit {
+        // Left mouse button
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(Some(event.get_position().into()));
+            self.set_left_button_pressed(true);
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
+    }
+
+    fn button_release_event(&self, event: &EventButton) -> Inhibit {
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(None);
+            self.set_left_button_pressed(false);
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
+    }
+
+    fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
+        self.set_last_cursor_position(None);
+        ac.set_sample(None);
+        ac.update_all_gui();
+
+        Inhibit(false)
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        ev: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+                let new_position = DeviceCoords::from(ev.get_position());
+                self.set_last_cursor_position(Some(new_position));
+
+                let new_position = self.convert_device_to_xy(new_position);
+                let delta = (
+                    new_position.x - old_position.x,
+                    new_position.y - old_position.y,
+                );
+                let mut translate = self.get_translate();
+                translate.x -= delta.0;
+                translate.y -= delta.1;
+                self.set_translate(translate);
+                self.bound_view();
+                self.mark_background_dirty();
+                ac.update_all_gui();
+            }
+        }
+        Inhibit(false)
+    }
+
+    fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
+        let keyval = event.get_keyval();
+        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+            ac.display_next();
+            Inhibit(true)
+        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+            ac.display_previous();
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
+    }
+
+    fn size_allocate_event(&self, da: &DrawingArea) {
+        self.update_cache_allocations(da);
+    }
+
+    fn configure_event(&self, event: &EventConfigure) -> bool {
+        let rect = self.get_device_rect();
+        let (width, height) = event.get_size();
+        if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
+            || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+        {
+            self.mark_background_dirty();
+        }
+        false
+    }
 
     fn draw_background_cached(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());

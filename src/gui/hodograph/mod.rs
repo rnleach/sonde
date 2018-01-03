@@ -10,7 +10,6 @@ use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext
 use app::{config, AppContextPointer};
 use coords::{SDCoords, ScreenCoords, XYCoords};
 
-mod callbacks;
 mod drawing;
 
 pub struct HodoContext {
@@ -49,40 +48,35 @@ impl PlotContextExt for HodoContext {}
 
 impl Drawable for HodoContext {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        use self::callbacks::*;
-
         da.set_hexpand(true);
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| draw_hodo(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.hodo.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |da, ev| scroll_event(da, ev, &ac));
+        da.connect_scroll_event(move |_da, ev| ac.hodo.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |da, ev| button_press_event(da, ev, &ac));
+        da.connect_button_press_event(move |_da, ev| ac.hodo.button_press_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |da, ev| button_release_event(da, ev, &ac));
+        da.connect_button_release_event(move |_da, ev| ac.hodo.button_release_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.hodo.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |da, ev| leave_event(da, ev, &ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.hodo.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_release_event(move |da, ev| key_release_event(da, ev, &ac));
+        da.connect_key_press_event(move |_da, ev| HodoContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |da, ev| key_press_event(da, ev, &ac));
+        da.connect_configure_event(move |_da, ev| ac.hodo.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |da, ev| configure_event(da, ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, ev| size_allocate_event(da, ev, &ac));
+        da.connect_size_allocate(move |da, _ev| ac.hodo.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -90,7 +84,7 @@ impl Drawable for HodoContext {
             | EventMask::BUTTON_RELEASE_MASK
             | EventMask::POINTER_MOTION_HINT_MASK
             | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
+            | EventMask::KEY_PRESS_MASK)
             .bits() as i32);
     }
 

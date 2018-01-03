@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use gdk::EventMask;
+use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
@@ -11,7 +11,6 @@ use gui::DrawingArgs;
 use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 
 mod drawing;
-mod callbacks;
 
 pub struct RHOmegaContext {
     x_zoom: Cell<f64>,
@@ -144,40 +143,35 @@ impl PlotContextExt for RHOmegaContext {
 
 impl Drawable for RHOmegaContext {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        use self::callbacks::*;
-
         da.set_hexpand(true);
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| draw_rh_omega(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.rh_omega.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |da, ev| scroll_event(da, ev, &ac));
+        da.connect_scroll_event(move |_da, ev| ac.rh_omega.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |da, ev| button_press_event(da, ev, &ac));
+        da.connect_button_press_event(move |_da, ev| ac.rh_omega.button_press_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |da, ev| button_release_event(da, ev, &ac));
+        da.connect_button_release_event(move |_da, ev| ac.rh_omega.button_release_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.rh_omega.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |da, ev| leave_event(da, ev, &ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.rh_omega.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_release_event(move |da, ev| key_release_event(da, ev, &ac));
+        da.connect_key_press_event(move |_da, ev| RHOmegaContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |da, ev| key_press_event(da, ev, &ac));
+        da.connect_configure_event(move |_da, ev| ac.rh_omega.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |da, ev| configure_event(da, ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, ev| size_allocate_event(da, ev, &ac));
+        da.connect_size_allocate(move |da, _ev| ac.rh_omega.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -185,8 +179,92 @@ impl Drawable for RHOmegaContext {
             | EventMask::BUTTON_RELEASE_MASK
             | EventMask::POINTER_MOTION_HINT_MASK
             | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
+            | EventMask::KEY_PRESS_MASK)
             .bits() as i32);
+    }
+
+    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+        const DELTA_SCALE: f64 = 1.05;
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        let pos = ac.rh_omega
+            .convert_device_to_xy(DeviceCoords::from(event.get_position()));
+        let dir = event.get_direction();
+
+        let old_zoom = ac.rh_omega.get_zoom_factor();
+        let mut new_zoom = old_zoom;
+
+        match dir {
+            ScrollDirection::Up => {
+                new_zoom *= DELTA_SCALE;
+            }
+            ScrollDirection::Down => {
+                new_zoom /= DELTA_SCALE;
+            }
+            _ => {}
+        }
+
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        ac.rh_omega.set_zoom_factor(new_zoom);
+
+        let mut translate = ac.rh_omega.get_translate();
+        translate.y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
+        ac.rh_omega.set_translate(translate);
+        ac.rh_omega.bound_view();
+        ac.rh_omega.mark_background_dirty();
+
+        ac.update_all_gui();
+
+        Inhibit(true)
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        event: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+                let new_position = DeviceCoords::from(event.get_position());
+                self.set_last_cursor_position(Some(new_position));
+
+                let new_position = self.convert_device_to_xy(new_position);
+                let delta = (
+                    new_position.x - old_position.x,
+                    new_position.y - old_position.y,
+                );
+                let mut translate = self.get_translate();
+                translate.y -= delta.1;
+                self.set_translate_y(translate);
+                self.bound_view();
+                self.mark_background_dirty();
+                ac.update_all_gui();
+
+                ac.set_sample(None);
+            }
+        } else if ac.plottable() {
+            let position: DeviceCoords = event.get_position().into();
+
+            self.set_last_cursor_position(Some(position));
+            let wp_position = self.convert_device_to_wp(position);
+            let sample = ::sounding_analysis::linear_interpolate(
+                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                wp_position.p,
+            );
+            ac.set_sample(Some(sample));
+            ac.mark_overlay_dirty();
+            ac.update_all_gui();
+        }
+        Inhibit(false)
     }
 
     fn draw_background(&self, args: DrawingArgs) {

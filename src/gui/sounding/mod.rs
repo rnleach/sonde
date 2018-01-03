@@ -1,18 +1,17 @@
 use std::rc::Rc;
 
-use gdk::EventMask;
+use gdk::{EventMask, EventMotion};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::AppContextPointer;
 
 use gui::DrawingArgs;
-use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContextExt};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 
 use app::config;
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
 
-mod callbacks;
 mod drawing;
 
 pub struct SkewTContext {
@@ -83,40 +82,35 @@ impl PlotContextExt for SkewTContext {}
 
 impl Drawable for SkewTContext {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        use self::callbacks::*;
-
         da.set_hexpand(true);
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| draw_skew_t(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.skew_t.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |da, ev| scroll_event(da, ev, &ac));
+        da.connect_scroll_event(move |_da, ev| ac.skew_t.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |da, ev| button_press_event(da, ev, &ac));
+        da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |da, ev| button_release_event(da, ev, &ac));
+        da.connect_button_release_event(move |_da, ev| ac.skew_t.button_release_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |da, ev| leave_event(da, ev, &ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.skew_t.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_release_event(move |da, ev| key_release_event(da, ev, &ac));
+        da.connect_key_press_event(move |_da, ev| SkewTContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |da, ev| key_press_event(da, ev, &ac));
+        da.connect_configure_event(move |_da, ev| ac.skew_t.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |da, ev| configure_event(da, ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, ev| size_allocate_event(da, ev, &ac));
+        da.connect_size_allocate(move |da, _ev| ac.skew_t.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -124,8 +118,53 @@ impl Drawable for SkewTContext {
             | EventMask::BUTTON_RELEASE_MASK
             | EventMask::POINTER_MOTION_HINT_MASK
             | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_RELEASE_MASK | EventMask::KEY_PRESS_MASK)
+            | EventMask::KEY_PRESS_MASK)
             .bits() as i32);
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        event: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+                let new_position = DeviceCoords::from(event.get_position());
+                self.set_last_cursor_position(Some(new_position));
+
+                let new_position = self.convert_device_to_xy(new_position);
+                let delta = (
+                    new_position.x - old_position.x,
+                    new_position.y - old_position.y,
+                );
+                let mut translate = self.get_translate();
+                translate.x -= delta.0;
+                translate.y -= delta.1;
+                self.set_translate(translate);
+                self.bound_view();
+                self.mark_background_dirty();
+                ac.update_all_gui();
+
+                ac.set_sample(None);
+            }
+        } else if ac.plottable() {
+            let position: DeviceCoords = event.get_position().into();
+
+            self.set_last_cursor_position(Some(position));
+            let tp_position = self.convert_device_to_tp(position);
+            let sample = ::sounding_analysis::linear_interpolate(
+                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                tp_position.pressure,
+            );
+            ac.set_sample(Some(sample));
+            ac.mark_overlay_dirty();
+            ac.update_all_gui();
+        }
+        Inhibit(false)
     }
 
     fn draw_background(&self, args: DrawingArgs) {
