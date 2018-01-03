@@ -3,10 +3,10 @@
 use std::rc::Rc;
 
 mod plot_context;
-pub use self::plot_context::{HasGenericContext, PlotContext, PlotContextExt};
-pub use self::sounding::skew_t_context::SkewTContext;
-pub use self::rh_omega::rh_omega_context::RHOmegaContext;
-pub use self::hodograph::hodo_context::HodoContext;
+pub use self::plot_context::{Drawable, HasGenericContext, PlotContext, PlotContextExt};
+pub use self::sounding::SkewTContext;
+pub use self::rh_omega::RHOmegaContext;
+pub use self::hodograph::HodoContext;
 
 pub mod hodograph;
 pub mod index_area;
@@ -65,13 +65,12 @@ impl Gui {
             app_context: Rc::clone(acp),
         };
 
-        sounding::set_up_sounding_area(&gui.get_sounding_area(), acp);
-        hodograph::set_up_hodograph_area(&gui.get_hodograph_area(), acp);
+        sounding::SkewTContext::set_up_drawing_area(&gui.get_sounding_area(), acp);
+        hodograph::HodoContext::set_up_drawing_area(&gui.get_hodograph_area(), acp);
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
-
-        rh_omega::set_up_rh_omega_area(&gui.get_rh_omega_area(), acp);
+        rh_omega::RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
 
         main_window::layout(&gui, acp);
 

@@ -9,9 +9,9 @@ use sounding_base::{DataRow, Sounding};
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
 use gui::Gui;
-use gui::hodograph::hodo_context::HodoContext;
-use gui::sounding::skew_t_context::SkewTContext;
-use gui::rh_omega::rh_omega_context::RHOmegaContext;
+use gui::hodograph::HodoContext;
+use gui::sounding::SkewTContext;
+use gui::rh_omega::RHOmegaContext;
 use gui::{PlotContext, PlotContextExt};
 
 // Module for configuring application

@@ -4,6 +4,7 @@ use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait, Operator};
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
+use app::AppContextPointer;
 use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
 use gui::{AppContext, DrawingArgs};
 
@@ -509,6 +510,7 @@ where
 }
 
 pub trait Drawable: PlotContext + PlotContextExt {
+    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
     fn draw_overlays(&self, args: DrawingArgs);
