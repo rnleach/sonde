@@ -43,6 +43,8 @@ pub fn draw_active_sample(args: DrawingArgs) {
 }
 
 fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> {
+    use sounding_analysis::met_formulas::rh;
+
     let mut results = vec![];
 
     let t_c = vals.temperature.as_option();
@@ -66,7 +68,7 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
             line.push_str(&format!("{:.0}C", dp_c));
         }
         if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-            line.push_str(&format!(" {:.0}%", 100.0 * ::formula::rh(t_c, dp_c)));
+            line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
         }
         if let Some(omega) = omega {
             line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));

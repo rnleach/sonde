@@ -6,7 +6,7 @@ authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 [dependencies]
 sounding-base = "^0.1.1"
 sounding-bufkit = "^0.1"
-sounding-analysis = "^0.1"
+sounding-analysis = "^0.1.2"
 error-chain = "^0.11"
 cairo-rs = "^0.3"
 glib = "^0.4"
@@ -18,6 +18,7 @@ itertools = "^0.7.0"
 
 [patch.crates-io]
 sounding-base = { git = 'https://github.com/rnleach/sounding-base.git', version = '^0.1.1' }
+sounding-analysis = {git = 'https://github.com/rnleach/sounding-analysis.git', version = '^0.1.2' }
 
 [profile.release]
 lto = true

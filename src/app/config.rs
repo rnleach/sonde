@@ -447,7 +447,7 @@ lazy_static! {
 
     /// Compute points for background mixing ratio only once
     pub static ref ISO_MIXING_RATIO_PNTS: Vec<[XYCoords; 2]> = {
-        use formula::*;
+        use sounding_analysis::met_formulas::*;
 
         ISO_MIXING_RATIO
         .into_iter()
@@ -474,7 +474,8 @@ lazy_static! {
 
     /// Compute points for background theta-e
     pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
-        use formula::{find_root, theta_e_saturated_kelvin};
+        use sounding_analysis::met_formulas::theta_e_saturated_kelvin;
+        use sounding_analysis::utility::find_root;
 
         ISO_THETA_E_C
         .iter()
@@ -541,19 +542,20 @@ lazy_static! {
 fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     use std::f64;
     use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
+    use sounding_analysis::met_formulas::temperature_c_from_theta;
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t = ::formula::temperature_c_from_theta(theta, p);
+        let t = temperature_c_from_theta(theta, p);
         result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
         }));
         p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
     }
-    let t = ::formula::temperature_c_from_theta(theta, ISENTROPS_TOP_P);
+    let t = temperature_c_from_theta(theta, ISENTROPS_TOP_P);
 
     result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,

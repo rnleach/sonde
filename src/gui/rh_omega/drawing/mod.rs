@@ -23,6 +23,8 @@ pub fn draw_overlays(args: DrawingArgs) {
 }
 
 fn draw_rh_profile(args: DrawingArgs) {
+    use sounding_analysis::met_formulas::rh;
+
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -43,7 +45,7 @@ fn draw_rh_profile(args: DrawingArgs) {
                     triplet.1.as_option(),
                     triplet.2.as_option(),
                 ) {
-                    Some((p, ::formula::rh(t, td)))
+                    Some((p, rh(t, td)))
                 } else {
                     None
                 }
