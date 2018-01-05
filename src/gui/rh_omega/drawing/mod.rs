@@ -41,9 +41,9 @@ fn draw_rh_profile(args: DrawingArgs) {
         let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|triplet| {
                 if let (Some(p), Some(t), Some(td)) = (
-                    triplet.0.as_option(),
-                    triplet.1.as_option(),
-                    triplet.2.as_option(),
+                    *triplet.0,
+                    *triplet.1,
+                    *triplet.2,
                 ) {
                     Some((p, rh(t, td)))
                 } else {
@@ -142,7 +142,7 @@ fn draw_omega_profile(args: DrawingArgs) {
             .iter()
             .zip(omega_data.iter())
             .filter_map(|val_pair| {
-                if let (Some(p), Some(w)) = (val_pair.0.as_option(), val_pair.1.as_option()) {
+                if let (Some(p), Some(w)) = (*val_pair.0, *val_pair.1) {
                     if p > config::MINP {
                         let wp_coords = WPCoords { w, p };
                         Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
@@ -164,7 +164,7 @@ fn draw_active_readout(args: DrawingArgs) {
 
     if config.show_active_readout {
         let sample_p = if let Some(sample) = ac.get_sample() {
-            if let Some(sample_p) = sample.pressure.as_option() {
+            if let Some(sample_p) = sample.pressure {
                 sample_p
             } else {
                 return;

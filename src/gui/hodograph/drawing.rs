@@ -198,9 +198,9 @@ pub fn draw_data(args: DrawingArgs) {
 
         let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|triplet| {
             if let (Some(p), Some(speed), Some(dir)) = (
-                triplet.0.as_option(),
-                triplet.1.as_option(),
-                triplet.2.as_option(),
+                *triplet.0,
+                *triplet.1,
+                *triplet.2,
             ) {
                 if p >= config.min_hodo_pressure {
                     let sd_coords = SDCoords { speed, dir };
@@ -232,9 +232,9 @@ pub fn draw_overlays(args: DrawingArgs) {
 
     let (speed, dir) = if let Some(sample) = ac.get_sample() {
         if let (Some(pressure), Some(speed), Some(dir)) = (
-            sample.pressure.as_option(),
-            sample.speed.as_option(),
-            sample.direction.as_option(),
+            sample.pressure,
+            sample.speed,
+            sample.direction,
         ) {
             if pressure >= config.min_hodo_pressure {
                 (speed, dir)

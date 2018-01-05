@@ -229,7 +229,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
                 vt.hour()
             );
 
-            if let Some(lt) = snd.get_lead_time().as_option() {
+            if let Some(lt) = snd.get_lead_time() {
                 temp_string.push_str(&format!(" F{:03}", lt));
             }
 
@@ -238,17 +238,17 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 
         // Build location part.
         let (lat, lon, elevation) = snd.get_location();
-        if lat.as_option().is_some() || lon.as_option().is_some() || elevation.as_option().is_some()
+        if lat.is_some() || lon.is_some() || elevation.is_some()
         {
             location = Some("".to_owned());
             if let Some(ref mut loc) = location {
-                if let Some(lat) = lat.as_option() {
+                if let Some(lat) = lat {
                     loc.push_str(&format!("{:.2}", lat));
                 }
-                if let Some(lon) = lon.as_option() {
+                if let Some(lon) = lon {
                     loc.push_str(&format!(", {:.2}", lon));
                 }
-                if let Some(el) = elevation.as_option() {
+                if let Some(el) = elevation {
                     loc.push_str(&format!(", {:.0}m ({:.0}ft)", el, el * 3.28084));
                 }
             }

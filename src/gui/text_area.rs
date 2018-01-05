@@ -58,14 +58,14 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
 
     macro_rules! unwrap_to_str {
         ($opt_val:expr, $fmt:expr) => {
-            if $opt_val.as_option().is_some() {
+            if $opt_val.is_some() {
                 format!($fmt, $opt_val.unwrap())
             } else {
                 "".to_owned()
             }
         };
         ($opt_val:expr, $fmt:expr, $multiplier:expr) => {
-            if $opt_val.as_option().is_some() {
+            if $opt_val.is_some() {
                 format!($fmt, $opt_val.unwrap() * $multiplier)
             } else {
                 "".to_owned()
@@ -173,7 +173,7 @@ pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
     }
 
     let tp = if let Some(sample) = ac.get_sample() {
-        if let Some(tp) = sample.pressure.as_option() {
+        if let Some(tp) = sample.pressure {
             tp
         } else {
             return;

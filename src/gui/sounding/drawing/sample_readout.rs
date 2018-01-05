@@ -27,7 +27,7 @@ pub fn draw_active_sample(args: DrawingArgs) {
         return;
     };
 
-    let sample_p = if let Some(sample_p) = vals.pressure.as_option() {
+    let sample_p = if let Some(sample_p) = vals.pressure {
         sample_p
     } else {
         return;
@@ -47,14 +47,14 @@ fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> 
 
     let mut results = vec![];
 
-    let t_c = vals.temperature.as_option();
-    let dp_c = vals.dew_point.as_option();
-    let pres = vals.pressure.as_option();
-    let dir = vals.direction.as_option();
-    let spd = vals.speed.as_option();
-    let hgt_asl = vals.height.as_option();
-    let omega = vals.omega.as_option();
-    let elevation = snd.get_location().2.as_option();
+    let t_c = vals.temperature;
+    let dp_c = vals.dew_point;
+    let pres = vals.pressure;
+    let dir = vals.direction;
+    let spd = vals.speed;
+    let hgt_asl = vals.height;
+    let omega = vals.omega;
+    let elevation = snd.get_location().2;
 
     if t_c.is_some() || dp_c.is_some() || omega.is_some() {
         let mut line = String::with_capacity(128);

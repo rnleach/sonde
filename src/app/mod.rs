@@ -101,7 +101,7 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(Temperature))
                 .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
@@ -135,7 +135,7 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(DewPoint))
                 .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
@@ -169,7 +169,7 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
                 .filter_map(|p| {
-                    if let (Some(p), Some(o)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(o)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
@@ -199,9 +199,9 @@ impl AppContext {
                 snd.get_profile(WindDirection)
             ).filter_map(|tuple| {
                 if let (Some(p), Some(s), Some(d)) = (
-                    tuple.0.as_option(),
-                    tuple.1.as_option(),
-                    tuple.2.as_option(),
+                    *tuple.0,
+                    *tuple.1,
+                    *tuple.2,
                 ) {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
@@ -285,7 +285,7 @@ impl AppContext {
 
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
-            if let Some(p) = sample.pressure.as_option() {
+            if let Some(p) = sample.pressure {
                 self.last_sample
                     .set(Some(::sounding_analysis::linear_interpolate(
                         &self.list.borrow()[self.currently_displayed_index.get()],

@@ -41,7 +41,7 @@ pub fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
             .zip(temp_data.iter())
             .filter_map(|val_pair| {
                 if let (Some(pressure), Some(temperature)) =
-                    (val_pair.0.as_option(), val_pair.1.as_option())
+                    (*val_pair.0, *val_pair.1)
                 {
                     if pressure > config::MINP {
                         let tp_coords = TPCoords {
