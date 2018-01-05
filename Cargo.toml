@@ -5,7 +5,7 @@ authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
 sounding-base = "^0.2"
-sounding-bufkit = "^0.2"
+sounding-bufkit = "^0.2.1"
 sounding-analysis = "^0.2"
 error-chain = "^0.11"
 cairo-rs = "^0.3"
