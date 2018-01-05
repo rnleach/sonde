@@ -398,7 +398,23 @@ where
         self.get_generic_context().xy_envelope.get()
     }
 
-    fn set_xy_envelope(&self, new_envelope: XYRect) {
+    fn set_xy_envelope(&self, mut new_envelope: XYRect) {
+
+        {
+            let ll = &mut new_envelope.lower_left;
+            let ur = &mut new_envelope.upper_right;
+
+            let xmin = &mut ll.x;
+            let xmax = &mut ur.x;
+            let ymin = &mut ll.y;
+            let ymax = &mut ur.y;
+
+            if *xmin < 0.0 { *xmin = 0.0; }
+            if *xmax > 1.0 { *xmax = 1.0; }
+            if *ymin < 0.0 { *ymin = 0.0; }
+            if *ymax > 1.0 { *ymax = 0.0; }
+        }
+
         self.get_generic_context().xy_envelope.set(new_envelope);
     }
 
