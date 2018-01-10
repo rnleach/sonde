@@ -99,6 +99,7 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     // Set up hbox for profiles
     let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
+    profile_box.pack_start(&gui.get_cloud_area(), true, true, 0);
 
     // Right pane
     let notebook = Notebook::new();

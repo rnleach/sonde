@@ -12,6 +12,7 @@ use gui::Gui;
 use gui::hodograph::HodoContext;
 use gui::sounding::SkewTContext;
 use gui::rh_omega::RHOmegaContext;
+use gui::cloud::CloudContext;
 use gui::{PlotContext, PlotContextExt};
 
 // Module for configuring application
@@ -44,6 +45,9 @@ pub struct AppContext {
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
+    // Handle to Cloud profile context
+    pub cloud: CloudContext,
+
     // Handle to Hodograph context
     pub hodo: HodoContext,
 }
@@ -63,6 +67,7 @@ impl AppContext {
             gui: RefCell::new(None),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
+            cloud: CloudContext::new(),
             hodo: HodoContext::new(),
         })
     }
@@ -231,6 +236,10 @@ impl AppContext {
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
         self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
         self.hodo.set_xy_envelope(hodo_xy_envelope);
+        let mut cloud_envelope = rh_omega_xy_envelope;
+        cloud_envelope.lower_left.x = 0.0;
+        cloud_envelope.upper_right.x = 1.0;
+        self.cloud.set_xy_envelope(cloud_envelope);
 
         self.fit_to_data();
 
@@ -334,6 +343,7 @@ impl AppContext {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
+        self.cloud.zoom_to_envelope();
         self.mark_background_dirty();
     }
 
@@ -358,7 +368,8 @@ impl AppContext {
     pub fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
         self.skew_t.mark_data_dirty();
-        self.rh_omega.mark_background_dirty();
+        self.rh_omega.mark_data_dirty();
+        self.cloud.mark_data_dirty();
         // TODO: Mark others as I can
     }
 
@@ -366,13 +377,15 @@ impl AppContext {
         self.hodo.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
+        self.cloud.mark_overlay_dirty();
         // TODO: Mark others as I can
     }
 
     pub fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
         self.skew_t.mark_background_dirty();
-        self.rh_omega.mark_data_dirty();
+        self.rh_omega.mark_background_dirty();
+        self.cloud.mark_background_dirty();
         // TODO: Mark others as I can
     }
 }

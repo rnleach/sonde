@@ -99,6 +99,18 @@ pub struct WPCoords {
 }
 
 /***************************************************************************************************
+ *                   Percent - Pressure coords for the Cloud Cover
+ * ************************************************************************************************/
+/// Percent-Pressure coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct PPCoords {
+    /// Percent 0.0 - 1.0
+    pub pcnt: f64,
+    /// Pressure in hPa
+    pub press: f64,
+}
+
+/***************************************************************************************************
  *                 X - Y Coords for a default plot area that can be zoomed and panned
  * ************************************************************************************************/
 

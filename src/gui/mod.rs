@@ -8,12 +8,13 @@ pub use self::sounding::SkewTContext;
 pub use self::rh_omega::RHOmegaContext;
 pub use self::hodograph::HodoContext;
 
+pub mod cloud;
+pub mod control_area;
 pub mod hodograph;
 pub mod index_area;
-pub mod control_area;
 pub mod main_window;
-pub mod sounding;
 pub mod rh_omega;
+pub mod sounding;
 pub mod text_area;
 
 use cairo::{Context, Matrix};
@@ -41,6 +42,7 @@ pub struct Gui {
 
     // Profiles
     rh_omega_area: DrawingArea,
+    cloud: DrawingArea,
 
     // Main window
     window: Window,
@@ -60,6 +62,7 @@ impl Gui {
             text_area: TextView::new(),
 
             rh_omega_area: DrawingArea::new(),
+            cloud: DrawingArea::new(),
 
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
@@ -71,6 +74,7 @@ impl Gui {
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
         rh_omega::RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
+        cloud::CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
 
         main_window::layout(&gui, acp);
 
@@ -101,6 +105,10 @@ impl Gui {
         self.rh_omega_area.clone()
     }
 
+    pub fn get_cloud_area(&self) -> DrawingArea {
+        self.cloud.clone()
+    }
+
     pub fn get_window(&self) -> Window {
         self.window.clone()
     }
@@ -114,6 +122,10 @@ impl Gui {
 
         if self.rh_omega_area.is_visible() {
             self.rh_omega_area.queue_draw();
+        }
+
+        if self.cloud.is_visible() {
+            self.cloud.queue_draw();
         }
     }
 

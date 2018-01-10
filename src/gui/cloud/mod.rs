@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::rc::Rc;
 
 use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
@@ -6,62 +5,60 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContextPointer};
-use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords};
+use coords::{DeviceCoords, ScreenCoords, PPCoords, XYCoords};
 use gui::DrawingArgs;
 use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 
 mod drawing;
 
-pub struct RHOmegaContext {
-    x_zoom: Cell<f64>,
+pub struct CloudContext {
     generic: GenericContext,
 }
 
-impl RHOmegaContext {
+impl CloudContext {
     pub fn new() -> Self {
-        RHOmegaContext {
-            x_zoom: Cell::new(1.0),
+        CloudContext {
             generic: GenericContext::new(),
         }
     }
 
-    pub fn convert_wp_to_xy(coords: WPCoords) -> XYCoords {
+    pub fn convert_pp_to_xy(coords: PPCoords) -> XYCoords {
         use std::f64;
 
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.p))
+        let y = (f64::log10(config::MAXP) - f64::log10(coords.press))
             / (f64::log10(config::MAXP) - f64::log10(config::MINP));
 
         // The + sign below looks weird, but is correct.
-        let x = (coords.w + config::MAX_ABS_W) / (2.0 * config::MAX_ABS_W);
+        let x = coords.pcnt;
 
         XYCoords { x, y }
     }
 
-    pub fn convert_xy_to_wp(coords: XYCoords) -> WPCoords {
+    pub fn convert_xy_to_pp(coords: XYCoords) -> PPCoords {
         use std::f64;
 
-        let p = 10.0f64.powf(
+        let press = 10.0f64.powf(
             -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP))
                 + f64::log10(config::MAXP),
         );
-        let w = coords.x * (2.0 * config::MAX_ABS_W) - config::MAX_ABS_W;
+        let pcnt = coords.x;
 
-        WPCoords { w, p }
+        PPCoords { pcnt, press }
     }
 
-    pub fn convert_screen_to_wp(&self, coords: ScreenCoords) -> WPCoords {
+    pub fn convert_screen_to_pp(&self, coords: ScreenCoords) -> PPCoords {
         let xy = self.convert_screen_to_xy(coords);
-        RHOmegaContext::convert_xy_to_wp(xy)
+        CloudContext::convert_xy_to_pp(xy)
     }
 
-    pub fn convert_wp_to_screen(&self, coords: WPCoords) -> ScreenCoords {
-        let xy = RHOmegaContext::convert_wp_to_xy(coords);
+    pub fn convert_pp_to_screen(&self, coords: PPCoords) -> ScreenCoords {
+        let xy = CloudContext::convert_pp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
-    pub fn convert_device_to_wp(&self, coords: DeviceCoords) -> WPCoords {
+    pub fn convert_device_to_pp(&self, coords: DeviceCoords) -> PPCoords {
         let xy = self.convert_device_to_xy(coords);
-        Self::convert_xy_to_wp(xy)
+        Self::convert_xy_to_pp(xy)
     }
 
     pub fn set_translate_y(&self, new_translate: XYCoords) {
@@ -71,15 +68,14 @@ impl RHOmegaContext {
     }
 }
 
-impl HasGenericContext for RHOmegaContext {
+impl HasGenericContext for CloudContext {
     fn get_generic_context(&self) -> &GenericContext {
         &self.generic
     }
 }
 
-impl PlotContextExt for RHOmegaContext {
+impl PlotContextExt for CloudContext {
     fn zoom_to_envelope(&self) {
-
         let xy_envelope = &self.get_xy_envelope();
         self.set_translate(xy_envelope.lower_left);
 
@@ -93,11 +89,6 @@ impl PlotContextExt for RHOmegaContext {
 
         self.set_zoom_factor(height_scale);
         self.bound_view();
-
-        let width = xy_envelope.upper_right.x - xy_envelope.lower_left.x;
-        let width_scale = 1.0 / width;
-
-        self.x_zoom.set(width_scale);
     }
 
     fn bound_view(&self) {
@@ -128,11 +119,11 @@ impl PlotContextExt for RHOmegaContext {
 
     fn convert_xy_to_screen(&self, coords: XYCoords) -> ScreenCoords {
         // Apply translation first
-        let x = coords.x - self.get_translate().x;
+        let x = coords.x;
         let y = coords.y - self.get_translate().y;
 
         // Apply scaling
-        let x = x * self.x_zoom.get();
+        let x = x;
         let y = y * self.get_zoom_factor();
 
         ScreenCoords { x, y }
@@ -140,48 +131,48 @@ impl PlotContextExt for RHOmegaContext {
 
     fn convert_screen_to_xy(&self, coords: ScreenCoords) -> XYCoords {
         // Unapply scaling first
-        let x = coords.x / self.x_zoom.get();
+        let x = coords.x;
         let y = coords.y / self.get_zoom_factor();
 
         // Unapply translation
-        let x = x + self.get_translate().x;
+        let x = x;
         let y = y + self.get_translate().y;
 
         XYCoords { x, y }
     }
 }
 
-impl Drawable for RHOmegaContext {
+impl Drawable for CloudContext {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
         da.set_hexpand(true);
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.rh_omega.draw_callback(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.rh_omega.scroll_event(ev, &ac));
+        da.connect_scroll_event(move |_da, ev| ac.cloud.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.rh_omega.button_press_event(ev));
+        da.connect_button_press_event(move |_da, ev| ac.cloud.button_press_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| ac.rh_omega.button_release_event(ev));
+        da.connect_button_release_event(move |_da, ev| ac.cloud.button_release_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.rh_omega.mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.cloud.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.rh_omega.leave_event(&ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.cloud.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| RHOmegaContext::key_press_event(ev, &ac));
+        da.connect_key_press_event(move |_da, ev| CloudContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.rh_omega.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.rh_omega.size_allocate_event(da));
+        da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -202,7 +193,7 @@ impl Drawable for RHOmegaContext {
             .convert_device_to_xy(DeviceCoords::from(event.get_position()));
         let dir = event.get_direction();
 
-        let old_zoom = ac.rh_omega.get_zoom_factor();
+        let old_zoom = ac.cloud.get_zoom_factor();
         let mut new_zoom = old_zoom;
 
         match dir {
@@ -220,13 +211,13 @@ impl Drawable for RHOmegaContext {
         } else if new_zoom > MAX_ZOOM {
             new_zoom = MAX_ZOOM;
         }
-        ac.rh_omega.set_zoom_factor(new_zoom);
+        ac.cloud.set_zoom_factor(new_zoom);
 
-        let mut translate = ac.rh_omega.get_translate();
+        let mut translate = ac.cloud.get_translate();
         translate.y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
-        ac.rh_omega.set_translate(translate);
-        ac.rh_omega.bound_view();
-        ac.rh_omega.mark_background_dirty();
+        ac.cloud.set_translate(translate);
+        ac.cloud.bound_view();
+        ac.cloud.mark_background_dirty();
 
         ac.update_all_gui();
 
@@ -265,10 +256,10 @@ impl Drawable for RHOmegaContext {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
-            let wp_position = self.convert_device_to_wp(position);
+            let pp_position = self.convert_device_to_pp(position);
             let sample = ::sounding_analysis::linear_interpolate(
                 &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
-                wp_position.p,
+                pp_position.press,
             );
             ac.set_sample(Some(sample));
             ac.mark_overlay_dirty();
