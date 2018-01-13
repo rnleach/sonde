@@ -43,11 +43,7 @@ fn gather_wind_data(
 
     izip!(pres, dir, spd)
         .filter_map(|tuple| {
-            let (p, d, s) = (
-                *tuple.0,
-                *tuple.1,
-                *tuple.2,
-            );
+            let (p, d, s) = (*tuple.0, *tuple.1, *tuple.2);
             if let (Some(p), Some(d), Some(s)) = (p, d, s) {
                 if p > config::MINP {
                     Some((p, d, s))

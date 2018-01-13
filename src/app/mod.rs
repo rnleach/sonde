@@ -42,14 +42,14 @@ pub struct AppContext {
     // Handle to skew-t context
     pub skew_t: SkewTContext,
 
+    // Handle to Hodograph context
+    pub hodo: HodoContext,
+
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
     // Handle to Cloud profile context
     pub cloud: CloudContext,
-
-    // Handle to Hodograph context
-    pub hodo: HodoContext,
 }
 
 impl AppContext {
@@ -203,11 +203,7 @@ impl AppContext {
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
             ).filter_map(|tuple| {
-                if let (Some(p), Some(s), Some(d)) = (
-                    *tuple.0,
-                    *tuple.1,
-                    *tuple.2,
-                ) {
+                if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {

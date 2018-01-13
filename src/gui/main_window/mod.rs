@@ -70,7 +70,7 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     menu_bar
 }
 
-fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
+fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
     macro_rules! add_tab {
         ($notebook:ident, $widget:expr, $label:expr) => {
             $widget.set_property_margin(config::WIDGET_MARGIN);
@@ -108,6 +108,7 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
+    notebook.set_tab_pos(gtk::PositionType::Right);
 
     main_pane.add1(&add_border_frame(&h_box));
     main_pane.add2(&notebook);

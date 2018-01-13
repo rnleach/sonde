@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
-use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventMask, EventMotion, EventScroll};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContextPointer};
-use coords::{DeviceCoords, ScreenCoords, PPCoords, XYCoords};
+use coords::{DeviceCoords, PPCoords, ScreenCoords, XYCoords};
 use gui::DrawingArgs;
-use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt,
+                        SlaveProfileDrawable};
 
 mod drawing;
 
@@ -46,11 +47,6 @@ impl CloudContext {
         PPCoords { pcnt, press }
     }
 
-    pub fn convert_screen_to_pp(&self, coords: ScreenCoords) -> PPCoords {
-        let xy = self.convert_screen_to_xy(coords);
-        CloudContext::convert_xy_to_pp(xy)
-    }
-
     pub fn convert_pp_to_screen(&self, coords: PPCoords) -> ScreenCoords {
         let xy = CloudContext::convert_pp_to_xy(coords);
         self.convert_xy_to_screen(xy)
@@ -59,12 +55,6 @@ impl CloudContext {
     pub fn convert_device_to_pp(&self, coords: DeviceCoords) -> PPCoords {
         let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_pp(xy)
-    }
-
-    pub fn set_translate_y(&self, new_translate: XYCoords) {
-        let mut translate = self.get_translate();
-        translate.y = new_translate.y;
-        self.set_translate(translate);
     }
 }
 
@@ -75,21 +65,7 @@ impl HasGenericContext for CloudContext {
 }
 
 impl PlotContextExt for CloudContext {
-    fn zoom_to_envelope(&self) {
-        let xy_envelope = &self.get_xy_envelope();
-        self.set_translate(xy_envelope.lower_left);
-
-        let height = xy_envelope.upper_right.y - xy_envelope.lower_left.y;
-
-        let device_height = self.get_device_rect().height;
-        let device_width = self.get_device_rect().width;
-        let aspect_ratio = device_height / device_width;
-        let height = height / aspect_ratio;
-        let height_scale = 1.0 / height;
-
-        self.set_zoom_factor(height_scale);
-        self.bound_view();
-    }
+    fn zoom_to_envelope(&self) {}
 
     fn bound_view(&self) {
         let device_rect = self.get_device_rect();
@@ -151,15 +127,6 @@ impl Drawable for CloudContext {
         da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.cloud.scroll_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.cloud.button_press_event(ev));
-
-        let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| ac.cloud.button_release_event(ev));
-
-        let ac = Rc::clone(acp);
         da.connect_motion_notify_event(move |da, ev| ac.cloud.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
@@ -184,44 +151,8 @@ impl Drawable for CloudContext {
             .bits() as i32);
     }
 
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-        const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
-
-        let pos = ac.rh_omega
-            .convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
-
-        let old_zoom = ac.cloud.get_zoom_factor();
-        let mut new_zoom = old_zoom;
-
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
-
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        ac.cloud.set_zoom_factor(new_zoom);
-
-        let mut translate = ac.cloud.get_translate();
-        translate.y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
-        ac.cloud.set_translate(translate);
-        ac.cloud.bound_view();
-        ac.cloud.mark_background_dirty();
-
-        ac.update_all_gui();
-
-        Inhibit(true)
+    fn scroll_event(&self, _event: &EventScroll, _ac: &AppContextPointer) -> Inhibit {
+        Inhibit(false)
     }
 
     fn mouse_motion_event(
@@ -232,27 +163,7 @@ impl Drawable for CloudContext {
     ) -> Inhibit {
         da.grab_focus();
 
-        if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
-                let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
-                self.set_last_cursor_position(Some(new_position));
-
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
-                let mut translate = self.get_translate();
-                translate.y -= delta.1;
-                self.set_translate_y(translate);
-                self.bound_view();
-                self.mark_background_dirty();
-                ac.update_all_gui();
-
-                ac.set_sample(None);
-            }
-        } else if ac.plottable() {
+        if ac.plottable() {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
@@ -278,5 +189,17 @@ impl Drawable for CloudContext {
 
     fn draw_overlays(&self, args: DrawingArgs) {
         drawing::draw_overlays(args);
+    }
+}
+
+impl SlaveProfileDrawable for CloudContext {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
+        acp.skew_t.get_zoom_factor()
+    }
+
+    fn set_translate_y(&self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.set_translate(translate);
     }
 }

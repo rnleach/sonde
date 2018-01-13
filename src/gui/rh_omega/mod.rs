@@ -1,17 +1,19 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventMask, EventMotion};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContextPointer};
-use coords::{DeviceCoords, ScreenCoords, WPCoords, XYCoords};
+use coords::{DeviceCoords, Rect, ScreenCoords, WPCoords, XYCoords};
 use gui::DrawingArgs;
-use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt,
+                        SlaveProfileDrawable};
 
 mod drawing;
 
+#[derive(Debug)]
 pub struct RHOmegaContext {
     x_zoom: Cell<f64>,
     generic: GenericContext,
@@ -63,12 +65,6 @@ impl RHOmegaContext {
         let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_wp(xy)
     }
-
-    pub fn set_translate_y(&self, new_translate: XYCoords) {
-        let mut translate = self.get_translate();
-        translate.y = new_translate.y;
-        self.set_translate(translate);
-    }
 }
 
 impl HasGenericContext for RHOmegaContext {
@@ -79,25 +75,14 @@ impl HasGenericContext for RHOmegaContext {
 
 impl PlotContextExt for RHOmegaContext {
     fn zoom_to_envelope(&self) {
-
         let xy_envelope = &self.get_xy_envelope();
         self.set_translate(xy_envelope.lower_left);
 
-        let height = xy_envelope.upper_right.y - xy_envelope.lower_left.y;
-
-        let device_height = self.get_device_rect().height;
-        let device_width = self.get_device_rect().width;
-        let aspect_ratio = device_height / device_width;
-        let height = height / aspect_ratio;
-        let height_scale = 1.0 / height;
-
-        self.set_zoom_factor(height_scale);
-        self.bound_view();
-
-        let width = xy_envelope.upper_right.x - xy_envelope.lower_left.x;
+        let width = xy_envelope.width();
         let width_scale = 1.0 / width;
 
         self.x_zoom.set(width_scale);
+        self.bound_view();
     }
 
     fn bound_view(&self) {
@@ -160,15 +145,6 @@ impl Drawable for RHOmegaContext {
         da.connect_draw(move |_da, cr| ac.rh_omega.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.rh_omega.scroll_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.rh_omega.button_press_event(ev));
-
-        let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| ac.rh_omega.button_release_event(ev));
-
-        let ac = Rc::clone(acp);
         da.connect_motion_notify_event(move |da, ev| ac.rh_omega.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
@@ -193,46 +169,6 @@ impl Drawable for RHOmegaContext {
             .bits() as i32);
     }
 
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-        const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
-
-        let pos = ac.rh_omega
-            .convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
-
-        let old_zoom = ac.rh_omega.get_zoom_factor();
-        let mut new_zoom = old_zoom;
-
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
-
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        ac.rh_omega.set_zoom_factor(new_zoom);
-
-        let mut translate = ac.rh_omega.get_translate();
-        translate.y = pos.y - old_zoom / new_zoom * (pos.y - translate.y);
-        ac.rh_omega.set_translate(translate);
-        ac.rh_omega.bound_view();
-        ac.rh_omega.mark_background_dirty();
-
-        ac.update_all_gui();
-
-        Inhibit(true)
-    }
-
     fn mouse_motion_event(
         &self,
         da: &DrawingArea,
@@ -241,27 +177,7 @@ impl Drawable for RHOmegaContext {
     ) -> Inhibit {
         da.grab_focus();
 
-        if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
-                let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
-                self.set_last_cursor_position(Some(new_position));
-
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
-                let mut translate = self.get_translate();
-                translate.y -= delta.1;
-                self.set_translate_y(translate);
-                self.bound_view();
-                self.mark_background_dirty();
-                ac.update_all_gui();
-
-                ac.set_sample(None);
-            }
-        } else if ac.plottable() {
+        if ac.plottable() {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
@@ -287,5 +203,17 @@ impl Drawable for RHOmegaContext {
 
     fn draw_overlays(&self, args: DrawingArgs) {
         drawing::draw_overlays(args);
+    }
+}
+
+impl SlaveProfileDrawable for RHOmegaContext {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
+        acp.skew_t.get_zoom_factor()
+    }
+
+    fn set_translate_y(&self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.set_translate(translate);
     }
 }

@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
-use gdk::{EventMask, EventMotion};
+use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::AppContextPointer;
 
 use gui::DrawingArgs;
-use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContext, PlotContextExt};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, MasterDrawable, PlotContext,
+                        PlotContextExt};
 
 use app::config;
 use coords::{DeviceCoords, ScreenCoords, TPCoords, XYCoords};
@@ -122,6 +123,49 @@ impl Drawable for SkewTContext {
             .bits() as i32);
     }
 
+    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
+    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+        const DELTA_SCALE: f64 = 1.05;
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+        let dir = event.get_direction();
+
+        let old_zoom = self.get_zoom_factor();
+        let mut new_zoom = old_zoom;
+
+        match dir {
+            ScrollDirection::Up => {
+                new_zoom *= DELTA_SCALE;
+            }
+            ScrollDirection::Down => {
+                new_zoom /= DELTA_SCALE;
+            }
+            _ => {}
+        }
+
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        self.set_zoom_factor(new_zoom);
+
+        let mut translate = self.get_translate();
+        translate = XYCoords {
+            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+        };
+        self.set_translate(translate);
+        self.bound_view();
+        ac.mark_background_dirty();
+
+        ac.update_all_gui();
+
+        Inhibit(true)
+    }
+
     fn mouse_motion_event(
         &self,
         da: &DrawingArea,
@@ -146,7 +190,7 @@ impl Drawable for SkewTContext {
                 translate.y -= delta.1;
                 self.set_translate(translate);
                 self.bound_view();
-                self.mark_background_dirty();
+                ac.mark_background_dirty();
                 ac.update_all_gui();
 
                 ac.set_sample(None);
@@ -179,3 +223,5 @@ impl Drawable for SkewTContext {
         self::drawing::draw_overlays(args);
     }
 }
+
+impl MasterDrawable for SkewTContext {}

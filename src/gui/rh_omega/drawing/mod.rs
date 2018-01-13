@@ -40,11 +40,7 @@ fn draw_rh_profile(args: DrawingArgs) {
         let td_data = sndg.get_profile(DewPoint);
         let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|triplet| {
-                if let (Some(p), Some(t), Some(td)) = (
-                    *triplet.0,
-                    *triplet.1,
-                    *triplet.2,
-                ) {
+                if let (Some(p), Some(t), Some(td)) = (*triplet.0, *triplet.1, *triplet.2) {
                     Some((p, rh(t, td)))
                 } else {
                     None

@@ -1,6 +1,5 @@
-
 use app::config;
-use coords::{ScreenCoords, PPCoords};
+use coords::{PPCoords, ScreenCoords};
 use gui::{plot_curve_from_points, DrawingArgs, PlotContextExt};
 
 pub fn draw_background(args: DrawingArgs) {
@@ -20,7 +19,6 @@ pub fn draw_overlays(args: DrawingArgs) {
 }
 
 fn draw_cloud_profile(args: DrawingArgs) {
-    
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -31,10 +29,7 @@ fn draw_cloud_profile(args: DrawingArgs) {
         let c_data = sndg.get_profile(CloudFraction);
         let mut profile = izip!(pres_data, c_data)
             .filter_map(|pair| {
-                if let (Some(p), Some(c)) = (
-                    *pair.0,
-                    *pair.1,
-                ) {
+                if let (Some(p), Some(c)) = (*pair.0, *pair.1) {
                     Some((p, c))
                 } else {
                     None
@@ -43,7 +38,10 @@ fn draw_cloud_profile(args: DrawingArgs) {
             .filter_map(|pair| {
                 let (press, pcnt) = pair;
                 if press > config::MINP {
-                    Some(ac.cloud.convert_pp_to_screen(PPCoords { pcnt: pcnt / 100.0, press }))
+                    Some(ac.cloud.convert_pp_to_screen(PPCoords {
+                        pcnt: pcnt / 100.0,
+                        press,
+                    }))
                 } else {
                     None
                 }
@@ -167,12 +165,7 @@ pub fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
         for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
-            let mut coords = [
-                (0.0, bottom_p),
-                (0.0, top_p),
-                (1.0, top_p),
-                (1.0, bottom_p),
-            ];
+            let mut coords = [(0.0, bottom_p), (0.0, top_p), (1.0, top_p), (1.0, bottom_p)];
 
             // Convert points to screen coords
             for coord in &mut coords {

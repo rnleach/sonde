@@ -5,7 +5,8 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use gui::DrawingArgs;
-use gui::plot_context::{Drawable, GenericContext, HasGenericContext, PlotContextExt};
+use gui::plot_context::{Drawable, GenericContext, HasGenericContext, MasterDrawable,
+                        PlotContextExt};
 
 use app::{config, AppContextPointer};
 use coords::{SDCoords, ScreenCoords, XYCoords};
@@ -100,3 +101,5 @@ impl Drawable for HodoContext {
         drawing::draw_overlays(args);
     }
 }
+
+impl MasterDrawable for HodoContext {}

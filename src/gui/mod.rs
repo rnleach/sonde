@@ -115,18 +115,9 @@ impl Gui {
 
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
-
-        if self.hodograph_area.is_visible() {
-            self.hodograph_area.queue_draw();
-        }
-
-        if self.rh_omega_area.is_visible() {
-            self.rh_omega_area.queue_draw();
-        }
-
-        if self.cloud.is_visible() {
-            self.cloud.queue_draw();
-        }
+        self.hodograph_area.queue_draw();
+        self.rh_omega_area.queue_draw();
+        self.cloud.queue_draw();
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {

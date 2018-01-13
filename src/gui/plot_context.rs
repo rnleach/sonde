@@ -83,6 +83,12 @@ pub trait PlotContextExt: PlotContext {
         // Get the size
         let (width, height) = (da.get_allocation().width, da.get_allocation().height);
 
+        self.set_device_rect(DeviceRect {
+            upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+            width: f64::from(width),
+            height: f64::from(height),
+        });
+
         // Make the new allocations
         self.set_background_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
         self.set_data_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
@@ -316,6 +322,7 @@ pub trait PlotContextExt: PlotContext {
     }
 }
 
+#[derive(Debug)]
 pub struct GenericContext {
     // Area to draw in
     device_rect: Cell<DeviceRect>,
@@ -399,7 +406,6 @@ where
     }
 
     fn set_xy_envelope(&self, mut new_envelope: XYRect) {
-
         {
             let ll = &mut new_envelope.lower_left;
             let ur = &mut new_envelope.upper_right;
@@ -409,10 +415,18 @@ where
             let ymin = &mut ll.y;
             let ymax = &mut ur.y;
 
-            if *xmin < 0.0 { *xmin = 0.0; }
-            if *xmax > 1.0 { *xmax = 1.0; }
-            if *ymin < 0.0 { *ymin = 0.0; }
-            if *ymax > 1.0 { *ymax = 0.0; }
+            if *xmin < 0.0 {
+                *xmin = 0.0;
+            }
+            if *xmax > 1.0 {
+                *xmax = 1.0;
+            }
+            if *ymin < 0.0 {
+                *ymin = 0.0;
+            }
+            if *ymax > 1.0 {
+                *ymax = 0.0;
+            }
         }
 
         self.get_generic_context().xy_envelope.set(new_envelope);
@@ -532,17 +546,6 @@ pub trait Drawable: PlotContext + PlotContextExt {
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
     fn draw_overlays(&self, args: DrawingArgs);
-
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
-        let args = DrawingArgs::new(acp, cr);
-
-        self.init_matrix(args);
-        self.draw_background_cached(args);
-        self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
-
-        Inhibit(false)
-    }
 
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
     fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
@@ -748,5 +751,42 @@ pub trait Drawable: PlotContext + PlotContextExt {
 
         cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
         cr.paint();
+    }
+}
+
+pub trait MasterDrawable: Drawable {
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
+    }
+}
+
+pub trait SlaveProfileDrawable: Drawable {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64;
+    fn set_translate_y(&self, new_translate: XYCoords);
+
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        let device_height = self.get_device_rect().height;
+        let device_width = self.get_device_rect().width;
+        let aspect_ratio = device_height / device_width;
+
+        self.set_zoom_factor(aspect_ratio * self.get_master_zoom(acp));
+        self.set_translate_y(acp.skew_t.get_translate());
+        self.bound_view();
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
     }
 }

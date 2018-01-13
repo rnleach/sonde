@@ -238,8 +238,7 @@ fn build_legend_strings(ac: &AppContext) -> (Option<String>, Option<String>, Opt
 
         // Build location part.
         let (lat, lon, elevation) = snd.get_location();
-        if lat.is_some() || lon.is_some() || elevation.is_some()
-        {
+        if lat.is_some() || lon.is_some() || elevation.is_some() {
             location = Some("".to_owned());
             if let Some(ref mut loc) = location {
                 if let Some(lat) = lat {
