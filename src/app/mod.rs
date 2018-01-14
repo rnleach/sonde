@@ -8,12 +8,8 @@ use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
-use gui::Gui;
-use gui::hodograph::HodoContext;
-use gui::sounding::SkewTContext;
-use gui::rh_omega::RHOmegaContext;
-use gui::cloud::CloudContext;
-use gui::{PlotContext, PlotContextExt};
+use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
+          SkewTContext};
 
 // Module for configuring application
 pub mod config;
@@ -355,7 +351,7 @@ impl AppContext {
 
         if let Some(ref gui) = *self.gui.borrow() {
             let ta = gui.get_text_area();
-            ::gui::text_area::update_text_highlight(&ta, self);
+            ::gui::update_text_highlight(&ta, self);
         }
 
         self.mark_overlay_dirty();

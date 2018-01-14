@@ -2,20 +2,22 @@
 
 use std::rc::Rc;
 
+mod cloud;
+mod control_area;
+mod hodograph;
+mod index_area;
+mod main_window;
 mod plot_context;
-pub use self::plot_context::{Drawable, HasGenericContext, PlotContext, PlotContextExt};
-pub use self::sounding::SkewTContext;
-pub use self::rh_omega::RHOmegaContext;
-pub use self::hodograph::HodoContext;
+mod rh_omega;
+mod sounding;
+mod text_area;
 
-pub mod cloud;
-pub mod control_area;
-pub mod hodograph;
-pub mod index_area;
-pub mod main_window;
-pub mod rh_omega;
-pub mod sounding;
-pub mod text_area;
+pub use self::cloud::CloudContext;
+pub use self::hodograph::HodoContext;
+pub use self::plot_context::{Drawable, HasGenericContext, PlotContext, PlotContextExt};
+pub use self::rh_omega::RHOmegaContext;
+pub use self::sounding::SkewTContext;
+pub use self::text_area::update_text_highlight;
 
 use cairo::{Context, Matrix};
 use gtk::prelude::*;

@@ -84,7 +84,6 @@ pub struct Config {
     pub show_cloud_frame: bool, // FIXME: is this used? It should be.
     /// Cloud Color
     pub cloud_rgba: (f64, f64, f64, f64),
-    
 
     //
     // Labeling
