@@ -47,8 +47,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
                 }
             });
 
-        let line_width = config.omega_line_width; // FIXME: use another lind width?
-        let mut rgba = config.rh_rgba; // FIXME: Make a cloud rgba
+        let line_width = config.omega_line_width; // FIXME: use another line width?
+        let mut rgba = config.cloud_rgba;
         rgba.3 *= 0.75;
 
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);

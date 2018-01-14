@@ -65,17 +65,26 @@ pub struct Config {
     // RH-Omega profile
     //
     /// Show the rh omega frame
-    pub show_rh_omega_frame: bool,
+    pub show_rh_omega_frame: bool, // FIXME: is this used? It should be.
     /// Show the omega profile
-    pub show_omega_profile: bool,
+    pub show_omega_profile: bool, // FIXME: Remove this.
     /// Line width in pixels for omega
     pub omega_line_width: f64,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
     /// Show RH
-    pub show_rh_profile: bool,
+    pub show_rh_profile: bool, // FIXME: Remove this
     /// RH Color
     pub rh_rgba: (f64, f64, f64, f64),
+
+    //
+    // Cloud profile
+    //
+    /// Show the cloud frame
+    pub show_cloud_frame: bool, // FIXME: is this used? It should be.
+    /// Cloud Color
+    pub cloud_rgba: (f64, f64, f64, f64),
+    
 
     //
     // Labeling
@@ -217,6 +226,12 @@ impl Default for Config {
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
             show_rh_profile: true,
             rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
+
+            //
+            // Cloud profile
+            //
+            show_cloud_frame: true,
+            cloud_rgba: (0.5, 0.5, 0.5, 1.0),
 
             //
             // Labeling
