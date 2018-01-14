@@ -2,12 +2,14 @@
 
 use std::rc::Rc;
 
-use cairo::{Context, Matrix};
+use cairo::{Context, Matrix, Operator};
 use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
+use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
+          ScrollDirection};
 
 use app::{AppContext, AppContextPointer};
-use coords::{Rect, ScreenCoords, ScreenRect};
+use coords::{DeviceCoords, DeviceRect, XYCoords};
 
 mod cloud;
 mod control_area;
@@ -18,6 +20,7 @@ mod plot_context;
 mod rh_omega;
 mod sounding;
 mod text_area;
+mod utility;
 
 pub use self::cloud::CloudContext;
 pub use self::hodograph::HodoContext;
@@ -26,7 +29,7 @@ pub use self::rh_omega::RHOmegaContext;
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
-use self::plot_context::Drawable;
+use self::utility::DrawingArgs;
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -132,95 +135,287 @@ impl Gui {
     }
 }
 
-// Draw a curve connecting a list of points.
-fn plot_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
-    I: Iterator<Item = ScreenCoords>,
-{
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
+trait Drawable: PlotContext + PlotContextExt {
+    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
+    fn draw_background(&self, args: DrawingArgs);
+    fn draw_data(&self, args: DrawingArgs);
+    fn draw_overlays(&self, args: DrawingArgs);
 
-    let mut points = points;
-    if let Some(start) = points.by_ref().next() {
-        cr.move_to(start.x, start.y);
-        for end in points {
-            cr.line_to(end.x, end.y);
+    fn init_matrix(&self, args: DrawingArgs) {
+        let cr = args.cr;
+
+        cr.save();
+
+        let (x1, y1, x2, y2) = cr.clip_extents();
+        let width = f64::abs(x2 - x1);
+        let height = f64::abs(y2 - y1);
+
+        let device_rect = DeviceRect {
+            upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+            width,
+            height,
+        };
+        self.set_device_rect(device_rect);
+        let scale_factor = self.scale_factor();
+
+        // Start fresh
+        cr.identity_matrix();
+        // Set the scale factor
+        cr.scale(scale_factor, scale_factor);
+        // Set origin at lower left.
+        cr.transform(Matrix {
+            xx: 1.0,
+            yx: 0.0,
+            xy: 0.0,
+            yy: -1.0,
+            x0: 0.0,
+            y0: device_rect.height / scale_factor,
+        });
+
+        self.set_matrix(cr.get_matrix());
+        cr.restore();
+    }
+
+    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
+    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+        const DELTA_SCALE: f64 = 1.05;
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+        let dir = event.get_direction();
+
+        let old_zoom = self.get_zoom_factor();
+        let mut new_zoom = old_zoom;
+
+        match dir {
+            ScrollDirection::Up => {
+                new_zoom *= DELTA_SCALE;
+            }
+            ScrollDirection::Down => {
+                new_zoom /= DELTA_SCALE;
+            }
+            _ => {}
         }
 
-        cr.stroke();
-    }
-}
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        self.set_zoom_factor(new_zoom);
 
-// Draw a dashed line on the graph.
-fn plot_dashed_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
-    I: Iterator<Item = ScreenCoords>,
-{
-    cr.set_dash(&[0.02], 0.0);
-    plot_curve_from_points(cr, line_width_pixels, rgba, points);
-    cr.set_dash(&[], 0.0);
-}
+        let mut translate = self.get_translate();
+        translate = XYCoords {
+            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+        };
+        self.set_translate(translate);
+        self.bound_view();
+        self.mark_background_dirty();
 
-fn check_overlap_then_add(
-    cr: &Context,
-    ac: &AppContext,
-    vector: &mut Vec<(String, ScreenRect)>,
-    plot_edges: &ScreenRect,
-    label_pair: (String, ScreenRect),
-) {
-    let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
-        .0;
-    let padded_rect = label_pair.1.add_padding(padding);
+        ac.update_all_gui();
 
-    // Make sure it is on screen - but don't add padding to this check cause the screen already
-    // has padding.
-    if !label_pair.1.inside(plot_edges) {
-        return;
+        Inhibit(true)
     }
 
-    // Check for overlap
-    for &(_, ref rect) in vector.iter() {
-        if padded_rect.overlaps(rect) {
-            return;
+    fn button_press_event(&self, event: &EventButton) -> Inhibit {
+        // Left mouse button
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(Some(event.get_position().into()));
+            self.set_left_button_pressed(true);
+            Inhibit(true)
+        } else {
+            Inhibit(false)
         }
     }
 
-    vector.push(label_pair);
-}
+    fn button_release_event(&self, event: &EventButton) -> Inhibit {
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(None);
+            self.set_left_button_pressed(false);
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
+    }
 
-#[derive(Clone, Copy)]
-pub struct DrawingArgs<'a, 'b> {
-    pub ac: &'a AppContext,
-    pub cr: &'b Context,
-}
+    fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
+        self.set_last_cursor_position(None);
+        ac.set_sample(None);
+        ac.update_all_gui();
 
-impl<'a, 'b> DrawingArgs<'a, 'b> {
-    pub fn new(ac: &'a AppContext, cr: &'b Context) -> Self {
-        DrawingArgs { ac, cr }
+        Inhibit(false)
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        ev: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+                let new_position = DeviceCoords::from(ev.get_position());
+                self.set_last_cursor_position(Some(new_position));
+
+                let new_position = self.convert_device_to_xy(new_position);
+                let delta = (
+                    new_position.x - old_position.x,
+                    new_position.y - old_position.y,
+                );
+                let mut translate = self.get_translate();
+                translate.x -= delta.0;
+                translate.y -= delta.1;
+                self.set_translate(translate);
+                self.bound_view();
+                self.mark_background_dirty();
+                ac.update_all_gui();
+            }
+        }
+        Inhibit(false)
+    }
+
+    fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
+        let keyval = event.get_keyval();
+        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+            ac.display_next();
+            Inhibit(true)
+        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+            ac.display_previous();
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
+    }
+
+    fn size_allocate_event(&self, da: &DrawingArea) {
+        self.update_cache_allocations(da);
+    }
+
+    fn configure_event(&self, event: &EventConfigure) -> bool {
+        let rect = self.get_device_rect();
+        let (width, height) = event.get_size();
+        if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
+            || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
+        {
+            self.mark_background_dirty();
+        }
+        false
+    }
+
+    fn draw_background_cached(&self, args: DrawingArgs) {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        if self.is_background_dirty() {
+            let tmp_cr = Context::new(&self.get_background_layer());
+
+            // Clear the previous drawing from the cache
+            tmp_cr.save();
+            let rgba = config.background_rgba;
+            tmp_cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            tmp_cr.set_operator(Operator::Source);
+            tmp_cr.paint();
+            tmp_cr.restore();
+            tmp_cr.transform(self.get_matrix());
+            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
+
+            self.bound_view();
+
+            self.draw_background(tmp_args);
+
+            self.clear_background_dirty();
+        }
+
+        cr.set_source_surface(&self.get_background_layer(), 0.0, 0.0);
+        cr.paint();
+    }
+
+    fn draw_data_cached(&self, args: DrawingArgs) {
+        let (ac, cr) = (args.ac, args.cr);
+
+        if self.is_data_dirty() {
+            let tmp_cr = Context::new(&self.get_data_layer());
+
+            // Clear the previous drawing from the cache
+            tmp_cr.save();
+            tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+            tmp_cr.set_operator(Operator::Source);
+            tmp_cr.paint();
+            tmp_cr.restore();
+            tmp_cr.transform(self.get_matrix());
+            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
+
+            self.draw_data(tmp_args);
+
+            self.clear_data_dirty();
+        }
+
+        cr.set_source_surface(&self.get_data_layer(), 0.0, 0.0);
+        cr.paint();
+    }
+
+    fn draw_overlay_cached(&self, args: DrawingArgs) {
+        let (ac, cr) = (args.ac, args.cr);
+
+        if self.is_overlay_dirty() {
+            let tmp_cr = Context::new(&self.get_overlay_layer());
+
+            // Clear the previous drawing from the cache
+            tmp_cr.save();
+            tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+            tmp_cr.set_operator(Operator::Source);
+            tmp_cr.paint();
+            tmp_cr.restore();
+            tmp_cr.transform(self.get_matrix());
+            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
+
+            self.draw_overlays(tmp_args);
+
+            self.clear_overlay_dirty();
+        }
+
+        cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
+        cr.paint();
     }
 }
 
-fn set_font_size<T: PlotContext>(pc: &T, size_in_pct: f64, cr: &Context) {
-    let height = pc.get_device_rect().height();
+trait MasterDrawable: Drawable {
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
 
-    let mut font_size = size_in_pct / 100.0 * height;
-    font_size = cr.device_to_user_distance(font_size, 0.0).0;
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
 
-    // Flip the y-coordinate so it displays the font right side up
-    cr.set_font_matrix(Matrix {
-        xx: 1.0 * font_size,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0 * font_size, // Reflect it to be right side up!
-        x0: 0.0,
-        y0: 0.0,
-    });
+        Inhibit(false)
+    }
+}
+
+trait SlaveProfileDrawable: Drawable {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64;
+    fn set_translate_y(&self, new_translate: XYCoords);
+
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        let device_height = self.get_device_rect().height;
+        let device_width = self.get_device_rect().width;
+        let aspect_ratio = device_height / device_width;
+
+        self.set_zoom_factor(aspect_ratio * self.get_master_zoom(acp));
+        self.set_translate_y(acp.skew_t.get_translate());
+        self.bound_view();
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
+    }
 }

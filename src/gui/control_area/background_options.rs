@@ -1,13 +1,12 @@
 use std::rc::Rc;
 
+use gdk::RGBA;
 use gtk;
 use gtk::prelude::*;
 use gtk::{CheckButton, ColorButton, Frame, ScrolledWindow};
-use gdk::RGBA;
-
-use gui::control_area::{BOX_SPACING, PADDING};
 
 use app::AppContextPointer;
+use gui::control_area::{BOX_SPACING, PADDING};
 
 pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);

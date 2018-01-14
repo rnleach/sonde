@@ -13,7 +13,7 @@ use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaCo
 
 // Module for configuring application
 pub mod config;
-use app::config::Config;
+use self::config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;

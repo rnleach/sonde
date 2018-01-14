@@ -1,9 +1,7 @@
 use gtk::{ScrollablePolicy, TextTag, TextView};
 use gtk::prelude::*;
 
-use app::config;
-
-use app::{AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
