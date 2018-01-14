@@ -9,7 +9,7 @@ use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, 
           ScrollDirection};
 
 use app::{AppContext, AppContextPointer};
-use coords::{DeviceCoords, DeviceRect, XYCoords};
+use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, XYCoords};
 
 mod cloud;
 mod control_area;
@@ -417,5 +417,49 @@ trait SlaveProfileDrawable: Drawable {
         self.draw_overlay_cached(args);
 
         Inhibit(false)
+    }
+
+    fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
+        use sounding_base::Profile::Pressure;
+
+        let (ac, cr) = (args.ac, args.cr);
+
+        if !ac.config.borrow().show_dendritic_zone {
+            return;
+        }
+
+        // If is plottable, draw snow growth zones
+        if let Some(ref snd) = ac.get_sounding_for_display() {
+            let bb = self.bounding_box_in_screen_coords();
+            let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+
+            let rgba = ac.config.borrow().dendritic_zone_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+            for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
+                let mut coords = [
+                    (left, bottom_p),
+                    (left, top_p),
+                    (right, top_p),
+                    (right, bottom_p),
+                ];
+
+                // Convert points to screen coords
+                for coord in &mut coords {
+                    coord.1 = convert_pressure_to_y(coord.1);
+                }
+
+                let mut coord_iter = coords.iter();
+                for coord in coord_iter.by_ref().take(1) {
+                    cr.move_to(coord.0, coord.1);
+                }
+                for coord in coord_iter {
+                    cr.line_to(coord.0, coord.1);
+                }
+
+                cr.close_path();
+                cr.fill();
+            }
+        }
     }
 }

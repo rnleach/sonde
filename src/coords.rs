@@ -1,6 +1,8 @@
 //! Coordinate systems and geometry definitions. Some conversions are dependent on the application
 //! state, and so those functions are a part of the `AppContext`.
 
+use app::config;
+
 /// Common operations on rectangles
 pub trait Rect {
     /// Get the minimum x coordinate
@@ -273,4 +275,22 @@ impl Rect for DeviceRect {
     fn max_y(&self) -> f64 {
         self.upper_left.row + self.height
     }
+}
+
+/***************************************************************************************************
+ *                   Converting Pressure to the y coordinate
+ * ************************************************************************************************/
+/// Given a pressure value, convert it to a y-value from X-Y coordinates.
+///
+/// Overwhelmingly the veritical coordinate system is based on pressure, so this is a very common
+/// operation to do, and you want it to always be done them same.
+pub fn convert_pressure_to_y(pressure_hpa: f64) -> f64 {
+    (f64::log10(config::MAXP) - f64::log10(pressure_hpa))
+        / (f64::log10(config::MAXP) - f64::log10(config::MINP))
+}
+
+/// Provide an inverse function as well.
+pub fn convert_y_to_pressure(y: f64) -> f64 {
+    10.0f64
+        .powf(-y * (f64::log10(config::MAXP) - f64::log10(config::MINP)) + f64::log10(config::MAXP))
 }

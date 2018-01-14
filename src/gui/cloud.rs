@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContextPointer};
-use coords::{DeviceCoords, PPCoords, ScreenCoords, XYCoords};
+use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{plot_curve_from_points, DrawingArgs};
@@ -22,10 +22,7 @@ impl CloudContext {
     }
 
     pub fn convert_pp_to_xy(coords: PPCoords) -> XYCoords {
-        use std::f64;
-
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.press))
-            / (f64::log10(config::MAXP) - f64::log10(config::MINP));
+        let y = convert_pressure_to_y(coords.press);
 
         // The + sign below looks weird, but is correct.
         let x = coords.pcnt;
@@ -178,15 +175,16 @@ impl Drawable for CloudContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        draw_background(args);
+        self.draw_dendtritic_snow_growth_zone(args);
+        draw_background_lines(args);
     }
 
     fn draw_data(&self, args: DrawingArgs) {
-        draw_data(args);
+        draw_cloud_profile(args);
     }
 
     fn draw_overlays(&self, args: DrawingArgs) {
-        draw_overlays(args);
+        draw_active_readout(args);
     }
 }
 
@@ -200,22 +198,6 @@ impl SlaveProfileDrawable for CloudContext {
         translate.y = new_translate.y;
         self.set_translate(translate);
     }
-}
-
-fn draw_background(args: DrawingArgs) {
-    if args.ac.config.borrow().show_dendritic_zone {
-        draw_dendtritic_snow_growth_zone(args);
-    }
-
-    draw_background_lines(args);
-}
-
-fn draw_data(args: DrawingArgs) {
-    draw_cloud_profile(args);
-}
-
-fn draw_overlays(args: DrawingArgs) {
-    draw_active_readout(args);
 }
 
 fn draw_cloud_profile(args: DrawingArgs) {
@@ -305,6 +287,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
     }
 }
 
+// FIXME:: generalize for all profiles
+//         need to add an activereadout text function for this in the profile trait.
 fn draw_active_readout(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -350,43 +334,6 @@ fn draw_background_lines(args: DrawingArgs) {
             let pnts = pnts.iter()
                 .map(|xy_coords| ac.cloud.convert_xy_to_screen(*xy_coords));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
-        }
-    }
-}
-
-fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
-    use sounding_base::Profile::Pressure;
-
-    let (ac, cr) = (args.ac, args.cr);
-
-    // If is plottable, draw snow growth zones
-    if let Some(ref snd) = ac.get_sounding_for_display() {
-        let rgba = ac.config.borrow().dendritic_zone_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
-            let mut coords = [(0.0, bottom_p), (0.0, top_p), (1.0, top_p), (1.0, bottom_p)];
-
-            // Convert points to screen coords
-            for coord in &mut coords {
-                let screen_coords = ac.cloud.convert_pp_to_screen(PPCoords {
-                    pcnt: coord.0,
-                    press: coord.1,
-                });
-                coord.0 = screen_coords.x;
-                coord.1 = screen_coords.y;
-            }
-
-            let mut coord_iter = coords.iter();
-            for coord in coord_iter.by_ref().take(1) {
-                cr.move_to(coord.0, coord.1);
-            }
-            for coord in coord_iter {
-                cr.line_to(coord.0, coord.1);
-            }
-
-            cr.close_path();
-            cr.fill();
         }
     }
 }

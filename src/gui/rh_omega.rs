@@ -7,7 +7,8 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContextPointer};
-use coords::{DeviceCoords, Rect, ScreenCoords, ScreenRect, WPCoords, XYCoords};
+use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
+             ScreenRect, WPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, set_font_size};
@@ -27,10 +28,7 @@ impl RHOmegaContext {
     }
 
     pub fn convert_wp_to_xy(coords: WPCoords) -> XYCoords {
-        use std::f64;
-
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.p))
-            / (f64::log10(config::MAXP) - f64::log10(config::MINP));
+        let y = convert_pressure_to_y(coords.p);
 
         // The + sign below looks weird, but is correct.
         let x = (coords.w + config::MAX_ABS_W) / (2.0 * config::MAX_ABS_W);
@@ -39,12 +37,7 @@ impl RHOmegaContext {
     }
 
     pub fn convert_xy_to_wp(coords: XYCoords) -> WPCoords {
-        use std::f64;
-
-        let p = 10.0f64.powf(
-            -coords.y * (f64::log10(config::MAXP) - f64::log10(config::MINP))
-                + f64::log10(config::MAXP),
-        );
+        let p = convert_y_to_pressure(coords.y);
         let w = coords.x * (2.0 * config::MAX_ABS_W) - config::MAX_ABS_W;
 
         WPCoords { w, p }
@@ -193,10 +186,7 @@ impl Drawable for RHOmegaContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_dendritic_zone {
-            draw_dendtritic_snow_growth_zone(args);
-        }
-
+        self.draw_dendtritic_snow_growth_zone(args);
         draw_background_lines(args);
         draw_labels(args);
     }
@@ -432,48 +422,6 @@ fn draw_background_lines(args: DrawingArgs) {
             ]).iter()
                 .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(*wp_coords)),
         );
-    }
-}
-
-fn draw_dendtritic_snow_growth_zone(args: DrawingArgs) {
-    use sounding_base::Profile::Pressure;
-
-    let (ac, cr) = (args.ac, args.cr);
-
-    // If is plottable, draw snow growth zones
-    if let Some(ref snd) = ac.get_sounding_for_display() {
-        let rgba = ac.config.borrow().dendritic_zone_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
-            let mut coords = [
-                (-config::MAX_ABS_W, bottom_p),
-                (-config::MAX_ABS_W, top_p),
-                (config::MAX_ABS_W, top_p),
-                (config::MAX_ABS_W, bottom_p),
-            ];
-
-            // Convert points to screen coords
-            for coord in &mut coords {
-                let screen_coords = ac.rh_omega.convert_wp_to_screen(WPCoords {
-                    w: coord.0,
-                    p: coord.1,
-                });
-                coord.0 = screen_coords.x;
-                coord.1 = screen_coords.y;
-            }
-
-            let mut coord_iter = coords.iter();
-            for coord in coord_iter.by_ref().take(1) {
-                cr.move_to(coord.0, coord.1);
-            }
-            for coord in coord_iter {
-                cr.line_to(coord.0, coord.1);
-            }
-
-            cr.close_path();
-            cr.fill();
-        }
     }
 }
 
