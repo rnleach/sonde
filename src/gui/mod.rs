@@ -2,6 +2,13 @@
 
 use std::rc::Rc;
 
+use cairo::{Context, Matrix};
+use gtk::prelude::*;
+use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
+
+use app::{AppContext, AppContextPointer};
+use coords::{Rect, ScreenCoords, ScreenRect};
+
 mod cloud;
 mod control_area;
 mod hodograph;
@@ -14,17 +21,12 @@ mod text_area;
 
 pub use self::cloud::CloudContext;
 pub use self::hodograph::HodoContext;
-pub use self::plot_context::{Drawable, HasGenericContext, PlotContext, PlotContextExt};
+pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::rh_omega::RHOmegaContext;
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
-use cairo::{Context, Matrix};
-use gtk::prelude::*;
-use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
-
-use app::{AppContext, AppContextPointer};
-use coords::{Rect, ScreenCoords, ScreenRect};
+use self::plot_context::Drawable;
 
 /// Aggregation of the GUI components need for later reference.
 ///
