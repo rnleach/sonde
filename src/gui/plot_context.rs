@@ -7,7 +7,7 @@ use gtk::prelude::*;
 use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
 use gui::AppContext;
 
-pub trait PlotContext {
+pub trait PlotContext: Sized {
     /// Set the width and height of the plot in device
     fn set_device_rect(&self, rect: DeviceRect);
 

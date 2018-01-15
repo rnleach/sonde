@@ -6,6 +6,8 @@ use gdk::{EventMask, EventMotion};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
+use sounding_base::{DataRow, Sounding};
+
 use app::{config, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
@@ -196,8 +198,28 @@ impl Drawable for RHOmegaContext {
         draw_omega_profile(args);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        draw_active_readout(args);
+    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        use sounding_analysis::met_formulas::rh;
+
+        let mut results = vec![];
+
+        let t_c = vals.temperature;
+        let dp_c = vals.dew_point;
+        let omega = vals.omega;
+
+        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+            let mut line = String::with_capacity(128);
+
+            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
+            }
+            if let Some(omega) = omega {
+                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
+            }
+            results.push(line);
+        }
+
+        results
     }
 }
 
@@ -345,40 +367,6 @@ fn draw_omega_profile(args: DrawingArgs) {
     }
 }
 
-fn draw_active_readout(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    if config.show_active_readout {
-        let sample_p = if let Some(sample) = ac.get_sample() {
-            if let Some(sample_p) = sample.pressure {
-                sample_p
-            } else {
-                return;
-            }
-        } else {
-            return;
-        };
-
-        let rgba = config.active_readout_line_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.set_line_width(
-            cr.device_to_user_distance(config.active_readout_line_width, 0.0)
-                .0,
-        );
-        let start = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: -1000.0,
-            p: sample_p,
-        });
-        let end = ac.rh_omega.convert_wp_to_screen(WPCoords {
-            w: 1000.0,
-            p: sample_p,
-        });
-        cr.move_to(start.x, start.y);
-        cr.line_to(end.x, end.y);
-        cr.stroke();
-    }
-}
 fn draw_background_lines(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();

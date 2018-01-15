@@ -8,7 +8,8 @@ use gtk::DrawingArea;
 use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{DeviceCoords, Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords};
+use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
+             ScreenRect, TPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points,
@@ -26,10 +27,7 @@ impl SkewTContext {
     }
 
     pub fn convert_tp_to_xy(coords: TPCoords) -> XYCoords {
-        use std::f64;
-
-        let y = (f64::log10(config::MAXP) - f64::log10(coords.pressure))
-            / (f64::log10(config::MAXP) - f64::log10(config::MINP));
+        let y = convert_pressure_to_y(coords.pressure);
         let x = (coords.temperature - config::MINT) / (config::MAXT - config::MINT);
 
         // do the skew
@@ -38,17 +36,12 @@ impl SkewTContext {
     }
 
     pub fn convert_xy_to_tp(coords: XYCoords) -> TPCoords {
-        use app::config;
-        use std::f64;
-
         // undo the skew
         let x = coords.x - coords.y;
         let y = coords.y;
 
         let t = x * (config::MAXT - config::MINT) + config::MINT;
-        let p = 10.0f64.powf(
-            f64::log10(config::MAXP) - y * (f64::log10(config::MAXP) - f64::log10(config::MINP)),
-        );
+        let p = convert_y_to_pressure(y);
 
         TPCoords {
             temperature: t,
@@ -211,55 +204,134 @@ impl Drawable for SkewTContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        draw_background(args);
+        draw_background_fill(args);
+        draw_background_lines(args);
+        draw_background_labels(args);
     }
 
     fn draw_data(&self, args: DrawingArgs) {
-        draw_data(args);
+        draw_temperature_profiles(args);
+        draw_wind_profile(args);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        draw_overlays(args);
+    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
+        use sounding_analysis::met_formulas::rh;
+
+        let mut results = vec![];
+
+        let t_c = vals.temperature;
+        let dp_c = vals.dew_point;
+        let pres = vals.pressure;
+        let dir = vals.direction;
+        let spd = vals.speed;
+        let hgt_asl = vals.height;
+        let omega = vals.omega;
+        let elevation = snd.get_location().2;
+
+        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+            let mut line = String::with_capacity(128);
+            if let Some(t_c) = t_c {
+                line.push_str(&format!("{:.0}C", t_c));
+            }
+            if let Some(dp_c) = dp_c {
+                if t_c.is_some() {
+                    line.push('/');
+                }
+                line.push_str(&format!("{:.0}C", dp_c));
+            }
+            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
+            }
+            if let Some(omega) = omega {
+                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
+            }
+            results.push(line);
+        }
+
+        if pres.is_some() || dir.is_some() || spd.is_some() {
+            let mut line = String::with_capacity(128);
+            if let Some(pres) = pres {
+                line.push_str(&format!("{:.0}hPa", pres));
+            }
+            if let Some(dir) = dir {
+                if pres.is_some() {
+                    line.push(' ');
+                }
+                let dir = (dir / 10.0).round() * 10.0;
+                line.push_str(&format!("{:03.0}", dir));
+            }
+            if let Some(spd) = spd {
+                if pres.is_some() && dir.is_none() {
+                    line.push(' ');
+                }
+                line.push_str(&format!("{:02.0}KT", spd));
+            }
+            results.push(line);
+        }
+
+        if let Some(hgt) = hgt_asl {
+            results.push(format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt));
+        }
+
+        if elevation.is_some() && hgt_asl.is_some() {
+            if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
+                let mut line = String::with_capacity(128);
+                line.push_str(&format!(
+                    "AGL: {:5.0}m ({:5.0}ft)",
+                    hgt - elev,
+                    3.28084 * (hgt - elev)
+                ));
+                results.push(line);
+            }
+        }
+
+        // Sample the screen coords. Leave these commented out for debugging later possibly.
+        // {
+        //     use app::PlotContext;
+        //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
+        //         let mut line = String::with_capacity(128);
+        //         line.push_str(&format!(
+        //             "col: {:3.0} row: {:3.0}",
+        //             pnt.col,
+        //             pnt.row
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt = _ac.skew_t.convert_device_to_screen(pnt);
+        //         line.push_str(&format!(
+        //             "screen x: {:.3} y: {:.3}",
+        //             pnt.x,
+        //             pnt.y
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt2 = _ac.skew_t.convert_screen_to_xy(pnt);
+        //         line.push_str(&format!(
+        //             "x: {:.3} y: {:.3}",
+        //             pnt2.x,
+        //             pnt2.y
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt = _ac.skew_t.convert_screen_to_tp(pnt);
+        //         line.push_str(&format!(
+        //             "t: {:3.0} p: {:3.0}",
+        //             pnt.temperature,
+        //             pnt.pressure
+        //         ));
+        //         results.push(line);
+        //     }
+        // }
+
+        results
     }
 }
 
 impl MasterDrawable for SkewTContext {}
 
-fn draw_background(args: DrawingArgs) {
-    draw_background_fill(args);
-    draw_background_lines(args);
-    draw_background_labels(args);
-}
-
-fn draw_data(args: DrawingArgs) {
-    draw_temperature_profiles(args);
-    draw_wind_profile(args);
-}
-
-fn draw_temperature_profiles(args: DrawingArgs) {
-    let config = args.ac.config.borrow();
-
-    use self::TemperatureType::{DewPoint, DryBulb, WetBulb};
-
-    if config.show_wet_bulb {
-        draw_temperature_profile(WetBulb, args);
-    }
-
-    if config.show_dew_point {
-        draw_temperature_profile(DewPoint, args);
-    }
-
-    if config.show_temperature {
-        draw_temperature_profile(DryBulb, args);
-    }
-}
-
-fn draw_overlays(args: DrawingArgs) {
-    if args.ac.config.borrow().show_active_readout {
-        draw_active_sample(args);
-    }
-}
-
+/**************************************************************************************************
+ *                                  Background Drawing
+ **************************************************************************************************/
 fn draw_background_fill(args: DrawingArgs) {
     let ac = args.ac;
     let config = ac.config.borrow();
@@ -275,6 +347,76 @@ fn draw_background_fill(args: DrawingArgs) {
     if config.show_dendritic_zone {
         draw_dendtritic_growth_zone(args);
     }
+}
+
+fn draw_temperature_banding(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
+
+    let rgba = ac.config.borrow().background_band_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    let mut start_line = -160i32;
+    while start_line < 100 {
+        let t1 = f64::from(start_line);
+        let t2 = t1 + 10.0;
+
+        draw_temperature_band(t1, t2, args);
+
+        start_line += 20;
+    }
+}
+
+fn draw_hail_growth_zone(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
+
+    let rgba = ac.config.borrow().hail_zone_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    draw_temperature_band(-30.0, -10.0, args);
+}
+
+fn draw_dendtritic_growth_zone(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
+
+    let rgba = ac.config.borrow().dendritic_zone_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+    draw_temperature_band(-18.0, -12.0, args);
+}
+
+fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
+
+    // Assume color has already been set up for us.
+
+    const MAXP: f64 = config::MAXP;
+    const MINP: f64 = config::MINP;
+
+    let mut coords = [
+        (warm_t, MAXP),
+        (warm_t, MINP),
+        (cold_t, MINP),
+        (cold_t, MAXP),
+    ];
+
+    // Convert points to screen coords
+    for coord in &mut coords {
+        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
+            temperature: coord.0,
+            pressure: coord.1,
+        });
+        coord.0 = screen_coords.x;
+        coord.1 = screen_coords.y;
+    }
+
+    let mut coord_iter = coords.iter();
+    for coord in coord_iter.by_ref().take(1) {
+        cr.move_to(coord.0, coord.1);
+    }
+    for coord in coord_iter {
+        cr.line_to(coord.0, coord.1);
+    }
+
+    cr.close_path();
+    cr.fill();
 }
 
 // Draw isentrops, isotherms, isobars, ...
@@ -361,76 +503,6 @@ fn draw_background_lines(args: DrawingArgs) {
             pnts,
         );
     }
-}
-
-fn draw_temperature_banding(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let rgba = ac.config.borrow().background_band_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    let mut start_line = -160i32;
-    while start_line < 100 {
-        let t1 = f64::from(start_line);
-        let t2 = t1 + 10.0;
-
-        draw_temperature_band(t1, t2, args);
-
-        start_line += 20;
-    }
-}
-
-fn draw_hail_growth_zone(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let rgba = ac.config.borrow().hail_zone_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    draw_temperature_band(-30.0, -10.0, args);
-}
-
-fn draw_dendtritic_growth_zone(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let rgba = ac.config.borrow().dendritic_zone_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-    draw_temperature_band(-18.0, -12.0, args);
-}
-
-fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    // Assume color has already been set up for us.
-
-    const MAXP: f64 = config::MAXP;
-    const MINP: f64 = config::MINP;
-
-    let mut coords = [
-        (warm_t, MAXP),
-        (warm_t, MINP),
-        (cold_t, MINP),
-        (cold_t, MAXP),
-    ];
-
-    // Convert points to screen coords
-    for coord in &mut coords {
-        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
-            temperature: coord.0,
-            pressure: coord.1,
-        });
-        coord.0 = screen_coords.x;
-        coord.1 = screen_coords.y;
-    }
-
-    let mut coord_iter = coords.iter();
-    for coord in coord_iter.by_ref().take(1) {
-        cr.move_to(coord.0, coord.1);
-    }
-    for coord in coord_iter {
-        cr.line_to(coord.0, coord.1);
-    }
-
-    cr.close_path();
-    cr.fill();
 }
 
 // Label the pressure, temperatures, etc lines.
@@ -570,6 +642,7 @@ fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
     }
 }
 
+// FIXME: Make this a method on drawable that requires something to build the legend strings
 // Add a description box
 fn draw_legend(args: DrawingArgs) {
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
@@ -815,292 +888,27 @@ fn draw_legend_text(
         );
     }
 }
+/**************************************************************************************************
+ *                                   Data Layer Drawing
+ **************************************************************************************************/
+fn draw_temperature_profiles(args: DrawingArgs) {
+    let config = args.ac.config.borrow();
 
-fn draw_active_sample(args: DrawingArgs) {
-    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+    use self::TemperatureType::{DewPoint, DryBulb, WetBulb};
 
-    let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
-    cr.set_font_face(font_face);
-
-    set_font_size(&ac.skew_t, config.label_font_size, cr);
-
-    let vals = if let Some(vals) = ac.get_sample() {
-        vals
-    } else {
-        return;
-    };
-
-    let snd = if let Some(snd) = ac.get_sounding_for_display() {
-        snd
-    } else {
-        return;
-    };
-
-    let sample_p = if let Some(sample_p) = vals.pressure {
-        sample_p
-    } else {
-        return;
-    };
-
-    let lines = create_text(&vals, &snd, ac);
-
-    draw_sample_line(args, sample_p);
-
-    let box_rect = calculate_screen_rect(args, &lines, sample_p);
-
-    draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
-}
-
-fn create_text(vals: &DataRow, snd: &Sounding, _ac: &AppContext) -> Vec<String> {
-    use sounding_analysis::met_formulas::rh;
-
-    let mut results = vec![];
-
-    let t_c = vals.temperature;
-    let dp_c = vals.dew_point;
-    let pres = vals.pressure;
-    let dir = vals.direction;
-    let spd = vals.speed;
-    let hgt_asl = vals.height;
-    let omega = vals.omega;
-    let elevation = snd.get_location().2;
-
-    if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-        let mut line = String::with_capacity(128);
-        if let Some(t_c) = t_c {
-            line.push_str(&format!("{:.0}C", t_c));
-        }
-        if let Some(dp_c) = dp_c {
-            if t_c.is_some() {
-                line.push('/');
-            }
-            line.push_str(&format!("{:.0}C", dp_c));
-        }
-        if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-            line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
-        }
-        if let Some(omega) = omega {
-            line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
-        }
-        results.push(line);
+    if config.show_wet_bulb {
+        draw_temperature_profile(WetBulb, args);
     }
 
-    if pres.is_some() || dir.is_some() || spd.is_some() {
-        let mut line = String::with_capacity(128);
-        if let Some(pres) = pres {
-            line.push_str(&format!("{:.0}hPa", pres));
-        }
-        if let Some(dir) = dir {
-            if pres.is_some() {
-                line.push(' ');
-            }
-            let dir = (dir / 10.0).round() * 10.0;
-            line.push_str(&format!("{:03.0}", dir));
-        }
-        if let Some(spd) = spd {
-            if pres.is_some() && dir.is_none() {
-                line.push(' ');
-            }
-            line.push_str(&format!("{:02.0}KT", spd));
-        }
-        results.push(line);
+    if config.show_dew_point {
+        draw_temperature_profile(DewPoint, args);
     }
 
-    if let Some(hgt) = hgt_asl {
-        results.push(format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt));
-    }
-
-    if elevation.is_some() && hgt_asl.is_some() {
-        if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
-            let mut line = String::with_capacity(128);
-            line.push_str(&format!(
-                "AGL: {:5.0}m ({:5.0}ft)",
-                hgt - elev,
-                3.28084 * (hgt - elev)
-            ));
-            results.push(line);
-        }
-    }
-
-    // Sample the screen coords. Leave these commented out for debugging later possibly.
-    // {
-    //     use app::PlotContext;
-    //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
-    //         let mut line = String::with_capacity(128);
-    //         line.push_str(&format!(
-    //             "col: {:3.0} row: {:3.0}",
-    //             pnt.col,
-    //             pnt.row
-    //         ));
-    //         results.push(line);
-    //         let mut line = String::with_capacity(128);
-    //         let pnt = _ac.skew_t.convert_device_to_screen(pnt);
-    //         line.push_str(&format!(
-    //             "screen x: {:.3} y: {:.3}",
-    //             pnt.x,
-    //             pnt.y
-    //         ));
-    //         results.push(line);
-    //         let mut line = String::with_capacity(128);
-    //         let pnt2 = _ac.skew_t.convert_screen_to_xy(pnt);
-    //         line.push_str(&format!(
-    //             "x: {:.3} y: {:.3}",
-    //             pnt2.x,
-    //             pnt2.y
-    //         ));
-    //         results.push(line);
-    //         let mut line = String::with_capacity(128);
-    //         let pnt = _ac.skew_t.convert_screen_to_tp(pnt);
-    //         line.push_str(&format!(
-    //             "t: {:3.0} p: {:3.0}",
-    //             pnt.temperature,
-    //             pnt.pressure
-    //         ));
-    //         results.push(line);
-    //     }
-    // }
-
-    results
-}
-
-fn draw_sample_line(args: DrawingArgs, sample_p: f64) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let rgba = config.active_readout_line_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(
-        cr.device_to_user_distance(config.active_readout_line_width, 0.0)
-            .0,
-    );
-    let start = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: -200.0,
-        pressure: sample_p,
-    });
-    let end = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 60.0,
-        pressure: sample_p,
-    });
-    cr.move_to(start.x, start.y);
-    cr.line_to(end.x, end.y);
-    cr.stroke();
-}
-
-fn calculate_screen_rect(args: DrawingArgs, strings: &[String], sample_p: f64) -> ScreenRect {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let mut width: f64 = 0.0;
-    let mut height: f64 = 0.0;
-
-    let font_extents = cr.font_extents();
-
-    for line in strings.iter() {
-        let line_extents = cr.text_extents(line);
-        if line_extents.width > width {
-            width = line_extents.width;
-        }
-        height += font_extents.height;
-    }
-
-    let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
-
-    width += 2.0 * padding;
-    height += 2.0 * padding;
-
-    let ScreenCoords { x: mut left, .. } = ac.skew_t
-        .convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
-    let ScreenCoords { y: top, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 0.0,
-        pressure: sample_p,
-    });
-    let mut bottom = top - height;
-
-    let ScreenCoords { x: xmin, y: ymin } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-    let ScreenCoords { x: xmax, y: ymax } =
-        ac.skew_t.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-
-    // Prevent clipping
-    if left < xmin {
-        left = xmin;
-    }
-    if left > xmax - width {
-        left = xmax - width;
-    }
-    if bottom < ymin {
-        bottom = ymin;
-    }
-    if bottom > ymax - height {
-        bottom = ymax - height;
-    }
-
-    // Keep it on the screen
-    let ScreenRect {
-        lower_left: ScreenCoords { x: xmin, y: ymin },
-        upper_right: ScreenCoords { x: xmax, y: ymax },
-    } = ac.skew_t.bounding_box_in_screen_coords();
-    if left < xmin {
-        left = xmin;
-    }
-    if left > xmax - width {
-        left = xmax - width;
-    }
-    if bottom < ymin {
-        bottom = ymin;
-    }
-    if bottom > ymax - height {
-        bottom = ymax - height;
-    }
-
-    let lower_left = ScreenCoords { x: left, y: bottom };
-    let top_right = ScreenCoords {
-        x: left + width,
-        y: bottom + height,
-    };
-
-    ScreenRect {
-        lower_left: lower_left,
-        upper_right: top_right,
+    if config.show_temperature {
+        draw_temperature_profile(DryBulb, args);
     }
 }
 
-fn draw_sample_readout_text_box(
-    rect: &ScreenRect,
-    cr: &Context,
-    ac: &AppContext,
-    lines: &[String],
-) {
-    let config = ac.config.borrow();
-
-    let ScreenRect {
-        lower_left: ScreenCoords { x: xmin, y: ymin },
-        upper_right: ScreenCoords { x: xmax, y: ymax },
-    } = *rect;
-
-    let rgba = config.background_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-    cr.fill_preserve();
-    let rgba = config.label_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-    cr.stroke();
-
-    let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
-
-    let font_extents = cr.font_extents();
-    let mut lines_drawn = 0.0;
-
-    for line in lines {
-        cr.move_to(
-            xmin + padding,
-            ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
-        );
-        cr.show_text(line);
-        lines_drawn += 1.0;
-    }
-}
 #[derive(Clone, Copy, Debug)]
 enum TemperatureType {
     DryBulb,
@@ -1108,7 +916,6 @@ enum TemperatureType {
     DewPoint,
 }
 
-// Draw the temperature profile
 fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -1496,3 +1303,7 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 
     ScreenCoords { x: xcenter, y: yc }
 }
+
+/**************************************************************************************************
+ *                                    Overlays Drawing
+ **************************************************************************************************/

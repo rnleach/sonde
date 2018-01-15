@@ -2,14 +2,16 @@
 
 use std::rc::Rc;
 
-use cairo::{Context, Matrix, Operator};
+use cairo::{Context, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
 
+use sounding_base::{DataRow, Sounding};
+
 use app::{AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, XYCoords};
+use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, ScreenCoords, ScreenRect, XYCoords};
 
 mod cloud;
 mod control_area;
@@ -29,7 +31,7 @@ pub use self::rh_omega::RHOmegaContext;
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
-use self::utility::DrawingArgs;
+use self::utility::{set_font_size, DrawingArgs};
 
 /// Aggregation of the GUI components need for later reference.
 ///
@@ -139,7 +141,7 @@ trait Drawable: PlotContext + PlotContextExt {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
-    fn draw_overlays(&self, args: DrawingArgs);
+    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
 
     fn init_matrix(&self, args: DrawingArgs) {
         let cr = args.cr;
@@ -381,6 +383,193 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
         cr.paint();
     }
+
+    fn draw_active_sample(&self, args: DrawingArgs) {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let font_face =
+            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+        cr.set_font_face(font_face);
+
+        set_font_size(self, config.label_font_size, cr);
+
+        let vals = if let Some(vals) = ac.get_sample() {
+            vals
+        } else {
+            return;
+        };
+
+        let snd = if let Some(snd) = ac.get_sounding_for_display() {
+            snd
+        } else {
+            return;
+        };
+
+        let sample_p = if let Some(sample_p) = vals.pressure {
+            sample_p
+        } else {
+            return;
+        };
+
+        let lines = Self::create_active_readout_text(&vals, &snd);
+
+        self.draw_sample_line(args, sample_p);
+
+        let box_rect = self.calculate_active_reaout_box(args, &lines, sample_p);
+
+        Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
+    }
+
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
+
+    /***********************************************************************************************
+     *           Support for drawing the active readout on pressure based plots.
+     **********************************************************************************************/
+    fn draw_sample_line(&self, args: DrawingArgs, sample_p: f64) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let bb = self.bounding_box_in_screen_coords();
+        let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+        let y = convert_pressure_to_y(sample_p);
+
+        let rgba = config.active_readout_line_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(
+            cr.device_to_user_distance(config.active_readout_line_width, 0.0)
+                .0,
+        );
+        let start = self.convert_xy_to_screen(XYCoords { x: left, y: y });
+        let end = self.convert_xy_to_screen(XYCoords { x: right, y: y });
+        cr.move_to(start.x, start.y);
+        cr.line_to(end.x, end.y);
+        cr.stroke();
+    }
+
+    fn calculate_active_reaout_box(
+        &self,
+        args: DrawingArgs,
+        strings: &[String],
+        sample_p: f64,
+    ) -> ScreenRect {
+        let cr = args.cr;
+        let config = args.ac.config.borrow();
+
+        let mut width: f64 = 0.0;
+        let mut height: f64 = 0.0;
+
+        let font_extents = cr.font_extents();
+
+        for line in strings.iter() {
+            let line_extents = cr.text_extents(line);
+            if line_extents.width > width {
+                width = line_extents.width;
+            }
+            height += font_extents.height;
+        }
+
+        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+
+        width += 2.0 * padding;
+        height += 2.0 * padding;
+
+        let ScreenCoords { x: mut left, .. } =
+            self.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
+        let ScreenCoords { y: top, .. } = self.convert_xy_to_screen(XYCoords {
+            x: 0.0,
+            y: convert_pressure_to_y(sample_p),
+        });
+        let mut bottom = top - height;
+
+        let ScreenCoords { x: xmin, y: ymin } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+        let ScreenCoords { x: xmax, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+
+        // Prevent clipping
+        if left < xmin {
+            left = xmin;
+        }
+        if left > xmax - width {
+            left = xmax - width;
+        }
+        if bottom < ymin {
+            bottom = ymin;
+        }
+        if bottom > ymax - height {
+            bottom = ymax - height;
+        }
+
+        // Keep it on the screen
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = self.bounding_box_in_screen_coords();
+        if left < xmin {
+            left = xmin;
+        }
+        if left > xmax - width {
+            left = xmax - width;
+        }
+        if bottom < ymin {
+            bottom = ymin;
+        }
+        if bottom > ymax - height {
+            bottom = ymax - height;
+        }
+
+        let lower_left = ScreenCoords { x: left, y: bottom };
+        let top_right = ScreenCoords {
+            x: left + width,
+            y: bottom + height,
+        };
+
+        ScreenRect {
+            lower_left: lower_left,
+            upper_right: top_right,
+        }
+    }
+
+    fn draw_sample_readout_text_box(
+        rect: &ScreenRect,
+        cr: &Context,
+        ac: &AppContext,
+        lines: &[String],
+    ) {
+        let config = ac.config.borrow();
+
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = *rect;
+
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+        cr.fill_preserve();
+        let rgba = config.label_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke();
+
+        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+
+        let font_extents = cr.font_extents();
+        let mut lines_drawn = 0.0;
+
+        for line in lines {
+            cr.move_to(
+                xmin + padding,
+                ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
+            );
+            cr.show_text(line);
+            lines_drawn += 1.0;
+        }
+    }
 }
 
 trait MasterDrawable: Drawable {
@@ -436,6 +625,7 @@ trait SlaveProfileDrawable: Drawable {
             let rgba = ac.config.borrow().dendritic_zone_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
+            // FIXME: Find a way to cache this in app context.
             for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
                 let mut coords = [
                     (left, bottom_p),
@@ -447,6 +637,14 @@ trait SlaveProfileDrawable: Drawable {
                 // Convert points to screen coords
                 for coord in &mut coords {
                     coord.1 = convert_pressure_to_y(coord.1);
+
+                    let screen_coords = self.convert_xy_to_screen(XYCoords {
+                        x: coord.0,
+                        y: coord.1,
+                    });
+
+                    coord.0 = screen_coords.x;
+                    coord.1 = screen_coords.y;
                 }
 
                 let mut coord_iter = coords.iter();

@@ -5,6 +5,8 @@ use gdk::EventMask;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
+use sounding_base::{DataRow, Sounding};
+
 use app::{config, AppContextPointer};
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable};
@@ -97,6 +99,10 @@ impl Drawable for HodoContext {
 
     fn draw_overlays(&self, args: DrawingArgs) {
         draw_overlays(args);
+    }
+
+    fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        vec![]
     }
 }
 
