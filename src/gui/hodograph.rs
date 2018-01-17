@@ -7,7 +7,7 @@ use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
 
-use app::{config, AppContextPointer};
+use app::{config, AppContextPointer, AppContext};
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContextExt};
@@ -103,6 +103,11 @@ impl Drawable for HodoContext {
 
     fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         vec![]
+    }
+
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+
+        vec!["Hodograph".to_owned()]
     }
 }
 

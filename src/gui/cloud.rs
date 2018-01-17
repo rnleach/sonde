@@ -6,7 +6,7 @@ use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
 
-use app::{config, AppContextPointer};
+use app::{config, AppContextPointer, AppContext};
 use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
@@ -179,6 +179,8 @@ impl Drawable for CloudContext {
     fn draw_background(&self, args: DrawingArgs) {
         self.draw_dendtritic_snow_growth_zone(args);
         draw_background_lines(args);
+        self.prepare_to_make_text(args);
+        self.draw_legend(args);
     }
 
     fn draw_data(&self, args: DrawingArgs) {
@@ -188,15 +190,18 @@ impl Drawable for CloudContext {
     fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         let mut results = vec![];
 
-        let cloud = vals.cloud_fraction;
-
-        if let Some(cloud) = cloud {
+        if let Some(cloud) = vals.cloud_fraction {
             let cld = (cloud / 10.0).round() * 10.0;
-            let line = format!("{:.0}", cld);
+            let line = format!("{:.0}%", cld);
             results.push(line);
         }
 
         results
+    }
+
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+
+        vec!["Cloud Cover".to_owned()]
     }
 }
 
@@ -289,6 +294,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
                 continue;
             } else {
                 // Impossible state
+                println!("Unreachable");
+                break; // FIXME: Should be unreachable, check for empty clouds
                 unreachable!();
             }
 

@@ -1,19 +1,18 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use cairo::{FontFace, FontSlant, FontWeight};
 use gdk::{EventMask, EventMotion};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
 
-use app::{config, AppContextPointer};
+use app::{config, AppContextPointer, AppContext};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points, set_font_size};
+use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
 #[derive(Debug)]
 pub struct RHOmegaContext {
@@ -191,6 +190,7 @@ impl Drawable for RHOmegaContext {
         self.draw_dendtritic_snow_growth_zone(args);
         draw_background_lines(args);
         draw_labels(args);
+        self.draw_legend(args);
     }
 
     fn draw_data(&self, args: DrawingArgs) {
@@ -211,7 +211,7 @@ impl Drawable for RHOmegaContext {
             let mut line = String::with_capacity(128);
 
             if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
+                line.push_str(&format!("{:.0}%", 100.0 * rh(t_c, dp_c)));
             }
             if let Some(omega) = omega {
                 line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
@@ -220,6 +220,11 @@ impl Drawable for RHOmegaContext {
         }
 
         results
+    }
+
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+
+        vec!["RH & PVV".to_owned()]
     }
 }
 
@@ -420,11 +425,7 @@ fn draw_labels(args: DrawingArgs) {
     let config = ac.config.borrow();
 
     if config.show_labels {
-        let font_face =
-            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
-        cr.set_font_face(font_face);
-
-        set_font_size(&ac.rh_omega, config.label_font_size, cr);
+        ac.rh_omega.prepare_to_make_text(args);
 
         let labels = collect_labels(args);
         let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;

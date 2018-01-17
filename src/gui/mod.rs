@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use cairo::{Context, FontFace, FontSlant, FontWeight, Matrix, Operator};
+use cairo::{Context, FontFace, FontSlant, FontWeight, Matrix, Operator, FontExtents};
 use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
@@ -11,7 +11,7 @@ use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, 
 use sounding_base::{DataRow, Sounding};
 
 use app::{AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, ScreenCoords, ScreenRect, XYCoords};
+use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, ScreenCoords, ScreenRect, XYCoords, Rect};
 
 mod cloud;
 mod control_area;
@@ -141,7 +141,6 @@ trait Drawable: PlotContext + PlotContextExt {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
-    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
 
     fn init_matrix(&self, args: DrawingArgs) {
         let cr = args.cr;
@@ -384,14 +383,29 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.paint();
     }
 
-    fn draw_active_sample(&self, args: DrawingArgs) {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
 
-        let font_face =
-            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+    fn prepare_to_make_text(&self, args: DrawingArgs){
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
         set_font_size(self, config.label_font_size, cr);
+    }
+
+    /***********************************************************************************************
+     *           Support for drawing the active readout on pressure based plots.
+     **********************************************************************************************/
+    // FIXME: Factor into it's own trait for organization?
+    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
+
+    fn draw_active_sample(&self, args: DrawingArgs) {
+        let (ac, cr) = (args.ac, args.cr);
 
         let vals = if let Some(vals) = ac.get_sample() {
             vals
@@ -415,20 +429,13 @@ trait Drawable: PlotContext + PlotContextExt {
 
         self.draw_sample_line(args, sample_p);
 
-        let box_rect = self.calculate_active_reaout_box(args, &lines, sample_p);
+        self.prepare_to_make_text(args);
+
+        let box_rect = self.calculate_active_readout_box(args, &lines, sample_p);
 
         Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
-            self.draw_active_sample(args);
-        }
-    }
-
-    /***********************************************************************************************
-     *           Support for drawing the active readout on pressure based plots.
-     **********************************************************************************************/
     fn draw_sample_line(&self, args: DrawingArgs, sample_p: f64) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
@@ -450,7 +457,7 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.stroke();
     }
 
-    fn calculate_active_reaout_box(
+    fn calculate_active_readout_box(
         &self,
         args: DrawingArgs,
         strings: &[String],
@@ -568,6 +575,134 @@ trait Drawable: PlotContext + PlotContextExt {
             );
             cr.show_text(line);
             lines_drawn += 1.0;
+        }
+    }
+
+    /***********************************************************************************************
+     *                         Support for drawing a legend or title.
+     **********************************************************************************************/
+    // FIXME: Factor into it's own trait for organization?
+    
+    fn draw_legend(&self, args: DrawingArgs) {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
+
+        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+        upper_left.x += padding;
+        upper_left.y -= padding;
+
+        // Make sure we stay on the x-y coords domain
+        let ScreenCoords { x: xmin, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+        let edge_offset = upper_left.x;
+        if ymax - edge_offset < upper_left.y {
+            upper_left.y = ymax - edge_offset;
+        }
+
+        if xmin + edge_offset > upper_left.x {
+            upper_left.x = xmin + edge_offset;
+        }
+
+        let font_extents = cr.font_extents();
+
+        let legend_text = Self::build_legend_strings(ac);
+
+        let (box_width, box_height) = Self::calculate_legend_box_size(args, &font_extents, &legend_text);
+
+        let legend_rect = ScreenRect {
+            lower_left: ScreenCoords {
+                x: upper_left.x,
+                y: upper_left.y - box_height,
+            },
+            upper_right: ScreenCoords {
+                x: upper_left.x + box_width,
+                y: upper_left.y,
+            },
+        };
+
+        Self::draw_legend_rectangle(args, &legend_rect);
+
+        Self::draw_legend_text(
+            args,
+            &upper_left,
+            &font_extents,
+            &legend_text,
+        );
+    }
+
+    fn build_legend_strings(ac: &AppContext) -> Vec<String>; 
+
+    fn calculate_legend_box_size(args: DrawingArgs, font_extents: &FontExtents, legend_text: &[String]) -> (f64, f64) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let mut box_width: f64 = 0.0;
+        let mut box_height: f64 = 0.0;
+
+        for line in legend_text {
+            let extents = cr.text_extents(line);
+            if extents.width > box_width {
+                box_width = extents.width;
+            }
+            box_height += font_extents.height;
+        }
+
+        // Add room for the last line's descent
+        box_height += font_extents.descent;
+
+        // Add padding last
+        let (padding_x, padding_y) = cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        box_height += 2.0 * padding_y;
+        box_width += 2.0 * padding_x;
+
+        (box_width, box_height)
+    }
+
+    fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let ScreenRect { lower_left, .. } = *screen_rect;
+
+        cr.rectangle(
+            lower_left.x,
+            lower_left.y,
+            screen_rect.width(),
+            screen_rect.height(),
+        );
+
+        let rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke_preserve();
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.fill();
+    }
+
+    fn draw_legend_text(
+        args: DrawingArgs,
+        upper_left: &ScreenCoords,
+        font_extents: &FontExtents, legend_text: &[String]
+    ) {
+        let (config, cr) = (args.ac.config.borrow(), args.cr);
+
+        let rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+
+        let (padding_x, padding_y) = cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+
+        // Remember how many lines we have drawn so far for setting position of the next line.
+        let mut line_num = 1;
+
+        for line in legend_text {
+                cr.move_to(
+                upper_left.x + padding_x,
+                upper_left.y - padding_y - f64::from(line_num) * font_extents.height,
+            );
+
+            cr.show_text(line);
+            line_num += 1;
         }
     }
 }
