@@ -366,7 +366,7 @@ impl Drawable for SkewTContext {
             let (lat, lon, elevation) = snd.get_location();
             if lat.is_some() || lon.is_some() || elevation.is_some() {
                 let mut location = "".to_owned();
-                
+
                 if let Some(lat) = lat {
                     location.push_str(&format!("{:.2}", lat));
                 }
@@ -565,7 +565,6 @@ fn draw_background_lines(args: DrawingArgs) {
 
 // Label the pressure, temperatures, etc lines.
 fn draw_background_labels(args: DrawingArgs) {
-
     let (ac, config) = (args.ac, args.ac.config.borrow());
     ac.skew_t.prepare_to_make_text(args);
 

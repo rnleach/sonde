@@ -6,7 +6,7 @@ use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
 
-use app::{config, AppContextPointer, AppContext};
+use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
@@ -200,7 +200,6 @@ impl Drawable for CloudContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-
         vec!["Cloud Cover".to_owned()]
     }
 }

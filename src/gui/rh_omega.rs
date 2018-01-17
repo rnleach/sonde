@@ -7,7 +7,7 @@ use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
 
-use app::{config, AppContextPointer, AppContext};
+use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
@@ -223,7 +223,6 @@ impl Drawable for RHOmegaContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-
         vec!["RH & PVV".to_owned()]
     }
 }

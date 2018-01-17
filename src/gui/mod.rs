@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use cairo::{Context, FontFace, FontSlant, FontWeight, Matrix, Operator, FontExtents};
+use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gtk::prelude::*;
 use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
@@ -11,7 +11,8 @@ use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, 
 use sounding_base::{DataRow, Sounding};
 
 use app::{AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, ScreenCoords, ScreenRect, XYCoords, Rect};
+use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
+             XYCoords};
 
 mod cloud;
 mod control_area;
@@ -389,10 +390,11 @@ trait Drawable: PlotContext + PlotContextExt {
         }
     }
 
-    fn prepare_to_make_text(&self, args: DrawingArgs){
+    fn prepare_to_make_text(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
-        let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+        let font_face =
+            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
         set_font_size(self, config.label_font_size, cr);
@@ -582,7 +584,7 @@ trait Drawable: PlotContext + PlotContextExt {
      *                         Support for drawing a legend or title.
      **********************************************************************************************/
     // FIXME: Factor into it's own trait for organization?
-    
+
     fn draw_legend(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -608,7 +610,8 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let legend_text = Self::build_legend_strings(ac);
 
-        let (box_width, box_height) = Self::calculate_legend_box_size(args, &font_extents, &legend_text);
+        let (box_width, box_height) =
+            Self::calculate_legend_box_size(args, &font_extents, &legend_text);
 
         let legend_rect = ScreenRect {
             lower_left: ScreenCoords {
@@ -623,17 +626,16 @@ trait Drawable: PlotContext + PlotContextExt {
 
         Self::draw_legend_rectangle(args, &legend_rect);
 
-        Self::draw_legend_text(
-            args,
-            &upper_left,
-            &font_extents,
-            &legend_text,
-        );
+        Self::draw_legend_text(args, &upper_left, &font_extents, &legend_text);
     }
 
-    fn build_legend_strings(ac: &AppContext) -> Vec<String>; 
+    fn build_legend_strings(ac: &AppContext) -> Vec<String>;
 
-    fn calculate_legend_box_size(args: DrawingArgs, font_extents: &FontExtents, legend_text: &[String]) -> (f64, f64) {
+    fn calculate_legend_box_size(
+        args: DrawingArgs,
+        font_extents: &FontExtents,
+        legend_text: &[String],
+    ) -> (f64, f64) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let mut box_width: f64 = 0.0;
@@ -651,7 +653,8 @@ trait Drawable: PlotContext + PlotContextExt {
         box_height += font_extents.descent;
 
         // Add padding last
-        let (padding_x, padding_y) = cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let (padding_x, padding_y) =
+            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
         box_height += 2.0 * padding_y;
         box_width += 2.0 * padding_x;
 
@@ -683,20 +686,22 @@ trait Drawable: PlotContext + PlotContextExt {
     fn draw_legend_text(
         args: DrawingArgs,
         upper_left: &ScreenCoords,
-        font_extents: &FontExtents, legend_text: &[String]
+        font_extents: &FontExtents,
+        legend_text: &[String],
     ) {
         let (config, cr) = (args.ac.config.borrow(), args.cr);
 
         let rgb = config.label_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
-        let (padding_x, padding_y) = cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let (padding_x, padding_y) =
+            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
 
         // Remember how many lines we have drawn so far for setting position of the next line.
         let mut line_num = 1;
 
         for line in legend_text {
-                cr.move_to(
+            cr.move_to(
                 upper_left.x + padding_x,
                 upper_left.y - padding_y - f64::from(line_num) * font_extents.height,
             );
