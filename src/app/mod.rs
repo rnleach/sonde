@@ -174,7 +174,10 @@ impl AppContext {
                         if p < config::MINP {
                             None
                         } else {
-                            Some(WPCoords { w: o.abs(), p })
+                            Some(WPCoords {
+                                w: { f64::max(o.abs(), config::MIN_ABS_W) },
+                                p,
+                            })
                         }
                     } else {
                         None
@@ -226,8 +229,11 @@ impl AppContext {
         }
 
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
-        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
         self.hodo.set_xy_envelope(hodo_xy_envelope);
+
+
+        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
+
         let mut cloud_envelope = rh_omega_xy_envelope;
         cloud_envelope.lower_left.x = 0.0;
         cloud_envelope.upper_right.x = 1.0;
