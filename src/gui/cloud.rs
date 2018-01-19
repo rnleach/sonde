@@ -191,7 +191,7 @@ impl Drawable for CloudContext {
         let mut results = vec![];
 
         if let Some(cloud) = vals.cloud_fraction {
-            let cld = (cloud / 10.0).round() * 10.0;
+            let cld = (cloud).round();
             let line = format!("{:.0}%", cld);
             results.push(line);
         }

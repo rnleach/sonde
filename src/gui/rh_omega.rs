@@ -213,8 +213,11 @@ impl Drawable for RHOmegaContext {
             if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
                 line.push_str(&format!("{:.0}%", 100.0 * rh(t_c, dp_c)));
             }
+            if t_c.is_some() && dp_c.is_some() && omega.is_some() {
+                line.push(' ');
+            }
             if let Some(omega) = omega {
-                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
+                line.push_str(&format!("{:.1} hPa/s", omega * 10.0));
             }
             results.push(line);
         }
