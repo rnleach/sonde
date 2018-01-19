@@ -10,7 +10,8 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
+use gui::{Drawable, DrawingArgs, LegendBox, MasterDrawable, PlotContext, PlotContextExt,
+          SampleReadout};
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points};
 
@@ -213,6 +214,16 @@ impl Drawable for SkewTContext {
         draw_wind_profile(args);
     }
 
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
+}
+
+impl MasterDrawable for SkewTContext {}
+
+impl SampleReadout for SkewTContext {
     fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
         use sounding_analysis::met_formulas::rh;
 
@@ -324,7 +335,9 @@ impl Drawable for SkewTContext {
 
         results
     }
+}
 
+impl LegendBox for SkewTContext {
     fn build_legend_strings(ac: &AppContext) -> Vec<String> {
         use chrono::Weekday::*;
 
@@ -384,8 +397,6 @@ impl Drawable for SkewTContext {
         result
     }
 }
-
-impl MasterDrawable for SkewTContext {}
 
 /**************************************************************************************************
  *                                  Background Drawing

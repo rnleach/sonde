@@ -142,6 +142,7 @@ trait Drawable: PlotContext + PlotContextExt {
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
     fn draw_background(&self, args: DrawingArgs);
     fn draw_data(&self, args: DrawingArgs);
+    fn draw_overlays(&self, args: DrawingArgs);
 
     fn init_matrix(&self, args: DrawingArgs) {
         let cr = args.cr;
@@ -384,12 +385,6 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.paint();
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
-            self.draw_active_sample(args);
-        }
-    }
-
     fn prepare_to_make_text(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
@@ -399,11 +394,99 @@ trait Drawable: PlotContext + PlotContextExt {
 
         set_font_size(self, config.label_font_size, cr);
     }
+}
 
-    /***********************************************************************************************
-     *           Support for drawing the active readout on pressure based plots.
-     **********************************************************************************************/
-    // FIXME: Factor into it's own trait for organization?
+trait MasterDrawable: Drawable {
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
+    }
+}
+
+trait SlaveProfileDrawable: Drawable {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64;
+    fn set_translate_y(&self, new_translate: XYCoords);
+
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+        let args = DrawingArgs::new(acp, cr);
+
+        let device_height = self.get_device_rect().height;
+        let device_width = self.get_device_rect().width;
+        let aspect_ratio = device_height / device_width;
+
+        self.set_zoom_factor(aspect_ratio * self.get_master_zoom(acp));
+        self.set_translate_y(acp.skew_t.get_translate());
+        self.bound_view();
+
+        self.init_matrix(args);
+        self.draw_background_cached(args);
+        self.draw_data_cached(args);
+        self.draw_overlay_cached(args);
+
+        Inhibit(false)
+    }
+
+    fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
+        use sounding_base::Profile::Pressure;
+
+        let (ac, cr) = (args.ac, args.cr);
+
+        if !ac.config.borrow().show_dendritic_zone {
+            return;
+        }
+
+        // If is plottable, draw snow growth zones
+        if let Some(ref snd) = ac.get_sounding_for_display() {
+            let bb = self.bounding_box_in_screen_coords();
+            let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+
+            let rgba = ac.config.borrow().dendritic_zone_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+            // FIXME: Find a way to cache this in app context.
+            for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
+                let mut coords = [
+                    (left, bottom_p),
+                    (left, top_p),
+                    (right, top_p),
+                    (right, bottom_p),
+                ];
+
+                // Convert points to screen coords
+                for coord in &mut coords {
+                    coord.1 = convert_pressure_to_y(coord.1);
+
+                    let screen_coords = self.convert_xy_to_screen(XYCoords {
+                        x: coord.0,
+                        y: coord.1,
+                    });
+
+                    coord.0 = screen_coords.x;
+                    coord.1 = screen_coords.y;
+                }
+
+                let mut coord_iter = coords.iter();
+                for coord in coord_iter.by_ref().take(1) {
+                    cr.move_to(coord.0, coord.1);
+                }
+                for coord in coord_iter {
+                    cr.line_to(coord.0, coord.1);
+                }
+
+                cr.close_path();
+                cr.fill();
+            }
+        }
+    }
+}
+
+trait SampleReadout: Drawable {
     fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
 
     fn draw_active_sample(&self, args: DrawingArgs) {
@@ -579,11 +662,10 @@ trait Drawable: PlotContext + PlotContextExt {
             lines_drawn += 1.0;
         }
     }
+}
 
-    /***********************************************************************************************
-     *                         Support for drawing a legend or title.
-     **********************************************************************************************/
-    // FIXME: Factor into it's own trait for organization?
+trait LegendBox: Drawable {
+    fn build_legend_strings(ac: &AppContext) -> Vec<String>;
 
     fn draw_legend(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
@@ -629,8 +711,6 @@ trait Drawable: PlotContext + PlotContextExt {
         Self::draw_legend_text(args, &upper_left, &font_extents, &legend_text);
     }
 
-    fn build_legend_strings(ac: &AppContext) -> Vec<String>;
-
     fn calculate_legend_box_size(
         args: DrawingArgs,
         font_extents: &FontExtents,
@@ -649,13 +729,14 @@ trait Drawable: PlotContext + PlotContextExt {
             box_height += font_extents.height;
         }
 
-        // Add room for the last line's descent
-        box_height += font_extents.descent;
-
         // Add padding last
         let (padding_x, padding_y) =
             cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
-        box_height += 2.0 * padding_y;
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
+
+        // Add room for the last line's descent and padding
+        box_height += f64::max(font_extents.descent, padding_y);
+        box_height += padding_y;
         box_width += 2.0 * padding_x;
 
         (box_width, box_height)
@@ -696,6 +777,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let (padding_x, padding_y) =
             cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
 
         // Remember how many lines we have drawn so far for setting position of the next line.
         let mut line_num = 1;
@@ -703,101 +785,12 @@ trait Drawable: PlotContext + PlotContextExt {
         for line in legend_text {
             cr.move_to(
                 upper_left.x + padding_x,
-                upper_left.y - padding_y - f64::from(line_num) * font_extents.height,
+                upper_left.y - padding_y - font_extents.ascent
+                    - f64::from(line_num - 1) * font_extents.height,
             );
 
             cr.show_text(line);
             line_num += 1;
-        }
-    }
-}
-
-trait MasterDrawable: Drawable {
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
-        let args = DrawingArgs::new(acp, cr);
-
-        self.init_matrix(args);
-        self.draw_background_cached(args);
-        self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
-
-        Inhibit(false)
-    }
-}
-
-trait SlaveProfileDrawable: Drawable {
-    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64;
-    fn set_translate_y(&self, new_translate: XYCoords);
-
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
-        let args = DrawingArgs::new(acp, cr);
-
-        let device_height = self.get_device_rect().height;
-        let device_width = self.get_device_rect().width;
-        let aspect_ratio = device_height / device_width;
-
-        self.set_zoom_factor(aspect_ratio * self.get_master_zoom(acp));
-        self.set_translate_y(acp.skew_t.get_translate());
-        self.bound_view();
-
-        self.init_matrix(args);
-        self.draw_background_cached(args);
-        self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
-
-        Inhibit(false)
-    }
-
-    fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
-        use sounding_base::Profile::Pressure;
-
-        let (ac, cr) = (args.ac, args.cr);
-
-        if !ac.config.borrow().show_dendritic_zone {
-            return;
-        }
-
-        // If is plottable, draw snow growth zones
-        if let Some(ref snd) = ac.get_sounding_for_display() {
-            let bb = self.bounding_box_in_screen_coords();
-            let (left, right) = (bb.lower_left.x, bb.upper_right.x);
-
-            let rgba = ac.config.borrow().dendritic_zone_rgba;
-            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-            // FIXME: Find a way to cache this in app context.
-            for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
-                let mut coords = [
-                    (left, bottom_p),
-                    (left, top_p),
-                    (right, top_p),
-                    (right, bottom_p),
-                ];
-
-                // Convert points to screen coords
-                for coord in &mut coords {
-                    coord.1 = convert_pressure_to_y(coord.1);
-
-                    let screen_coords = self.convert_xy_to_screen(XYCoords {
-                        x: coord.0,
-                        y: coord.1,
-                    });
-
-                    coord.0 = screen_coords.x;
-                    coord.1 = screen_coords.y;
-                }
-
-                let mut coord_iter = coords.iter();
-                for coord in coord_iter.by_ref().take(1) {
-                    cr.move_to(coord.0, coord.1);
-                }
-                for coord in coord_iter {
-                    cr.line_to(coord.0, coord.1);
-                }
-
-                cr.close_path();
-                cr.fill();
-            }
         }
     }
 }

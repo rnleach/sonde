@@ -5,11 +5,9 @@ use gdk::EventMask;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use sounding_base::{DataRow, Sounding};
-
 use app::{config, AppContext, AppContextPointer};
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect, XYCoords};
-use gui::{Drawable, DrawingArgs, MasterDrawable};
+use gui::{Drawable, DrawingArgs, LegendBox, MasterDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, set_font_size};
 
@@ -100,17 +98,15 @@ impl Drawable for HodoContext {
     fn draw_overlays(&self, args: DrawingArgs) {
         draw_overlays(args);
     }
+}
 
-    fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
-        vec![]
-    }
+impl MasterDrawable for HodoContext {}
 
+impl LegendBox for HodoContext {
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["Hodograph".to_owned()]
     }
 }
-
-impl MasterDrawable for HodoContext {}
 
 fn draw_background(args: DrawingArgs) {
     let config = args.ac.config.borrow();

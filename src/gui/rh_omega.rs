@@ -10,7 +10,7 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
+use gui::{Drawable, DrawingArgs, LegendBox, SampleReadout, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
@@ -198,6 +198,26 @@ impl Drawable for RHOmegaContext {
         draw_omega_profile(args);
     }
 
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
+}
+
+impl SlaveProfileDrawable for RHOmegaContext {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
+        acp.skew_t.get_zoom_factor()
+    }
+
+    fn set_translate_y(&self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.set_translate(translate);
+    }
+}
+
+impl SampleReadout for RHOmegaContext {
     fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         use sounding_analysis::met_formulas::rh;
 
@@ -224,21 +244,11 @@ impl Drawable for RHOmegaContext {
 
         results
     }
-
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["RH & PVV".to_owned()]
-    }
 }
 
-impl SlaveProfileDrawable for RHOmegaContext {
-    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
-        acp.skew_t.get_zoom_factor()
-    }
-
-    fn set_translate_y(&self, new_translate: XYCoords) {
-        let mut translate = self.get_translate();
-        translate.y = new_translate.y;
-        self.set_translate(translate);
+impl LegendBox for RHOmegaContext {
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+        vec!["RH & PVV".to_owned()]
     }
 }
 

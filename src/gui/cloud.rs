@@ -8,7 +8,7 @@ use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords};
-use gui::{Drawable, SlaveProfileDrawable};
+use gui::{Drawable, LegendBox, SampleReadout, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{plot_curve_from_points, DrawingArgs};
 
@@ -187,20 +187,10 @@ impl Drawable for CloudContext {
         draw_cloud_profile(args);
     }
 
-    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
-        let mut results = vec![];
-
-        if let Some(cloud) = vals.cloud_fraction {
-            let cld = (cloud).round();
-            let line = format!("{:.0}%", cld);
-            results.push(line);
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
         }
-
-        results
-    }
-
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Cloud Cover".to_owned()]
     }
 }
 
@@ -213,6 +203,26 @@ impl SlaveProfileDrawable for CloudContext {
         let mut translate = self.get_translate();
         translate.y = new_translate.y;
         self.set_translate(translate);
+    }
+}
+
+impl SampleReadout for CloudContext {
+    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        let mut results = vec![];
+
+        if let Some(cloud) = vals.cloud_fraction {
+            let cld = (cloud).round();
+            let line = format!("{:.0}%", cld);
+            results.push(line);
+        }
+
+        results
+    }
+}
+
+impl LegendBox for CloudContext {
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+        vec!["Cloud Cover".to_owned()]
     }
 }
 
