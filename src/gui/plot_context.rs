@@ -41,6 +41,12 @@ pub trait PlotContext: Sized {
     /// Get the last position of the cursor over this widget.
     fn get_last_cursor_position(&self) -> Option<DeviceCoords>;
 
+    /// Has data availabe to draw in this context
+    fn has_data(&self) -> bool;
+
+    /// Set whether data is available to draw in this context.
+    fn set_has_data(&self, has_data: bool);
+
     /// Set the last position of the cursor over this widget.
     fn set_last_cursor_position<T>(&self, new_position: T)
     where
@@ -302,6 +308,7 @@ pub struct GenericContext {
     // last cursor position in skew_t widget, used for sampling and panning
     last_cursor_position: Cell<Option<DeviceCoords>>,
 
+    // Store the cairo matrix for use in drawing the different layers in a layer.
     matrix: Cell<Matrix>,
 
     dirty_background: Cell<bool>,
@@ -312,6 +319,9 @@ pub struct GenericContext {
 
     dirty_overlay: Cell<bool>,
     overlay_layer: RefCell<ImageSurface>,
+
+    // Flag for whether data is available for this context.
+    have_data_flag: Cell<bool>,
 }
 
 impl GenericContext {
@@ -343,6 +353,8 @@ impl GenericContext {
 
             dirty_overlay: Cell::new(true),
             overlay_layer: RefCell::new(ImageSurface::create(Format::ARgb32, 5, 5).unwrap()),
+
+            have_data_flag: Cell::new(true),
         }
     }
 }
@@ -500,5 +512,13 @@ where
 
     fn set_overlay_layer(&self, new_surface: ImageSurface) {
         *self.get_generic_context().overlay_layer.borrow_mut() = new_surface;
+    }
+
+    fn has_data(&self) -> bool {
+        self.get_generic_context().have_data_flag.get()
+    }
+
+    fn set_has_data(&self, has_data: bool) {
+        self.get_generic_context().have_data_flag.set(has_data);
     }
 }

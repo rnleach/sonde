@@ -194,8 +194,8 @@ impl Drawable for RHOmegaContext {
     }
 
     fn draw_data(&self, args: DrawingArgs) {
-        draw_rh_profile(args);
-        draw_omega_profile(args);
+        let has_data = draw_rh_profile(args) || draw_omega_profile(args);
+        self.set_has_data(has_data);
     }
 
     fn draw_overlays(&self, args: DrawingArgs) {
@@ -252,14 +252,14 @@ impl LegendBox for RHOmegaContext {
     }
 }
 
-fn draw_rh_profile(args: DrawingArgs) {
+fn draw_rh_profile(args: DrawingArgs)-> bool {
     use sounding_analysis::met_formulas::rh;
 
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if !config.show_rh_profile {
-        return;
+        return false;
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
@@ -336,6 +336,8 @@ fn draw_rh_profile(args: DrawingArgs) {
             } else if let (None, None, Some(_)) = (previous, curr, next) {
                 // Just getting into the loop - do nothing
                 continue;
+            } else if let (None, None, None) = (previous, curr, next) {
+                return false;
             } else {
                 // Impossible state
                 unreachable!();
@@ -345,15 +347,18 @@ fn draw_rh_profile(args: DrawingArgs) {
             cr.fill_preserve();
             cr.stroke();
         }
+    } else {
+        return false;
     }
+    true
 }
 
-fn draw_omega_profile(args: DrawingArgs) {
+fn draw_omega_profile(args: DrawingArgs) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if !config.show_omega_profile {
-        return;
+        return false;
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
@@ -381,7 +386,11 @@ fn draw_omega_profile(args: DrawingArgs) {
             });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
+    } else {
+        return false;
     }
+
+    true
 }
 
 fn draw_background_lines(args: DrawingArgs) {

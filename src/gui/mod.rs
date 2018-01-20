@@ -490,6 +490,8 @@ trait SampleReadout: Drawable {
     fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
 
     fn draw_active_sample(&self, args: DrawingArgs) {
+        if !self.has_data() { return; }
+        
         let (ac, cr) = (args.ac, args.cr);
 
         let vals = if let Some(vals) = ac.get_sample() {

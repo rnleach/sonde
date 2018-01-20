@@ -160,7 +160,7 @@ impl Drawable for CloudContext {
     ) -> Inhibit {
         da.grab_focus();
 
-        if ac.plottable() {
+        if ac.plottable() && self.has_data() {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
@@ -233,6 +233,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{CloudFraction, Pressure};
 
+        ac.cloud.set_has_data(true);
+
         let pres_data = sndg.get_profile(Pressure);
         let c_data = sndg.get_profile(CloudFraction);
         let mut profile = izip!(pres_data, c_data)
@@ -301,10 +303,12 @@ fn draw_cloud_profile(args: DrawingArgs) {
             } else if let (None, None, Some(_)) = (previous, curr, next) {
                 // Just getting into the loop - do nothing
                 continue;
+            } else if let (None, None, None) = (previous, curr, next) {
+                // There is no data plot the no data and leave!
+                ac.cloud.set_has_data(false);
+                break;
             } else {
                 // Impossible state
-                println!("Unreachable");
-                break; // FIXME: Should be unreachable, check for empty clouds
                 unreachable!();
             }
 
@@ -312,6 +316,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
             cr.fill_preserve();
             cr.stroke();
         }
+    } else {
+        ac.cloud.set_has_data(false);
     }
 }
 
