@@ -177,7 +177,7 @@ impl Drawable for CloudContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        self.draw_dendtritic_snow_growth_zone(args);
+        draw_background_fill(args);
         draw_background_lines(args);
         self.prepare_to_make_text(args);
         self.draw_legend(args);
@@ -321,6 +321,45 @@ fn draw_cloud_profile(args: DrawingArgs) {
     }
 }
 
+fn draw_background_fill(args: DrawingArgs) {
+    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+    let rgba = config.background_band_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+    let mut percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0].iter();
+    let mut draw = true;
+    let mut prev = percents.next();
+    while let Some(prev_val) = prev {
+        let curr = percents.next();
+        if let Some(curr_val) = curr {
+            if draw {
+                let ll = PPCoords {
+                    pcnt: *prev_val / 100.0,
+                    press: config::MAXP,
+                };
+                let ur = PPCoords {
+                    pcnt: *curr_val / 100.0,
+                    press: config::MINP,
+                };
+                let ll = ac.cloud.convert_pp_to_screen(ll);
+                let ur = ac.cloud.convert_pp_to_screen(ur);
+                let ScreenCoords { x: xmin, y: ymin } = ll;
+                let ScreenCoords { x: xmax, y: ymax } = ur;
+                cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                cr.fill();
+                draw = false;
+            } else {
+                draw = true;
+            }
+        }
+        prev = curr;
+    }
+
+    ac.cloud.draw_dendtritic_snow_growth_zone(args);
+
+}
+
 fn draw_background_lines(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -332,5 +371,13 @@ fn draw_background_lines(args: DrawingArgs) {
                 .map(|xy_coords| ac.cloud.convert_xy_to_screen(*xy_coords));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
+    }
+
+    // Draw percent values
+    let percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
+    for percent in &percents{
+        let pnts = [PPCoords{pcnt: *percent / 100.0, press: config::MINP},PPCoords{pcnt:*percent / 100.0, press:config::MAXP}];
+        let pnts = pnts.iter().map(|pp_coord| ac.cloud.convert_pp_to_screen(*pp_coord));
+        plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
     }
 }
