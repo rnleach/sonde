@@ -154,12 +154,12 @@ impl Drawable for RHOmegaContext {
 
         da.set_can_focus(true);
 
-        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-            | EventMask::BUTTON_RELEASE_MASK
-            | EventMask::POINTER_MOTION_HINT_MASK
-            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_PRESS_MASK)
-            .bits() as i32);
+        da.add_events(
+            (EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK | EventMask::BUTTON_RELEASE_MASK
+                | EventMask::POINTER_MOTION_HINT_MASK | EventMask::POINTER_MOTION_MASK
+                | EventMask::LEAVE_NOTIFY_MASK | EventMask::KEY_PRESS_MASK)
+                .bits() as i32,
+        );
     }
 
     fn mouse_motion_event(
@@ -176,7 +176,7 @@ impl Drawable for RHOmegaContext {
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                &ac.get_sounding_for_display().unwrap(), // will not panic due to ac.plottable
                 wp_position.p,
             );
             ac.set_sample(Some(sample));
@@ -187,14 +187,16 @@ impl Drawable for RHOmegaContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        self.draw_dendtritic_snow_growth_zone(args);
+        draw_background_fill(args);
         draw_background_lines(args);
         draw_labels(args);
         self.draw_legend(args);
     }
 
     fn draw_data(&self, args: DrawingArgs) {
-        let has_data = draw_rh_profile(args) || draw_omega_profile(args);
+        let rh_drawn = draw_rh_profile(args);
+        let omega_drawn = draw_omega_profile(args);
+        let has_data = rh_drawn || omega_drawn;
         self.set_has_data(has_data);
     }
 
@@ -252,7 +254,7 @@ impl LegendBox for RHOmegaContext {
     }
 }
 
-fn draw_rh_profile(args: DrawingArgs)-> bool {
+fn draw_rh_profile(args: DrawingArgs) -> bool {
     use sounding_analysis::met_formulas::rh;
 
     let (ac, cr) = (args.ac, args.cr);
@@ -391,6 +393,44 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
     }
 
     true
+}
+
+fn draw_background_fill(args: DrawingArgs) {
+    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+    let rgba = config.background_band_rgba;
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+    let mut omegas = config::ISO_OMEGA.iter();
+    let mut draw = true;
+    let mut prev = omegas.next();
+    while let Some(prev_val) = prev {
+        let curr = omegas.next();
+        if let Some(curr_val) = curr {
+            if draw {
+                let ll = WPCoords {
+                    w: *prev_val,
+                    p: config::MAXP,
+                };
+                let ur = WPCoords {
+                    w: *curr_val,
+                    p: config::MINP,
+                };
+                let ll = ac.rh_omega.convert_wp_to_screen(ll);
+                let ur = ac.rh_omega.convert_wp_to_screen(ur);
+                let ScreenCoords { x: xmin, y: ymin } = ll;
+                let ScreenCoords { x: xmax, y: ymax } = ur;
+                cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                cr.fill();
+                draw = false;
+            } else {
+                draw = true;
+            }
+        }
+        prev = curr;
+    }
+
+    ac.rh_omega.draw_dendtritic_snow_growth_zone(args);
 }
 
 fn draw_background_lines(args: DrawingArgs) {
