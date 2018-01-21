@@ -247,8 +247,6 @@ impl Labels for CloudContext {
 
         let mut labels = vec![];
 
-        let percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
-
         let screen_edges = self.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
@@ -257,7 +255,7 @@ impl Labels for CloudContext {
             press: screen_max_p, ..
         } = ac.cloud.convert_screen_to_pp(lower_left);
 
-        for pcnt in &percents {
+        for pcnt in &config::PERCENTS {
             let label = format!("{:.0}%", *pcnt);
 
             let extents = cr.text_extents(&label);
@@ -331,7 +329,7 @@ fn draw_cloud_profile(args: DrawingArgs) {
                 }
             });
 
-        let line_width = config.omega_line_width; // FIXME: use another line width?
+        let line_width = config.bar_graph_line_width;
         let mut rgba = config.cloud_rgba;
         rgba.3 *= 0.75;
 
@@ -402,23 +400,15 @@ fn draw_background_fill(args: DrawingArgs) {
         let rgba = config.background_band_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-        let mut percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0].iter();
+        let mut lines = config::CLOUD_PERCENT_PNTS.iter();
         let mut draw = true;
-        let mut prev = percents.next();
+        let mut prev = lines.next();
         while let Some(prev_val) = prev {
-            let curr = percents.next();
+            let curr = lines.next();
             if let Some(curr_val) = curr {
                 if draw {
-                    let ll = PPCoords {
-                        pcnt: *prev_val / 100.0,
-                        press: config::MAXP,
-                    };
-                    let ur = PPCoords {
-                        pcnt: *curr_val / 100.0,
-                        press: config::MINP,
-                    };
-                    let ll = ac.cloud.convert_pp_to_screen(ll);
-                    let ur = ac.cloud.convert_pp_to_screen(ur);
+                    let ll = ac.cloud.convert_xy_to_screen(prev_val[0]);
+                    let ur = ac.cloud.convert_xy_to_screen(curr_val[1]);
                     let ScreenCoords { x: xmin, y: ymin } = ll;
                     let ScreenCoords { x: xmax, y: ymax } = ur;
                     cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
@@ -450,11 +440,8 @@ fn draw_background_lines(args: DrawingArgs) {
     }
 
     // Draw percent values
-    // FIXME: Move these values to config as CONST
-    let percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
-    for percent in &percents{
-        let pnts = [PPCoords{pcnt: *percent / 100.0, press: config::MINP},PPCoords{pcnt:*percent / 100.0, press:config::MAXP}];
-        let pnts = pnts.iter().map(|pp_coord| ac.cloud.convert_pp_to_screen(*pp_coord));
+    for line in config::CLOUD_PERCENT_PNTS.iter() { 
+        let pnts = line.iter().map(|xy_coord| ac.cloud.convert_xy_to_screen(*xy_coord));
         plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
     }
 }

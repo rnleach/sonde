@@ -317,10 +317,6 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if !config.show_rh_profile {
-        return false;
-    }
-
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{DewPoint, Pressure, Temperature};
 
@@ -349,7 +345,7 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
                 }
             });
 
-        let line_width = config.omega_line_width;
+        let line_width = config.bar_graph_line_width;
         let mut rgba = config.rh_rgba;
         rgba.3 *= 0.75;
 
@@ -415,10 +411,6 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
 fn draw_omega_profile(args: DrawingArgs) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
-
-    if !config.show_omega_profile {
-        return false;
-    }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{Pressure, PressureVerticalVelocity};

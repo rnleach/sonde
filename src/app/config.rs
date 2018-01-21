@@ -1,7 +1,7 @@
 //! Keep configuration data in this module.
 
-use coords::{SDCoords, TPCoords, WPCoords, XYCoords};
-use gui::{HodoContext, RHOmegaContext, SkewTContext};
+use coords::{SDCoords, TPCoords, WPCoords, XYCoords, PPCoords};
+use gui::{HodoContext, RHOmegaContext, SkewTContext, CloudContext};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -66,14 +66,10 @@ pub struct Config {
     //
     /// Show the rh omega frame
     pub show_rh_omega_frame: bool, // FIXME: is this used? It should be.
-    /// Show the omega profile
-    pub show_omega_profile: bool, // FIXME: Remove this.
     /// Line width in pixels for omega
     pub omega_line_width: f64,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
-    /// Show RH
-    pub show_rh_profile: bool, // FIXME: Remove this
     /// RH Color
     pub rh_rgba: (f64, f64, f64, f64),
 
@@ -171,6 +167,11 @@ pub struct Config {
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: f64,
+
+    //
+    // Misc configuration.
+    //
+    pub bar_graph_line_width: f64,
 }
 
 impl Config {}
@@ -220,10 +221,8 @@ impl Default for Config {
             // RH-Omega profile
             //
             show_rh_omega_frame: true,
-            show_omega_profile: true,
             omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
-            show_rh_profile: true,
             rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
 
             //
@@ -285,6 +284,11 @@ impl Default for Config {
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
             min_hodo_pressure: 300.0,
+
+            //
+            // Misc configuration.
+            //
+            bar_graph_line_width: 2.0,
         }
     }
 }
@@ -529,6 +533,8 @@ pub const ISO_SPEED: [f64; 25] = [
     250.0,
 ];
 
+pub const PERCENTS: [f64; 11] = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
+
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
@@ -673,6 +679,31 @@ lazy_static! {
             v
         })
         .collect()
+    };
+
+    /// Compute points for background cloud coverage
+    pub static ref CLOUD_PERCENT_PNTS: Vec<[XYCoords; 2]> = {
+        PERCENTS
+            .into_iter()
+            .map(|p| {
+                [
+                PPCoords {
+                    pcnt: *p / 100.0,
+                    press: MINP,
+                },
+                PPCoords {
+                    pcnt: *p / 100.0,
+                    press: MAXP,
+                },
+            ]
+            })
+        .map(|pp| {
+            [
+                CloudContext::convert_pp_to_xy(pp[0]),
+                CloudContext::convert_pp_to_xy(pp[1])
+            ]
+        })
+            .collect()
     };
 }
 
