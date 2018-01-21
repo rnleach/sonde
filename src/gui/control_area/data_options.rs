@@ -48,7 +48,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         temperature_rgba
     );
     build_config_color_and_check!(data_box, "Wind", acp, show_wind_profile, wind_rgba);
-    build_config_color!( data_box, "Vertical Velocity (\u{03C9})", acp, omega_rgba);
+    build_config_color!(data_box, "Vertical Velocity (\u{03C9})", acp, omega_rgba);
     build_config_color!(data_box, "Relative Humidity", acp, rh_rgba);
     build_config_color!(data_box, "Cloud Coverage", acp, cloud_rgba);
 

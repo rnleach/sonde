@@ -231,7 +231,6 @@ impl AppContext {
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
         self.hodo.set_xy_envelope(hodo_xy_envelope);
 
-
         self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
 
         let mut cloud_envelope = rh_omega_xy_envelope;

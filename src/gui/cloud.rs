@@ -7,10 +7,10 @@ use gtk::DrawingArea;
 use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords, ScreenRect};
+use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, ScreenRect, XYCoords};
 use gui::{Drawable, Labels, SampleReadout, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{plot_curve_from_points, DrawingArgs, check_overlap_then_add};
+use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 
 pub struct CloudContext {
     generic: GenericContext,
@@ -250,9 +250,9 @@ impl Labels for CloudContext {
         let screen_edges = self.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
-        
         let PPCoords {
-            press: screen_max_p, ..
+            press: screen_max_p,
+            ..
         } = ac.cloud.convert_screen_to_pp(lower_left);
 
         for pcnt in &config::PERCENTS {
@@ -263,8 +263,10 @@ impl Labels for CloudContext {
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.cloud
-                .convert_pp_to_screen(PPCoords { pcnt: *pcnt/100.0, press: screen_max_p });
+            } = ac.cloud.convert_pp_to_screen(PPCoords {
+                pcnt: *pcnt / 100.0,
+                press: screen_max_p,
+            });
             xpos -= extents.width / 2.0; // Center
             ypos -= extents.height / 2.0; // Center
             ypos += extents.height; // Move up off bottom axis.
@@ -396,7 +398,7 @@ fn draw_cloud_profile(args: DrawingArgs) {
 fn draw_background_fill(args: DrawingArgs) {
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-    if config.show_background_bands{
+    if config.show_background_bands {
         let rgba = config.background_band_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
@@ -423,7 +425,6 @@ fn draw_background_fill(args: DrawingArgs) {
     }
 
     ac.cloud.draw_dendtritic_snow_growth_zone(args);
-
 }
 
 fn draw_background_lines(args: DrawingArgs) {
@@ -440,9 +441,9 @@ fn draw_background_lines(args: DrawingArgs) {
     }
 
     // Draw percent values
-    for line in config::CLOUD_PERCENT_PNTS.iter() { 
-        let pnts = line.iter().map(|xy_coord| ac.cloud.convert_xy_to_screen(*xy_coord));
+    for line in config::CLOUD_PERCENT_PNTS.iter() {
+        let pnts = line.iter()
+            .map(|xy_coord| ac.cloud.convert_xy_to_screen(*xy_coord));
         plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
     }
 }
-

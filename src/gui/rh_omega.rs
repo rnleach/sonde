@@ -154,12 +154,12 @@ impl Drawable for RHOmegaContext {
 
         da.set_can_focus(true);
 
-        da.add_events(
-            (EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK | EventMask::BUTTON_RELEASE_MASK
-                | EventMask::POINTER_MOTION_HINT_MASK | EventMask::POINTER_MOTION_MASK
-                | EventMask::LEAVE_NOTIFY_MASK | EventMask::KEY_PRESS_MASK)
-                .bits() as i32,
-        );
+        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
+            | EventMask::BUTTON_RELEASE_MASK
+            | EventMask::POINTER_MOTION_HINT_MASK
+            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
+            | EventMask::KEY_PRESS_MASK)
+            .bits() as i32);
     }
 
     fn mouse_motion_event(

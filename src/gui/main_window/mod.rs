@@ -152,10 +152,14 @@ fn get_preferred_window_size<T: WidgetExt>(widget: &T, ac: &AppContext) -> (i32,
 
     if let Some(screen) = widget.get_screen() {
         let mut width = screen.get_width() * 2 / 3;
-        if config.window_width > width { width = config.window_width; }
+        if config.window_width > width {
+            width = config.window_width;
+        }
 
         let mut height = screen.get_height() * 2 / 3;
-        if config.window_height > height { height = config.window_height;}
+        if config.window_height > height {
+            height = config.window_height;
+        }
         (width, height)
     } else {
         (config.window_width, config.window_height)

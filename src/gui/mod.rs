@@ -490,8 +490,10 @@ trait SampleReadout: Drawable {
     fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
 
     fn draw_active_sample(&self, args: DrawingArgs) {
-        if !self.has_data() { return; }
-        
+        if !self.has_data() {
+            return;
+        }
+
         let (ac, cr) = (args.ac, args.cr);
 
         let vals = if let Some(vals) = ac.get_sample() {
@@ -671,11 +673,9 @@ trait Labels: Drawable {
     fn build_legend_strings(ac: &AppContext) -> Vec<String>;
 
     fn draw_background_labels(&self, args: DrawingArgs) {
-
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_labels {
-
             let labels = self.collect_labels(args);
             let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
 
@@ -704,7 +704,9 @@ trait Labels: Drawable {
     fn draw_legend(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        if !ac.plottable() {return;}
+        if !ac.plottable() {
+            return;
+        }
 
         let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
 
