@@ -1,15 +1,14 @@
 use std::rc::Rc;
 
-use cairo::{FontFace, FontSlant, FontWeight};
 use gdk::EventMask;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContext, AppContextPointer};
 use coords::{Rect, SDCoords, ScreenCoords, ScreenRect, XYCoords};
-use gui::{Drawable, DrawingArgs, LegendBox, MasterDrawable};
+use gui::{Drawable, DrawingArgs, Labels, MasterDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContextExt};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points, set_font_size};
+use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
 pub struct HodoContext {
     generic: GenericContext,
@@ -88,7 +87,27 @@ impl Drawable for HodoContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
-        draw_background(args);
+        let config = args.ac.config.borrow();
+
+        if config.show_background_bands {
+            draw_background_fill(args);
+        }
+
+        if config.show_iso_speed {
+            draw_background_lines(args);
+        }
+
+        if config.show_labels || config.show_legend {
+            self.prepare_to_make_text(args);
+        }
+
+        if config.show_labels {
+            self.draw_background_labels(args);
+        }
+
+        if config.show_legend {
+            self.draw_legend(args);
+        }
     }
 
     fn draw_data(&self, args: DrawingArgs) {
@@ -102,25 +121,58 @@ impl Drawable for HodoContext {
 
 impl MasterDrawable for HodoContext {}
 
-impl LegendBox for HodoContext {
+impl Labels for HodoContext {
+    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let mut labels = vec![];
+
+        let screen_edges = self.calculate_plot_edges(cr, ac);
+
+        if config.show_iso_speed {
+            for &s in &config::ISO_SPEED {
+                for direction in &[240.0] {
+                    let label = format!("{:.0}", s);
+
+                    let extents = cr.text_extents(&label);
+
+                    let ScreenCoords {
+                        x: mut screen_x,
+                        y: mut screen_y,
+                    } = self.convert_sd_to_screen(SDCoords {
+                        speed: s,
+                        dir: *direction,
+                    });
+                    screen_y -= extents.height / 2.0;
+                    screen_x -= extents.width / 2.0;
+
+                    let label_lower_left = ScreenCoords {
+                        x: screen_x,
+                        y: screen_y,
+                    };
+                    let label_upper_right = ScreenCoords {
+                        x: screen_x + extents.width,
+                        y: screen_y + extents.height,
+                    };
+
+                    let pair = (
+                        label,
+                        ScreenRect {
+                            lower_left: label_lower_left,
+                            upper_right: label_upper_right,
+                        },
+                    );
+
+                    check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+                }
+            }
+        }
+
+        labels
+    }
+
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["Hodograph".to_owned()]
-    }
-}
-
-fn draw_background(args: DrawingArgs) {
-    let config = args.ac.config.borrow();
-
-    if config.show_background_bands {
-        draw_background_fill(args);
-    }
-
-    if config.show_iso_speed {
-        draw_background_lines(args);
-    }
-
-    if config.show_labels {
-        draw_background_labels(args);
     }
 }
 
@@ -203,89 +255,6 @@ fn draw_background_lines(args: DrawingArgs) {
             pnts.iter().cloned(),
         );
     }
-}
-
-fn draw_background_labels(args: DrawingArgs) {
-    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-    let font_face = FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
-    cr.set_font_face(font_face);
-
-    set_font_size(&ac.hodo, config.label_font_size, cr);
-
-    let labels = collect_labels(args);
-
-    let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
-
-    for (label, rect) in labels {
-        let ScreenRect { lower_left, .. } = rect;
-
-        let mut rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.rectangle(
-            lower_left.x - padding,
-            lower_left.y - padding,
-            rect.width() + 2.0 * padding,
-            rect.height() + 2.0 * padding,
-        );
-        cr.fill();
-
-        // Setup label colors
-        rgba = config.label_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.move_to(lower_left.x, lower_left.y);
-        cr.show_text(&label);
-    }
-}
-
-fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let mut labels = vec![];
-
-    let screen_edges = ac.hodo.calculate_plot_edges(cr, ac);
-
-    if config.show_iso_speed {
-        for &s in &config::ISO_SPEED {
-            for direction in &[240.0] {
-                let label = format!("{:.0}", s);
-
-                let extents = cr.text_extents(&label);
-
-                let ScreenCoords {
-                    x: mut screen_x,
-                    y: mut screen_y,
-                } = ac.hodo.convert_sd_to_screen(SDCoords {
-                    speed: s,
-                    dir: *direction,
-                });
-                screen_y -= extents.height / 2.0;
-                screen_x -= extents.width / 2.0;
-
-                let label_lower_left = ScreenCoords {
-                    x: screen_x,
-                    y: screen_y,
-                };
-                let label_upper_right = ScreenCoords {
-                    x: screen_x + extents.width,
-                    y: screen_y + extents.height,
-                };
-
-                let pair = (
-                    label,
-                    ScreenRect {
-                        lower_left: label_lower_left,
-                        upper_right: label_upper_right,
-                    },
-                );
-
-                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
-            }
-        }
-    }
-
-    labels
 }
 
 fn draw_data(args: DrawingArgs) {

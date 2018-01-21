@@ -10,7 +10,7 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, LegendBox, MasterDrawable, PlotContext, PlotContextExt,
+use gui::{Drawable, DrawingArgs, Labels, MasterDrawable, PlotContext, PlotContextExt,
           SampleReadout};
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points};
@@ -204,9 +204,22 @@ impl Drawable for SkewTContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
+        let config = args.ac.config.borrow();
+
         draw_background_fill(args);
         draw_background_lines(args);
-        draw_background_labels(args);
+
+        if config.show_labels || config.show_legend {
+            self.prepare_to_make_text(args);
+        }
+
+        if config.show_labels {
+            self.draw_background_labels(args);
+        }
+
+        if config.show_legend {
+            self.draw_legend(args);
+        }
     }
 
     fn draw_data(&self, args: DrawingArgs) {
@@ -337,7 +350,90 @@ impl SampleReadout for SkewTContext {
     }
 }
 
-impl LegendBox for SkewTContext {
+impl Labels for SkewTContext {
+    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let mut labels = vec![];
+
+        let screen_edges = self.calculate_plot_edges(cr, ac);
+        let ScreenRect { lower_left, .. } = screen_edges;
+
+        if config.show_isobars {
+            for &p in &config::ISOBARS {
+                let label = format!("{}", p);
+
+                let extents = cr.text_extents(&label);
+
+                let ScreenCoords { y: screen_y, .. } = self.convert_tp_to_screen(TPCoords {
+                    temperature: 0.0,
+                    pressure: p,
+                });
+                let screen_y = screen_y - extents.height / 2.0;
+
+                let label_lower_left = ScreenCoords {
+                    x: lower_left.x,
+                    y: screen_y,
+                };
+                let label_upper_right = ScreenCoords {
+                    x: lower_left.x + extents.width,
+                    y: screen_y + extents.height,
+                };
+
+                let pair = (
+                    label,
+                    ScreenRect {
+                        lower_left: label_lower_left,
+                        upper_right: label_upper_right,
+                    },
+                );
+
+                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+            }
+        }
+
+        if config.show_isotherms {
+            let TPCoords {
+                pressure: screen_max_p,
+                ..
+            } = self.convert_screen_to_tp(lower_left);
+            for &t in &config::ISOTHERMS {
+                let label = format!("{}", t);
+
+                let extents = cr.text_extents(&label);
+
+                let ScreenCoords {
+                    x: mut xpos,
+                    y: mut ypos,
+                } = self.convert_tp_to_screen(TPCoords {
+                    temperature: t,
+                    pressure: screen_max_p,
+                });
+                xpos -= extents.width / 2.0; // Center
+                ypos -= extents.height / 2.0; // Center
+                ypos += extents.height; // Move up off bottom axis.
+                xpos += extents.height; // Move right for 45 degree angle from move up
+
+                let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+                let label_upper_right = ScreenCoords {
+                    x: xpos + extents.width,
+                    y: ypos + extents.height,
+                };
+
+                let pair = (
+                    label,
+                    ScreenRect {
+                        lower_left: label_lower_left,
+                        upper_right: label_upper_right,
+                    },
+                );
+                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+            }
+        }
+
+        labels
+    }
+
     fn build_legend_strings(ac: &AppContext) -> Vec<String> {
         use chrono::Weekday::*;
 
@@ -571,132 +667,6 @@ fn draw_background_lines(args: DrawingArgs) {
             config.freezing_line_color,
             pnts,
         );
-    }
-}
-
-// Label the pressure, temperatures, etc lines.
-fn draw_background_labels(args: DrawingArgs) {
-    let (ac, config) = (args.ac, args.ac.config.borrow());
-    ac.skew_t.prepare_to_make_text(args);
-
-    if config.show_labels {
-        let labels = collect_labels(args);
-        draw_labels(args, labels);
-    }
-
-    if ac.plottable() && config.show_legend {
-        ac.skew_t.draw_legend(args);
-    }
-}
-
-fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let mut labels = vec![];
-
-    let screen_edges = ac.skew_t.calculate_plot_edges(cr, ac);
-    let ScreenRect { lower_left, .. } = screen_edges;
-
-    if config.show_isobars {
-        for &p in &config::ISOBARS {
-            let label = format!("{}", p);
-
-            let extents = cr.text_extents(&label);
-
-            let ScreenCoords { y: screen_y, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-                temperature: 0.0,
-                pressure: p,
-            });
-            let screen_y = screen_y - extents.height / 2.0;
-
-            let label_lower_left = ScreenCoords {
-                x: lower_left.x,
-                y: screen_y,
-            };
-            let label_upper_right = ScreenCoords {
-                x: lower_left.x + extents.width,
-                y: screen_y + extents.height,
-            };
-
-            let pair = (
-                label,
-                ScreenRect {
-                    lower_left: label_lower_left,
-                    upper_right: label_upper_right,
-                },
-            );
-
-            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
-        }
-    }
-
-    if config.show_isotherms {
-        let TPCoords {
-            pressure: screen_max_p,
-            ..
-        } = ac.skew_t.convert_screen_to_tp(lower_left);
-        for &t in &config::ISOTHERMS {
-            let label = format!("{}", t);
-
-            let extents = cr.text_extents(&label);
-
-            let ScreenCoords {
-                x: mut xpos,
-                y: mut ypos,
-            } = ac.skew_t.convert_tp_to_screen(TPCoords {
-                temperature: t,
-                pressure: screen_max_p,
-            });
-            xpos -= extents.width / 2.0; // Center
-            ypos -= extents.height / 2.0; // Center
-            ypos += extents.height; // Move up off bottom axis.
-            xpos += extents.height; // Move right for 45 degree angle from move up
-
-            let label_lower_left = ScreenCoords { x: xpos, y: ypos };
-            let label_upper_right = ScreenCoords {
-                x: xpos + extents.width,
-                y: ypos + extents.height,
-            };
-
-            let pair = (
-                label,
-                ScreenRect {
-                    lower_left: label_lower_left,
-                    upper_right: label_upper_right,
-                },
-            );
-            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
-        }
-    }
-
-    labels
-}
-
-fn draw_labels(args: DrawingArgs, labels: Vec<(String, ScreenRect)>) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
-
-    for (label, rect) in labels {
-        let ScreenRect { lower_left, .. } = rect;
-
-        let mut rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.rectangle(
-            lower_left.x - padding,
-            lower_left.y - padding,
-            rect.width() + 2.0 * padding,
-            rect.height() + 2.0 * padding,
-        );
-        cr.fill();
-
-        // Setup label colors
-        rgba = config.label_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.move_to(lower_left.x, lower_left.y);
-        cr.show_text(&label);
     }
 }
 

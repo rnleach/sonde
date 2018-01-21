@@ -10,7 +10,7 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, LegendBox, SampleReadout, SlaveProfileDrawable};
+use gui::{Drawable, DrawingArgs, Labels, SampleReadout, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
@@ -189,7 +189,8 @@ impl Drawable for RHOmegaContext {
     fn draw_background(&self, args: DrawingArgs) {
         draw_background_fill(args);
         draw_background_lines(args);
-        draw_labels(args);
+        self.prepare_to_make_text(args);
+        self.draw_background_labels(args);
         self.draw_legend(args);
     }
 
@@ -248,7 +249,63 @@ impl SampleReadout for RHOmegaContext {
     }
 }
 
-impl LegendBox for RHOmegaContext {
+impl Labels for RHOmegaContext {
+    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let mut labels = vec![];
+
+        let screen_edges = ac.rh_omega.calculate_plot_edges(cr, ac);
+        let ScreenRect { lower_left, .. } = screen_edges;
+
+        if config.show_iso_omega_lines {
+            let WPCoords {
+                p: screen_max_p, ..
+            } = ac.rh_omega.convert_screen_to_wp(lower_left);
+
+            for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
+                let label = format!("{:.0}", w * 10.0);
+
+                let extents = cr.text_extents(&label);
+
+                let ScreenCoords {
+                    x: mut xpos,
+                    y: mut ypos,
+                } = ac.rh_omega
+                    .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
+                xpos -= extents.width / 2.0; // Center
+                ypos -= extents.height / 2.0; // Center
+                ypos += extents.height; // Move up off bottom axis.
+
+                let ScreenRect {
+                    lower_left: ScreenCoords { x: xmin, .. },
+                    upper_right: ScreenCoords { x: xmax, .. },
+                } = screen_edges;
+
+                if xpos < xmin || xpos + extents.width > xmax {
+                    continue;
+                }
+
+                let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+                let label_upper_right = ScreenCoords {
+                    x: xpos + extents.width,
+                    y: ypos + extents.height,
+                };
+
+                let pair = (
+                    label,
+                    ScreenRect {
+                        lower_left: label_lower_left,
+                        upper_right: label_upper_right,
+                    },
+                );
+                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+            }
+        }
+
+        labels
+    }
+
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["RH & PVV".to_owned()]
     }
@@ -398,36 +455,38 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
 fn draw_background_fill(args: DrawingArgs) {
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-    let rgba = config.background_band_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    if config.show_background_bands {
+        let rgba = config.background_band_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-    let mut omegas = config::ISO_OMEGA.iter();
-    let mut draw = true;
-    let mut prev = omegas.next();
-    while let Some(prev_val) = prev {
-        let curr = omegas.next();
-        if let Some(curr_val) = curr {
-            if draw {
-                let ll = WPCoords {
-                    w: *prev_val,
-                    p: config::MAXP,
-                };
-                let ur = WPCoords {
-                    w: *curr_val,
-                    p: config::MINP,
-                };
-                let ll = ac.rh_omega.convert_wp_to_screen(ll);
-                let ur = ac.rh_omega.convert_wp_to_screen(ur);
-                let ScreenCoords { x: xmin, y: ymin } = ll;
-                let ScreenCoords { x: xmax, y: ymax } = ur;
-                cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                cr.fill();
-                draw = false;
-            } else {
-                draw = true;
+        let mut omegas = config::ISO_OMEGA.iter();
+        let mut draw = true;
+        let mut prev = omegas.next();
+        while let Some(prev_val) = prev {
+            let curr = omegas.next();
+            if let Some(curr_val) = curr {
+                if draw {
+                    let ll = WPCoords {
+                        w: *prev_val,
+                        p: config::MAXP,
+                    };
+                    let ur = WPCoords {
+                        w: *curr_val,
+                        p: config::MINP,
+                    };
+                    let ll = ac.rh_omega.convert_wp_to_screen(ll);
+                    let ur = ac.rh_omega.convert_wp_to_screen(ur);
+                    let ScreenCoords { x: xmin, y: ymin } = ll;
+                    let ScreenCoords { x: xmax, y: ymax } = ur;
+                    cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                    cr.fill();
+                    draw = false;
+                } else {
+                    draw = true;
+                }
             }
+            prev = curr;
         }
-        prev = curr;
     }
 
     ac.rh_omega.draw_dendtritic_snow_growth_zone(args);
@@ -477,95 +536,4 @@ fn draw_background_lines(args: DrawingArgs) {
                 .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(*wp_coords)),
         );
     }
-}
-
-fn draw_labels(args: DrawingArgs) {
-    use coords::Rect;
-
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    if config.show_labels {
-        ac.rh_omega.prepare_to_make_text(args);
-
-        let labels = collect_labels(args);
-        let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
-
-        for (label, rect) in labels {
-            let ScreenRect { lower_left, .. } = rect;
-
-            let mut rgba = config.background_rgba;
-            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            cr.rectangle(
-                lower_left.x - padding,
-                lower_left.y - padding,
-                rect.width() + 2.0 * padding,
-                rect.height() + 2.0 * padding,
-            );
-            cr.fill();
-
-            // Setup label colors
-            rgba = config.label_rgba;
-            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            cr.move_to(lower_left.x, lower_left.y);
-            cr.show_text(&label);
-        }
-    }
-}
-
-fn collect_labels(args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    let mut labels = vec![];
-
-    let screen_edges = ac.rh_omega.calculate_plot_edges(cr, ac);
-    let ScreenRect { lower_left, .. } = screen_edges;
-
-    if config.show_iso_omega_lines {
-        let WPCoords {
-            p: screen_max_p, ..
-        } = ac.rh_omega.convert_screen_to_wp(lower_left);
-
-        for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
-            let label = format!("{:.0}", w * 10.0);
-
-            let extents = cr.text_extents(&label);
-
-            let ScreenCoords {
-                x: mut xpos,
-                y: mut ypos,
-            } = ac.rh_omega
-                .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
-            xpos -= extents.width / 2.0; // Center
-            ypos -= extents.height / 2.0; // Center
-            ypos += extents.height; // Move up off bottom axis.
-
-            let ScreenRect {
-                lower_left: ScreenCoords { x: xmin, .. },
-                upper_right: ScreenCoords { x: xmax, .. },
-            } = screen_edges;
-
-            if xpos < xmin || xpos + extents.width > xmax {
-                continue;
-            }
-
-            let label_lower_left = ScreenCoords { x: xpos, y: ypos };
-            let label_upper_right = ScreenCoords {
-                x: xpos + extents.width,
-                y: ypos + extents.height,
-            };
-
-            let pair = (
-                label,
-                ScreenRect {
-                    lower_left: label_lower_left,
-                    upper_right: label_upper_right,
-                },
-            );
-            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
-        }
-    }
-
-    labels
 }

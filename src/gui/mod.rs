@@ -666,11 +666,45 @@ trait SampleReadout: Drawable {
     }
 }
 
-trait LegendBox: Drawable {
+trait Labels: Drawable {
+    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)>;
     fn build_legend_strings(ac: &AppContext) -> Vec<String>;
+
+    fn draw_background_labels(&self, args: DrawingArgs) {
+
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        if config.show_labels {
+
+            let labels = self.collect_labels(args);
+            let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
+
+            for (label, rect) in labels {
+                let ScreenRect { lower_left, .. } = rect;
+
+                let mut rgba = config.background_rgba;
+                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                cr.rectangle(
+                    lower_left.x - padding,
+                    lower_left.y - padding,
+                    rect.width() + 2.0 * padding,
+                    rect.height() + 2.0 * padding,
+                );
+                cr.fill();
+
+                // Setup label colors
+                rgba = config.label_rgba;
+                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                cr.move_to(lower_left.x, lower_left.y);
+                cr.show_text(&label);
+            }
+        }
+    }
 
     fn draw_legend(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        if !ac.plottable() {return;}
 
         let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
 

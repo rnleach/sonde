@@ -7,10 +7,10 @@ use gtk::DrawingArea;
 use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords};
-use gui::{Drawable, LegendBox, SampleReadout, SlaveProfileDrawable};
+use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, XYCoords, ScreenRect};
+use gui::{Drawable, Labels, SampleReadout, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{plot_curve_from_points, DrawingArgs};
+use gui::utility::{plot_curve_from_points, DrawingArgs, check_overlap_then_add};
 
 pub struct CloudContext {
     generic: GenericContext,
@@ -47,6 +47,11 @@ impl CloudContext {
     pub fn convert_pp_to_screen(&self, coords: PPCoords) -> ScreenCoords {
         let xy = CloudContext::convert_pp_to_xy(coords);
         self.convert_xy_to_screen(xy)
+    }
+
+    pub fn convert_screen_to_pp(&self, coords: ScreenCoords) -> PPCoords {
+        let xy = self.convert_screen_to_xy(coords);
+        CloudContext::convert_xy_to_pp(xy)
     }
 
     pub fn convert_device_to_pp(&self, coords: DeviceCoords) -> PPCoords {
@@ -177,10 +182,22 @@ impl Drawable for CloudContext {
     }
 
     fn draw_background(&self, args: DrawingArgs) {
+        let config = args.ac.config.borrow();
+
         draw_background_fill(args);
         draw_background_lines(args);
-        self.prepare_to_make_text(args);
-        self.draw_legend(args);
+
+        if config.show_labels || config.show_legend {
+            self.prepare_to_make_text(args);
+        }
+
+        if config.show_labels {
+            self.draw_background_labels(args);
+        }
+
+        if config.show_legend {
+            self.draw_legend(args);
+        }
     }
 
     fn draw_data(&self, args: DrawingArgs) {
@@ -220,9 +237,66 @@ impl SampleReadout for CloudContext {
     }
 }
 
-impl LegendBox for CloudContext {
+impl Labels for CloudContext {
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["Cloud Cover".to_owned()]
+    }
+
+    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+        let (ac, cr) = (args.ac, args.cr);
+
+        let mut labels = vec![];
+
+        let percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
+
+        let screen_edges = self.calculate_plot_edges(cr, ac);
+        let ScreenRect { lower_left, .. } = screen_edges;
+
+        
+        let PPCoords {
+            press: screen_max_p, ..
+        } = ac.cloud.convert_screen_to_pp(lower_left);
+
+        for pcnt in &percents {
+            let label = format!("{:.0}%", *pcnt);
+
+            let extents = cr.text_extents(&label);
+
+            let ScreenCoords {
+                x: mut xpos,
+                y: mut ypos,
+            } = ac.cloud
+                .convert_pp_to_screen(PPCoords { pcnt: *pcnt/100.0, press: screen_max_p });
+            xpos -= extents.width / 2.0; // Center
+            ypos -= extents.height / 2.0; // Center
+            ypos += extents.height; // Move up off bottom axis.
+
+            let ScreenRect {
+                lower_left: ScreenCoords { x: xmin, .. },
+                upper_right: ScreenCoords { x: xmax, .. },
+            } = screen_edges;
+
+            if xpos < xmin || xpos + extents.width > xmax {
+                continue;
+            }
+
+            let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+            let label_upper_right = ScreenCoords {
+                x: xpos + extents.width,
+                y: ypos + extents.height,
+            };
+
+            let pair = (
+                label,
+                ScreenRect {
+                    lower_left: label_lower_left,
+                    upper_right: label_upper_right,
+                },
+            );
+            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+        }
+
+        labels
     }
 }
 
@@ -324,36 +398,38 @@ fn draw_cloud_profile(args: DrawingArgs) {
 fn draw_background_fill(args: DrawingArgs) {
     let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-    let rgba = config.background_band_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+    if config.show_background_bands{
+        let rgba = config.background_band_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-    let mut percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0].iter();
-    let mut draw = true;
-    let mut prev = percents.next();
-    while let Some(prev_val) = prev {
-        let curr = percents.next();
-        if let Some(curr_val) = curr {
-            if draw {
-                let ll = PPCoords {
-                    pcnt: *prev_val / 100.0,
-                    press: config::MAXP,
-                };
-                let ur = PPCoords {
-                    pcnt: *curr_val / 100.0,
-                    press: config::MINP,
-                };
-                let ll = ac.cloud.convert_pp_to_screen(ll);
-                let ur = ac.cloud.convert_pp_to_screen(ur);
-                let ScreenCoords { x: xmin, y: ymin } = ll;
-                let ScreenCoords { x: xmax, y: ymax } = ur;
-                cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                cr.fill();
-                draw = false;
-            } else {
-                draw = true;
+        let mut percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0].iter();
+        let mut draw = true;
+        let mut prev = percents.next();
+        while let Some(prev_val) = prev {
+            let curr = percents.next();
+            if let Some(curr_val) = curr {
+                if draw {
+                    let ll = PPCoords {
+                        pcnt: *prev_val / 100.0,
+                        press: config::MAXP,
+                    };
+                    let ur = PPCoords {
+                        pcnt: *curr_val / 100.0,
+                        press: config::MINP,
+                    };
+                    let ll = ac.cloud.convert_pp_to_screen(ll);
+                    let ur = ac.cloud.convert_pp_to_screen(ur);
+                    let ScreenCoords { x: xmin, y: ymin } = ll;
+                    let ScreenCoords { x: xmax, y: ymax } = ur;
+                    cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                    cr.fill();
+                    draw = false;
+                } else {
+                    draw = true;
+                }
             }
+            prev = curr;
         }
-        prev = curr;
     }
 
     ac.cloud.draw_dendtritic_snow_growth_zone(args);
@@ -374,6 +450,7 @@ fn draw_background_lines(args: DrawingArgs) {
     }
 
     // Draw percent values
+    // FIXME: Move these values to config as CONST
     let percents = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0,80.0,90.0,100.0];
     for percent in &percents{
         let pnts = [PPCoords{pcnt: *percent / 100.0, press: config::MINP},PPCoords{pcnt:*percent / 100.0, press:config::MAXP}];
@@ -381,3 +458,4 @@ fn draw_background_lines(args: DrawingArgs) {
         plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
     }
 }
+
