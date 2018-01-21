@@ -394,6 +394,54 @@ trait Drawable: PlotContext + PlotContextExt {
 
         set_font_size(self, config.label_font_size, cr);
     }
+
+    fn draw_no_data(&self, args: DrawingArgs) {
+        const MESSAGE: &str = "No Data";
+
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        self.prepare_to_make_text(args);
+        cr.save();
+
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = self.bounding_box_in_screen_coords();
+
+        // Scale the font to fill the view.
+        let width = xmax - xmin;
+        let text_width = cr.text_extents(MESSAGE).width;
+        let ratio = 0.75 * width / text_width;
+        set_font_size(self, config.label_font_size * ratio, cr);
+
+        // Calculate the starting position
+        let text_extents = cr.text_extents(MESSAGE);
+        let height = ymax - ymin;
+        let start_y = ymin + (height - text_extents.height) / 2.0;
+        let start_x = xmin + (width - text_extents.width) / 2.0;
+
+        // Make a rectangle behind it.
+        let font_extents = cr.font_extents();
+        let mut rgb = config.background_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.rectangle(
+            start_x - 0.05 * text_extents.width,
+            start_y - font_extents.descent,
+            1.1 * text_extents.width,
+            font_extents.height,
+        );
+        cr.fill_preserve();
+        rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke();
+
+        // Draw the text.
+        cr.move_to(start_x, start_y);
+        cr.show_text(MESSAGE);
+
+        cr.restore();
+    }
 }
 
 trait MasterDrawable: Drawable {

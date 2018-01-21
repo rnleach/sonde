@@ -393,6 +393,10 @@ fn draw_cloud_profile(args: DrawingArgs) {
     } else {
         ac.cloud.set_has_data(false);
     }
+
+    if !ac.cloud.has_data() {
+        ac.cloud.draw_no_data(args);
+    }
 }
 
 fn draw_background_fill(args: DrawingArgs) {

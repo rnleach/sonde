@@ -199,6 +199,9 @@ impl Drawable for RHOmegaContext {
         let omega_drawn = draw_omega_profile(args);
         let has_data = rh_drawn || omega_drawn;
         self.set_has_data(has_data);
+        if !has_data {
+            self.draw_no_data(args);
+        }
     }
 
     fn draw_overlays(&self, args: DrawingArgs) {
