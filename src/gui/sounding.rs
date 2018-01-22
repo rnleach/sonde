@@ -10,8 +10,7 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, Labels, MasterDrawable, PlotContext, PlotContextExt,
-          SampleReadout};
+use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points};
 
@@ -63,6 +62,79 @@ impl SkewTContext {
         let xy = self.convert_device_to_xy(coords);
         Self::convert_xy_to_tp(xy)
     }
+
+    /***********************************************************************************************
+     * Support methods for drawing the background..
+     **********************************************************************************************/
+    fn draw_temperature_banding(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let rgba = config.background_band_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        let mut start_line = -160i32;
+        while start_line < 100 {
+            let t1 = f64::from(start_line);
+            let t2 = t1 + 10.0;
+
+            self.draw_temperature_band(t1, t2, args);
+
+            start_line += 20;
+        }
+    }
+
+    fn draw_hail_growth_zone(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let rgba = config.hail_zone_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        self.draw_temperature_band(-30.0, -10.0, args);
+    }
+
+    fn draw_dendtritic_growth_zone(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let rgba = config.dendritic_zone_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        self.draw_temperature_band(-18.0, -12.0, args);
+    }
+
+    fn draw_temperature_band(&self, cold_t: f64, warm_t: f64, args: DrawingArgs) {
+        let cr = args.cr;
+
+        // Assume color has already been set up for us.
+
+        const MAXP: f64 = config::MAXP;
+        const MINP: f64 = config::MINP;
+
+        let mut coords = [
+            (warm_t, MAXP),
+            (warm_t, MINP),
+            (cold_t, MINP),
+            (cold_t, MAXP),
+        ];
+
+        // Convert points to screen coords
+        for coord in &mut coords {
+            let screen_coords = self.convert_tp_to_screen(TPCoords {
+                temperature: coord.0,
+                pressure: coord.1,
+            });
+            coord.0 = screen_coords.x;
+            coord.1 = screen_coords.y;
+        }
+
+        let mut coord_iter = coords.iter();
+        for coord in coord_iter.by_ref().take(1) {
+            cr.move_to(coord.0, coord.1);
+        }
+        for coord in coord_iter {
+            cr.line_to(coord.0, coord.1);
+        }
+
+        cr.close_path();
+        cr.fill();
+    }
 }
 
 impl HasGenericContext for SkewTContext {
@@ -74,6 +146,9 @@ impl HasGenericContext for SkewTContext {
 impl PlotContextExt for SkewTContext {}
 
 impl Drawable for SkewTContext {
+    /***********************************************************************************************
+     * Initialization
+     **********************************************************************************************/
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
         da.set_hexpand(true);
         da.set_vexpand(true);
@@ -115,242 +190,119 @@ impl Drawable for SkewTContext {
             .bits() as i32);
     }
 
-    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-        const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
-
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
-
-        let old_zoom = self.get_zoom_factor();
-        let mut new_zoom = old_zoom;
-
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
-
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        self.set_zoom_factor(new_zoom);
-
-        let mut translate = self.get_translate();
-        translate = XYCoords {
-            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
-            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
-        };
-        self.set_translate(translate);
-        self.bound_view();
-        ac.mark_background_dirty();
-
-        ac.update_all_gui();
-
-        Inhibit(true)
-    }
-
-    fn mouse_motion_event(
-        &self,
-        da: &DrawingArea,
-        event: &EventMotion,
-        ac: &AppContextPointer,
-    ) -> Inhibit {
-        da.grab_focus();
-
-        if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
-                let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
-                self.set_last_cursor_position(Some(new_position));
-
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
-                let mut translate = self.get_translate();
-                translate.x -= delta.0;
-                translate.y -= delta.1;
-                self.set_translate(translate);
-                self.bound_view();
-                ac.mark_background_dirty();
-                ac.update_all_gui();
-
-                ac.set_sample(None);
-            }
-        } else if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
-
-            self.set_last_cursor_position(Some(position));
-            let tp_position = self.convert_device_to_tp(position);
-            let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
-                tp_position.pressure,
-            );
-            ac.set_sample(Some(sample));
-            ac.mark_overlay_dirty();
-            ac.update_all_gui();
-        }
-        Inhibit(false)
-    }
-
-    fn draw_background(&self, args: DrawingArgs) {
+    /***********************************************************************************************
+     * Background Drawing.
+     **********************************************************************************************/
+    fn draw_background_fill(&self, args: DrawingArgs) {
         let config = args.ac.config.borrow();
 
-        draw_background_fill(args);
-        draw_background_lines(args);
-
-        if config.show_labels || config.show_legend {
-            self.prepare_to_make_text(args);
+        if config.show_background_bands {
+            self.draw_temperature_banding(args);
         }
 
-        if config.show_labels {
-            self.draw_background_labels(args);
+        if config.show_hail_zone {
+            self.draw_hail_growth_zone(args);
         }
 
-        if config.show_legend {
-            self.draw_legend(args);
+        if config.show_dendritic_zone {
+            self.draw_dendtritic_growth_zone(args);
         }
     }
 
-    fn draw_data(&self, args: DrawingArgs) {
-        draw_temperature_profiles(args);
-        draw_wind_profile(args);
-    }
+    fn draw_background_lines(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
-            self.draw_active_sample(args);
+        // Draws background lines from the bottom up.
+
+        // Draw isentrops
+        if config.show_isentrops {
+            for pnts in config::ISENTROP_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.isentrop_rgba,
+                    pnts,
+                );
+            }
+        }
+
+        // Draw theta-e lines
+        if config.show_iso_theta_e {
+            for pnts in config::ISO_THETA_E_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.iso_theta_e_rgba,
+                    pnts,
+                );
+            }
+        }
+
+        // Draw mixing ratio lines
+        if config.show_iso_mixing_ratio {
+            for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_dashed_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.iso_mixing_ratio_rgba,
+                    pnts,
+                );
+            }
+        }
+
+        // Draw isotherms
+        if config.show_isotherms {
+            for pnts in config::ISOTHERM_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|tp_coords| self.convert_xy_to_screen(*tp_coords));
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.isotherm_rgba,
+                    pnts,
+                );
+            }
+        }
+
+        // Draw isobars
+        if config.show_isobars {
+            for pnts in config::ISOBAR_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+
+                plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
+            }
+        }
+
+        // Draw the freezing line
+        if config.show_freezing_line {
+            let pnts = &[
+                TPCoords {
+                    temperature: 0.0,
+                    pressure: config::MAXP,
+                },
+                TPCoords {
+                    temperature: 0.0,
+                    pressure: config::MINP,
+                },
+            ];
+            let pnts = pnts.iter()
+                .map(|tp_coords| self.convert_tp_to_screen(*tp_coords));
+            plot_curve_from_points(
+                cr,
+                config.freezing_line_width,
+                config.freezing_line_color,
+                pnts,
+            );
         }
     }
-}
 
-impl MasterDrawable for SkewTContext {}
-
-impl SampleReadout for SkewTContext {
-    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
-        use sounding_analysis::met_formulas::rh;
-
-        let mut results = vec![];
-
-        let t_c = vals.temperature;
-        let dp_c = vals.dew_point;
-        let pres = vals.pressure;
-        let dir = vals.direction;
-        let spd = vals.speed;
-        let hgt_asl = vals.height;
-        let omega = vals.omega;
-        let elevation = snd.get_location().2;
-
-        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            let mut line = String::with_capacity(128);
-            if let Some(t_c) = t_c {
-                line.push_str(&format!("{:.0}C", t_c));
-            }
-            if let Some(dp_c) = dp_c {
-                if t_c.is_some() {
-                    line.push('/');
-                }
-                line.push_str(&format!("{:.0}C", dp_c));
-            }
-            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
-            }
-            if let Some(omega) = omega {
-                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
-            }
-            results.push(line);
-        }
-
-        if pres.is_some() || dir.is_some() || spd.is_some() {
-            let mut line = String::with_capacity(128);
-            if let Some(pres) = pres {
-                line.push_str(&format!("{:.0}hPa", pres));
-            }
-            if let Some(dir) = dir {
-                if pres.is_some() {
-                    line.push(' ');
-                }
-                let dir = (dir / 10.0).round() * 10.0;
-                line.push_str(&format!("{:03.0}", dir));
-            }
-            if let Some(spd) = spd {
-                if pres.is_some() && dir.is_none() {
-                    line.push(' ');
-                }
-                line.push_str(&format!("{:02.0}KT", spd));
-            }
-            results.push(line);
-        }
-
-        if let Some(hgt) = hgt_asl {
-            results.push(format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt));
-        }
-
-        if elevation.is_some() && hgt_asl.is_some() {
-            if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
-                let mut line = String::with_capacity(128);
-                line.push_str(&format!(
-                    "AGL: {:5.0}m ({:5.0}ft)",
-                    hgt - elev,
-                    3.28084 * (hgt - elev)
-                ));
-                results.push(line);
-            }
-        }
-
-        // Sample the screen coords. Leave these commented out for debugging later possibly.
-        // {
-        //     use app::PlotContext;
-        //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
-        //         let mut line = String::with_capacity(128);
-        //         line.push_str(&format!(
-        //             "col: {:3.0} row: {:3.0}",
-        //             pnt.col,
-        //             pnt.row
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt = _ac.skew_t.convert_device_to_screen(pnt);
-        //         line.push_str(&format!(
-        //             "screen x: {:.3} y: {:.3}",
-        //             pnt.x,
-        //             pnt.y
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt2 = _ac.skew_t.convert_screen_to_xy(pnt);
-        //         line.push_str(&format!(
-        //             "x: {:.3} y: {:.3}",
-        //             pnt2.x,
-        //             pnt2.y
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt = _ac.skew_t.convert_screen_to_tp(pnt);
-        //         line.push_str(&format!(
-        //             "t: {:3.0} p: {:3.0}",
-        //             pnt.temperature,
-        //             pnt.pressure
-        //         ));
-        //         results.push(line);
-        //     }
-        // }
-
-        results
-    }
-}
-
-impl Labels for SkewTContext {
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -492,183 +444,223 @@ impl Labels for SkewTContext {
 
         result
     }
-}
 
-/**************************************************************************************************
- *                                  Background Drawing
- **************************************************************************************************/
-fn draw_background_fill(args: DrawingArgs) {
-    let ac = args.ac;
-    let config = ac.config.borrow();
-
-    if config.show_background_bands {
-        draw_temperature_banding(args);
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    fn draw_data(&self, args: DrawingArgs) {
+        draw_temperature_profiles(args);
+        draw_wind_profile(args);
     }
 
-    if config.show_hail_zone {
-        draw_hail_growth_zone(args);
-    }
+    /***********************************************************************************************
+     * Overlays Drawing.
+     **********************************************************************************************/
+    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
+        use sounding_analysis::met_formulas::rh;
 
-    if config.show_dendritic_zone {
-        draw_dendtritic_growth_zone(args);
-    }
-}
+        let mut results = vec![];
 
-fn draw_temperature_banding(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
+        let t_c = vals.temperature;
+        let dp_c = vals.dew_point;
+        let pres = vals.pressure;
+        let dir = vals.direction;
+        let spd = vals.speed;
+        let hgt_asl = vals.height;
+        let omega = vals.omega;
+        let elevation = snd.get_location().2;
 
-    let rgba = ac.config.borrow().background_band_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    let mut start_line = -160i32;
-    while start_line < 100 {
-        let t1 = f64::from(start_line);
-        let t2 = t1 + 10.0;
-
-        draw_temperature_band(t1, t2, args);
-
-        start_line += 20;
-    }
-}
-
-fn draw_hail_growth_zone(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let rgba = ac.config.borrow().hail_zone_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    draw_temperature_band(-30.0, -10.0, args);
-}
-
-fn draw_dendtritic_growth_zone(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let rgba = ac.config.borrow().dendritic_zone_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-    draw_temperature_band(-18.0, -12.0, args);
-}
-
-fn draw_temperature_band(cold_t: f64, warm_t: f64, args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    // Assume color has already been set up for us.
-
-    const MAXP: f64 = config::MAXP;
-    const MINP: f64 = config::MINP;
-
-    let mut coords = [
-        (warm_t, MAXP),
-        (warm_t, MINP),
-        (cold_t, MINP),
-        (cold_t, MAXP),
-    ];
-
-    // Convert points to screen coords
-    for coord in &mut coords {
-        let screen_coords = ac.skew_t.convert_tp_to_screen(TPCoords {
-            temperature: coord.0,
-            pressure: coord.1,
-        });
-        coord.0 = screen_coords.x;
-        coord.1 = screen_coords.y;
-    }
-
-    let mut coord_iter = coords.iter();
-    for coord in coord_iter.by_ref().take(1) {
-        cr.move_to(coord.0, coord.1);
-    }
-    for coord in coord_iter {
-        cr.line_to(coord.0, coord.1);
-    }
-
-    cr.close_path();
-    cr.fill();
-}
-
-// Draw isentrops, isotherms, isobars, ...
-fn draw_background_lines(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    // Draws background lines from the bottom up.
-
-    // Draw isentrops
-    if config.show_isentrops {
-        for pnts in config::ISENTROP_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
-            plot_curve_from_points(cr, config.background_line_width, config.isentrop_rgba, pnts);
+        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+            let mut line = String::with_capacity(128);
+            if let Some(t_c) = t_c {
+                line.push_str(&format!("{:.0}C", t_c));
+            }
+            if let Some(dp_c) = dp_c {
+                if t_c.is_some() {
+                    line.push('/');
+                }
+                line.push_str(&format!("{:.0}C", dp_c));
+            }
+            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
+            }
+            if let Some(omega) = omega {
+                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
+            }
+            results.push(line);
         }
+
+        if pres.is_some() || dir.is_some() || spd.is_some() {
+            let mut line = String::with_capacity(128);
+            if let Some(pres) = pres {
+                line.push_str(&format!("{:.0}hPa", pres));
+            }
+            if let Some(dir) = dir {
+                if pres.is_some() {
+                    line.push(' ');
+                }
+                let dir = (dir / 10.0).round() * 10.0;
+                line.push_str(&format!("{:03.0}", dir));
+            }
+            if let Some(spd) = spd {
+                if pres.is_some() && dir.is_none() {
+                    line.push(' ');
+                }
+                line.push_str(&format!("{:02.0}KT", spd));
+            }
+            results.push(line);
+        }
+
+        if let Some(hgt) = hgt_asl {
+            results.push(format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt));
+        }
+
+        if elevation.is_some() && hgt_asl.is_some() {
+            if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
+                let mut line = String::with_capacity(128);
+                line.push_str(&format!(
+                    "AGL: {:5.0}m ({:5.0}ft)",
+                    hgt - elev,
+                    3.28084 * (hgt - elev)
+                ));
+                results.push(line);
+            }
+        }
+
+        // Sample the screen coords. Leave these commented out for debugging later possibly.
+        // {
+        //     use app::PlotContext;
+        //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
+        //         let mut line = String::with_capacity(128);
+        //         line.push_str(&format!(
+        //             "col: {:3.0} row: {:3.0}",
+        //             pnt.col,
+        //             pnt.row
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt = _ac.skew_t.convert_device_to_screen(pnt);
+        //         line.push_str(&format!(
+        //             "screen x: {:.3} y: {:.3}",
+        //             pnt.x,
+        //             pnt.y
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt2 = _ac.skew_t.convert_screen_to_xy(pnt);
+        //         line.push_str(&format!(
+        //             "x: {:.3} y: {:.3}",
+        //             pnt2.x,
+        //             pnt2.y
+        //         ));
+        //         results.push(line);
+        //         let mut line = String::with_capacity(128);
+        //         let pnt = _ac.skew_t.convert_screen_to_tp(pnt);
+        //         line.push_str(&format!(
+        //             "t: {:3.0} p: {:3.0}",
+        //             pnt.temperature,
+        //             pnt.pressure
+        //         ));
+        //         results.push(line);
+        //     }
+        // }
+
+        results
     }
 
-    // Draw theta-e lines
-    if config.show_iso_theta_e {
-        for pnts in config::ISO_THETA_E_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
-            plot_curve_from_points(
-                cr,
-                config.background_line_width,
-                config.iso_theta_e_rgba,
-                pnts,
+    /***********************************************************************************************
+     * Events
+     **********************************************************************************************/
+    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
+    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+        const DELTA_SCALE: f64 = 1.05;
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
+        let dir = event.get_direction();
+
+        let old_zoom = self.get_zoom_factor();
+        let mut new_zoom = old_zoom;
+
+        match dir {
+            ScrollDirection::Up => {
+                new_zoom *= DELTA_SCALE;
+            }
+            ScrollDirection::Down => {
+                new_zoom /= DELTA_SCALE;
+            }
+            _ => {}
+        }
+
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        self.set_zoom_factor(new_zoom);
+
+        let mut translate = self.get_translate();
+        translate = XYCoords {
+            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+        };
+        self.set_translate(translate);
+        self.bound_view();
+        ac.mark_background_dirty();
+
+        ac.update_all_gui();
+
+        Inhibit(true)
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        event: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+                let new_position = DeviceCoords::from(event.get_position());
+                self.set_last_cursor_position(Some(new_position));
+
+                let new_position = self.convert_device_to_xy(new_position);
+                let delta = (
+                    new_position.x - old_position.x,
+                    new_position.y - old_position.y,
+                );
+                let mut translate = self.get_translate();
+                translate.x -= delta.0;
+                translate.y -= delta.1;
+                self.set_translate(translate);
+                self.bound_view();
+                ac.mark_background_dirty();
+                ac.update_all_gui();
+
+                ac.set_sample(None);
+            }
+        } else if ac.plottable() {
+            let position: DeviceCoords = event.get_position().into();
+
+            self.set_last_cursor_position(Some(position));
+            let tp_position = self.convert_device_to_tp(position);
+            let sample = ::sounding_analysis::linear_interpolate(
+                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                tp_position.pressure,
             );
+            ac.set_sample(Some(sample));
+            ac.mark_overlay_dirty();
+            ac.update_all_gui();
         }
-    }
-
-    // Draw mixing ratio lines
-    if config.show_iso_mixing_ratio {
-        for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
-            plot_dashed_curve_from_points(
-                cr,
-                config.background_line_width,
-                config.iso_mixing_ratio_rgba,
-                pnts,
-            );
-        }
-    }
-
-    // Draw isotherms
-    if config.show_isotherms {
-        for pnts in config::ISOTHERM_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|tp_coords| ac.skew_t.convert_xy_to_screen(*tp_coords));
-            plot_curve_from_points(cr, config.background_line_width, config.isotherm_rgba, pnts);
-        }
-    }
-
-    // Draw isobars
-    if config.show_isobars {
-        for pnts in config::ISOBAR_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.skew_t.convert_xy_to_screen(*xy_coords));
-
-            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
-        }
-    }
-
-    // Draw the freezing line
-    if config.show_freezing_line {
-        let pnts = &[
-            TPCoords {
-                temperature: 0.0,
-                pressure: config::MAXP,
-            },
-            TPCoords {
-                temperature: 0.0,
-                pressure: config::MINP,
-            },
-        ];
-        let pnts = pnts.iter()
-            .map(|tp_coords| ac.skew_t.convert_tp_to_screen(*tp_coords));
-        plot_curve_from_points(
-            cr,
-            config.freezing_line_width,
-            config.freezing_line_color,
-            pnts,
-        );
+        Inhibit(false)
     }
 }
+
+impl MasterDrawable for SkewTContext {}
 
 /**************************************************************************************************
  *                                   Data Layer Drawing
@@ -1085,7 +1077,3 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 
     ScreenCoords { x: xcenter, y: yc }
 }
-
-/**************************************************************************************************
- *                                    Overlays Drawing
- **************************************************************************************************/

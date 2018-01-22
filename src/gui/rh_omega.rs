@@ -10,7 +10,7 @@ use sounding_base::{DataRow, Sounding};
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, Labels, SampleReadout, SlaveProfileDrawable};
+use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
@@ -130,6 +130,9 @@ impl PlotContextExt for RHOmegaContext {
 }
 
 impl Drawable for RHOmegaContext {
+    /***********************************************************************************************
+     * Initialization
+     **********************************************************************************************/
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
         da.set_hexpand(true);
         da.set_vexpand(true);
@@ -162,97 +165,95 @@ impl Drawable for RHOmegaContext {
             .bits() as i32);
     }
 
-    fn mouse_motion_event(
-        &self,
-        da: &DrawingArea,
-        event: &EventMotion,
-        ac: &AppContextPointer,
-    ) -> Inhibit {
-        da.grab_focus();
+    /***********************************************************************************************
+     * Background Drawing.
+     **********************************************************************************************/
 
-        if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
+    fn draw_background_fill(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
 
-            self.set_last_cursor_position(Some(position));
-            let wp_position = self.convert_device_to_wp(position);
-            let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // will not panic due to ac.plottable
-                wp_position.p,
+        if config.show_background_bands {
+            let rgba = config.background_band_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+            let mut omegas = config::ISO_OMEGA.iter();
+            let mut draw = true;
+            let mut prev = omegas.next();
+            while let Some(prev_val) = prev {
+                let curr = omegas.next();
+                if let Some(curr_val) = curr {
+                    if draw {
+                        let ll = WPCoords {
+                            w: *prev_val,
+                            p: config::MAXP,
+                        };
+                        let ur = WPCoords {
+                            w: *curr_val,
+                            p: config::MINP,
+                        };
+                        let ll = self.convert_wp_to_screen(ll);
+                        let ur = self.convert_wp_to_screen(ur);
+                        let ScreenCoords { x: xmin, y: ymin } = ll;
+                        let ScreenCoords { x: xmax, y: ymax } = ur;
+                        cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                        cr.fill();
+                        draw = false;
+                    } else {
+                        draw = true;
+                    }
+                }
+                prev = curr;
+            }
+        }
+
+        self.draw_dendtritic_snow_growth_zone(args);
+    }
+
+    fn draw_background_lines(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        // Draw isobars
+        if config.show_isobars {
+            for pnts in config::ISOBAR_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
+            }
+        }
+
+        // Draw w-lines
+        if config.show_iso_omega_lines {
+            for v_line in config::ISO_OMEGA_PNTS.iter() {
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.isobar_rgba,
+                    v_line
+                        .iter()
+                        .map(|xy_coords| self.convert_xy_to_screen(*xy_coords)),
+                );
+            }
+
+            // Make a thicker zero line
+            plot_curve_from_points(
+                cr,
+                config.background_line_width * 2.6,
+                config.isobar_rgba,
+                ([
+                    WPCoords {
+                        w: 0.0,
+                        p: config::MAXP,
+                    },
+                    WPCoords {
+                        w: 0.0,
+                        p: config::MINP,
+                    },
+                ]).iter()
+                    .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
             );
-            ac.set_sample(Some(sample));
-            ac.mark_overlay_dirty();
-            ac.update_all_gui();
-        }
-        Inhibit(false)
-    }
-
-    fn draw_background(&self, args: DrawingArgs) {
-        draw_background_fill(args);
-        draw_background_lines(args);
-        self.prepare_to_make_text(args);
-        self.draw_background_labels(args);
-        self.draw_legend(args);
-    }
-
-    fn draw_data(&self, args: DrawingArgs) {
-        let rh_drawn = draw_rh_profile(args);
-        let omega_drawn = draw_omega_profile(args);
-        let has_data = rh_drawn || omega_drawn;
-        self.set_has_data(has_data);
-        if !has_data {
-            self.draw_no_data(args);
         }
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
-            self.draw_active_sample(args);
-        }
-    }
-}
-
-impl SlaveProfileDrawable for RHOmegaContext {
-    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
-        acp.skew_t.get_zoom_factor()
-    }
-
-    fn set_translate_y(&self, new_translate: XYCoords) {
-        let mut translate = self.get_translate();
-        translate.y = new_translate.y;
-        self.set_translate(translate);
-    }
-}
-
-impl SampleReadout for RHOmegaContext {
-    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
-        use sounding_analysis::met_formulas::rh;
-
-        let mut results = vec![];
-
-        let t_c = vals.temperature;
-        let dp_c = vals.dew_point;
-        let omega = vals.omega;
-
-        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            let mut line = String::with_capacity(128);
-
-            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                line.push_str(&format!("{:.0}%", 100.0 * rh(t_c, dp_c)));
-            }
-            if t_c.is_some() && dp_c.is_some() && omega.is_some() {
-                line.push(' ');
-            }
-            if let Some(omega) = omega {
-                line.push_str(&format!("{:.1} hPa/s", omega * 10.0));
-            }
-            results.push(line);
-        }
-
-        results
-    }
-}
-
-impl Labels for RHOmegaContext {
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -311,6 +312,88 @@ impl Labels for RHOmegaContext {
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["RH & PVV".to_owned()]
+    }
+
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    fn draw_data(&self, args: DrawingArgs) {
+        let rh_drawn = draw_rh_profile(args);
+        let omega_drawn = draw_omega_profile(args);
+        let has_data = rh_drawn || omega_drawn;
+        self.set_has_data(has_data);
+        if !has_data {
+            self.draw_no_data(args);
+        }
+    }
+
+    /***********************************************************************************************
+     * Overlays Drawing.
+     **********************************************************************************************/
+    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        use sounding_analysis::met_formulas::rh;
+
+        let mut results = vec![];
+
+        let t_c = vals.temperature;
+        let dp_c = vals.dew_point;
+        let omega = vals.omega;
+
+        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+            let mut line = String::with_capacity(128);
+
+            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                line.push_str(&format!("{:.0}%", 100.0 * rh(t_c, dp_c)));
+            }
+            if t_c.is_some() && dp_c.is_some() && omega.is_some() {
+                line.push(' ');
+            }
+            if let Some(omega) = omega {
+                line.push_str(&format!("{:.1} hPa/s", omega * 10.0));
+            }
+            results.push(line);
+        }
+
+        results
+    }
+
+    /***********************************************************************************************
+     * Events
+     **********************************************************************************************/
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        event: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if ac.plottable() {
+            let position: DeviceCoords = event.get_position().into();
+
+            self.set_last_cursor_position(Some(position));
+            let wp_position = self.convert_device_to_wp(position);
+            let sample = ::sounding_analysis::linear_interpolate(
+                &ac.get_sounding_for_display().unwrap(), // will not panic due to ac.plottable
+                wp_position.p,
+            );
+            ac.set_sample(Some(sample));
+            ac.mark_overlay_dirty();
+            ac.update_all_gui();
+        }
+        Inhibit(false)
+    }
+}
+
+impl SlaveProfileDrawable for RHOmegaContext {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
+        acp.skew_t.get_zoom_factor()
+    }
+
+    fn set_translate_y(&self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.set_translate(translate);
     }
 }
 
@@ -445,90 +528,4 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
     }
 
     true
-}
-
-fn draw_background_fill(args: DrawingArgs) {
-    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-    if config.show_background_bands {
-        let rgba = config.background_band_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut omegas = config::ISO_OMEGA.iter();
-        let mut draw = true;
-        let mut prev = omegas.next();
-        while let Some(prev_val) = prev {
-            let curr = omegas.next();
-            if let Some(curr_val) = curr {
-                if draw {
-                    let ll = WPCoords {
-                        w: *prev_val,
-                        p: config::MAXP,
-                    };
-                    let ur = WPCoords {
-                        w: *curr_val,
-                        p: config::MINP,
-                    };
-                    let ll = ac.rh_omega.convert_wp_to_screen(ll);
-                    let ur = ac.rh_omega.convert_wp_to_screen(ur);
-                    let ScreenCoords { x: xmin, y: ymin } = ll;
-                    let ScreenCoords { x: xmax, y: ymax } = ur;
-                    cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                    cr.fill();
-                    draw = false;
-                } else {
-                    draw = true;
-                }
-            }
-            prev = curr;
-        }
-    }
-
-    ac.rh_omega.draw_dendtritic_snow_growth_zone(args);
-}
-
-fn draw_background_lines(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    // Draw isobars
-    if config.show_isobars {
-        for pnts in config::ISOBAR_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.rh_omega.convert_xy_to_screen(*xy_coords));
-            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
-        }
-    }
-
-    // Draw w-lines
-    if config.show_iso_omega_lines {
-        for v_line in config::ISO_OMEGA_PNTS.iter() {
-            plot_curve_from_points(
-                cr,
-                config.background_line_width,
-                config.isobar_rgba,
-                v_line
-                    .iter()
-                    .map(|xy_coords| ac.rh_omega.convert_xy_to_screen(*xy_coords)),
-            );
-        }
-
-        // Make a thicker zero line
-        plot_curve_from_points(
-            cr,
-            config.background_line_width * 2.6,
-            config.isobar_rgba,
-            ([
-                WPCoords {
-                    w: 0.0,
-                    p: config::MAXP,
-                },
-                WPCoords {
-                    w: 0.0,
-                    p: config::MINP,
-                },
-            ]).iter()
-                .map(|wp_coords| ac.rh_omega.convert_wp_to_screen(*wp_coords)),
-        );
-    }
 }

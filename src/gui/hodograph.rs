@@ -5,9 +5,9 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{Rect, SDCoords, ScreenCoords, ScreenRect, XYCoords};
-use gui::{Drawable, DrawingArgs, Labels, MasterDrawable};
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContextExt};
+use coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
+use gui::{Drawable, DrawingArgs, MasterDrawable};
+use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
 
 pub struct HodoContext {
@@ -45,6 +45,9 @@ impl HasGenericContext for HodoContext {
 impl PlotContextExt for HodoContext {}
 
 impl Drawable for HodoContext {
+    /***********************************************************************************************
+     * Initialization
+     **********************************************************************************************/
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
         da.set_hexpand(true);
         da.set_vexpand(true);
@@ -86,42 +89,79 @@ impl Drawable for HodoContext {
             .bits() as i32);
     }
 
-    fn draw_background(&self, args: DrawingArgs) {
-        let config = args.ac.config.borrow();
+    /***********************************************************************************************
+     * Background Drawing.
+     **********************************************************************************************/
+    fn draw_background_fill(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
 
-        if config.show_background_bands {
-            draw_background_fill(args);
+        let mut do_draw = true;
+        let rgba = config.background_band_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        for pnts in config::ISO_SPEED_PNTS.iter() {
+            let mut pnts = pnts.iter()
+                .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+
+            if let Some(pnt) = pnts.by_ref().next() {
+                cr.move_to(pnt.x, pnt.y);
+            }
+            if do_draw {
+                for pnt in pnts {
+                    cr.line_to(pnt.x, pnt.y);
+                }
+            } else {
+                for pnt in pnts.rev() {
+                    cr.line_to(pnt.x, pnt.y);
+                }
+            }
+            cr.close_path();
+            if do_draw {
+                cr.fill();
+            }
+            do_draw = !do_draw;
         }
+    }
+
+    fn draw_background_lines(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_iso_speed {
-            draw_background_lines(args);
-        }
+            for pnts in config::ISO_SPEED_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.iso_speed_rgba,
+                    pnts,
+                );
+            }
 
-        if config.show_labels || config.show_legend {
-            self.prepare_to_make_text(args);
-        }
-
-        if config.show_labels {
-            self.draw_background_labels(args);
-        }
-
-        if config.show_legend {
-            self.draw_legend(args);
+            let origin = self.convert_sd_to_screen(SDCoords {
+                speed: 0.0,
+                dir: 360.0,
+            });
+            for pnts in [
+                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0
+            ].iter()
+                .map(|d| {
+                    let end_point = self.convert_sd_to_screen(SDCoords {
+                        speed: config::MAX_SPEED,
+                        dir: *d,
+                    });
+                    [origin, end_point]
+                }) {
+                plot_curve_from_points(
+                    cr,
+                    config.background_line_width,
+                    config.iso_speed_rgba,
+                    pnts.iter().cloned(),
+                );
+            }
         }
     }
 
-    fn draw_data(&self, args: DrawingArgs) {
-        draw_data(args);
-    }
-
-    fn draw_overlays(&self, args: DrawingArgs) {
-        draw_overlays(args);
-    }
-}
-
-impl MasterDrawable for HodoContext {}
-
-impl Labels for HodoContext {
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -174,88 +214,61 @@ impl Labels for HodoContext {
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["Hodograph".to_owned()]
     }
-}
 
-fn draw_background_fill(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    fn draw_data(&self, args: DrawingArgs) {
+        draw_data(args);
+    }
 
-    let mut rgba = ac.config.borrow().background_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    let rect = ac.hodo.bounding_box_in_screen_coords();
-    cr.rectangle(
-        rect.lower_left.x,
-        rect.lower_left.y,
-        rect.width(),
-        rect.height(),
-    );
-    cr.fill();
-
-    let mut do_draw = true;
-    rgba = ac.config.borrow().background_band_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-    for pnts in config::ISO_SPEED_PNTS.iter() {
-        let mut pnts = pnts.iter()
-            .map(|xy_coords| ac.hodo.convert_xy_to_screen(*xy_coords));
-
-        if let Some(pnt) = pnts.by_ref().next() {
-            cr.move_to(pnt.x, pnt.y);
+    /***********************************************************************************************
+     * Overlays Drawing.
+     **********************************************************************************************/
+    fn draw_active_sample(&self, args: DrawingArgs) {
+        if !self.has_data() {
+            return;
         }
-        if do_draw {
-            for pnt in pnts {
-                cr.line_to(pnt.x, pnt.y);
+
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let (speed, dir) = if let Some(sample) = ac.get_sample() {
+            if let (Some(pressure), Some(speed), Some(dir)) =
+                (sample.pressure, sample.speed, sample.direction)
+            {
+                if pressure >= config.min_hodo_pressure {
+                    (speed, dir)
+                } else {
+                    return;
+                }
+            } else {
+                return;
             }
         } else {
-            for pnt in pnts.rev() {
-                cr.line_to(pnt.x, pnt.y);
-            }
-        }
-        cr.close_path();
-        if do_draw {
-            cr.fill();
-        }
-        do_draw = !do_draw;
+            return;
+        };
+
+        let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
+        let coords = ac.hodo.convert_sd_to_screen(SDCoords { speed, dir });
+
+        let rgba = config.active_readout_line_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.arc(
+            coords.x,
+            coords.y,
+            pnt_size,
+            0.0,
+            2.0 * ::std::f64::consts::PI,
+        );
+        cr.fill();
     }
+
+    /***********************************************************************************************
+     * Events
+     **********************************************************************************************/
 }
 
-fn draw_background_lines(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-
-    let config = ac.config.borrow();
-
-    for pnts in config::ISO_SPEED_PNTS.iter() {
-        let pnts = pnts.iter()
-            .map(|xy_coords| ac.hodo.convert_xy_to_screen(*xy_coords));
-        plot_curve_from_points(
-            cr,
-            config.background_line_width,
-            config.iso_speed_rgba,
-            pnts,
-        );
-    }
-
-    let origin = ac.hodo.convert_sd_to_screen(SDCoords {
-        speed: 0.0,
-        dir: 360.0,
-    });
-    for pnts in [
-        30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0
-    ].iter()
-        .map(|d| {
-            let end_point = ac.hodo.convert_sd_to_screen(SDCoords {
-                speed: config::MAX_SPEED,
-                dir: *d,
-            });
-            [origin, end_point]
-        }) {
-        plot_curve_from_points(
-            cr,
-            config.background_line_width,
-            config.iso_speed_rgba,
-            pnts.iter().cloned(),
-        );
-    }
-}
+impl MasterDrawable for HodoContext {}
 
 fn draw_data(args: DrawingArgs) {
     use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
@@ -288,43 +301,4 @@ fn draw_data(args: DrawingArgs) {
             profile_data,
         );
     }
-}
-
-fn draw_overlays(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    if !config.show_active_readout {
-        return;
-    }
-
-    let (speed, dir) = if let Some(sample) = ac.get_sample() {
-        if let (Some(pressure), Some(speed), Some(dir)) =
-            (sample.pressure, sample.speed, sample.direction)
-        {
-            if pressure >= config.min_hodo_pressure {
-                (speed, dir)
-            } else {
-                return;
-            }
-        } else {
-            return;
-        }
-    } else {
-        return;
-    };
-
-    let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
-    let coords = ac.hodo.convert_sd_to_screen(SDCoords { speed, dir });
-
-    let rgba = config.active_readout_line_rgba;
-    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.arc(
-        coords.x,
-        coords.y,
-        pnt_size,
-        0.0,
-        2.0 * ::std::f64::consts::PI,
-    );
-    cr.fill();
 }

@@ -139,11 +139,13 @@ impl Gui {
 }
 
 trait Drawable: PlotContext + PlotContextExt {
+    /***********************************************************************************************
+     * Initialization
+     **********************************************************************************************/
+    /// Required to implement.
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
-    fn draw_background(&self, args: DrawingArgs);
-    fn draw_data(&self, args: DrawingArgs);
-    fn draw_overlays(&self, args: DrawingArgs);
 
+    /// Not recommended to override.
     fn init_matrix(&self, args: DrawingArgs) {
         let cr = args.cr;
 
@@ -179,6 +181,481 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.restore();
     }
 
+    /// Not recommended to override.
+    fn prepare_to_make_text(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let font_face =
+            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+        cr.set_font_face(font_face);
+
+        set_font_size(self, config.label_font_size, cr);
+    }
+
+    /***********************************************************************************************
+     * Background Drawing.
+     **********************************************************************************************/
+    /// Override for background fill.
+    fn draw_background_fill(&self, _args: DrawingArgs) {}
+
+    /// Override for background lines.
+    fn draw_background_lines(&self, _args: DrawingArgs) {}
+
+    /// Override for background labels.
+    fn collect_labels(&self, _args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+        vec![]
+    }
+
+    /// Override for for a legend.
+    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+        vec![]
+    }
+
+    /// Not recommended to override.
+    fn draw_background_labels(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        if config.show_labels {
+            let labels = self.collect_labels(args);
+            let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
+
+            for (label, rect) in labels {
+                let ScreenRect { lower_left, .. } = rect;
+
+                let mut rgba = config.background_rgba;
+                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                cr.rectangle(
+                    lower_left.x - padding,
+                    lower_left.y - padding,
+                    rect.width() + 2.0 * padding,
+                    rect.height() + 2.0 * padding,
+                );
+                cr.fill();
+
+                // Setup label colors
+                rgba = config.label_rgba;
+                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                cr.move_to(lower_left.x, lower_left.y);
+                cr.show_text(&label);
+            }
+        }
+    }
+
+    /// Not recommended to override.
+    fn draw_background_legend(&self, args: DrawingArgs) {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        if !ac.plottable() {
+            return;
+        }
+
+        let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
+
+        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+        upper_left.x += padding;
+        upper_left.y -= padding;
+
+        // Make sure we stay on the x-y coords domain
+        let ScreenCoords { x: xmin, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+        let edge_offset = upper_left.x;
+        if ymax - edge_offset < upper_left.y {
+            upper_left.y = ymax - edge_offset;
+        }
+
+        if xmin + edge_offset > upper_left.x {
+            upper_left.x = xmin + edge_offset;
+        }
+
+        let font_extents = cr.font_extents();
+
+        let legend_text = Self::build_legend_strings(ac);
+
+        let (box_width, box_height) =
+            Self::calculate_legend_box_size(args, &font_extents, &legend_text);
+
+        let legend_rect = ScreenRect {
+            lower_left: ScreenCoords {
+                x: upper_left.x,
+                y: upper_left.y - box_height,
+            },
+            upper_right: ScreenCoords {
+                x: upper_left.x + box_width,
+                y: upper_left.y,
+            },
+        };
+
+        Self::draw_legend_rectangle(args, &legend_rect);
+
+        Self::draw_legend_text(args, &upper_left, &font_extents, &legend_text);
+    }
+
+    /// Not recommended to override.
+    fn calculate_legend_box_size(
+        args: DrawingArgs,
+        font_extents: &FontExtents,
+        legend_text: &[String],
+    ) -> (f64, f64) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let mut box_width: f64 = 0.0;
+        let mut box_height: f64 = 0.0;
+
+        for line in legend_text {
+            let extents = cr.text_extents(line);
+            if extents.width > box_width {
+                box_width = extents.width;
+            }
+            box_height += font_extents.height;
+        }
+
+        // Add padding last
+        let (padding_x, padding_y) =
+            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
+
+        // Add room for the last line's descent and padding
+        box_height += f64::max(font_extents.descent, padding_y);
+        box_height += padding_y;
+        box_width += 2.0 * padding_x;
+
+        (box_width, box_height)
+    }
+
+    /// Not recommended to override.
+    fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let ScreenRect { lower_left, .. } = *screen_rect;
+
+        cr.rectangle(
+            lower_left.x,
+            lower_left.y,
+            screen_rect.width(),
+            screen_rect.height(),
+        );
+
+        let rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke_preserve();
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.fill();
+    }
+
+    /// Not recommended to override.
+    fn draw_legend_text(
+        args: DrawingArgs,
+        upper_left: &ScreenCoords,
+        font_extents: &FontExtents,
+        legend_text: &[String],
+    ) {
+        let (config, cr) = (args.ac.config.borrow(), args.cr);
+
+        let rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+
+        let (padding_x, padding_y) =
+            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
+
+        // Remember how many lines we have drawn so far for setting position of the next line.
+        let mut line_num = 1;
+
+        for line in legend_text {
+            cr.move_to(
+                upper_left.x + padding_x,
+                upper_left.y - padding_y - font_extents.ascent
+                    - f64::from(line_num - 1) * font_extents.height,
+            );
+
+            cr.show_text(line);
+            line_num += 1;
+        }
+    }
+
+    /// Not recommended to override.
+    fn draw_background(&self, args: DrawingArgs) {
+        let config = args.ac.config.borrow();
+
+        self.draw_background_fill(args);
+        self.draw_background_lines(args);
+
+        if config.show_labels || config.show_legend {
+            self.prepare_to_make_text(args);
+        }
+
+        if config.show_labels {
+            self.draw_background_labels(args);
+        }
+
+        if config.show_legend {
+            self.draw_background_legend(args);
+        }
+    }
+
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    fn draw_data(&self, args: DrawingArgs);
+
+    /// Not recommended to override.
+    fn draw_no_data(&self, args: DrawingArgs) {
+        const MESSAGE: &str = "No Data";
+
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        self.prepare_to_make_text(args);
+        cr.save();
+
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = self.bounding_box_in_screen_coords();
+
+        // Scale the font to fill the view.
+        let width = xmax - xmin;
+        let text_width = cr.text_extents(MESSAGE).width;
+        let ratio = 0.75 * width / text_width;
+        set_font_size(self, config.label_font_size * ratio, cr);
+
+        // Calculate the starting position
+        let text_extents = cr.text_extents(MESSAGE);
+        let height = ymax - ymin;
+        let start_y = ymin + (height - text_extents.height) / 2.0;
+        let start_x = xmin + (width - text_extents.width) / 2.0;
+
+        // Make a rectangle behind it.
+        let font_extents = cr.font_extents();
+        let mut rgb = config.background_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.rectangle(
+            start_x - 0.05 * text_extents.width,
+            start_y - font_extents.descent,
+            1.1 * text_extents.width,
+            font_extents.height,
+        );
+        cr.fill_preserve();
+        rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke();
+
+        // Draw the text.
+        cr.move_to(start_x, start_y);
+        cr.show_text(MESSAGE);
+
+        cr.restore();
+    }
+
+    /***********************************************************************************************
+     * Overlays Drawing.
+     **********************************************************************************************/
+    /// Override to draw the activate the active readout/sampling.
+    fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        vec![]
+    }
+
+    /// Override to add overlays other than the active readout, or to create one without text
+    /// or that doesn't use pressure as a coordinate, such as the hodograph.
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
+
+    /// Not recommended to override, unless you want to create an active readout that doesn't use
+    /// pressure as a vertical coord or doesn't use text. Like the Hodograph.
+    fn draw_active_sample(&self, args: DrawingArgs) {
+        if !self.has_data() {
+            return;
+        }
+
+        let (ac, cr) = (args.ac, args.cr);
+
+        let vals = if let Some(vals) = ac.get_sample() {
+            vals
+        } else {
+            return;
+        };
+
+        let snd = if let Some(snd) = ac.get_sounding_for_display() {
+            snd
+        } else {
+            return;
+        };
+
+        let sample_p = if let Some(sample_p) = vals.pressure {
+            sample_p
+        } else {
+            return;
+        };
+
+        let lines = Self::create_active_readout_text(&vals, &snd);
+
+        if lines.is_empty() {
+            return;
+        }
+
+        self.draw_sample_line(args, sample_p);
+
+        self.prepare_to_make_text(args);
+
+        let box_rect = self.calculate_active_readout_box(args, &lines, sample_p);
+
+        Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
+    }
+
+    /// Not recommended to override.
+    fn draw_sample_line(&self, args: DrawingArgs, sample_p: f64) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let bb = self.bounding_box_in_screen_coords();
+        let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+        let y = convert_pressure_to_y(sample_p);
+
+        let rgba = config.active_readout_line_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(
+            cr.device_to_user_distance(config.active_readout_line_width, 0.0)
+                .0,
+        );
+        let start = self.convert_xy_to_screen(XYCoords { x: left, y: y });
+        let end = self.convert_xy_to_screen(XYCoords { x: right, y: y });
+        cr.move_to(start.x, start.y);
+        cr.line_to(end.x, end.y);
+        cr.stroke();
+    }
+
+    /// Not recommended to override.
+    fn calculate_active_readout_box(
+        &self,
+        args: DrawingArgs,
+        strings: &[String],
+        sample_p: f64,
+    ) -> ScreenRect {
+        let cr = args.cr;
+        let config = args.ac.config.borrow();
+
+        let mut width: f64 = 0.0;
+        let mut height: f64 = 0.0;
+
+        let font_extents = cr.font_extents();
+
+        for line in strings.iter() {
+            let line_extents = cr.text_extents(line);
+            if line_extents.width > width {
+                width = line_extents.width;
+            }
+            height += font_extents.height;
+        }
+
+        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+
+        width += 2.0 * padding;
+        height += 2.0 * padding;
+
+        let ScreenCoords { x: mut left, .. } =
+            self.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
+        let ScreenCoords { y: top, .. } = self.convert_xy_to_screen(XYCoords {
+            x: 0.0,
+            y: convert_pressure_to_y(sample_p),
+        });
+        let mut bottom = top - height;
+
+        let ScreenCoords { x: xmin, y: ymin } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+        let ScreenCoords { x: xmax, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+
+        // Prevent clipping
+        if left < xmin {
+            left = xmin;
+        }
+        if left > xmax - width {
+            left = xmax - width;
+        }
+        if bottom < ymin {
+            bottom = ymin;
+        }
+        if bottom > ymax - height {
+            bottom = ymax - height;
+        }
+
+        // Keep it on the screen
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = self.bounding_box_in_screen_coords();
+        if left < xmin {
+            left = xmin;
+        }
+        if left > xmax - width {
+            left = xmax - width;
+        }
+        if bottom < ymin {
+            bottom = ymin;
+        }
+        if bottom > ymax - height {
+            bottom = ymax - height;
+        }
+
+        let lower_left = ScreenCoords { x: left, y: bottom };
+        let top_right = ScreenCoords {
+            x: left + width,
+            y: bottom + height,
+        };
+
+        ScreenRect {
+            lower_left: lower_left,
+            upper_right: top_right,
+        }
+    }
+
+    /// Not recommended to override.
+    fn draw_sample_readout_text_box(
+        rect: &ScreenRect,
+        cr: &Context,
+        ac: &AppContext,
+        lines: &[String],
+    ) {
+        let config = ac.config.borrow();
+
+        let ScreenRect {
+            lower_left: ScreenCoords { x: xmin, y: ymin },
+            upper_right: ScreenCoords { x: xmax, y: ymax },
+        } = *rect;
+
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+        cr.fill_preserve();
+        let rgba = config.label_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke();
+
+        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+
+        let font_extents = cr.font_extents();
+        let mut lines_drawn = 0.0;
+
+        for line in lines {
+            cr.move_to(
+                xmin + padding,
+                ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
+            );
+            cr.show_text(line);
+            lines_drawn += 1.0;
+        }
+    }
+
+    /***********************************************************************************************
+     * Events
+     **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
     fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
@@ -310,6 +787,9 @@ trait Drawable: PlotContext + PlotContextExt {
         false
     }
 
+    /***********************************************************************************************
+     * Used a layered cached system for drawing on screen
+     **********************************************************************************************/
     fn draw_background_cached(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
@@ -383,64 +863,6 @@ trait Drawable: PlotContext + PlotContextExt {
 
         cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
         cr.paint();
-    }
-
-    fn prepare_to_make_text(&self, args: DrawingArgs) {
-        let (cr, config) = (args.cr, args.ac.config.borrow());
-
-        let font_face =
-            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
-        cr.set_font_face(font_face);
-
-        set_font_size(self, config.label_font_size, cr);
-    }
-
-    fn draw_no_data(&self, args: DrawingArgs) {
-        const MESSAGE: &str = "No Data";
-
-        let (cr, config) = (args.cr, args.ac.config.borrow());
-
-        self.prepare_to_make_text(args);
-        cr.save();
-
-        let ScreenRect {
-            lower_left: ScreenCoords { x: xmin, y: ymin },
-            upper_right: ScreenCoords { x: xmax, y: ymax },
-        } = self.bounding_box_in_screen_coords();
-
-        // Scale the font to fill the view.
-        let width = xmax - xmin;
-        let text_width = cr.text_extents(MESSAGE).width;
-        let ratio = 0.75 * width / text_width;
-        set_font_size(self, config.label_font_size * ratio, cr);
-
-        // Calculate the starting position
-        let text_extents = cr.text_extents(MESSAGE);
-        let height = ymax - ymin;
-        let start_y = ymin + (height - text_extents.height) / 2.0;
-        let start_x = xmin + (width - text_extents.width) / 2.0;
-
-        // Make a rectangle behind it.
-        let font_extents = cr.font_extents();
-        let mut rgb = config.background_rgba;
-        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.rectangle(
-            start_x - 0.05 * text_extents.width,
-            start_y - font_extents.descent,
-            1.1 * text_extents.width,
-            font_extents.height,
-        );
-        cr.fill_preserve();
-        rgb = config.label_rgba;
-        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke();
-
-        // Draw the text.
-        cr.move_to(start_x, start_y);
-        cr.show_text(MESSAGE);
-
-        cr.restore();
     }
 }
 
@@ -530,353 +952,6 @@ trait SlaveProfileDrawable: Drawable {
                 cr.close_path();
                 cr.fill();
             }
-        }
-    }
-}
-
-trait SampleReadout: Drawable {
-    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String>;
-
-    fn draw_active_sample(&self, args: DrawingArgs) {
-        if !self.has_data() {
-            return;
-        }
-
-        let (ac, cr) = (args.ac, args.cr);
-
-        let vals = if let Some(vals) = ac.get_sample() {
-            vals
-        } else {
-            return;
-        };
-
-        let snd = if let Some(snd) = ac.get_sounding_for_display() {
-            snd
-        } else {
-            return;
-        };
-
-        let sample_p = if let Some(sample_p) = vals.pressure {
-            sample_p
-        } else {
-            return;
-        };
-
-        let lines = Self::create_active_readout_text(&vals, &snd);
-
-        self.draw_sample_line(args, sample_p);
-
-        self.prepare_to_make_text(args);
-
-        let box_rect = self.calculate_active_readout_box(args, &lines, sample_p);
-
-        Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
-    }
-
-    fn draw_sample_line(&self, args: DrawingArgs, sample_p: f64) {
-        let (ac, cr) = (args.ac, args.cr);
-        let config = ac.config.borrow();
-
-        let bb = self.bounding_box_in_screen_coords();
-        let (left, right) = (bb.lower_left.x, bb.upper_right.x);
-        let y = convert_pressure_to_y(sample_p);
-
-        let rgba = config.active_readout_line_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.set_line_width(
-            cr.device_to_user_distance(config.active_readout_line_width, 0.0)
-                .0,
-        );
-        let start = self.convert_xy_to_screen(XYCoords { x: left, y: y });
-        let end = self.convert_xy_to_screen(XYCoords { x: right, y: y });
-        cr.move_to(start.x, start.y);
-        cr.line_to(end.x, end.y);
-        cr.stroke();
-    }
-
-    fn calculate_active_readout_box(
-        &self,
-        args: DrawingArgs,
-        strings: &[String],
-        sample_p: f64,
-    ) -> ScreenRect {
-        let cr = args.cr;
-        let config = args.ac.config.borrow();
-
-        let mut width: f64 = 0.0;
-        let mut height: f64 = 0.0;
-
-        let font_extents = cr.font_extents();
-
-        for line in strings.iter() {
-            let line_extents = cr.text_extents(line);
-            if line_extents.width > width {
-                width = line_extents.width;
-            }
-            height += font_extents.height;
-        }
-
-        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
-
-        width += 2.0 * padding;
-        height += 2.0 * padding;
-
-        let ScreenCoords { x: mut left, .. } =
-            self.convert_device_to_screen(DeviceCoords { col: 5.0, row: 5.0 });
-        let ScreenCoords { y: top, .. } = self.convert_xy_to_screen(XYCoords {
-            x: 0.0,
-            y: convert_pressure_to_y(sample_p),
-        });
-        let mut bottom = top - height;
-
-        let ScreenCoords { x: xmin, y: ymin } =
-            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
-        let ScreenCoords { x: xmax, y: ymax } =
-            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
-
-        // Prevent clipping
-        if left < xmin {
-            left = xmin;
-        }
-        if left > xmax - width {
-            left = xmax - width;
-        }
-        if bottom < ymin {
-            bottom = ymin;
-        }
-        if bottom > ymax - height {
-            bottom = ymax - height;
-        }
-
-        // Keep it on the screen
-        let ScreenRect {
-            lower_left: ScreenCoords { x: xmin, y: ymin },
-            upper_right: ScreenCoords { x: xmax, y: ymax },
-        } = self.bounding_box_in_screen_coords();
-        if left < xmin {
-            left = xmin;
-        }
-        if left > xmax - width {
-            left = xmax - width;
-        }
-        if bottom < ymin {
-            bottom = ymin;
-        }
-        if bottom > ymax - height {
-            bottom = ymax - height;
-        }
-
-        let lower_left = ScreenCoords { x: left, y: bottom };
-        let top_right = ScreenCoords {
-            x: left + width,
-            y: bottom + height,
-        };
-
-        ScreenRect {
-            lower_left: lower_left,
-            upper_right: top_right,
-        }
-    }
-
-    fn draw_sample_readout_text_box(
-        rect: &ScreenRect,
-        cr: &Context,
-        ac: &AppContext,
-        lines: &[String],
-    ) {
-        let config = ac.config.borrow();
-
-        let ScreenRect {
-            lower_left: ScreenCoords { x: xmin, y: ymin },
-            upper_right: ScreenCoords { x: xmax, y: ymax },
-        } = *rect;
-
-        let rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-        cr.fill_preserve();
-        let rgba = config.label_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke();
-
-        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
-
-        let font_extents = cr.font_extents();
-        let mut lines_drawn = 0.0;
-
-        for line in lines {
-            cr.move_to(
-                xmin + padding,
-                ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
-            );
-            cr.show_text(line);
-            lines_drawn += 1.0;
-        }
-    }
-}
-
-trait Labels: Drawable {
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)>;
-    fn build_legend_strings(ac: &AppContext) -> Vec<String>;
-
-    fn draw_background_labels(&self, args: DrawingArgs) {
-        let (cr, config) = (args.cr, args.ac.config.borrow());
-
-        if config.show_labels {
-            let labels = self.collect_labels(args);
-            let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
-
-            for (label, rect) in labels {
-                let ScreenRect { lower_left, .. } = rect;
-
-                let mut rgba = config.background_rgba;
-                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-                cr.rectangle(
-                    lower_left.x - padding,
-                    lower_left.y - padding,
-                    rect.width() + 2.0 * padding,
-                    rect.height() + 2.0 * padding,
-                );
-                cr.fill();
-
-                // Setup label colors
-                rgba = config.label_rgba;
-                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-                cr.move_to(lower_left.x, lower_left.y);
-                cr.show_text(&label);
-            }
-        }
-    }
-
-    fn draw_legend(&self, args: DrawingArgs) {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-        if !ac.plottable() {
-            return;
-        }
-
-        let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
-
-        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
-        upper_left.x += padding;
-        upper_left.y -= padding;
-
-        // Make sure we stay on the x-y coords domain
-        let ScreenCoords { x: xmin, y: ymax } =
-            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
-        let edge_offset = upper_left.x;
-        if ymax - edge_offset < upper_left.y {
-            upper_left.y = ymax - edge_offset;
-        }
-
-        if xmin + edge_offset > upper_left.x {
-            upper_left.x = xmin + edge_offset;
-        }
-
-        let font_extents = cr.font_extents();
-
-        let legend_text = Self::build_legend_strings(ac);
-
-        let (box_width, box_height) =
-            Self::calculate_legend_box_size(args, &font_extents, &legend_text);
-
-        let legend_rect = ScreenRect {
-            lower_left: ScreenCoords {
-                x: upper_left.x,
-                y: upper_left.y - box_height,
-            },
-            upper_right: ScreenCoords {
-                x: upper_left.x + box_width,
-                y: upper_left.y,
-            },
-        };
-
-        Self::draw_legend_rectangle(args, &legend_rect);
-
-        Self::draw_legend_text(args, &upper_left, &font_extents, &legend_text);
-    }
-
-    fn calculate_legend_box_size(
-        args: DrawingArgs,
-        font_extents: &FontExtents,
-        legend_text: &[String],
-    ) -> (f64, f64) {
-        let (cr, config) = (args.cr, args.ac.config.borrow());
-
-        let mut box_width: f64 = 0.0;
-        let mut box_height: f64 = 0.0;
-
-        for line in legend_text {
-            let extents = cr.text_extents(line);
-            if extents.width > box_width {
-                box_width = extents.width;
-            }
-            box_height += font_extents.height;
-        }
-
-        // Add padding last
-        let (padding_x, padding_y) =
-            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
-        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
-
-        // Add room for the last line's descent and padding
-        box_height += f64::max(font_extents.descent, padding_y);
-        box_height += padding_y;
-        box_width += 2.0 * padding_x;
-
-        (box_width, box_height)
-    }
-
-    fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
-        let (ac, cr) = (args.ac, args.cr);
-        let config = ac.config.borrow();
-
-        let ScreenRect { lower_left, .. } = *screen_rect;
-
-        cr.rectangle(
-            lower_left.x,
-            lower_left.y,
-            screen_rect.width(),
-            screen_rect.height(),
-        );
-
-        let rgb = config.label_rgba;
-        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke_preserve();
-        let rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.fill();
-    }
-
-    fn draw_legend_text(
-        args: DrawingArgs,
-        upper_left: &ScreenCoords,
-        font_extents: &FontExtents,
-        legend_text: &[String],
-    ) {
-        let (config, cr) = (args.ac.config.borrow(), args.cr);
-
-        let rgb = config.label_rgba;
-        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-
-        let (padding_x, padding_y) =
-            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
-        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
-
-        // Remember how many lines we have drawn so far for setting position of the next line.
-        let mut line_num = 1;
-
-        for line in legend_text {
-            cr.move_to(
-                upper_left.x + padding_x,
-                upper_left.y - padding_y - font_extents.ascent
-                    - f64::from(line_num - 1) * font_extents.height,
-            );
-
-            cr.show_text(line);
-            line_num += 1;
         }
     }
 }

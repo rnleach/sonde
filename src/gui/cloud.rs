@@ -8,7 +8,7 @@ use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, PPCoords, ScreenCoords, ScreenRect, XYCoords};
-use gui::{Drawable, Labels, SampleReadout, SlaveProfileDrawable};
+use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 
@@ -121,6 +121,9 @@ impl PlotContextExt for CloudContext {
 }
 
 impl Drawable for CloudContext {
+    /***********************************************************************************************
+     * Initialization
+     **********************************************************************************************/
     fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
         da.set_hexpand(true);
         da.set_vexpand(true);
@@ -153,91 +156,61 @@ impl Drawable for CloudContext {
             .bits() as i32);
     }
 
-    fn scroll_event(&self, _event: &EventScroll, _ac: &AppContextPointer) -> Inhibit {
-        Inhibit(false)
-    }
+    /***********************************************************************************************
+     * Background Drawing.
+     **********************************************************************************************/
+    fn draw_background_fill(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
 
-    fn mouse_motion_event(
-        &self,
-        da: &DrawingArea,
-        event: &EventMotion,
-        ac: &AppContextPointer,
-    ) -> Inhibit {
-        da.grab_focus();
+        if config.show_background_bands {
+            let rgba = config.background_band_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-        if ac.plottable() && self.has_data() {
-            let position: DeviceCoords = event.get_position().into();
-
-            self.set_last_cursor_position(Some(position));
-            let pp_position = self.convert_device_to_pp(position);
-            let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
-                pp_position.press,
-            );
-            ac.set_sample(Some(sample));
-            ac.mark_overlay_dirty();
-            ac.update_all_gui();
-        }
-        Inhibit(false)
-    }
-
-    fn draw_background(&self, args: DrawingArgs) {
-        let config = args.ac.config.borrow();
-
-        draw_background_fill(args);
-        draw_background_lines(args);
-
-        if config.show_labels || config.show_legend {
-            self.prepare_to_make_text(args);
+            let mut lines = config::CLOUD_PERCENT_PNTS.iter();
+            let mut draw = true;
+            let mut prev = lines.next();
+            while let Some(prev_val) = prev {
+                let curr = lines.next();
+                if let Some(curr_val) = curr {
+                    if draw {
+                        let ll = self.convert_xy_to_screen(prev_val[0]);
+                        let ur = self.convert_xy_to_screen(curr_val[1]);
+                        let ScreenCoords { x: xmin, y: ymin } = ll;
+                        let ScreenCoords { x: xmax, y: ymax } = ur;
+                        cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+                        cr.fill();
+                        draw = false;
+                    } else {
+                        draw = true;
+                    }
+                }
+                prev = curr;
+            }
         }
 
-        if config.show_labels {
-            self.draw_background_labels(args);
+        self.draw_dendtritic_snow_growth_zone(args);
+    }
+
+    fn draw_background_lines(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        // Draw isobars
+        if config.show_isobars {
+            for pnts in config::ISOBAR_PNTS.iter() {
+                let pnts = pnts.iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+                plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
+            }
         }
 
-        if config.show_legend {
-            self.draw_legend(args);
+        // Draw percent values
+        for line in config::CLOUD_PERCENT_PNTS.iter() {
+            let pnts = line.iter()
+                .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
+            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
     }
 
-    fn draw_data(&self, args: DrawingArgs) {
-        draw_cloud_profile(args);
-    }
-
-    fn draw_overlays(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
-            self.draw_active_sample(args);
-        }
-    }
-}
-
-impl SlaveProfileDrawable for CloudContext {
-    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
-        acp.skew_t.get_zoom_factor()
-    }
-
-    fn set_translate_y(&self, new_translate: XYCoords) {
-        let mut translate = self.get_translate();
-        translate.y = new_translate.y;
-        self.set_translate(translate);
-    }
-}
-
-impl SampleReadout for CloudContext {
-    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
-        let mut results = vec![];
-
-        if let Some(cloud) = vals.cloud_fraction {
-            let cld = (cloud).round();
-            let line = format!("{:.0}%", cld);
-            results.push(line);
-        }
-
-        results
-    }
-}
-
-impl Labels for CloudContext {
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
         vec!["Cloud Cover".to_owned()]
     }
@@ -297,6 +270,71 @@ impl Labels for CloudContext {
         }
 
         labels
+    }
+
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    fn draw_data(&self, args: DrawingArgs) {
+        draw_cloud_profile(args);
+    }
+
+    /***********************************************************************************************
+     * Overlays Drawing.
+     **********************************************************************************************/
+    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+        let mut results = vec![];
+
+        if let Some(cloud) = vals.cloud_fraction {
+            let cld = (cloud).round();
+            let line = format!("{:.0}%", cld);
+            results.push(line);
+        }
+
+        results
+    }
+
+    /***********************************************************************************************
+     * Events
+     **********************************************************************************************/
+    fn scroll_event(&self, _event: &EventScroll, _ac: &AppContextPointer) -> Inhibit {
+        Inhibit(false)
+    }
+
+    fn mouse_motion_event(
+        &self,
+        da: &DrawingArea,
+        event: &EventMotion,
+        ac: &AppContextPointer,
+    ) -> Inhibit {
+        da.grab_focus();
+
+        if ac.plottable() && self.has_data() {
+            let position: DeviceCoords = event.get_position().into();
+
+            self.set_last_cursor_position(Some(position));
+            let pp_position = self.convert_device_to_pp(position);
+            let sample = ::sounding_analysis::linear_interpolate(
+                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                pp_position.press,
+            );
+            ac.set_sample(Some(sample));
+            ac.mark_overlay_dirty();
+            ac.update_all_gui();
+        }
+        Inhibit(false)
+    }
+}
+
+impl SlaveProfileDrawable for CloudContext {
+    fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
+        acp.skew_t.get_zoom_factor()
+    }
+
+    fn set_translate_y(&self, new_translate: XYCoords) {
+        let mut translate = self.get_translate();
+        translate.y = new_translate.y;
+        self.set_translate(translate);
     }
 }
 
@@ -396,58 +434,5 @@ fn draw_cloud_profile(args: DrawingArgs) {
 
     if !ac.cloud.has_data() {
         ac.cloud.draw_no_data(args);
-    }
-}
-
-fn draw_background_fill(args: DrawingArgs) {
-    let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-    if config.show_background_bands {
-        let rgba = config.background_band_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut lines = config::CLOUD_PERCENT_PNTS.iter();
-        let mut draw = true;
-        let mut prev = lines.next();
-        while let Some(prev_val) = prev {
-            let curr = lines.next();
-            if let Some(curr_val) = curr {
-                if draw {
-                    let ll = ac.cloud.convert_xy_to_screen(prev_val[0]);
-                    let ur = ac.cloud.convert_xy_to_screen(curr_val[1]);
-                    let ScreenCoords { x: xmin, y: ymin } = ll;
-                    let ScreenCoords { x: xmax, y: ymax } = ur;
-                    cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                    cr.fill();
-                    draw = false;
-                } else {
-                    draw = true;
-                }
-            }
-            prev = curr;
-        }
-    }
-
-    ac.cloud.draw_dendtritic_snow_growth_zone(args);
-}
-
-fn draw_background_lines(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    // Draw isobars
-    if config.show_isobars {
-        for pnts in config::ISOBAR_PNTS.iter() {
-            let pnts = pnts.iter()
-                .map(|xy_coords| ac.cloud.convert_xy_to_screen(*xy_coords));
-            plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
-        }
-    }
-
-    // Draw percent values
-    for line in config::CLOUD_PERCENT_PNTS.iter() {
-        let pnts = line.iter()
-            .map(|xy_coord| ac.cloud.convert_xy_to_screen(*xy_coord));
-        plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
     }
 }
