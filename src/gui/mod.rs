@@ -24,6 +24,7 @@ mod rh_omega;
 mod sounding;
 mod text_area;
 mod utility;
+mod wind_speed;
 
 pub use self::cloud::CloudContext;
 pub use self::hodograph::HodoContext;
@@ -31,6 +32,7 @@ pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::rh_omega::RHOmegaContext;
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
+pub use self::wind_speed::WindSpeedContext;
 
 use self::utility::{set_font_size, DrawingArgs};
 
@@ -53,6 +55,7 @@ pub struct Gui {
     // Profiles
     rh_omega_area: DrawingArea,
     cloud: DrawingArea,
+    wind_speed: DrawingArea,
 
     // Main window
     window: Window,
@@ -73,6 +76,7 @@ impl Gui {
 
             rh_omega_area: DrawingArea::new(),
             cloud: DrawingArea::new(),
+            wind_speed: DrawingArea::new(),
 
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
@@ -85,6 +89,7 @@ impl Gui {
         text_area::set_up_text_area(&gui.get_text_area(), acp);
         rh_omega::RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
         cloud::CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
+        wind_speed::WindSpeedContext::set_up_drawing_area(&gui.get_wind_speed_profile_area(), acp);
 
         main_window::layout(&gui, acp);
 
@@ -119,6 +124,10 @@ impl Gui {
         self.cloud.clone()
     }
 
+    pub fn get_wind_speed_profile_area(&self) -> DrawingArea {
+        self.wind_speed.clone()
+    }
+
     pub fn get_window(&self) -> Window {
         self.window.clone()
     }
@@ -128,6 +137,7 @@ impl Gui {
         self.hodograph_area.queue_draw();
         self.rh_omega_area.queue_draw();
         self.cloud.queue_draw();
+        self.wind_speed.queue_draw();
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {

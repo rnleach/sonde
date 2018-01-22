@@ -1,7 +1,7 @@
 //! Keep configuration data in this module.
 
-use coords::{PPCoords, SDCoords, TPCoords, WPCoords, XYCoords};
-use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext};
+use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -62,12 +62,16 @@ pub struct Config {
     pub show_dew_point: bool,
 
     //
+    // General profile configuration items
+    //
+    /// Profile plot line widths
+    pub profile_line_width: f64,
+
+    //
     // RH-Omega profile
     //
     /// Show the rh omega frame
     pub show_rh_omega_frame: bool, // FIXME: is this used? It should be.
-    /// Line width in pixels for omega
-    pub omega_line_width: f64,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
     /// RH Color
@@ -80,6 +84,14 @@ pub struct Config {
     pub show_cloud_frame: bool, // FIXME: is this used? It should be.
     /// Cloud Color
     pub cloud_rgba: (f64, f64, f64, f64),
+
+    //
+    // Wind speed profile
+    //
+    /// Show the wind speed profile frame
+    pub show_wind_speed_profile: bool, // FIXME: is this used? It should be.
+    /// Wind speed profile color.
+    pub wind_speed_profile_rgba: (f64, f64, f64, f64),
 
     //
     // Labeling
@@ -218,10 +230,14 @@ impl Default for Config {
             show_dew_point: true,
 
             //
+            // General profile configuration items
+            //
+            profile_line_width: 2.0,
+
+            //
             // RH-Omega profile
             //
             show_rh_omega_frame: true,
-            omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
             rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
 
@@ -230,6 +246,12 @@ impl Default for Config {
             //
             show_cloud_frame: true,
             cloud_rgba: (0.5, 0.5, 0.5, 1.0),
+
+            //
+            // Wind speed profile
+            //
+            show_wind_speed_profile: true,
+            wind_speed_profile_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Labeling
@@ -325,6 +347,9 @@ pub const MIN_ABS_W: f64 = 3.0;
 /// Maximum wind speed on hodograph in Knots
 pub const MAX_SPEED: f64 = 250.0;
 
+/// Maximum wind speed on the wind speed profile in Knots
+pub const MAX_PROFILE_SPEED: f64 = MAX_SPEED;
+
 //
 // Limits on the top pressure level for some background lines.
 //
@@ -414,6 +439,8 @@ pub const ISO_SPEED: [f64; 25] = [
 pub const PERCENTS: [f64; 11] = [
     0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0
 ];
+
+pub const PROFILE_SPEEDS: [f64; 25] = ISO_SPEED;
 
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
@@ -581,6 +608,31 @@ lazy_static! {
             [
                 CloudContext::convert_pp_to_xy(pp[0]),
                 CloudContext::convert_pp_to_xy(pp[1])
+            ]
+        })
+            .collect()
+    };
+
+    /// Compute points for background cloud coverage
+    pub static ref PROFILE_SPEED_PNTS: Vec<[XYCoords; 2]> = {
+        PROFILE_SPEEDS
+            .into_iter()
+            .map(|speed| {
+                [
+                SPCoords {
+                    spd: *speed,
+                    press: MINP,
+                },
+                SPCoords {
+                    spd: *speed,
+                    press: MAXP,
+                },
+            ]
+            })
+        .map(|sp| {
+            [
+                WindSpeedContext::convert_sp_to_xy(sp[0]),
+                WindSpeedContext::convert_sp_to_xy(sp[1])
             ]
         })
             .collect()

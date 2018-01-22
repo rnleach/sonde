@@ -7,61 +7,70 @@ use gtk::DrawingArea;
 use sounding_base::{DataRow, Sounding};
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
+use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 
-pub struct CloudContext {
+pub struct WindSpeedContext {
     generic: GenericContext,
 }
 
-impl CloudContext {
+impl WindSpeedContext {
     pub fn new() -> Self {
-        CloudContext {
+        WindSpeedContext {
             generic: GenericContext::new(),
         }
     }
 
-    pub fn convert_pp_to_xy(coords: PPCoords) -> XYCoords {
+    pub fn convert_sp_to_xy(coords: SPCoords) -> XYCoords {
         let y = convert_pressure_to_y(coords.press);
 
-        let x = coords.pcnt;
+        let mut x = coords.spd;
+        // Avoid infinity
+        if x <= 0.0 {
+            x = 0.00001;
+        }
+        x = (f64::log10(x) - f64::log10(1.0))
+            / (f64::log10(config::MAX_PROFILE_SPEED) - f64::log10(1.0));
 
         XYCoords { x, y }
     }
 
-    pub fn convert_xy_to_pp(coords: XYCoords) -> PPCoords {
+    pub fn convert_xy_to_sp(coords: XYCoords) -> SPCoords {
         let press = convert_y_to_pressure(coords.y);
-        let pcnt = coords.x;
 
-        PPCoords { pcnt, press }
+        let spd = 10.0f64.powf(
+            coords.x * (f64::log10(config::MAX_PROFILE_SPEED) - f64::log10(1.0)) + f64::log10(1.0),
+        );
+
+        SPCoords { spd, press }
     }
 
-    pub fn convert_pp_to_screen(&self, coords: PPCoords) -> ScreenCoords {
-        let xy = CloudContext::convert_pp_to_xy(coords);
+    pub fn convert_sp_to_screen(&self, coords: SPCoords) -> ScreenCoords {
+        let xy = Self::convert_sp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
-    pub fn convert_screen_to_pp(&self, coords: ScreenCoords) -> PPCoords {
+    pub fn convert_screen_to_sp(&self, coords: ScreenCoords) -> SPCoords {
         let xy = self.convert_screen_to_xy(coords);
-        CloudContext::convert_xy_to_pp(xy)
+        Self::convert_xy_to_sp(xy)
     }
 
-    pub fn convert_device_to_pp(&self, coords: DeviceCoords) -> PPCoords {
+    pub fn convert_device_to_sp(&self, coords: DeviceCoords) -> SPCoords {
         let xy = self.convert_device_to_xy(coords);
-        Self::convert_xy_to_pp(xy)
+        Self::convert_xy_to_sp(xy)
     }
 }
 
-impl HasGenericContext for CloudContext {
+impl HasGenericContext for WindSpeedContext {
     fn get_generic_context(&self) -> &GenericContext {
         &self.generic
     }
 }
 
-impl PlotContextExt for CloudContext {
+impl PlotContextExt for WindSpeedContext {
     fn zoom_to_envelope(&self) {}
 
     fn bound_view(&self) {
@@ -115,7 +124,7 @@ impl PlotContextExt for CloudContext {
     }
 }
 
-impl Drawable for CloudContext {
+impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
@@ -124,22 +133,22 @@ impl Drawable for CloudContext {
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.wind_speed.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.cloud.mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.wind_speed.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.cloud.leave_event(&ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.wind_speed.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| CloudContext::key_press_event(ev, &ac));
+        da.connect_key_press_event(move |_da, ev| WindSpeedContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.wind_speed.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));
+        da.connect_size_allocate(move |da, _ev| ac.wind_speed.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -161,7 +170,7 @@ impl Drawable for CloudContext {
             let rgba = config.background_band_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-            let mut lines = config::CLOUD_PERCENT_PNTS.iter();
+            let mut lines = config::PROFILE_SPEED_PNTS.iter();
             let mut draw = true;
             let mut prev = lines.next();
             while let Some(prev_val) = prev {
@@ -199,7 +208,7 @@ impl Drawable for CloudContext {
         }
 
         // Draw percent values
-        for line in config::CLOUD_PERCENT_PNTS.iter() {
+        for line in config::PROFILE_SPEED_PNTS.iter() {
             let pnts = line.iter()
                 .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
@@ -207,7 +216,7 @@ impl Drawable for CloudContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Cloud Cover".to_owned()]
+        vec!["Wind".to_owned(), "Speed".to_owned()]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -218,21 +227,21 @@ impl Drawable for CloudContext {
         let screen_edges = self.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
-        let PPCoords {
+        let SPCoords {
             press: screen_max_p,
             ..
-        } = self.convert_screen_to_pp(lower_left);
+        } = self.convert_screen_to_sp(lower_left);
 
-        for pcnt in &config::PERCENTS {
-            let label = format!("{:.0}%", *pcnt);
+        for spd in &config::PROFILE_SPEEDS {
+            let label = format!("{:.0}", *spd);
 
             let extents = cr.text_extents(&label);
 
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.cloud.convert_pp_to_screen(PPCoords {
-                pcnt: *pcnt / 100.0,
+            } = self.convert_sp_to_screen(SPCoords {
+                spd: *spd,
                 press: screen_max_p,
             });
             xpos -= extents.width / 2.0; // Center
@@ -271,7 +280,7 @@ impl Drawable for CloudContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
-        draw_cloud_profile(args);
+        draw_wind_speed_profile(args);
     }
 
     /***********************************************************************************************
@@ -280,9 +289,9 @@ impl Drawable for CloudContext {
     fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         let mut results = vec![];
 
-        if let Some(cloud) = vals.cloud_fraction {
-            let cld = (cloud).round();
-            let line = format!("{:.0}%", cld);
+        if let Some(speed) = vals.speed {
+            let spd = speed.round();
+            let line = format!("{:.0}kt", spd);
             results.push(line);
         }
 
@@ -308,10 +317,10 @@ impl Drawable for CloudContext {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
-            let pp_position = self.convert_device_to_pp(position);
+            let sp_position = self.convert_device_to_sp(position);
             let sample = ::sounding_analysis::linear_interpolate(
                 &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
-                pp_position.press,
+                sp_position.press,
             );
             ac.set_sample(Some(sample));
             ac.mark_overlay_dirty();
@@ -321,7 +330,7 @@ impl Drawable for CloudContext {
     }
 }
 
-impl SlaveProfileDrawable for CloudContext {
+impl SlaveProfileDrawable for WindSpeedContext {
     fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
         acp.skew_t.get_zoom_factor()
     }
@@ -333,101 +342,45 @@ impl SlaveProfileDrawable for CloudContext {
     }
 }
 
-fn draw_cloud_profile(args: DrawingArgs) {
+fn draw_wind_speed_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        use sounding_base::Profile::{CloudFraction, Pressure};
+        use sounding_base::Profile::{Pressure, WindSpeed};
 
-        ac.cloud.set_has_data(true);
+        ac.wind_speed.set_has_data(true);
 
         let pres_data = sndg.get_profile(Pressure);
-        let c_data = sndg.get_profile(CloudFraction);
-        let mut profile = izip!(pres_data, c_data)
+        let spd_data = sndg.get_profile(WindSpeed);
+        let mut profile = izip!(pres_data, spd_data)
             .filter_map(|pair| {
-                if let (Some(p), Some(c)) = (*pair.0, *pair.1) {
-                    Some((p, c))
+                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+                    Some((p, s))
                 } else {
                     None
                 }
             })
             .filter_map(|pair| {
-                let (press, pcnt) = pair;
+                let (press, spd) = pair;
                 if press > config::MINP {
-                    Some(ac.cloud.convert_pp_to_screen(PPCoords {
-                        pcnt: pcnt / 100.0,
-                        press,
-                    }))
+                    Some(ac.wind_speed.convert_sp_to_screen(SPCoords { spd, press }))
                 } else {
                     None
                 }
             });
 
-        let line_width = config.bar_graph_line_width;
-        let mut rgba = config.cloud_rgba;
-        rgba.3 *= 0.75;
-
-        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut previous: Option<ScreenCoords>;
-        let mut curr: Option<ScreenCoords> = None;
-        let mut next: Option<ScreenCoords> = None;
-        loop {
-            previous = curr;
-            curr = next;
-            next = profile.next();
-
-            const XMIN: f64 = 0.0;
-            let xmax: f64;
-            let ymin: f64;
-            let ymax: f64;
-            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
-                // In the middle - most common
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = (n.y - c.y) / 2.0;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
-                // Last point
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = down;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
-                // First point
-                xmax = c.x;
-                let up = (n.y - c.y) / 2.0;
-                let down = up;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(_), None, None) = (previous, curr, next) {
-                // Done - get out of here
-                break;
-            } else if let (None, None, Some(_)) = (previous, curr, next) {
-                // Just getting into the loop - do nothing
-                continue;
-            } else if let (None, None, None) = (previous, curr, next) {
-                // There is no data plot the no data and leave!
-                ac.cloud.set_has_data(false);
-                break;
-            } else {
-                // Impossible state
-                unreachable!();
-            }
-
-            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
-            cr.fill_preserve();
-            cr.stroke();
-        }
+        plot_curve_from_points(
+            cr,
+            config.profile_line_width,
+            config.wind_speed_profile_rgba,
+            profile,
+        );
     } else {
-        ac.cloud.set_has_data(false);
+        ac.wind_speed.set_has_data(false);
     }
 
-    if !ac.cloud.has_data() {
-        ac.cloud.draw_no_data(args);
+    if !ac.wind_speed.has_data() {
+        ac.wind_speed.draw_no_data(args);
     }
 }

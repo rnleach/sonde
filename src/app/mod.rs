@@ -9,7 +9,7 @@ use sounding_base::{DataRow, Sounding};
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
 use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
-          SkewTContext};
+          SkewTContext, WindSpeedContext};
 
 // Module for configuring application
 pub mod config;
@@ -46,6 +46,9 @@ pub struct AppContext {
 
     // Handle to Cloud profile context
     pub cloud: CloudContext,
+
+    // Handle to wind speed profile context
+    pub wind_speed: WindSpeedContext,
 }
 
 impl AppContext {
@@ -65,6 +68,7 @@ impl AppContext {
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),
             hodo: HodoContext::new(),
+            wind_speed: WindSpeedContext::new(),
         })
     }
 
@@ -341,6 +345,7 @@ impl AppContext {
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
         self.cloud.zoom_to_envelope();
+        self.wind_speed.zoom_to_envelope();
         self.mark_background_dirty();
     }
 
@@ -367,6 +372,7 @@ impl AppContext {
         self.skew_t.mark_data_dirty();
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
+        self.wind_speed.mark_data_dirty();
         // TODO: Mark others as I can
     }
 
@@ -375,6 +381,7 @@ impl AppContext {
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
+        self.wind_speed.mark_overlay_dirty();
         // TODO: Mark others as I can
     }
 
@@ -383,6 +390,7 @@ impl AppContext {
         self.skew_t.mark_background_dirty();
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
+        self.wind_speed.mark_background_dirty();
         // TODO: Mark others as I can
     }
 }

@@ -113,6 +113,18 @@ pub struct PPCoords {
 }
 
 /***************************************************************************************************
+ *                   Speed - Pressure coords for the wind speed profile
+ * ************************************************************************************************/
+/// Speed-Pressure coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct SPCoords {
+    /// Speed in knots
+    pub spd: f64,
+    /// Pressure in hPa
+    pub press: f64,
+}
+
+/***************************************************************************************************
  *                 X - Y Coords for a default plot area that can be zoomed and panned
  * ************************************************************************************************/
 

@@ -503,7 +503,7 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
 
         let pres_data = sndg.get_profile(Pressure);
         let omega_data = sndg.get_profile(PressureVerticalVelocity);
-        let line_width = config.omega_line_width;
+        let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 
         let profile_data = pres_data
