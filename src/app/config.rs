@@ -440,7 +440,10 @@ pub const PERCENTS: [f64; 11] = [
     0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0
 ];
 
-pub const PROFILE_SPEEDS: [f64; 25] = ISO_SPEED;
+pub const PROFILE_SPEEDS: [f64; 20] = [
+    1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0,
+    90.0, 100.0, 200.0,
+];
 
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
