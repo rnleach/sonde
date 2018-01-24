@@ -8,15 +8,12 @@ use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use errors::*;
-use gui::Gui;
-use gui::hodograph::HodoContext;
-use gui::sounding::SkewTContext;
-use gui::rh_omega::RHOmegaContext;
-use gui::{PlotContext, PlotContextExt};
+use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
+          SkewTContext, WindSpeedContext};
 
 // Module for configuring application
 pub mod config;
-use app::config::Config;
+use self::config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
@@ -41,11 +38,17 @@ pub struct AppContext {
     // Handle to skew-t context
     pub skew_t: SkewTContext,
 
+    // Handle to Hodograph context
+    pub hodo: HodoContext,
+
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
-    // Handle to Hodograph context
-    pub hodo: HodoContext,
+    // Handle to Cloud profile context
+    pub cloud: CloudContext,
+
+    // Handle to wind speed profile context
+    pub wind_speed: WindSpeedContext,
 }
 
 impl AppContext {
@@ -63,7 +66,9 @@ impl AppContext {
             gui: RefCell::new(None),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
+            cloud: CloudContext::new(),
             hodo: HodoContext::new(),
+            wind_speed: WindSpeedContext::new(),
         })
     }
 
@@ -101,7 +106,7 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(Temperature))
                 .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
@@ -135,7 +140,7 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(DewPoint))
                 .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
@@ -169,11 +174,14 @@ impl AppContext {
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
                 .filter_map(|p| {
-                    if let (Some(p), Some(o)) = (p.0.as_option(), p.1.as_option()) {
+                    if let (Some(p), Some(o)) = (*p.0, *p.1) {
                         if p < config::MINP {
                             None
                         } else {
-                            Some(WPCoords { w: o.abs(), p })
+                            Some(WPCoords {
+                                w: { f64::max(o.abs(), config::MIN_ABS_W) },
+                                p,
+                            })
                         }
                     } else {
                         None
@@ -198,11 +206,7 @@ impl AppContext {
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
             ).filter_map(|tuple| {
-                if let (Some(p), Some(s), Some(d)) = (
-                    tuple.0.as_option(),
-                    tuple.1.as_option(),
-                    tuple.2.as_option(),
-                ) {
+                if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {
@@ -229,8 +233,14 @@ impl AppContext {
         }
 
         self.skew_t.set_xy_envelope(skew_t_xy_envelope);
-        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
         self.hodo.set_xy_envelope(hodo_xy_envelope);
+
+        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
+
+        let mut cloud_envelope = rh_omega_xy_envelope;
+        cloud_envelope.lower_left.x = 0.0;
+        cloud_envelope.upper_right.x = 1.0;
+        self.cloud.set_xy_envelope(cloud_envelope);
 
         self.fit_to_data();
 
@@ -285,7 +295,7 @@ impl AppContext {
 
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
-            if let Some(p) = sample.pressure.as_option() {
+            if let Some(p) = sample.pressure {
                 self.last_sample
                     .set(Some(::sounding_analysis::linear_interpolate(
                         &self.list.borrow()[self.currently_displayed_index.get()],
@@ -334,6 +344,8 @@ impl AppContext {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
         self.rh_omega.zoom_to_envelope();
+        self.cloud.zoom_to_envelope();
+        self.wind_speed.zoom_to_envelope();
         self.mark_background_dirty();
     }
 
@@ -349,7 +361,7 @@ impl AppContext {
 
         if let Some(ref gui) = *self.gui.borrow() {
             let ta = gui.get_text_area();
-            ::gui::text_area::update_text_highlight(&ta, self);
+            ::gui::update_text_highlight(&ta, self);
         }
 
         self.mark_overlay_dirty();
@@ -358,7 +370,9 @@ impl AppContext {
     pub fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
         self.skew_t.mark_data_dirty();
-        self.rh_omega.mark_background_dirty();
+        self.rh_omega.mark_data_dirty();
+        self.cloud.mark_data_dirty();
+        self.wind_speed.mark_data_dirty();
         // TODO: Mark others as I can
     }
 
@@ -366,13 +380,17 @@ impl AppContext {
         self.hodo.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
+        self.cloud.mark_overlay_dirty();
+        self.wind_speed.mark_overlay_dirty();
         // TODO: Mark others as I can
     }
 
     pub fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
         self.skew_t.mark_background_dirty();
-        self.rh_omega.mark_data_dirty();
+        self.rh_omega.mark_background_dirty();
+        self.cloud.mark_background_dirty();
+        self.wind_speed.mark_background_dirty();
         // TODO: Mark others as I can
     }
 }

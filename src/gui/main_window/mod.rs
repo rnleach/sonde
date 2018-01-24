@@ -70,7 +70,7 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     menu_bar
 }
 
-fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
+fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
     macro_rules! add_tab {
         ($notebook:ident, $widget:expr, $label:expr) => {
             $widget.set_property_margin(config::WIDGET_MARGIN);
@@ -79,15 +79,12 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
         };
     }
 
-    const BOX_SPACING: i32 = 3;
+    const BOX_SPACING: i32 = 2;
 
     let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
 
     // Left pane
     let skew_t = gui.get_sounding_area();
-    let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    h_box.set_property_margin(config::WIDGET_MARGIN);
-    h_box.pack_start(&skew_t, true, true, 0);
 
     // Set up scrolled window for text area.
     let text_win = ScrolledWindow::new(None, None);
@@ -99,6 +96,8 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     // Set up hbox for profiles
     let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
+    profile_box.pack_start(&gui.get_cloud_area(), true, true, 0);
+    profile_box.pack_start(&gui.get_wind_speed_profile_area(), true, true, 0);
 
     // Right pane
     let notebook = Notebook::new();
@@ -107,8 +106,9 @@ fn layout_frames(gui: &Gui, ac: &AppContext) -> gtk::Paned {
     add_tab!(notebook, gui.get_index_area(), "Indexes");
     add_tab!(notebook, v_text_box, "Text");
     add_tab!(notebook, gui.get_control_area(), "Controls");
+    notebook.set_tab_pos(gtk::PositionType::Right);
 
-    main_pane.add1(&add_border_frame(&h_box));
+    main_pane.add1(&add_border_frame(&skew_t));
     main_pane.add2(&notebook);
 
     let (width, height) = get_preferred_window_size(&skew_t, ac);
@@ -152,7 +152,16 @@ fn get_preferred_window_size<T: WidgetExt>(widget: &T, ac: &AppContext) -> (i32,
     let config = ac.config.borrow();
 
     if let Some(screen) = widget.get_screen() {
-        (screen.get_width() * 2 / 3, screen.get_height() * 2 / 3)
+        let mut width = screen.get_width() * 2 / 3;
+        if config.window_width > width {
+            width = config.window_width;
+        }
+
+        let mut height = screen.get_height() * 2 / 3;
+        if config.window_height > height {
+            height = config.window_height;
+        }
+        (width, height)
     } else {
         (config.window_width, config.window_height)
     }

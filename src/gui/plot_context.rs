@@ -1,16 +1,13 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait, Operator};
-use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-          ScrollDirection};
+use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
-use app::AppContextPointer;
 use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
-use gui::{AppContext, DrawingArgs};
+use gui::AppContext;
 
-pub trait PlotContext {
+pub trait PlotContext: Sized {
     /// Set the width and height of the plot in device
     fn set_device_rect(&self, rect: DeviceRect);
 
@@ -43,6 +40,12 @@ pub trait PlotContext {
 
     /// Get the last position of the cursor over this widget.
     fn get_last_cursor_position(&self) -> Option<DeviceCoords>;
+
+    /// Has data availabe to draw in this context
+    fn has_data(&self) -> bool;
+
+    /// Set whether data is available to draw in this context.
+    fn set_has_data(&self, has_data: bool);
 
     /// Set the last position of the cursor over this widget.
     fn set_last_cursor_position<T>(&self, new_position: T)
@@ -82,6 +85,12 @@ pub trait PlotContextExt: PlotContext {
 
         // Get the size
         let (width, height) = (da.get_allocation().width, da.get_allocation().height);
+
+        self.set_device_rect(DeviceRect {
+            upper_left: DeviceCoords { row: 0.0, col: 0.0 },
+            width: f64::from(width),
+            height: f64::from(height),
+        });
 
         // Make the new allocations
         self.set_background_layer(ImageSurface::create(Format::ARgb32, width, height).unwrap());
@@ -279,43 +288,9 @@ pub trait PlotContextExt: PlotContext {
 
         self.bound_view();
     }
-
-    fn init_matrix(&self, args: DrawingArgs) {
-        let cr = args.cr;
-
-        cr.save();
-
-        let (x1, y1, x2, y2) = cr.clip_extents();
-        let width = f64::abs(x2 - x1);
-        let height = f64::abs(y2 - y1);
-
-        let device_rect = DeviceRect {
-            upper_left: DeviceCoords { row: 0.0, col: 0.0 },
-            width,
-            height,
-        };
-        self.set_device_rect(device_rect);
-        let scale_factor = self.scale_factor();
-
-        // Start fresh
-        cr.identity_matrix();
-        // Set the scale factor
-        cr.scale(scale_factor, scale_factor);
-        // Set origin at lower left.
-        cr.transform(Matrix {
-            xx: 1.0,
-            yx: 0.0,
-            xy: 0.0,
-            yy: -1.0,
-            x0: 0.0,
-            y0: device_rect.height / scale_factor,
-        });
-
-        self.set_matrix(cr.get_matrix());
-        cr.restore();
-    }
 }
 
+#[derive(Debug)]
 pub struct GenericContext {
     // Area to draw in
     device_rect: Cell<DeviceRect>,
@@ -333,6 +308,7 @@ pub struct GenericContext {
     // last cursor position in skew_t widget, used for sampling and panning
     last_cursor_position: Cell<Option<DeviceCoords>>,
 
+    // Store the cairo matrix for use in drawing the different layers in a layer.
     matrix: Cell<Matrix>,
 
     dirty_background: Cell<bool>,
@@ -343,6 +319,9 @@ pub struct GenericContext {
 
     dirty_overlay: Cell<bool>,
     overlay_layer: RefCell<ImageSurface>,
+
+    // Flag for whether data is available for this context.
+    have_data_flag: Cell<bool>,
 }
 
 impl GenericContext {
@@ -374,6 +353,8 @@ impl GenericContext {
 
             dirty_overlay: Cell::new(true),
             overlay_layer: RefCell::new(ImageSurface::create(Format::ARgb32, 5, 5).unwrap()),
+
+            have_data_flag: Cell::new(true),
         }
     }
 }
@@ -398,7 +379,30 @@ where
         self.get_generic_context().xy_envelope.get()
     }
 
-    fn set_xy_envelope(&self, new_envelope: XYRect) {
+    fn set_xy_envelope(&self, mut new_envelope: XYRect) {
+        {
+            let ll = &mut new_envelope.lower_left;
+            let ur = &mut new_envelope.upper_right;
+
+            let xmin = &mut ll.x;
+            let xmax = &mut ur.x;
+            let ymin = &mut ll.y;
+            let ymax = &mut ur.y;
+
+            if *xmin < 0.0 {
+                *xmin = 0.0;
+            }
+            if *xmax > 1.0 {
+                *xmax = 1.0;
+            }
+            if *ymin < 0.0 {
+                *ymin = 0.0;
+            }
+            if *ymax > 1.0 {
+                *ymax = 0.0;
+            }
+        }
+
         self.get_generic_context().xy_envelope.set(new_envelope);
     }
 
@@ -509,228 +513,12 @@ where
     fn set_overlay_layer(&self, new_surface: ImageSurface) {
         *self.get_generic_context().overlay_layer.borrow_mut() = new_surface;
     }
-}
 
-pub trait Drawable: PlotContext + PlotContextExt {
-    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
-    fn draw_background(&self, args: DrawingArgs);
-    fn draw_data(&self, args: DrawingArgs);
-    fn draw_overlays(&self, args: DrawingArgs);
-
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
-        let args = DrawingArgs::new(acp, cr);
-
-        self.init_matrix(args);
-        self.draw_background_cached(args);
-        self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
-
-        Inhibit(false)
+    fn has_data(&self) -> bool {
+        self.get_generic_context().have_data_flag.get()
     }
 
-    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-        const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
-
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
-
-        let old_zoom = self.get_zoom_factor();
-        let mut new_zoom = old_zoom;
-
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
-
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        self.set_zoom_factor(new_zoom);
-
-        let mut translate = self.get_translate();
-        translate = XYCoords {
-            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
-            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
-        };
-        self.set_translate(translate);
-        self.bound_view();
-        self.mark_background_dirty();
-
-        ac.update_all_gui();
-
-        Inhibit(true)
-    }
-
-    fn button_press_event(&self, event: &EventButton) -> Inhibit {
-        // Left mouse button
-        if event.get_button() == 1 {
-            self.set_last_cursor_position(Some(event.get_position().into()));
-            self.set_left_button_pressed(true);
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
-    }
-
-    fn button_release_event(&self, event: &EventButton) -> Inhibit {
-        if event.get_button() == 1 {
-            self.set_last_cursor_position(None);
-            self.set_left_button_pressed(false);
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
-    }
-
-    fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
-        self.set_last_cursor_position(None);
-        ac.set_sample(None);
-        ac.update_all_gui();
-
-        Inhibit(false)
-    }
-
-    fn mouse_motion_event(
-        &self,
-        da: &DrawingArea,
-        ev: &EventMotion,
-        ac: &AppContextPointer,
-    ) -> Inhibit {
-        da.grab_focus();
-
-        if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
-                let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(ev.get_position());
-                self.set_last_cursor_position(Some(new_position));
-
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
-                let mut translate = self.get_translate();
-                translate.x -= delta.0;
-                translate.y -= delta.1;
-                self.set_translate(translate);
-                self.bound_view();
-                self.mark_background_dirty();
-                ac.update_all_gui();
-            }
-        }
-        Inhibit(false)
-    }
-
-    fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
-        let keyval = event.get_keyval();
-        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
-            ac.display_next();
-            Inhibit(true)
-        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
-            ac.display_previous();
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
-    }
-
-    fn size_allocate_event(&self, da: &DrawingArea) {
-        self.update_cache_allocations(da);
-    }
-
-    fn configure_event(&self, event: &EventConfigure) -> bool {
-        let rect = self.get_device_rect();
-        let (width, height) = event.get_size();
-        if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
-            || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
-        {
-            self.mark_background_dirty();
-        }
-        false
-    }
-
-    fn draw_background_cached(&self, args: DrawingArgs) {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
-
-        if self.is_background_dirty() {
-            let tmp_cr = Context::new(&self.get_background_layer());
-
-            // Clear the previous drawing from the cache
-            tmp_cr.save();
-            let rgba = config.background_rgba;
-            tmp_cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
-            tmp_cr.transform(self.get_matrix());
-            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
-
-            self.bound_view();
-
-            self.draw_background(tmp_args);
-
-            self.clear_background_dirty();
-        }
-
-        cr.set_source_surface(&self.get_background_layer(), 0.0, 0.0);
-        cr.paint();
-    }
-
-    fn draw_data_cached(&self, args: DrawingArgs) {
-        let (ac, cr) = (args.ac, args.cr);
-
-        if self.is_data_dirty() {
-            let tmp_cr = Context::new(&self.get_data_layer());
-
-            // Clear the previous drawing from the cache
-            tmp_cr.save();
-            tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
-            tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
-            tmp_cr.transform(self.get_matrix());
-            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
-
-            self.draw_data(tmp_args);
-
-            self.clear_data_dirty();
-        }
-
-        cr.set_source_surface(&self.get_data_layer(), 0.0, 0.0);
-        cr.paint();
-    }
-
-    fn draw_overlay_cached(&self, args: DrawingArgs) {
-        let (ac, cr) = (args.ac, args.cr);
-
-        if self.is_overlay_dirty() {
-            let tmp_cr = Context::new(&self.get_overlay_layer());
-
-            // Clear the previous drawing from the cache
-            tmp_cr.save();
-            tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
-            tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
-            tmp_cr.transform(self.get_matrix());
-            let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
-
-            self.draw_overlays(tmp_args);
-
-            self.clear_overlay_dirty();
-        }
-
-        cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
-        cr.paint();
+    fn set_has_data(&self, has_data: bool) {
+        self.get_generic_context().have_data_flag.set(has_data);
     }
 }

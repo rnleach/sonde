@@ -1,13 +1,12 @@
 use std::rc::Rc;
 
+use gdk::RGBA;
 use gtk;
 use gtk::prelude::*;
 use gtk::{CheckButton, ColorButton, Frame, ScrolledWindow};
-use gdk::RGBA;
-
-use gui::control_area::{BOX_SPACING, PADDING};
 
 use app::AppContextPointer;
+use gui::control_area::{BOX_SPACING, PADDING};
 
 pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
@@ -49,14 +48,9 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         temperature_rgba
     );
     build_config_color_and_check!(data_box, "Wind", acp, show_wind_profile, wind_rgba);
-    build_config_color_and_check!(
-        data_box,
-        "Vertical Velocity (\u{03C9})",
-        acp,
-        show_omega_profile,
-        omega_rgba
-    );
-    build_config_color_and_check!(data_box, "Relative Humidity", acp, show_rh_profile, rh_rgba);
+    build_config_color!(data_box, "Vertical Velocity (\u{03C9})", acp, omega_rgba);
+    build_config_color!(data_box, "Relative Humidity", acp, rh_rgba);
+    build_config_color!(data_box, "Cloud Coverage", acp, cloud_rgba);
 
     //
     // Layout boxes in the frame

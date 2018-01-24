@@ -31,9 +31,6 @@ mod coords;
 mod errors;
 use errors::*;
 
-// meteorological formulas
-mod formula;
-
 // GUI module
 mod gui;
 

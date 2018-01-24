@@ -1,7 +1,7 @@
 //! Keep configuration data in this module.
 
-use coords::{SDCoords, TPCoords, WPCoords, XYCoords};
-use gui::{HodoContext, RHOmegaContext, SkewTContext};
+use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
@@ -62,20 +62,36 @@ pub struct Config {
     pub show_dew_point: bool,
 
     //
+    // General profile configuration items
+    //
+    /// Profile plot line widths
+    pub profile_line_width: f64,
+
+    //
     // RH-Omega profile
     //
     /// Show the rh omega frame
-    pub show_rh_omega_frame: bool,
-    /// Show the omega profile
-    pub show_omega_profile: bool,
-    /// Line width in pixels for omega
-    pub omega_line_width: f64,
+    pub show_rh_omega_frame: bool, // FIXME: is this used? It should be.
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
-    /// Show RH
-    pub show_rh_profile: bool,
     /// RH Color
     pub rh_rgba: (f64, f64, f64, f64),
+
+    //
+    // Cloud profile
+    //
+    /// Show the cloud frame
+    pub show_cloud_frame: bool, // FIXME: is this used? It should be.
+    /// Cloud Color
+    pub cloud_rgba: (f64, f64, f64, f64),
+
+    //
+    // Wind speed profile
+    //
+    /// Show the wind speed profile frame
+    pub show_wind_speed_profile: bool, // FIXME: is this used? It should be.
+    /// Wind speed profile color.
+    pub wind_speed_profile_rgba: (f64, f64, f64, f64),
 
     //
     // Labeling
@@ -163,6 +179,11 @@ pub struct Config {
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: f64,
+
+    //
+    // Misc configuration.
+    //
+    pub bar_graph_line_width: f64,
 }
 
 impl Config {}
@@ -209,14 +230,28 @@ impl Default for Config {
             show_dew_point: true,
 
             //
+            // General profile configuration items
+            //
+            profile_line_width: 2.0,
+
+            //
             // RH-Omega profile
             //
             show_rh_omega_frame: true,
-            show_omega_profile: true,
-            omega_line_width: 2.0,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
-            show_rh_profile: true,
             rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
+
+            //
+            // Cloud profile
+            //
+            show_cloud_frame: true,
+            cloud_rgba: (0.5, 0.5, 0.5, 1.0),
+
+            //
+            // Wind speed profile
+            //
+            show_wind_speed_profile: true,
+            wind_speed_profile_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Labeling
@@ -271,6 +306,11 @@ impl Default for Config {
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
             min_hodo_pressure: 300.0,
+
+            //
+            // Misc configuration.
+            //
+            bar_graph_line_width: 2.0,
         }
     }
 }
@@ -301,9 +341,14 @@ pub const MAXT: f64 = 50.5; // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: f64 = 10.0;
+/// Minimum allowable vertical velocity in Pa/s, used only for setting scale.
+pub const MIN_ABS_W: f64 = 3.0;
 
 /// Maximum wind speed on hodograph in Knots
 pub const MAX_SPEED: f64 = 250.0;
+
+/// Maximum wind speed on the wind speed profile in Knots
+pub const MAX_PROFILE_SPEED: f64 = MAX_SPEED;
 
 //
 // Limits on the top pressure level for some background lines.
@@ -391,6 +436,15 @@ pub const ISO_SPEED: [f64; 25] = [
     160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0,
 ];
 
+pub const PERCENTS: [f64; 11] = [
+    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0
+];
+
+pub const PROFILE_SPEEDS: [f64; 20] = [
+    1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0,
+    90.0, 100.0, 200.0,
+];
+
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
@@ -447,7 +501,7 @@ lazy_static! {
 
     /// Compute points for background mixing ratio only once
     pub static ref ISO_MIXING_RATIO_PNTS: Vec<[XYCoords; 2]> = {
-        use formula::*;
+        use sounding_analysis::met_formulas::*;
 
         ISO_MIXING_RATIO
         .into_iter()
@@ -474,7 +528,8 @@ lazy_static! {
 
     /// Compute points for background theta-e
     pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
-        use formula::{find_root, theta_e_saturated_kelvin};
+        use sounding_analysis::met_formulas::theta_e_saturated_kelvin;
+        use sounding_analysis::utility::find_root;
 
         ISO_THETA_E_C
         .iter()
@@ -535,25 +590,76 @@ lazy_static! {
         })
         .collect()
     };
+
+    /// Compute points for background cloud coverage
+    pub static ref CLOUD_PERCENT_PNTS: Vec<[XYCoords; 2]> = {
+        PERCENTS
+            .into_iter()
+            .map(|p| {
+                [
+                PPCoords {
+                    pcnt: *p / 100.0,
+                    press: MINP,
+                },
+                PPCoords {
+                    pcnt: *p / 100.0,
+                    press: MAXP,
+                },
+            ]
+            })
+        .map(|pp| {
+            [
+                CloudContext::convert_pp_to_xy(pp[0]),
+                CloudContext::convert_pp_to_xy(pp[1])
+            ]
+        })
+            .collect()
+    };
+
+    /// Compute points for background cloud coverage
+    pub static ref PROFILE_SPEED_PNTS: Vec<[XYCoords; 2]> = {
+        PROFILE_SPEEDS
+            .into_iter()
+            .map(|speed| {
+                [
+                SPCoords {
+                    spd: *speed,
+                    press: MINP,
+                },
+                SPCoords {
+                    spd: *speed,
+                    press: MAXP,
+                },
+            ]
+            })
+        .map(|sp| {
+            [
+                WindSpeedContext::convert_sp_to_xy(sp[0]),
+                WindSpeedContext::convert_sp_to_xy(sp[1])
+            ]
+        })
+            .collect()
+    };
 }
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     use std::f64;
     use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
+    use sounding_analysis::met_formulas::temperature_c_from_theta;
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t = ::formula::temperature_c_from_theta(theta, p);
+        let t = temperature_c_from_theta(theta, p);
         result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
         }));
         p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
     }
-    let t = ::formula::temperature_c_from_theta(theta, ISENTROPS_TOP_P);
+    let t = temperature_c_from_theta(theta, ISENTROPS_TOP_P);
 
     result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,
