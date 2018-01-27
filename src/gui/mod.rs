@@ -913,8 +913,6 @@ trait SlaveProfileDrawable: Drawable {
     }
 
     fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
-        use sounding_base::Profile::Pressure;
-
         let (ac, cr) = (args.ac, args.cr);
 
         if !ac.config.borrow().show_dendritic_zone {
@@ -930,12 +928,17 @@ trait SlaveProfileDrawable: Drawable {
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
             // FIXME: Find a way to cache this in app context.
-            for (bottom_p, top_p) in ::sounding_analysis::dendritic_growth_zone(snd, Pressure) {
+            let layers = match ::sounding_analysis::layers::dendritic_snow_zone(snd) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
+
+            for layer in layers {
                 let mut coords = [
-                    (left, bottom_p),
-                    (left, top_p),
-                    (right, top_p),
-                    (right, bottom_p),
+                    (left, layer.bottom_press),
+                    (left, layer.top_press),
+                    (right, layer.top_press),
+                    (right, layer.bottom_press),
                 ];
 
                 // Convert points to screen coords

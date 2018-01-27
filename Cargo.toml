@@ -18,6 +18,7 @@ itertools = "^0.7.0"
 
 [patch.crates-io]
 sounding-analysis = {git = 'https://github.com/rnleach/sounding-analysis.git', version = '^0.2.0' }
+sounding-base = {git = 'https://github.com/rnleach/sounding-base.git', version = '^0.2.1' }
 
 [profile.release]
 lto = true
