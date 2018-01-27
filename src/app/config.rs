@@ -130,6 +130,12 @@ pub struct Config {
     pub hail_zone_rgba: (f64, f64, f64, f64),
     /// Show or hide the hail growth zone
     pub show_hail_zone: bool,
+    /// Color used to fill the warm layer aloft
+    pub warm_layer_rgba: (f64, f64, f64, f64),
+    /// Color used to fill the wet bulb warm layer aloft
+    pub warm_wet_bulb_aloft_rgba: (f64, f64, f64, f64),
+    /// Show or hide the hail growth zone
+    pub show_warm_layer_aloft: bool,
     /// Line width for freezing line
     pub freezing_line_width: f64,
     /// Color for freezing line
@@ -275,6 +281,9 @@ impl Default for Config {
             show_dendritic_zone: true,
             hail_zone_rgba: (0.0, 0.803921569, 0.803921569, 1.0),
             show_hail_zone: true,
+            warm_layer_rgba: (0.717647, 0.2549, 0.0549, 1.0),
+            warm_wet_bulb_aloft_rgba: (0.8, 0.0, 0.0, 1.0),
+            show_warm_layer_aloft: true,
             freezing_line_width: 3.0,
             freezing_line_color: (0.0, 0.466666667, 0.780392157, 1.0),
             show_freezing_line: true,

@@ -9,6 +9,7 @@ use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, 
           ScrollDirection};
 
 use sounding_base::{DataRow, Sounding};
+use sounding_analysis::Layer;
 
 use app::{AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
@@ -913,58 +914,93 @@ trait SlaveProfileDrawable: Drawable {
     }
 
     fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
-        let (ac, cr) = (args.ac, args.cr);
+        let ac = args.ac;
 
         if !ac.config.borrow().show_dendritic_zone {
             return;
         }
 
-        // If is plottable, draw snow growth zones
         if let Some(ref snd) = ac.get_sounding_for_display() {
-            let bb = self.bounding_box_in_screen_coords();
-            let (left, right) = (bb.lower_left.x, bb.upper_right.x);
-
-            let rgba = ac.config.borrow().dendritic_zone_rgba;
-            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-            // FIXME: Find a way to cache this in app context.
             let layers = match ::sounding_analysis::layers::dendritic_snow_zone(snd) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
 
-            for layer in layers {
-                let mut coords = [
-                    (left, layer.bottom_press),
-                    (left, layer.top_press),
-                    (right, layer.top_press),
-                    (right, layer.bottom_press),
-                ];
+            let rgba = ac.config.borrow().dendritic_zone_rgba;
 
-                // Convert points to screen coords
-                for coord in &mut coords {
-                    coord.1 = convert_pressure_to_y(coord.1);
+            self.draw_layers(args, &layers, rgba);
+        }
+    }
 
-                    let screen_coords = self.convert_xy_to_screen(XYCoords {
-                        x: coord.0,
-                        y: coord.1,
-                    });
+    fn draw_warm_layer_aloft(&self, args: DrawingArgs) {
+        let ac = args.ac;
 
-                    coord.0 = screen_coords.x;
-                    coord.1 = screen_coords.y;
-                }
+        if !ac.config.borrow().show_warm_layer_aloft {
+            return;
+        }
 
-                let mut coord_iter = coords.iter();
-                for coord in coord_iter.by_ref().take(1) {
-                    cr.move_to(coord.0, coord.1);
-                }
-                for coord in coord_iter {
-                    cr.line_to(coord.0, coord.1);
-                }
+        if let Some(ref snd) = ac.get_sounding_for_display() {
+            let layers = match ::sounding_analysis::layers::warm_temperature_layer_aloft(snd) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
 
-                cr.close_path();
-                cr.fill();
+            let rgba = ac.config.borrow().warm_layer_rgba;
+
+            self.draw_layers(args, &layers, rgba);
+
+            let layers = match ::sounding_analysis::layers::warm_wet_bulb_layer_aloft(snd) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
+
+            let rgba = ac.config.borrow().warm_wet_bulb_aloft_rgba;
+
+            self.draw_layers(args, &layers, rgba);
+
+
+        }
+    }
+
+    fn draw_layers(&self, args: DrawingArgs, layers: &[Layer], color_rgba: (f64, f64, f64, f64)) {
+        let cr = args.cr;
+
+        let bb = self.bounding_box_in_screen_coords();
+        let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+
+        cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
+
+        for layer in layers {
+            let mut coords = [
+                (left, layer.bottom_press),
+                (left, layer.top_press),
+                (right, layer.top_press),
+                (right, layer.bottom_press),
+            ];
+
+            // Convert points to screen coords
+            for coord in &mut coords {
+                coord.1 = convert_pressure_to_y(coord.1);
+
+                let screen_coords = self.convert_xy_to_screen(XYCoords {
+                    x: coord.0,
+                    y: coord.1,
+                });
+
+                coord.0 = screen_coords.x;
+                coord.1 = screen_coords.y;
             }
+
+            let mut coord_iter = coords.iter();
+            for coord in coord_iter.by_ref().take(1) {
+                cr.move_to(coord.0, coord.1);
+            }
+            for coord in coord_iter {
+                cr.line_to(coord.0, coord.1);
+            }
+
+            cr.close_path();
+            cr.fill();
         }
     }
 }
