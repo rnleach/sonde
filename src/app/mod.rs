@@ -7,7 +7,6 @@ use std::cell::{Cell, RefCell};
 use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use errors::*;
 use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
           SkewTContext, WindSpeedContext};
 
@@ -76,7 +75,7 @@ impl AppContext {
         *self.gui.borrow_mut() = Some(gui);
     }
 
-    pub fn load_data(&self, src: &mut Iterator<Item = Sounding>) -> Result<()> {
+    pub fn load_data(&self, src: &mut Iterator<Item = Sounding>) {
         use app::config;
         use sounding_base::Profile::*;
 
@@ -248,8 +247,6 @@ impl AppContext {
             gui.draw_all();
             gui.update_text_view(self);
         }
-
-        Ok(())
     }
 
     /// Is there any data to plot?

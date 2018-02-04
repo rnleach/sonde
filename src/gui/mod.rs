@@ -971,11 +971,23 @@ trait SlaveProfileDrawable: Drawable {
         cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
 
         for layer in layers {
+            let bottom_press = if let Some(press) = layer.bottom.pressure {
+                press
+            } else {
+                continue;
+            };
+
+            let top_press = if let Some(press) = layer.top.pressure {
+                press
+            } else {
+                continue;
+            };
+
             let mut coords = [
-                (left, layer.bottom_press),
-                (left, layer.top_press),
-                (right, layer.top_press),
-                (right, layer.bottom_press),
+                (left, bottom_press),
+                (left, top_press),
+                (right, top_press),
+                (right, bottom_press),
             ];
 
             // Convert points to screen coords

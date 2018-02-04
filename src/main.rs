@@ -1,15 +1,22 @@
 extern crate sonde;
+extern crate failure;
+
+use failure::Fail;
 
 fn main() {
     if let Err(ref e) = sonde::run() {
         println!("error: {}", e);
 
-        for e in e.iter().skip(1) {
-            println!("caused by: {}", e);
-        }
+        let mut fail: &Fail = e.cause();
 
-        if let Some(backtrace) = e.backtrace() {
-            println!("backtrace: {:?}", backtrace);
+        while let Some(cause) = fail.cause() {
+            println!("caused by: {}", cause);
+
+            if let Some(backtrace) = cause.backtrace() {
+                println!("backtrace: {}\n\n\n", backtrace);
+            }
+
+            fail = cause;
         }
 
         ::std::process::exit(1);

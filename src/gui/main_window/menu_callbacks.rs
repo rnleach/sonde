@@ -34,11 +34,11 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     dialog.destroy();
 }
 
-fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<()> {
-    let file = BufkitFile::load(path).chain_err(|| format!("Error loading file {:?}", path))?;
+fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Error> {
+    let file = BufkitFile::load(path)?;
     let data = file.data()?;
 
-    ac.load_data(&mut data.into_iter())?;
+    ac.load_data(&mut data.into_iter());
 
     if let Some(name) = path.file_name() {
         let mut src_name = "File: ".to_owned();

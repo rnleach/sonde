@@ -2,8 +2,7 @@
 #![recursion_limit = "1024"]
 
 extern crate chrono;
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 #[macro_use]
 extern crate itertools;
 #[macro_use]
@@ -34,13 +33,14 @@ use errors::*;
 // GUI module
 mod gui;
 
-pub fn run() -> Result<()> {
+pub fn run() -> Result<(), Error> {
     // Set up Gtk+
-    gtk::init().chain_err(|| "Error intializing Gtk+3")?;
+    gtk::init()?;
 
     // Set up data context
     let app = AppContext::new();
 
+    // FIXME: Dead code? Does nothing?
     // Clear the cache every time through the event loop.
     gtk::idle_add(move || gtk::Continue(true));
 
