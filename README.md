@@ -66,6 +66,10 @@ A hodograph is also included. When sampling the skew-t, a dot appears at the cor
 on the hodograph.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
+The profiles highlight important levels, such as the dendritic snow growth zone shown in these
+profiles. Also, the sample readouts track directly with the one on the skew-t.
+![screenshot with profiles view](./screenshots/Profiles.png)
+
 ## Future Development
  - Get the indexes display working.
  - Add more profiles.
