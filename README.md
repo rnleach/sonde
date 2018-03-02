@@ -1,6 +1,8 @@
 # Sonde
 A program for viewing and analysis of atmospheric soundings from weather models.
 
+[![Build Status](https://travis-ci.org/rnleach/sonde.svg?branch=master)](https://travis-ci.org/rnleach/sonde)
+
 ## Background
 
 There are already a few good tools out there for looking at atmospheric sounding data including
@@ -9,28 +11,34 @@ this is a good way to explore both in depth.
 
 I used [GKT+][gtk] via [Gtk-rs][gtkrs] and [Rust][rust] to implement it.
 
-Probably the frequently thought of use case for sounding analysis is thunderstorms and convection.
-However, they are also used heavily in forecasting winds and precipitation type during the winter.
-My main interests in meteorology are fire weather and winter weather, so that is the emphasis I am
-taking as I develop this.
+Probably the most frequently thought of use case for sounding analysis is thunderstorms and 
+convection. However, they are also used heavily in forecasting winds and precipitation type during 
+the winter. My main interests in meteorology are fire weather and winter weather, so that is the 
+emphasis I am taking as I develop this.
 
 ## Features
  - Data views
    - Pan and zoom. All data displays (except text) support panning and zooming.
    - Consistent graphical representation. No matter how far you zoom in/out on the skew-t, the 
      coordinates always keep the same aspect ratio. So a given lapse rate will always have the same
-     slope in the image, no matter what scale you zoom. 
+     slope in the image, no matter to what scale you zoom. 
  - Background
-   - Standard skew-t log-p background lines including constant mixing ration, isotherms, isobars,
-     wet adiabats and dry adiabats.
+   - Standard skew-t log-p background lines including constant mixing ratio, isotherms, isobars,
+     moist adiabats and dry adiabats.
    - Optional shading change every 10 degrees.
    - Critical temperature zones highlighted including hail growth zone and dendritic snow growth
      zone.
    - Freezing line/level emphasized.
  - Profiles
-   - Currently only a profile of pressure vertical velocity overlaid with relative humidity is 
-     created in the profiles tab.
+   - Pressure vertical velocity overlaid with relative humidity.
+   - Wind speed.
+   - Cloud cover.
    - More profiles to come.
+ - Profile backgrounds.
+   - Highlights dendritic snow growth zone if present in the sounding.
+   - Highlights warm layers aloft (dry bulb and wet bulb) if the surface temperature is below 
+     freezing.
+   - Freezing level emphasized.
  - Data
    - Wet bulb plot added.
    - Progressive disclosure of winds.
@@ -61,10 +69,8 @@ on the hodograph.
 ## Future Development
  - Get the indexes display working.
  - Add more profiles.
-   - Wind speed.
    - Lapse rate.
    - Theta-e.
-   - Cloud coverage.
  - A data downloader and manager.
  - Support for loading [bufr][bufr] files so that measured data can be inspected too.
  - Saving and loading of the configuration and colors.
