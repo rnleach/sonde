@@ -424,18 +424,19 @@ impl Drawable for SkewTContext {
             }
 
             // Build location part.
-            let (lat, lon, elevation) = snd.get_location();
-            if lat.is_some() || lon.is_some() || elevation.is_some() {
+            let coords = snd.get_station_info().location();
+            let elevation = snd.get_station_info().elevation();
+            if coords.is_some() || elevation.is_some() {
                 let mut location = "".to_owned();
 
-                if let Some(lat) = lat {
-                    location.push_str(&format!("{:.2}", lat));
-                }
-                if let Some(lon) = lon {
-                    location.push_str(&format!(", {:.2}", lon));
+                if let Some((lat, lon)) = coords {
+                    location.push_str(&format!("{:.2}, {:.2}", lat, lon));
+                    if elevation.is_some() {
+                        location.push_str(", ");
+                    }
                 }
                 if let Some(el) = elevation {
-                    location.push_str(&format!(", {:.0}m ({:.0}ft)", el, el * 3.28084));
+                    location.push_str(&format!("{:.0}m ({:.0}ft)", el, el * 3.28084));
                 }
 
                 result.push(location);
@@ -457,7 +458,7 @@ impl Drawable for SkewTContext {
      * Overlays Drawing.
      **********************************************************************************************/
     fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
-        use sounding_analysis::met_formulas::rh;
+        use metfor::rh;
 
         let mut results = vec![];
 
@@ -468,7 +469,7 @@ impl Drawable for SkewTContext {
         let spd = vals.speed;
         let hgt_asl = vals.height;
         let omega = vals.omega;
-        let elevation = snd.get_location().2;
+        let elevation = snd.get_station_info().elevation();
 
         if t_c.is_some() || dp_c.is_some() || omega.is_some() {
             let mut line = String::with_capacity(128);
@@ -482,7 +483,9 @@ impl Drawable for SkewTContext {
                 line.push_str(&format!("{:.0}C", dp_c));
             }
             if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                line.push_str(&format!(" {:.0}%", 100.0 * rh(t_c, dp_c)));
+                if let Ok(rh) = rh(t_c, dp_c) {
+                    line.push_str(&format!(" {:.0}%", 100.0 * rh));
+                }
             }
             if let Some(omega) = omega {
                 line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));

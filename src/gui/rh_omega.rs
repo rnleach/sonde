@@ -332,7 +332,7 @@ impl Drawable for RHOmegaContext {
      * Overlays Drawing.
      **********************************************************************************************/
     fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
-        use sounding_analysis::met_formulas::rh;
+        use metfor::rh;
 
         let mut results = vec![];
 
@@ -344,7 +344,9 @@ impl Drawable for RHOmegaContext {
             let mut line = String::with_capacity(128);
 
             if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                line.push_str(&format!("{:.0}%", 100.0 * rh(t_c, dp_c)));
+                if let Ok(rh) = rh(t_c, dp_c) {
+                    line.push_str(&format!("{:.0}%", 100.0 * rh));
+                }
             }
             if t_c.is_some() && dp_c.is_some() && omega.is_some() {
                 line.push(' ');
@@ -375,7 +377,7 @@ impl Drawable for RHOmegaContext {
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // will not panic due to ac.plottable
+                &ac.get_sounding_for_display().expect(file!()), // will not panic due to ac.plottable
                 wp_position.p,
             );
             ac.set_sample(Some(sample));
@@ -399,7 +401,7 @@ impl SlaveProfileDrawable for RHOmegaContext {
 }
 
 fn draw_rh_profile(args: DrawingArgs) -> bool {
-    use sounding_analysis::met_formulas::rh;
+    use metfor::rh;
 
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -413,7 +415,10 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
         let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|triplet| {
                 if let (Some(p), Some(t), Some(td)) = (*triplet.0, *triplet.1, *triplet.2) {
-                    Some((p, rh(t, td)))
+                    match rh(t, td) {
+                        Ok(rh) => Some((p, rh)),
+                        Err(_) => None,
+                    }
                 } else {
                     None
                 }

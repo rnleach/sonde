@@ -365,6 +365,8 @@ pub const MAX_PROFILE_SPEED: f64 = MAX_SPEED;
 
 /// Highest elevation pressure level to draw isentrops up to
 pub const ISENTROPS_TOP_P: f64 = MINP;
+/// Moist adiabat highest elevation pressure to draw up to
+pub const THETA_E_TOP_P: f64 = 200.0;
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 40;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
@@ -510,18 +512,18 @@ lazy_static! {
 
     /// Compute points for background mixing ratio only once
     pub static ref ISO_MIXING_RATIO_PNTS: Vec<[XYCoords; 2]> = {
-        use sounding_analysis::met_formulas::*;
+        use metfor::*;
 
         ISO_MIXING_RATIO
         .into_iter()
         .map(|mw| {
             [
                 TPCoords{
-                    temperature: temperature_from_p_and_saturated_mw(MAXP, *mw),
+                    temperature: dew_point_from_p_and_mw(MAXP, *mw/1000.0).expect("dp from mw fail"),
                     pressure: MAXP
                 },
                 TPCoords{
-                    temperature: temperature_from_p_and_saturated_mw(ISO_MIXING_RATIO_TOP_P, *mw),
+                    temperature: dew_point_from_p_and_mw(ISO_MIXING_RATIO_TOP_P, *mw/1000.0).expect("dp from mw fail"),
                     pressure: ISO_MIXING_RATIO_TOP_P,
                 },
             ]
@@ -537,21 +539,33 @@ lazy_static! {
 
     /// Compute points for background theta-e
     pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
-        use sounding_analysis::met_formulas::theta_e_saturated_kelvin;
-        use sounding_analysis::utility::find_root;
+        use metfor::theta_e_saturated_kelvin;
 
         ISO_THETA_E_C
         .iter()
         .map(|theta_c| theta_e_saturated_kelvin(1000.0, *theta_c))
         .map(|theta_e_k| {
             let mut v = vec![];
-            let mut p = ISENTROPS_TOP_P;
+            let mut p = THETA_E_TOP_P;
             let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
+
             while p < MAXP + 1.0001 * dp {
-                let t = find_root(&|t| {theta_e_saturated_kelvin(p,t)- theta_e_k},
-                    -150.0, 60.0);
-                v.push(SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p}));
-                p += dp;
+
+                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k?)},-60.0, 60.0)
+                    .and_then(|t| {
+                        v.push(
+                            SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p})
+                        );
+                        Ok(())
+                    })
+                {
+                    Ok(_) => p += dp,
+                    Err(_) =>
+                        p = find_root(
+                            &|p| {Ok(theta_e_saturated_kelvin(p,-59.999)? - theta_e_k?)},
+                            THETA_E_TOP_P,
+                            MAXP).unwrap_or_else(|_| p + 1.0),
+                }
             }
             v
         })
@@ -655,20 +669,20 @@ lazy_static! {
 fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     use std::f64;
     use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
-    use sounding_analysis::met_formulas::temperature_c_from_theta;
+    use metfor::temperature_c_from_theta;
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t = temperature_c_from_theta(theta, p);
+        let t = temperature_c_from_theta(theta, p).expect("constants should not fail!");
         result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
         }));
         p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
     }
-    let t = temperature_c_from_theta(theta, ISENTROPS_TOP_P);
+    let t = temperature_c_from_theta(theta, ISENTROPS_TOP_P).expect("constants should not fail!");
 
     result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,
@@ -676,4 +690,46 @@ fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     }));
 
     result
+}
+
+/// Bisection algorithm for finding the root of an equation given values bracketing a root. Used
+/// when drawing moist adiabats.
+use metfor::Result;
+fn find_root(f: &Fn(f64) -> Result<f64>, mut low_val: f64, mut high_val: f64) -> Result<f64> {
+    use metfor;
+
+    use std::f64;
+    const MAX_IT: usize = 50;
+    const EPS: f64 = 1.0e-10;
+
+    if low_val > high_val {
+        ::std::mem::swap(&mut low_val, &mut high_val);
+    }
+
+    let mut f_low = f(low_val)?;
+    let f_high = f(high_val)?;
+    if f_high * f_low > 0.0 {
+        return Err(metfor::MetForErr::InputOutOfRange);
+    }
+
+    let mut mid_val = (high_val - low_val) / 2.0 + low_val;
+    let mut f_mid = f(mid_val)?;
+    for _ in 0..MAX_IT {
+        if f_mid * f_low > 0.0 {
+            low_val = mid_val;
+            f_low = f_mid;
+        } else {
+            high_val = mid_val;
+            // f_high = f_mid;
+        }
+
+        if (high_val - low_val).abs() < EPS {
+            break;
+        }
+
+        mid_val = (high_val - low_val) / 2.0 + low_val;
+        f_mid = f(mid_val)?;
+    }
+
+    Ok(mid_val)
 }

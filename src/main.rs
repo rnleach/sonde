@@ -1,5 +1,5 @@
-extern crate sonde;
 extern crate failure;
+extern crate sonde;
 
 use failure::Fail;
 

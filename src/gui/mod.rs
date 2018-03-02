@@ -957,8 +957,6 @@ trait SlaveProfileDrawable: Drawable {
             let rgba = ac.config.borrow().warm_wet_bulb_aloft_rgba;
 
             self.draw_layers(args, &layers, rgba);
-
-
         }
     }
 

@@ -56,15 +56,15 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
 
     macro_rules! unwrap_to_str {
         ($opt_val:expr, $fmt:expr) => {
-            if $opt_val.is_some() {
-                format!($fmt, $opt_val.unwrap())
+            if let Some(val) = $opt_val {
+                format!($fmt, val)
             } else {
                 "".to_owned()
             }
         };
         ($opt_val:expr, $fmt:expr, $multiplier:expr) => {
-            if $opt_val.is_some() {
-                format!($fmt, $opt_val.unwrap() * $multiplier)
+            if let Some(val) = $opt_val {
+                format!($fmt, val * $multiplier)
             } else {
                 "".to_owned()
             }
@@ -76,7 +76,11 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
             let mut text = String::with_capacity(4096);
 
             for row in snd.top_down() {
-                if row.pressure.unwrap() < config::MINP {
+                if let Some(p) = row.pressure {
+                    if p < config::MINP {
+                        continue;
+                    }
+                } else {
                     continue;
                 }
                 text.push_str(&format!(

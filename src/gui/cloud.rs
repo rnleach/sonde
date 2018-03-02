@@ -311,7 +311,7 @@ impl Drawable for CloudContext {
             self.set_last_cursor_position(Some(position));
             let pp_position = self.convert_device_to_pp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap(), // ac.plottable() call ensures this won't panic
+                &ac.get_sounding_for_display().expect(file!()), // ac.plottable() call ensures this won't panic
                 pp_position.press,
             );
             ac.set_sample(Some(sample));
