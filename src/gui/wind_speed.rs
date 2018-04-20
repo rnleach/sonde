@@ -320,7 +320,7 @@ impl Drawable for WindSpeedContext {
             self.set_last_cursor_position(Some(position));
             let sp_position = self.convert_device_to_sp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap().0, // ac.plottable() call ensures this won't panic
+                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
                 sp_position.press,
             );
             ac.set_sample(sample.ok());
@@ -352,8 +352,8 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
 
         ac.wind_speed.set_has_data(true);
 
-        let pres_data = sndg.0.get_profile(Pressure);
-        let spd_data = sndg.0.get_profile(WindSpeed);
+        let pres_data = sndg.sounding().get_profile(Pressure);
+        let spd_data = sndg.sounding().get_profile(WindSpeed);
         let mut profile = izip!(pres_data, spd_data)
             .filter_map(|pair| {
                 if let (Some(p), Some(s)) = (*pair.0, *pair.1) {

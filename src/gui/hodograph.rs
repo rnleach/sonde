@@ -277,7 +277,7 @@ fn draw_data(args: DrawingArgs) {
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = &sndg.0;
+        let sndg = sndg.sounding();
         let pres_data = sndg.get_profile(Pressure);
         let speed_data = sndg.get_profile(WindSpeed);
         let dir_data = sndg.get_profile(WindDirection);

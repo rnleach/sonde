@@ -396,7 +396,7 @@ impl Drawable for SkewTContext {
         }
 
         if let Some(snd) = ac.get_sounding_for_display() {
-            let snd = &snd.0;
+            let snd = snd.sounding();
             // Build the valid time part
             if let Some(vt) = snd.get_valid_time() {
                 use chrono::{Datelike, Timelike};
@@ -653,7 +653,7 @@ impl Drawable for SkewTContext {
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().unwrap().0, // ac.plottable() call ensures this won't panic
+                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
                 tp_position.pressure,
             );
             ac.set_sample(sample.ok());
@@ -701,7 +701,7 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     use sounding_base::Profile::{DewPoint, Pressure, Temperature, WetBulb};
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = &sndg.0;
+        let sndg = sndg.sounding();
         let pres_data = sndg.get_profile(Pressure);
         let temp_data = match t_type {
             TemperatureType::DryBulb => sndg.get_profile(Temperature),
@@ -749,12 +749,12 @@ fn draw_wind_profile(args: DrawingArgs) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
-        let snd = if let Some(snd)= ac.get_sounding_for_display() {
+        let snd = if let Some(snd) = ac.get_sounding_for_display() {
             snd
         } else {
             return;
         };
-        let snd = &snd.0;
+        let snd = snd.sounding();
 
         let barb_config = WindBarbConfig::init(args);
         let barb_data = gather_wind_data(&snd, &barb_config, args);

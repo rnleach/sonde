@@ -377,7 +377,8 @@ impl Drawable for RHOmegaContext {
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().expect(file!()).0, // will not panic due to ac.plottable
+                // will not panic due to ac.plottable
+                &ac.get_sounding_for_display().expect(file!()).sounding(),
                 wp_position.p,
             );
             ac.set_sample(sample.ok());
@@ -409,9 +410,9 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{DewPoint, Pressure, Temperature};
 
-        let pres_data = sndg.0.get_profile(Pressure);
-        let t_data = sndg.0.get_profile(Temperature);
-        let td_data = sndg.0.get_profile(DewPoint);
+        let pres_data = sndg.sounding().get_profile(Pressure);
+        let t_data = sndg.sounding().get_profile(Temperature);
+        let td_data = sndg.sounding().get_profile(DewPoint);
         let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|triplet| {
                 if let (Some(p), Some(t), Some(td)) = (*triplet.0, *triplet.1, *triplet.2) {
@@ -507,8 +508,8 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{Pressure, PressureVerticalVelocity};
 
-        let pres_data = sndg.0.get_profile(Pressure);
-        let omega_data = sndg.0.get_profile(PressureVerticalVelocity);
+        let pres_data = sndg.sounding().get_profile(Pressure);
+        let omega_data = sndg.sounding().get_profile(PressureVerticalVelocity);
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 

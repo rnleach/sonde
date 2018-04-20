@@ -18,6 +18,32 @@ use self::config::Config;
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
 
+/// Wrapper for a sounding-analysis pair.
+pub struct SoundingPackage {
+    sounding: Sounding,
+    analysis: Analysis,
+}
+
+impl SoundingPackage {
+    /// Constructor for a package
+    fn new(snd: Sounding, anal: Analysis) -> Self {
+        SoundingPackage {
+            sounding: snd,
+            analysis: anal,
+        }
+    }
+
+    /// Getter for sounding reference.
+    pub fn sounding(&self) -> &Sounding {
+        &self.sounding
+    }
+
+    /// Getter for analysis reference
+    pub fn analysis(&self) -> &Analysis {
+        &self.analysis
+    }
+}
+
 /// Holds the application state. This is a singleton (not enforced) that is shared globally.
 pub struct AppContext {
     // Configuration, style and layout settings.
@@ -28,7 +54,7 @@ pub struct AppContext {
     // name. So whatever function loads a sounding should set this to reflect where it came from.
     source_description: RefCell<Option<String>>,
 
-    list: RefCell<Vec<Rc<(Sounding, Analysis)>>>,
+    list: RefCell<Vec<Rc<SoundingPackage>>>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
 
@@ -80,7 +106,9 @@ impl AppContext {
         use app::config;
         use sounding_base::Profile::*;
 
-        *self.list.borrow_mut() = src.into_iter().map(Rc::new).collect();
+        *self.list.borrow_mut() = src.into_iter()
+            .map(|(snd, anal)| Rc::new(SoundingPackage::new(snd, anal)))
+            .collect();
         self.currently_displayed_index.set(0);
         *self.source_description.borrow_mut() = None;
 
@@ -100,11 +128,12 @@ impl AppContext {
         };
 
         let snd_list = self.list.borrow();
+        let snd_list = snd_list.iter().map(|package| package.sounding());
 
-        for snd in snd_list.iter() {
-            for pair in snd.0.get_profile(Pressure)
+        for snd in snd_list {
+            for pair in snd.get_profile(Pressure)
                 .iter()
-                .zip(snd.0.get_profile(Temperature))
+                .zip(snd.get_profile(Temperature))
                 .filter_map(|p| {
                     if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -136,9 +165,9 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.0.get_profile(Pressure)
+            for pair in snd.get_profile(Pressure)
                 .iter()
-                .zip(snd.0.get_profile(DewPoint))
+                .zip(snd.get_profile(DewPoint))
                 .filter_map(|p| {
                     if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -170,9 +199,9 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.0.get_profile(Pressure)
+            for pair in snd.get_profile(Pressure)
                 .iter()
-                .zip(snd.0.get_profile(PressureVerticalVelocity))
+                .zip(snd.get_profile(PressureVerticalVelocity))
                 .filter_map(|p| {
                     if let (Some(p), Some(o)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -202,9 +231,9 @@ impl AppContext {
             }
 
             for pair in izip!(
-                snd.0.get_profile(Pressure),
-                snd.0.get_profile(WindSpeed),
-                snd.0.get_profile(WindDirection)
+                snd.get_profile(Pressure),
+                snd.get_profile(WindSpeed),
+                snd.get_profile(WindDirection)
             ).filter_map(|tuple| {
                 if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
                     if p < self.config.borrow().min_hodo_pressure {
@@ -294,11 +323,12 @@ impl AppContext {
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure {
-                self.last_sample
-                    .set(::sounding_analysis::linear_interpolate(
-                        &self.list.borrow()[self.currently_displayed_index.get()].0,
+                self.last_sample.set(
+                    ::sounding_analysis::linear_interpolate(
+                        &self.list.borrow()[self.currently_displayed_index.get()].sounding,
                         p,
-                    ).ok());
+                    ).ok(),
+                );
             } else {
                 self.last_sample.set(None);
             }
@@ -315,7 +345,7 @@ impl AppContext {
     }
 
     /// Get the sounding to draw.
-    pub fn get_sounding_for_display(&self) -> Option<Rc<(Sounding, Analysis)>> {
+    pub fn get_sounding_for_display(&self) -> Option<Rc<SoundingPackage>> {
         if self.plottable() {
             let shared_ptr = Rc::clone(&self.list.borrow()[self.currently_displayed_index.get()]);
             Some(shared_ptr)
