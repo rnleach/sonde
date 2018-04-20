@@ -311,10 +311,10 @@ impl Drawable for CloudContext {
             self.set_last_cursor_position(Some(position));
             let pp_position = self.convert_device_to_pp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().expect(file!()), // ac.plottable() call ensures this won't panic
+                &ac.get_sounding_for_display().expect(file!()).0, // ac.plottable() call ensures this won't panic
                 pp_position.press,
             );
-            ac.set_sample(Some(sample));
+            ac.set_sample(sample.ok());
             ac.mark_overlay_dirty();
             ac.update_all_gui();
         }
@@ -339,6 +339,7 @@ fn draw_cloud_profile(args: DrawingArgs) {
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
+        let sndg = &sndg.0;
         use sounding_base::Profile::{CloudFraction, Pressure};
 
         ac.cloud.set_has_data(true);

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
 use sounding_base::{DataRow, Sounding};
+use sounding_analysis::Analysis;
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
@@ -27,7 +28,7 @@ pub struct AppContext {
     // name. So whatever function loads a sounding should set this to reflect where it came from.
     source_description: RefCell<Option<String>>,
 
-    list: RefCell<Vec<Rc<Sounding>>>,
+    list: RefCell<Vec<Rc<(Sounding, Analysis)>>>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
 
@@ -75,7 +76,7 @@ impl AppContext {
         *self.gui.borrow_mut() = Some(gui);
     }
 
-    pub fn load_data(&self, src: &mut Iterator<Item = Sounding>) {
+    pub fn load_data(&self, src: &mut Iterator<Item = (Sounding, Analysis)>) {
         use app::config;
         use sounding_base::Profile::*;
 
@@ -101,9 +102,9 @@ impl AppContext {
         let snd_list = self.list.borrow();
 
         for snd in snd_list.iter() {
-            for pair in snd.get_profile(Pressure)
+            for pair in snd.0.get_profile(Pressure)
                 .iter()
-                .zip(snd.get_profile(Temperature))
+                .zip(snd.0.get_profile(Temperature))
                 .filter_map(|p| {
                     if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -135,9 +136,9 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.get_profile(Pressure)
+            for pair in snd.0.get_profile(Pressure)
                 .iter()
-                .zip(snd.get_profile(DewPoint))
+                .zip(snd.0.get_profile(DewPoint))
                 .filter_map(|p| {
                     if let (Some(p), Some(t)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -169,9 +170,9 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.get_profile(Pressure)
+            for pair in snd.0.get_profile(Pressure)
                 .iter()
-                .zip(snd.get_profile(PressureVerticalVelocity))
+                .zip(snd.0.get_profile(PressureVerticalVelocity))
                 .filter_map(|p| {
                     if let (Some(p), Some(o)) = (*p.0, *p.1) {
                         if p < config::MINP {
@@ -201,9 +202,9 @@ impl AppContext {
             }
 
             for pair in izip!(
-                snd.get_profile(Pressure),
-                snd.get_profile(WindSpeed),
-                snd.get_profile(WindDirection)
+                snd.0.get_profile(Pressure),
+                snd.0.get_profile(WindSpeed),
+                snd.0.get_profile(WindDirection)
             ).filter_map(|tuple| {
                 if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
                     if p < self.config.borrow().min_hodo_pressure {
@@ -294,10 +295,10 @@ impl AppContext {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure {
                 self.last_sample
-                    .set(Some(::sounding_analysis::linear_interpolate(
-                        &self.list.borrow()[self.currently_displayed_index.get()],
+                    .set(::sounding_analysis::linear_interpolate(
+                        &self.list.borrow()[self.currently_displayed_index.get()].0,
                         p,
-                    )));
+                    ).ok());
             } else {
                 self.last_sample.set(None);
             }
@@ -314,7 +315,7 @@ impl AppContext {
     }
 
     /// Get the sounding to draw.
-    pub fn get_sounding_for_display(&self) -> Option<Rc<Sounding>> {
+    pub fn get_sounding_for_display(&self) -> Option<Rc<(Sounding, Analysis)>> {
         if self.plottable() {
             let shared_ptr = Rc::clone(&self.list.borrow()[self.currently_displayed_index.get()]);
             Some(shared_ptr)

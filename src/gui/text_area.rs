@@ -75,7 +75,7 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
         if let Some(snd) = ac.get_sounding_for_display() {
             let mut text = String::with_capacity(4096);
 
-            for row in snd.top_down() {
+            for row in snd.0.top_down() {
                 if let Some(p) = row.pressure {
                     if p < config::MINP {
                         continue;

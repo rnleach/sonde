@@ -497,6 +497,7 @@ trait Drawable: PlotContext + PlotContextExt {
         } else {
             return;
         };
+        let snd = &snd.0;
 
         let sample_p = if let Some(sample_p) = vals.pressure {
             sample_p
@@ -921,6 +922,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
+            let snd = &snd.0;
             let layers = match ::sounding_analysis::layers::dendritic_snow_zone(snd) {
                 Ok(layers) => layers,
                 Err(_) => return,
@@ -940,6 +942,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
+            let snd = &snd.0;
             let layers = match ::sounding_analysis::layers::warm_temperature_layer_aloft(snd) {
                 Ok(layers) => layers,
                 Err(_) => return,
