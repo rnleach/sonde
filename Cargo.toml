@@ -4,12 +4,12 @@ version = "0.1.0"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
-cairo-rs = "^0.3"
+cairo-rs = "^0.4.1"
 chrono = "^0.4"
 failure = "^0.1.1"
-gdk = "^0.7"
-glib = "^0.4"
-gtk = { version = "^0.3", features = ["v3_10"] }
+gdk = "^0.8"
+glib = "^0.5"
+gtk = { version = "^0.4", features = ["v3_10"] }
 itertools = "^0.7.0"
 lazy_static = "^1"
 metfor = "^0.2.1"
