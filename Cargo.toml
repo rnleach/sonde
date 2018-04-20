@@ -12,7 +12,7 @@ glib = "^0.4"
 gtk = { version = "^0.3", features = ["v3_10"] }
 itertools = "^0.7.0"
 lazy_static = "^1"
-metfor = "^0.2"
+metfor = "^0.2.1"
 sounding-base = "^0.3"
 sounding-bufkit = "^0.3"
 sounding-analysis = "^0.3"

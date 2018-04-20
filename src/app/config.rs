@@ -551,7 +551,7 @@ lazy_static! {
 
             while p < MAXP + 1.0001 * dp {
 
-                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k?)},-60.0, 60.0)
+                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k?)},-80.0, 50.0)
                     .and_then(|t| {
                         v.push(
                             SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p})
@@ -562,7 +562,7 @@ lazy_static! {
                     Ok(_) => p += dp,
                     Err(_) =>
                         p = find_root(
-                            &|p| {Ok(theta_e_saturated_kelvin(p,-59.999)? - theta_e_k?)},
+                            &|p| {Ok(theta_e_saturated_kelvin(p,-79.999)? - theta_e_k?)},
                             THETA_E_TOP_P,
                             MAXP).unwrap_or_else(|_| p + 1.0),
                 }
