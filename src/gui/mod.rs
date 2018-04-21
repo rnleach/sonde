@@ -464,7 +464,7 @@ trait Drawable: PlotContext + PlotContextExt {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    /// Override to draw the activate the active readout/sampling.
+    /// Override to activate the active readout/sampling.
     fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         vec![]
     }

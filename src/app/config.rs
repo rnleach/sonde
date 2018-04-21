@@ -168,7 +168,12 @@ pub struct Config {
     pub active_readout_line_width: f64,
     /// Active readout line color
     pub active_readout_line_rgba: (f64, f64, f64, f64),
+    /// Show/hide the active readout
     pub show_active_readout: bool,
+    /// Show sample parcel profile
+    pub show_sample_parcel_profile: bool,
+    /// Color for sample parcel profile
+    pub sample_parcel_profile_color: (f64, f64, f64, f64),
 
     //
     // Hodograph
@@ -305,6 +310,8 @@ impl Default for Config {
             active_readout_line_width: 3.0,
             active_readout_line_rgba: (1.0, 0.0, 0.0, 1.0),
             show_active_readout: true,
+            show_sample_parcel_profile: true,
+            sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
 
             //
             // Hodograph

@@ -572,6 +572,16 @@ impl Drawable for SkewTContext {
         results
     }
 
+    fn draw_overlays(&self, args: DrawingArgs) {
+        if args.ac.config.borrow().show_sample_parcel_profile {
+            draw_sample_parcel_profile(args);
+        }
+
+        if args.ac.config.borrow().show_active_readout {
+            self.draw_active_sample(args);
+        }
+    }
+
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
@@ -1082,4 +1092,71 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
     });
 
     ScreenCoords { x: xcenter, y: yc }
+}
+
+/**************************************************************************************************
+ *                                Overlay Layer Drawing
+ **************************************************************************************************/
+fn draw_sample_parcel_profile(args: DrawingArgs) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    use sounding_analysis::profile::lift_parcel;
+    use sounding_analysis::parcel::Parcel;
+
+    if let Some(sndg) = ac.get_sounding_for_display() {
+        let sample_parcel = if let Some(vals) = ac.get_sample() {
+            let sample_parcel_opt = vals.pressure.and_then(|p| {
+                vals.temperature.and_then(|t| {
+                    vals.dew_point.and_then(|dp| {
+                        Some(Parcel {
+                            temperature: t,
+                            pressure: p,
+                            dew_point: dp,
+                        })
+                    })
+                })
+            });
+
+            match sample_parcel_opt {
+                Some(parcel) => parcel,
+                None => return,
+            }
+        } else {
+            return;
+        };
+
+        let sndg = sndg.sounding();
+
+        let profile = if let Ok(profile) = lift_parcel(sample_parcel, sndg) {
+            profile
+        } else {
+            return;
+        };
+
+        let pres_data = profile.pressure;
+        let temp_data = profile.parcel_t;
+
+        let line_width = config.temperature_line_width;
+        let line_rgba = config.sample_parcel_profile_color;
+
+        let profile_data = pres_data
+            .iter()
+            .zip(temp_data.iter())
+            .filter_map(|val_pair| {
+                let (pressure, temperature) = (*val_pair.0, *val_pair.1);
+
+                if pressure > config::MINP {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    Some(ac.skew_t.convert_tp_to_screen(tp_coords))
+                } else {
+                    None
+                }
+            });
+
+        plot_curve_from_points(cr, line_width, line_rgba, profile_data);
+    }
 }
