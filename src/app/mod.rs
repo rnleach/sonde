@@ -401,7 +401,6 @@ impl AppContext {
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
         self.wind_speed.mark_data_dirty();
-        // TODO: Mark others as I can
     }
 
     pub fn mark_overlay_dirty(&self) {
@@ -410,7 +409,6 @@ impl AppContext {
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
         self.wind_speed.mark_overlay_dirty();
-        // TODO: Mark others as I can
     }
 
     pub fn mark_background_dirty(&self) {
@@ -419,6 +417,5 @@ impl AppContext {
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
-        // TODO: Mark others as I can
     }
 }
