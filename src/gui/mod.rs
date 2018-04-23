@@ -462,7 +462,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /***********************************************************************************************
-     * Overlays Drawing.
+     * Active readout Drawing.
      **********************************************************************************************/
     /// Override to activate the active readout/sampling.
     fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
@@ -471,7 +471,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     /// Override to add overlays other than the active readout, or to create one without text
     /// or that doesn't use pressure as a coordinate, such as the hodograph.
-    fn draw_overlays(&self, args: DrawingArgs) {
+    fn draw_active_readout(&self, args: DrawingArgs) {
         if args.ac.config.borrow().show_active_readout {
             self.draw_active_sample(args);
         }
@@ -853,7 +853,7 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.paint();
     }
 
-    fn draw_overlay_cached(&self, args: DrawingArgs) {
+    fn draw_active_readout_cached(&self, args: DrawingArgs) {
         let (ac, cr) = (args.ac, args.cr);
 
         if self.is_overlay_dirty() {
@@ -868,7 +868,7 @@ trait Drawable: PlotContext + PlotContextExt {
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
-            self.draw_overlays(tmp_args);
+            self.draw_active_readout(tmp_args);
 
             self.clear_overlay_dirty();
         }
@@ -885,7 +885,7 @@ trait MasterDrawable: Drawable {
         self.init_matrix(args);
         self.draw_background_cached(args);
         self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
+        self.draw_active_readout_cached(args);
 
         Inhibit(false)
     }
@@ -909,7 +909,7 @@ trait SlaveProfileDrawable: Drawable {
         self.init_matrix(args);
         self.draw_background_cached(args);
         self.draw_data_cached(args);
-        self.draw_overlay_cached(args);
+        self.draw_active_readout_cached(args);
 
         Inhibit(false)
     }

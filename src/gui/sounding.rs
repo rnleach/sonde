@@ -572,7 +572,7 @@ impl Drawable for SkewTContext {
         results
     }
 
-    fn draw_overlays(&self, args: DrawingArgs) {
+    fn draw_active_readout(&self, args: DrawingArgs) {
         if args.ac.config.borrow().show_sample_parcel_profile {
             draw_sample_parcel_profile(args);
         }
