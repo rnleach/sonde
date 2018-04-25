@@ -6,13 +6,14 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
+use sounding_analysis;
 
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 use gui::plot_context::{GenericContext, HasGenericContext};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points};
+use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points, draw_filled_polygon};
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -453,6 +454,7 @@ impl Drawable for SkewTContext {
     fn draw_data(&self, args: DrawingArgs) {
         draw_temperature_profiles(args);
         draw_wind_profile(args);
+        draw_data_overlays(args);
     }
 
     /***********************************************************************************************
@@ -783,6 +785,128 @@ fn draw_wind_profile(args: DrawingArgs) {
     }
 }
 
+fn draw_data_overlays(args: DrawingArgs) {
+    use app::config::ParcelType::*;
+
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if !config.show_parcel_profile {
+        return;
+    }
+
+    if let Some(sndg) = ac.get_sounding_for_display() {
+        let sndg = sndg.sounding();
+
+        let parcel_profile = if let Ok(parcel) = match config.parcel_type {
+            Surface => sounding_analysis::parcel::surface_parcel(sndg),
+            MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
+            MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
+        }{
+            if let Ok(p_profile) = sounding_analysis::profile::lift_parcel(parcel, sndg){
+                p_profile
+            } else {
+                return;
+            }
+        } else {
+            return;
+        };
+
+        let pres_data = &parcel_profile.pressure;
+        let parcel_t = &parcel_profile.parcel_t;
+
+        let line_width = config.profile_line_width;
+        let line_rgba = config.parcel_rgba;
+        
+        let profile_data = izip!(pres_data, parcel_t)
+            .filter(|val_pair| {
+                let pressure = *val_pair.0;
+                pressure >= config::MINP
+            })
+            .map(|val_pair| {
+                let (pressure, temperature) = (*val_pair.0, *val_pair.1);
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
+
+        plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
+
+        if !config.fill_parcel_areas {
+            return;
+        }
+
+        let env_t = &parcel_profile.environment_t;
+        let cin_layers = parcel_profile.cin_layers();
+        let cape_layers = parcel_profile.cape_layers();
+
+        for (bottom, top) in cin_layers {
+            let up_side = izip!(pres_data, parcel_t, env_t)
+                .skip_while(|&(p, _, _)| *p > bottom)
+                .take_while(|&(p, _, _)| *p >= top)
+                .map(|(p, _, e_t)| (*p, *e_t));
+
+            let down_side = izip!(pres_data, parcel_t, env_t)
+                // Top down
+                .rev()
+                // Skip above top.
+                .skip_while(|&(p, _, _)| *p < top)
+                // Now we're in the CIN area!
+                .take_while(|&(p, _, _)| *p <= bottom)
+                .map(|(p, p_t, _)| (*p, *p_t));
+                
+            let negative_polygon = up_side.chain(down_side);
+
+            let negative_polygon = negative_polygon
+                .map(|(pressure, temperature)| {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    ac.skew_t.convert_tp_to_screen(tp_coords)
+                });
+
+            let negative_polygon_rgba = config.parcel_negative_rgba;
+
+            draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
+
+        }
+
+        for (bottom,top) in cape_layers {
+            let up_side = izip!(pres_data, parcel_t, env_t)
+                .skip_while(|&(p, _, _)| *p > bottom)
+                .take_while(|&(p, _, _)| *p >= top)
+                .map(|(p, _, e_t)| (*p, *e_t));
+
+            let down_side = izip!(pres_data, parcel_t, env_t)
+                // Top down
+                .rev()
+                // Skip above top.
+                .skip_while(|&(p, _, _)| *p < top)
+                // Now we're in the CIN area!
+                .take_while(|&(p, _, _)| *p <= bottom)
+                .map(|(p, p_t, _)| (*p, *p_t));
+                
+            let polygon = up_side.chain(down_side);
+
+            let polygon = polygon
+                .map(|(pressure, temperature)| {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    ac.skew_t.convert_tp_to_screen(tp_coords)
+                });
+
+            let polygon_rgba = config.parcel_positive_rgba;
+
+            draw_filled_polygon(cr, polygon_rgba, polygon);
+        }
+    }
+}
+
 fn gather_wind_data(
     snd: &::sounding_base::Sounding,
     barb_config: &WindBarbConfig,
@@ -1105,6 +1229,8 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
     use sounding_analysis::parcel::Parcel;
 
     if let Some(sndg) = ac.get_sounding_for_display() {
+
+        // Get a parcel
         let sample_parcel = if let Some(vals) = ac.get_sample() {
             let sample_parcel_opt = vals.pressure.and_then(|p| {
                 vals.temperature.and_then(|t| {
@@ -1128,6 +1254,7 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
 
         let sndg = sndg.sounding();
 
+        // Lift the parcel
         let profile = if let Ok(profile) = lift_parcel(sample_parcel, sndg) {
             profile
         } else {
@@ -1140,11 +1267,8 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
         let line_width = config.temperature_line_width;
         let line_rgba = config.sample_parcel_profile_color;
 
-        let profile_data = pres_data
-            .iter()
-            .zip(temp_data.iter())
-            .filter_map(|val_pair| {
-                let (pressure, temperature) = (*val_pair.0, *val_pair.1);
+        let profile_data = izip!(pres_data, temp_data)
+            .filter_map(|(pressure, temperature)| {
 
                 if pressure > config::MINP {
                     let tp_coords = TPCoords {

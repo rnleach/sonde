@@ -3,6 +3,13 @@
 use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
 use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
 
+/// Types of parcels you can use when doing parcel analysis.
+pub enum ParcelType {
+    Surface,
+    MixedLayer,
+    MostUnstable,
+}
+
 /// Data that can be changed at run-time affecting the look and feel of the application.
 pub struct Config {
     //
@@ -60,6 +67,22 @@ pub struct Config {
     pub dew_point_line_width: f64,
     /// Show the dew point profile
     pub show_dew_point: bool,
+
+    //
+    // Skew-T overlays
+    //
+    /// Parcel type to use when doing parcel analysis.
+    pub parcel_type: ParcelType,
+    /// Show parcel trajectory
+    pub show_parcel_profile: bool,
+    /// Parcel profile color.
+    pub parcel_rgba: (f64, f64, f64, f64),
+    /// Fill parcel positive and negative areas
+    pub fill_parcel_areas: bool,
+    /// Positive parcel area color.
+    pub parcel_positive_rgba: (f64, f64, f64, f64),
+    /// Negative parcela rea color.
+    pub parcel_negative_rgba: (f64, f64, f64, f64),
 
     //
     // General profile configuration items
@@ -239,6 +262,16 @@ impl Default for Config {
             dew_point_rgba: (0.0, 0.0, 0.0, 1.0),
             dew_point_line_width: 2.0,
             show_dew_point: true,
+
+            //
+            // Skew-T overlays
+            //
+            parcel_type: ParcelType::MostUnstable,
+            show_parcel_profile: true,
+            parcel_rgba: (0.0, 0.0, 0.0, 0.75),
+            fill_parcel_areas: true,
+            parcel_positive_rgba: (0.80, 0.0, 0.0, 0.5),
+            parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),
 
             //
             // General profile configuration items

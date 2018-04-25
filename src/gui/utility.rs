@@ -27,6 +27,25 @@ pub fn plot_curve_from_points<I>(
     }
 }
 
+// Draw a filled polygon
+pub fn draw_filled_polygon<I>( cr: &Context, rgba: (f64,f64,f64,f64), points: I) where I: Iterator<Item = ScreenCoords>
+{
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+    let mut points = points;
+    if let Some(start) = points.by_ref().next() {
+        cr.move_to(start.x, start.y);
+        for end in points {
+            cr.line_to(end.x, end.y);
+        }
+        cr.line_to(start.x, start.y);
+
+        cr.close_path();
+
+        cr.fill();
+    }
+}
+
 // Draw a dashed line on the graph.
 pub fn plot_dashed_curve_from_points<I>(
     cr: &Context,
