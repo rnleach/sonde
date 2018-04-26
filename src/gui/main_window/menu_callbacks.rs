@@ -21,7 +21,7 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     filter.set_name("Bufkit files (*.buf)");
     dialog.add_filter(&filter);
 
-    if dialog.run() == ResponseType::Ok.into() {
+    if ResponseType::from(dialog.run()) == ResponseType::Ok {
         if let Some(filename) = dialog.get_filename() {
             if let Err(ref err) = load_file(&filename, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);

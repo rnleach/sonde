@@ -14,3 +14,8 @@ Cargo.lock
 // OS specific
 //
 .DS_Store
+
+//
+// Application specific
+//
+config.yml

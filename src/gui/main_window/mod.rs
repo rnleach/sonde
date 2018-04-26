@@ -6,7 +6,7 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{Menu, MenuBar, MenuItem, Notebook, ScrolledWindow, Window};
 
-use app::{AppContext, AppContextPointer};
+use app::AppContextPointer;
 use app::config;
 use gui::Gui;
 
@@ -125,7 +125,7 @@ fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
     main_pane
 }
 
-fn configure_main_window(window: &Window, ac: &AppContext) {
+fn configure_main_window(window: &Window, ac: &AppContextPointer) {
     let (width, height) = {
         let cfg = ac.config.borrow();
         (cfg.window_width, cfg.window_height)
@@ -135,12 +135,24 @@ fn configure_main_window(window: &Window, ac: &AppContext) {
         window.set_default_size(width, height);
     }
 
+    window.set_position(gtk::WindowPosition::Center);
+
     window.set_title("Sonde");
     window.set_decorated(true);
     window.show_all();
+
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
         Inhibit(false)
+    });
+
+    let ac1 = Rc::clone(ac);
+    window.connect_configure_event(move |win, _evt| {
+        let (width, height) = win.get_size();
+        let mut config = ac1.config.borrow_mut();
+        config.window_width = width;
+        config.window_height = height;
+        false
     });
 }
 

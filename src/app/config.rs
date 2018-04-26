@@ -4,7 +4,7 @@ use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
 use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
 
 /// Types of parcels you can use when doing parcel analysis.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum ParcelType {
     Surface,
     MixedLayer,
@@ -12,6 +12,7 @@ pub enum ParcelType {
 }
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     //
     // Window Layout
