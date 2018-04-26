@@ -10,7 +10,7 @@ failure = "^0.1.1"
 gdk = "^0.8"
 glib = "^0.5"
 gtk = { version = "^0.4", features = ["v3_22"] }
-itertools = "^0.7.0"
+itertools = "^0.7"
 lazy_static = "^1"
 metfor = "^0.2.1"
 sounding-base = "^0.5"
