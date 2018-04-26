@@ -4,7 +4,8 @@ use std::rc::Rc;
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gtk::prelude::*;
-use gtk::{DrawingArea, Notebook, TextView, Window, WindowType};
+use gtk::{DrawingArea, Menu, Notebook, RadioMenuItem, SeparatorMenuItem, TextView, Window,
+          WindowType};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
 
@@ -12,6 +13,7 @@ use sounding_base::{DataRow, Sounding};
 use sounding_analysis::Layer;
 
 use app::{AppContext, AppContextPointer};
+use app::config::ParcelType;
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
 
@@ -46,6 +48,7 @@ use self::utility::{set_font_size, DrawingArgs};
 pub struct Gui {
     // Left pane
     sounding_area: DrawingArea,
+    sounding_context_menu: Menu,
 
     // Right pane
     hodograph_area: DrawingArea,
@@ -69,6 +72,7 @@ impl Gui {
     pub fn new(acp: &AppContextPointer) -> Gui {
         let gui = Gui {
             sounding_area: DrawingArea::new(),
+            sounding_context_menu: Self::build_sounding_area_context_menu(acp),
 
             hodograph_area: DrawingArea::new(),
             index_area: DrawingArea::new(),
@@ -146,6 +150,59 @@ impl Gui {
             self::text_area::update_text_area(&self.text_area, ac);
             self::text_area::update_text_highlight(&self.text_area, ac);
         }
+    }
+
+    pub fn show_popup_menu(&self, evt: &EventButton) {
+        let ev: &::gdk::Event = evt;
+        self.sounding_context_menu.popup_at_pointer(ev);
+    }
+
+    fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Menu {
+        use app::config::ParcelType::*;
+
+        let sfc = RadioMenuItem::new_with_label("Surface");
+        let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
+        let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
+
+        let p_type = acp.config.borrow().parcel_type;
+        match p_type {
+            Surface => sfc.set_active(true),
+            MixedLayer => mxd.set_active(true),
+            MostUnstable => mu.set_active(true),
+        }
+
+        fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
+            if button.get_active() {
+                ac.config.borrow_mut().parcel_type = parcel_type;
+                ac.mark_data_dirty();
+                ac.update_all_gui();
+            }
+        }
+
+        let ac = Rc::clone(acp);
+        sfc.connect_toggled(move |button| {
+            handle_toggle(button, Surface, &ac);
+        });
+
+        let ac = Rc::clone(acp);
+        mxd.connect_toggled(move |button| {
+            handle_toggle(button, MixedLayer, &ac);
+        });
+
+        let ac = Rc::clone(acp);
+        mu.connect_toggled(move |button| {
+            handle_toggle(button, MostUnstable, &ac);
+        });
+
+        let menu = Menu::new();
+        menu.append(&SeparatorMenuItem::new());
+        menu.append(&sfc);
+        menu.append(&mxd);
+        menu.append(&mu);
+        menu.append(&SeparatorMenuItem::new());
+        menu.show_all();
+
+        menu
     }
 }
 
@@ -535,8 +592,8 @@ trait Drawable: PlotContext + PlotContextExt {
             cr.device_to_user_distance(config.active_readout_line_width, 0.0)
                 .0,
         );
-        let start = self.convert_xy_to_screen(XYCoords { x: left, y: y });
-        let end = self.convert_xy_to_screen(XYCoords { x: right, y: y });
+        let start = self.convert_xy_to_screen(XYCoords { x: left, y });
+        let end = self.convert_xy_to_screen(XYCoords { x: right, y });
         cr.move_to(start.x, start.y);
         cr.line_to(end.x, end.y);
         cr.stroke();
@@ -616,14 +673,14 @@ trait Drawable: PlotContext + PlotContextExt {
         }
 
         let lower_left = ScreenCoords { x: left, y: bottom };
-        let top_right = ScreenCoords {
+        let upper_right = ScreenCoords {
             x: left + width,
             y: bottom + height,
         };
 
         ScreenRect {
-            lower_left: lower_left,
-            upper_right: top_right,
+            lower_left,
+            upper_right,
         }
     }
 
@@ -711,7 +768,7 @@ trait Drawable: PlotContext + PlotContextExt {
         Inhibit(true)
     }
 
-    fn button_press_event(&self, event: &EventButton) -> Inhibit {
+    fn button_press_event(&self, event: &EventButton, _ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
         if event.get_button() == 1 {
             self.set_last_cursor_position(Some(event.get_position().into()));

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use cairo::Context;
-use gdk::{EventMask, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventButton, EventMask, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
@@ -13,7 +13,8 @@ use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, S
              ScreenRect, TPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 use gui::plot_context::{GenericContext, HasGenericContext};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points, plot_dashed_curve_from_points, draw_filled_polygon};
+use gui::utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
+                   plot_dashed_curve_from_points};
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -161,7 +162,7 @@ impl Drawable for SkewTContext {
         da.connect_scroll_event(move |_da, ev| ac.skew_t.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev));
+        da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_button_release_event(move |_da, ev| ac.skew_t.button_release_event(ev));
@@ -630,6 +631,22 @@ impl Drawable for SkewTContext {
         Inhibit(true)
     }
 
+    fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
+        // Left mouse button
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(Some(event.get_position().into()));
+            self.set_left_button_pressed(true);
+            Inhibit(true)
+        } else if event.get_button() == 3 {
+            if let Some(ref gui) = *ac.gui.borrow() {
+                gui.show_popup_menu(event);
+            }
+            Inhibit(false)
+        } else {
+            Inhibit(false)
+        }
+    }
+
     fn mouse_motion_event(
         &self,
         da: &DrawingArea,
@@ -802,8 +819,8 @@ fn draw_data_overlays(args: DrawingArgs) {
             Surface => sounding_analysis::parcel::surface_parcel(sndg),
             MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
             MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
-        }{
-            if let Ok(p_profile) = sounding_analysis::profile::lift_parcel(parcel, sndg){
+        } {
+            if let Ok(p_profile) = sounding_analysis::profile::lift_parcel(parcel, sndg) {
                 p_profile
             } else {
                 return;
@@ -817,7 +834,7 @@ fn draw_data_overlays(args: DrawingArgs) {
 
         let line_width = config.profile_line_width;
         let line_rgba = config.parcel_rgba;
-        
+
         let profile_data = izip!(pres_data, parcel_t)
             .filter(|val_pair| {
                 let pressure = *val_pair.0;
@@ -856,25 +873,23 @@ fn draw_data_overlays(args: DrawingArgs) {
                 // Now we're in the CIN area!
                 .take_while(|&(p, _, _)| *p <= bottom)
                 .map(|(p, p_t, _)| (*p, *p_t));
-                
+
             let negative_polygon = up_side.chain(down_side);
 
-            let negative_polygon = negative_polygon
-                .map(|(pressure, temperature)| {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    ac.skew_t.convert_tp_to_screen(tp_coords)
-                });
+            let negative_polygon = negative_polygon.map(|(pressure, temperature)| {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
 
             let negative_polygon_rgba = config.parcel_negative_rgba;
 
             draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
-
         }
 
-        for (bottom,top) in cape_layers {
+        for (bottom, top) in cape_layers {
             let up_side = izip!(pres_data, parcel_t, env_t)
                 .skip_while(|&(p, _, _)| *p > bottom)
                 .take_while(|&(p, _, _)| *p >= top)
@@ -888,17 +903,16 @@ fn draw_data_overlays(args: DrawingArgs) {
                 // Now we're in the CIN area!
                 .take_while(|&(p, _, _)| *p <= bottom)
                 .map(|(p, p_t, _)| (*p, *p_t));
-                
+
             let polygon = up_side.chain(down_side);
 
-            let polygon = polygon
-                .map(|(pressure, temperature)| {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    ac.skew_t.convert_tp_to_screen(tp_coords)
-                });
+            let polygon = polygon.map(|(pressure, temperature)| {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
 
             let polygon_rgba = config.parcel_positive_rgba;
 
@@ -1219,7 +1233,7 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 }
 
 /**************************************************************************************************
- *                                Overlay Layer Drawing
+ *                              Active Readout Layer Drawing
  **************************************************************************************************/
 fn draw_sample_parcel_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
@@ -1229,7 +1243,6 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
     use sounding_analysis::parcel::Parcel;
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-
         // Get a parcel
         let sample_parcel = if let Some(vals) = ac.get_sample() {
             let sample_parcel_opt = vals.pressure.and_then(|p| {
@@ -1267,20 +1280,18 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
         let line_width = config.temperature_line_width;
         let line_rgba = config.sample_parcel_profile_color;
 
-        let profile_data = izip!(pres_data, temp_data)
-            .filter_map(|(pressure, temperature)| {
+        let profile_data = izip!(pres_data, temp_data).filter_map(|(pressure, temperature)| {
+            if pressure > config::MINP {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                Some(ac.skew_t.convert_tp_to_screen(tp_coords))
+            } else {
+                None
+            }
+        });
 
-                if pressure > config::MINP {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    Some(ac.skew_t.convert_tp_to_screen(tp_coords))
-                } else {
-                    None
-                }
-            });
-
-        plot_curve_from_points(cr, line_width, line_rgba, profile_data);
+        plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
 }

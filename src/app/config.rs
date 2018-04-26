@@ -4,6 +4,7 @@ use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
 use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
 
 /// Types of parcels you can use when doing parcel analysis.
+#[derive(Clone, Copy, Debug)]
 pub enum ParcelType {
     Surface,
     MixedLayer,
@@ -283,7 +284,7 @@ impl Default for Config {
             //
             show_rh_omega_frame: true,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
-            rh_rgba: (0.30588, 0.603921, 0.0235294, 1.0),
+            rh_rgba: (0.305_880, 0.603_921, 0.023_529_4, 1.0),
 
             //
             // Cloud profile
@@ -306,34 +307,34 @@ impl Default for Config {
             label_font_size: 2.0,
             edge_padding: 5.0,
             label_padding: 3.0,
-            label_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            label_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
 
             //
             // Background
             //
             background_line_width: 1.0,
             background_rgba: (1.0, 1.0, 1.0, 1.0),
-            background_band_rgba: (0.933333333, 0.964705882, 0.917647059, 1.0),
+            background_band_rgba: (0.933_333_333, 0.964_705_882, 0.917_647_059, 1.0),
             show_background_bands: true,
-            dendritic_zone_rgba: (0.0, 0.466666667, 0.780392157, 1.0),
+            dendritic_zone_rgba: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
             show_dendritic_zone: true,
-            hail_zone_rgba: (0.0, 0.803921569, 0.803921569, 1.0),
+            hail_zone_rgba: (0.0, 0.803_921_569, 0.803_921_569, 1.0),
             show_hail_zone: true,
-            warm_layer_rgba: (0.717647, 0.2549, 0.0549, 1.0),
+            warm_layer_rgba: (0.717_647, 0.254_9, 0.054_9, 1.0),
             warm_wet_bulb_aloft_rgba: (0.8, 0.0, 0.0, 1.0),
             show_warm_layer_aloft: true,
             freezing_line_width: 3.0,
-            freezing_line_color: (0.0, 0.466666667, 0.780392157, 1.0),
+            freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
             show_freezing_line: true,
-            isotherm_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            isotherm_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isotherms: true,
-            isobar_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            isobar_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isobars: true,
-            isentrop_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            isentrop_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isentrops: true,
-            iso_mixing_ratio_rgba: (0.090196078, 0.050980392, 0.360784314, 1.0),
+            iso_mixing_ratio_rgba: (0.090_196_078, 0.050_980_392, 0.360_784_314, 1.0),
             show_iso_mixing_ratio: true,
-            iso_theta_e_rgba: (0.333333333, 0.662745098, 0.278431373, 1.0),
+            iso_theta_e_rgba: (0.333_333_333, 0.662_745_098, 0.278_431_373, 1.0),
             show_iso_theta_e: true,
             show_iso_omega_lines: true,
 
@@ -349,7 +350,7 @@ impl Default for Config {
             //
             // Hodograph
             //
-            iso_speed_rgba: (0.862745098, 0.388235294, 0.156862745, 1.0),
+            iso_speed_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_iso_speed: true,
             velocity_line_width: 2.0,
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),

@@ -28,7 +28,9 @@ pub fn plot_curve_from_points<I>(
 }
 
 // Draw a filled polygon
-pub fn draw_filled_polygon<I>( cr: &Context, rgba: (f64,f64,f64,f64), points: I) where I: Iterator<Item = ScreenCoords>
+pub fn draw_filled_polygon<I>(cr: &Context, rgba: (f64, f64, f64, f64), points: I)
+where
+    I: Iterator<Item = ScreenCoords>,
 {
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 

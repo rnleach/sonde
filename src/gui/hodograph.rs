@@ -59,7 +59,7 @@ impl Drawable for HodoContext {
         da.connect_scroll_event(move |_da, ev| ac.hodo.scroll_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.hodo.button_press_event(ev));
+        da.connect_button_press_event(move |_da, ev| ac.hodo.button_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_button_release_event(move |_da, ev| ac.hodo.button_release_event(ev));

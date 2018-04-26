@@ -1,7 +1,5 @@
 use std::rc::Rc;
 
-use gdk::ScreenExt;
-
 use glib;
 
 use gtk;
@@ -111,7 +109,11 @@ fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
     main_pane.add1(&add_border_frame(&skew_t));
     main_pane.add2(&notebook);
 
-    let (width, height) = get_preferred_window_size(&skew_t, ac);
+    let (width, height) = {
+        let cfg = ac.config.borrow();
+        (cfg.window_width, cfg.window_height)
+    };
+
     let position = if width > height {
         height
     } else {
@@ -124,11 +126,16 @@ fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
 }
 
 fn configure_main_window(window: &Window, ac: &AppContext) {
-    let (width, height) = get_preferred_window_size(window, ac);
+    let (width, height) = {
+        let cfg = ac.config.borrow();
+        (cfg.window_width, cfg.window_height)
+    };
 
-    // Set up window title, size, etc
+    if width > 0 || height > 0 {
+        window.set_default_size(width, height);
+    }
+
     window.set_title("Sonde");
-    window.set_default_size(width, height);
     window.set_decorated(true);
     window.show_all();
     window.connect_delete_event(|_, _| {
@@ -146,23 +153,4 @@ fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
     f.set_shadow_type(gtk::ShadowType::In);
 
     f
-}
-
-fn get_preferred_window_size<T: WidgetExt>(widget: &T, ac: &AppContext) -> (i32, i32) {
-    let config = ac.config.borrow();
-
-    if let Some(screen) = widget.get_screen() {
-        let mut width = screen.get_width() * 2 / 3;
-        if config.window_width > width {
-            width = config.window_width;
-        }
-
-        let mut height = screen.get_height() * 2 / 3;
-        if config.window_height > height {
-            height = config.window_height;
-        }
-        (width, height)
-    } else {
-        (config.window_width, config.window_height)
-    }
 }
