@@ -1,7 +1,7 @@
 # Sonde
 A program for viewing and analysis of atmospheric soundings from weather models.
 
-[![Build Status](https://travis-ci.org/rnleach/sonde.svg?branch=master)](https://travis-ci.org/rnleach/sonde)
+[//]: # "[![Build Status](https://travis-ci.org/rnleach/sonde.svg?branch=master)](https://travis-ci.org/rnleach/sonde)"
 
 ## Background
 
