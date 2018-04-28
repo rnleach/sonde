@@ -561,11 +561,13 @@ lazy_static! {
         .map(|mw| {
             [
                 TPCoords{
-                    temperature: dew_point_from_p_and_mw(MAXP, *mw/1000.0).expect("dp from mw fail"),
+                    temperature: dew_point_from_p_and_mw(MAXP, *mw/1000.0)
+                        .expect("dp from mw fail"),
                     pressure: MAXP
                 },
                 TPCoords{
-                    temperature: dew_point_from_p_and_mw(ISO_MIXING_RATIO_TOP_P, *mw/1000.0).expect("dp from mw fail"),
+                    temperature: dew_point_from_p_and_mw(ISO_MIXING_RATIO_TOP_P, *mw/1000.0)
+                        .expect("dp from mw fail"),
                     pressure: ISO_MIXING_RATIO_TOP_P,
                 },
             ]
@@ -585,32 +587,8 @@ lazy_static! {
 
         ISO_THETA_E_C
         .iter()
-        .map(|theta_c| theta_e_saturated_kelvin(1000.0, *theta_c))
-        .map(|theta_e_k| {
-            let mut v = vec![];
-            let mut p = THETA_E_TOP_P;
-            let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
-
-            while p < MAXP + 1.0001 * dp {
-
-                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k?)},-80.0, 50.0)
-                    .and_then(|t| {
-                        v.push(
-                            SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p})
-                        );
-                        Ok(())
-                    })
-                {
-                    Ok(_) => p += dp,
-                    Err(_) =>
-                        p = find_root(
-                            &|p| {Ok(theta_e_saturated_kelvin(p,-79.999)? - theta_e_k?)},
-                            THETA_E_TOP_P,
-                            MAXP).unwrap_or_else(|_| p + 1.0),
-                }
-            }
-            v
-        })
+        .map(|theta_c| theta_e_saturated_kelvin(1000.0, *theta_c).expect("theta_e isopleth failed"))
+        .map(|theta_e_k| generate_theta_e_isopleth(theta_e_k))
         .collect()
     };
 
@@ -732,6 +710,34 @@ fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
     }));
 
     result
+}
+
+/// Generate an isopleth for equivalent potential temperatures.
+fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords>{
+    use metfor::theta_e_saturated_kelvin;
+    let mut v = vec![];
+            let mut p = THETA_E_TOP_P;
+            let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
+
+            while p < MAXP + 1.0001 * dp {
+
+                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k)},-80.0, 50.0)
+                    .and_then(|t| {
+                        v.push(
+                            SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p})
+                        );
+                        Ok(())
+                    })
+                {
+                    Ok(_) => p += dp,
+                    Err(_) =>
+                        p = find_root(
+                            &|p| {Ok(theta_e_saturated_kelvin(p,-79.999)? - theta_e_k)},
+                            THETA_E_TOP_P,
+                            MAXP).unwrap_or_else(|_| p + 1.0),
+                }
+            }
+            v
 }
 
 /// Bisection algorithm for finding the root of an equation given values bracketing a root. Used

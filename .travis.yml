@@ -1,8 +1,8 @@
 language: rust
 env:
-    - GTK=3.10
+    - GTK=3.22
 rust:
-  - 1.24.0
+  - 1.25.0
   - stable
   - beta
   - nightly
