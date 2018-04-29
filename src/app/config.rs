@@ -97,7 +97,7 @@ pub struct Config {
     // RH-Omega profile
     //
     /// Show the rh omega frame
-    pub show_rh_omega_frame: bool, // FIXME: is this used? It should be.
+    pub show_rh_omega_frame: bool,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
     /// RH Color

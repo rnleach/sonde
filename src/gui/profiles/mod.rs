@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
 use gtk;
 use gtk::prelude::*;
+use gtk::CheckButton;
 
 use app::AppContextPointer;
-use gui::{Gui, Drawable};
+use gui::{Drawable, Gui};
 
 pub mod cloud;
 pub mod rh_omega;
@@ -12,13 +15,65 @@ pub use self::cloud::CloudContext;
 pub use self::rh_omega::RHOmegaContext;
 pub use self::wind_speed::WindSpeedContext;
 
-pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32) -> gtk::Box {
-    // Set up hbox for profiles
-    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, box_spacing);
-    profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
-    profile_box.pack_start(&gui.get_cloud_area(), true, true, 0);
-    profile_box.pack_start(&gui.get_wind_speed_profile_area(), true, true, 0);
+macro_rules! build_profile{
+    ($p_box:ident, $label:expr, $c_box:ident, $drawing_area:expr, $acp:ident, $show_var:ident) => {
 
+        let da = $drawing_area;
+        $p_box.pack_start(&da, true, true, 0);
+        let check_button = CheckButton::new_with_label($label);
+        $c_box.pack_start(&check_button, false, false, 0);
+        let show_da = $acp.config.borrow().$show_var;
+        check_button.set_active(show_da);
+        if show_da {
+            da.show_all();
+        } else {
+            da.hide();
+        }
+
+        let ac = Rc::clone(&$acp);
+        check_button.connect_toggled(move |button| {
+            let button_state = button.get_active();
+            ac.config.borrow_mut().$show_var = button_state;
+            if button_state {
+                da.show_all();
+            } else {
+                da.hide()
+            }
+        });
+    };
+}
+
+pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32) -> gtk::Box {
+    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, box_spacing);
+    let control_box = gtk::Box::new(gtk::Orientation::Vertical, box_spacing);
+
+    build_profile!(
+        profile_box,
+        "RH-Omega",
+        control_box,
+        gui.get_rh_omega_area(),
+        acp,
+        show_rh_omega_frame
+    );
+    build_profile!(
+        profile_box,
+        "Clouds",
+        control_box,
+        gui.get_cloud_area(),
+        acp,
+        show_cloud_frame
+    );
+    build_profile!(
+        profile_box,
+        "Wind Spd",
+        control_box,
+        gui.get_wind_speed_profile_area(),
+        acp,
+        show_wind_speed_profile
+    );
+
+    profile_box.pack_start(&control_box, false, false, 0);
+    profile_box.show_all();
     profile_box
 }
 
