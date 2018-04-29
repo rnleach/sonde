@@ -713,31 +713,35 @@ fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
 }
 
 /// Generate an isopleth for equivalent potential temperatures.
-fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords>{
+fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords> {
     use metfor::theta_e_saturated_kelvin;
     let mut v = vec![];
-            let mut p = THETA_E_TOP_P;
-            let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
+    let mut p = THETA_E_TOP_P;
+    let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
 
-            while p < MAXP + 1.0001 * dp {
-
-                match find_root(&|t| {Ok(theta_e_saturated_kelvin(p,t)? - theta_e_k)},-80.0, 50.0)
-                    .and_then(|t| {
-                        v.push(
-                            SkewTContext::convert_tp_to_xy(TPCoords{temperature:t, pressure: p})
-                        );
-                        Ok(())
-                    })
-                {
-                    Ok(_) => p += dp,
-                    Err(_) =>
-                        p = find_root(
-                            &|p| {Ok(theta_e_saturated_kelvin(p,-79.999)? - theta_e_k)},
-                            THETA_E_TOP_P,
-                            MAXP).unwrap_or_else(|_| p + 1.0),
-                }
+    while p < MAXP + 1.0001 * dp {
+        match find_root(
+            &|t| Ok(theta_e_saturated_kelvin(p, t)? - theta_e_k),
+            -80.0,
+            50.0,
+        ).and_then(|t| {
+            v.push(SkewTContext::convert_tp_to_xy(TPCoords {
+                temperature: t,
+                pressure: p,
+            }));
+            Ok(())
+        }) {
+            Ok(_) => p += dp,
+            Err(_) => {
+                p = find_root(
+                    &|p| Ok(theta_e_saturated_kelvin(p, -79.999)? - theta_e_k),
+                    THETA_E_TOP_P,
+                    MAXP,
+                ).unwrap_or_else(|_| p + 1.0)
             }
-            v
+        }
+    }
+    v
 }
 
 /// Bisection algorithm for finding the root of an equation given values bracketing a root. Used
