@@ -133,9 +133,7 @@ impl Gui {
     pub fn draw_all(&self) {
         self.sounding_area.queue_draw();
         self.hodograph_area.queue_draw();
-        self.rh_omega_area.queue_draw();
-        self.cloud.queue_draw();
-        self.wind_speed.queue_draw();
+        profiles::draw_profiles(self, &self.app_context);
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {

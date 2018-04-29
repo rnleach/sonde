@@ -25,7 +25,7 @@ macro_rules! build_profile{
         let show_da = $acp.config.borrow().$show_var;
         check_button.set_active(show_da);
         if show_da {
-            da.show_all();
+            da.show();
         } else {
             da.hide();
         }
@@ -35,7 +35,7 @@ macro_rules! build_profile{
             let button_state = button.get_active();
             ac.config.borrow_mut().$show_var = button_state;
             if button_state {
-                da.show_all();
+                da.show();
             } else {
                 da.hide()
             }
@@ -75,6 +75,26 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
     profile_box.pack_start(&control_box, false, false, 0);
     profile_box.show_all();
     profile_box
+}
+
+macro_rules! draw_profile {
+    ($config:ident, $da:expr, $show_var:ident) => {
+        let da = $da;
+        if $config.$show_var {
+            da.show_all();
+            da.queue_draw();
+        } else {
+            da.hide();
+        }
+    };
+}
+pub fn draw_profiles(gui: &Gui, acp: &AppContextPointer) {
+    
+    let config = acp.config.borrow();
+
+    draw_profile!(config, gui.get_rh_omega_area(), show_rh_omega_frame);
+    draw_profile!(config, gui.get_cloud_area(), show_cloud_frame);
+    draw_profile!(config, gui.get_wind_speed_profile_area(), show_wind_speed_profile);
 }
 
 pub fn initialize_profiles(gui: &Gui, acp: &AppContextPointer) {

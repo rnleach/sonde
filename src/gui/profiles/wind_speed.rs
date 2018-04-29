@@ -158,6 +158,8 @@ impl Drawable for WindSpeedContext {
             | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
             | EventMask::KEY_PRESS_MASK)
             .bits() as i32);
+
+        da.set_no_show_all(true);
     }
 
     /***********************************************************************************************
