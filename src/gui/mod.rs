@@ -17,25 +17,20 @@ use app::config::ParcelType;
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
 
-mod cloud;
 mod control_area;
 mod hodograph;
 mod index_area;
 mod main_window;
 mod plot_context;
-mod rh_omega;
+pub mod profiles;
 mod sounding;
 mod text_area;
 mod utility;
-mod wind_speed;
 
-pub use self::cloud::CloudContext;
 pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
-pub use self::rh_omega::RHOmegaContext;
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
-pub use self::wind_speed::WindSpeedContext;
 
 use self::utility::{set_font_size, DrawingArgs};
 
@@ -92,9 +87,7 @@ impl Gui {
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
-        rh_omega::RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
-        cloud::CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
-        wind_speed::WindSpeedContext::set_up_drawing_area(&gui.get_wind_speed_profile_area(), acp);
+        profiles::initialize_profiles(&gui, acp);
 
         main_window::layout(&gui, acp);
 

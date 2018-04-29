@@ -92,10 +92,7 @@ fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
     v_text_box.pack_start(&text_win, true, true, 0);
 
     // Set up hbox for profiles
-    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-    profile_box.pack_start(&gui.get_rh_omega_area(), true, true, 0);
-    profile_box.pack_start(&gui.get_cloud_area(), true, true, 0);
-    profile_box.pack_start(&gui.get_wind_speed_profile_area(), true, true, 0);
+    let profile_box = super::profiles::set_up_profiles_box(gui, ac, BOX_SPACING);
 
     // Right pane
     let notebook = Notebook::new();

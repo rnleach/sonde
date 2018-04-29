@@ -1,7 +1,8 @@
 //! Keep configuration data in this module.
 
 use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
-use gui::{CloudContext, HodoContext, RHOmegaContext, SkewTContext, WindSpeedContext};
+use gui::{HodoContext, SkewTContext};
+use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 
 /// Types of parcels you can use when doing parcel analysis.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

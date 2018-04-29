@@ -8,8 +8,8 @@ use sounding_base::{DataRow, Sounding};
 use sounding_analysis::Analysis;
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use gui::{CloudContext, Gui, HodoContext, PlotContext, PlotContextExt, RHOmegaContext,
-          SkewTContext, WindSpeedContext};
+use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
+use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 
 // Module for configuring application
 pub mod config;
