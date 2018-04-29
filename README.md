@@ -14,7 +14,8 @@ I used [GKT+][gtk] via [Gtk-rs][gtkrs] and [Rust][rust] to implement it.
 Probably the most frequently thought of use case for sounding analysis is thunderstorms and 
 convection. However, they are also used heavily in forecasting winds and precipitation type during 
 the winter. My main interests in meteorology are fire weather and winter weather, so that is the 
-emphasis I am taking as I develop this.
+emphasis I am taking as I develop this. Of course convection will be considered too, but is not my
+top priority.
 
 ## Features
  - Data views
@@ -29,6 +30,7 @@ emphasis I am taking as I develop this.
    - Critical temperature zones highlighted including hail growth zone and dendritic snow growth
      zone.
    - Freezing line/level emphasized.
+   - Showing, hiding, and colors of all lines and shading is configurable.
  - Profiles
    - Pressure vertical velocity overlaid with relative humidity.
    - Wind speed.
@@ -39,6 +41,7 @@ emphasis I am taking as I develop this.
    - Highlights warm layers aloft (dry bulb and wet bulb) if the surface temperature is below 
      freezing.
    - Freezing level emphasized.
+   - Showing, hiding, and colors of all lines and shading is configurable.
  - Data
    - Wet bulb plot added.
    - Progressive disclosure of winds.
@@ -48,8 +51,10 @@ emphasis I am taking as I develop this.
    - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
  - Configuration
    - Controls tab allows configuration of what data, background lines, and background shading are 
-     displayed. Almost all the colors used are configurable too. It is very much a work in progress,
-     and persistence from run to run has not been implemented yet, but is planned.
+     displayed. Almost all the colors used are configurable too. It is very much a work in progress.
+   - Persistence from run to run has been implemented via a config.yml file that is saved every time
+     the program shuts down.
+   - Does not yet support saving and loading configurations, but that is planned.
 
 ## Screenshots
 
