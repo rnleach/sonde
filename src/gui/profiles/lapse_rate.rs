@@ -5,63 +5,64 @@ use gtk::prelude::*;
 use gtk::DrawingArea;
 
 use sounding_base::{DataRow, Sounding};
+use sounding_analysis;
 
 use app::{config, AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
+use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, LPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 
-pub struct CloudContext {
+const LR_RANGE: f64 = config::MAX_LAPSE_RATE - config::MIN_LAPSE_RATE;
+
+pub struct LapseRateContext {
     generic: GenericContext,
 }
 
-impl CloudContext {
+impl LapseRateContext {
     pub fn new() -> Self {
-        CloudContext {
+        LapseRateContext {
             generic: GenericContext::new(),
         }
     }
 
-    pub fn convert_pp_to_xy(coords: PPCoords) -> XYCoords {
+    pub fn convert_lp_to_xy(coords: LPCoords) -> XYCoords {
         let y = convert_pressure_to_y(coords.press);
-
-        let x = coords.pcnt;
-
+        let x = (coords.lapse_rate - config::MIN_LAPSE_RATE) / LR_RANGE;
         XYCoords { x, y }
     }
 
-    pub fn convert_xy_to_pp(coords: XYCoords) -> PPCoords {
+    pub fn convert_xy_to_lp(coords: XYCoords) -> LPCoords {
         let press = convert_y_to_pressure(coords.y);
-        let pcnt = coords.x;
+        let lapse_rate = coords.x * LR_RANGE + config::MIN_LAPSE_RATE;
 
-        PPCoords { pcnt, press }
+        LPCoords { lapse_rate, press }
     }
 
-    pub fn convert_pp_to_screen(&self, coords: PPCoords) -> ScreenCoords {
-        let xy = CloudContext::convert_pp_to_xy(coords);
+    pub fn convert_lp_to_screen(&self, coords: LPCoords) -> ScreenCoords {
+        let xy = Self::convert_lp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
-    pub fn convert_screen_to_pp(&self, coords: ScreenCoords) -> PPCoords {
+    pub fn convert_screen_to_lp(&self, coords: ScreenCoords) -> LPCoords {
         let xy = self.convert_screen_to_xy(coords);
-        CloudContext::convert_xy_to_pp(xy)
+        Self::convert_xy_to_lp(xy)
     }
 
-    pub fn convert_device_to_pp(&self, coords: DeviceCoords) -> PPCoords {
+    pub fn convert_device_to_lp(&self, coords: DeviceCoords) -> LPCoords {
         let xy = self.convert_device_to_xy(coords);
-        Self::convert_xy_to_pp(xy)
+        Self::convert_xy_to_lp(xy)
     }
 }
 
-impl HasGenericContext for CloudContext {
+impl HasGenericContext for LapseRateContext {
     fn get_generic_context(&self) -> &GenericContext {
         &self.generic
     }
 }
 
-impl PlotContextExt for CloudContext {
+impl PlotContextExt for LapseRateContext {
     fn zoom_to_envelope(&self) {}
 
     fn bound_view(&self) {
@@ -115,7 +116,7 @@ impl PlotContextExt for CloudContext {
     }
 }
 
-impl Drawable for CloudContext {
+impl Drawable for LapseRateContext {
     /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
@@ -124,22 +125,22 @@ impl Drawable for CloudContext {
         da.set_vexpand(true);
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
+        da.connect_draw(move |_da, cr| ac.lapse_rate.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.cloud.mouse_motion_event(da, ev, &ac));
+        da.connect_motion_notify_event(move |da, ev| ac.lapse_rate.mouse_motion_event(da, ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.cloud.leave_event(&ac));
+        da.connect_leave_notify_event(move |_da, _ev| ac.lapse_rate.leave_event(&ac));
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| CloudContext::key_press_event(ev, &ac));
+        da.connect_key_press_event(move |_da, ev| LapseRateContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.lapse_rate.configure_event(ev));
 
         let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));
+        da.connect_size_allocate(move |da, _ev| ac.lapse_rate.size_allocate_event(da));
 
         da.set_can_focus(true);
 
@@ -163,7 +164,7 @@ impl Drawable for CloudContext {
             let rgba = config.background_band_rgba;
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-            let mut lines = config::CLOUD_PERCENT_PNTS.iter();
+            let mut lines = config::PROFILE_LAPSE_RATE_PNTS.iter();
             let mut draw = true;
             let mut prev = lines.next();
             while let Some(prev_val) = prev {
@@ -186,14 +187,11 @@ impl Drawable for CloudContext {
         }
 
         self.draw_hail_growth_zone(args);
-        self.draw_dendtritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
-        // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
                 let pnts = pnts.iter()
@@ -202,8 +200,7 @@ impl Drawable for CloudContext {
             }
         }
 
-        // Draw percent values
-        for line in config::CLOUD_PERCENT_PNTS.iter() {
+        for line in config::PROFILE_LAPSE_RATE_PNTS.iter() {
             let pnts = line.iter()
                 .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
@@ -211,7 +208,7 @@ impl Drawable for CloudContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Cloud Cover".to_owned()]
+        vec!["Lapse Rate".to_owned(), "\u{00b0}C/km".to_owned()]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -222,21 +219,21 @@ impl Drawable for CloudContext {
         let screen_edges = self.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
-        let PPCoords {
+        let LPCoords {
             press: screen_max_p,
             ..
-        } = self.convert_screen_to_pp(lower_left);
+        } = self.convert_screen_to_lp(lower_left);
 
-        for pcnt in &config::PERCENTS {
-            let label = format!("{:.0}%", *pcnt);
+        for lapse_rate in &config::PROFILE_LAPSE_RATES {
+            let label = format!("{:.0}", *lapse_rate);
 
             let extents = cr.text_extents(&label);
 
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.cloud.convert_pp_to_screen(PPCoords {
-                pcnt: *pcnt / 100.0,
+            } = self.convert_lp_to_screen(LPCoords {
+                lapse_rate: *lapse_rate,
                 press: screen_max_p,
             });
             xpos -= extents.width / 2.0; // Center
@@ -275,7 +272,7 @@ impl Drawable for CloudContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
-        draw_cloud_profile(args);
+        draw_lapse_rate_profile(args);
     }
 
     /***********************************************************************************************
@@ -284,11 +281,12 @@ impl Drawable for CloudContext {
     fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
         let mut results = vec![];
 
-        if let Some(cloud) = vals.cloud_fraction {
-            let cld = (cloud).round();
-            let line = format!("{:.0}%", cld);
-            results.push(line);
-        }
+        // if let Some(speed) = vals.speed {
+        //     let spd = speed.round();
+        //     let line = format!("{:.0}kt", spd);
+        //     results.push(line);
+        // }
+        results.push("Filler".to_owned());
 
         results
     }
@@ -312,10 +310,10 @@ impl Drawable for CloudContext {
             let position: DeviceCoords = event.get_position().into();
 
             self.set_last_cursor_position(Some(position));
-            let pp_position = self.convert_device_to_pp(position);
+            let sp_position = self.convert_device_to_lp(position);
             let sample = ::sounding_analysis::linear_interpolate(
-                &ac.get_sounding_for_display().expect(file!()).sounding(), // ac.plottable() call ensures this won't panic
-                pp_position.press,
+                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
+                sp_position.press,
             );
             ac.set_sample(sample.ok());
             ac.mark_overlay_dirty();
@@ -325,7 +323,7 @@ impl Drawable for CloudContext {
     }
 }
 
-impl SlaveProfileDrawable for CloudContext {
+impl SlaveProfileDrawable for LapseRateContext {
     fn get_master_zoom(&self, acp: &AppContextPointer) -> f64 {
         acp.skew_t.get_zoom_factor()
     }
@@ -337,102 +335,45 @@ impl SlaveProfileDrawable for CloudContext {
     }
 }
 
-fn draw_cloud_profile(args: DrawingArgs) {
+fn draw_lapse_rate_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
-        use sounding_base::Profile::{CloudFraction, Pressure};
+        use sounding_base::Profile::Pressure;
 
-        ac.cloud.set_has_data(true);
+        ac.lapse_rate.set_has_data(true);
 
-        let pres_data = sndg.get_profile(Pressure);
-        let c_data = sndg.get_profile(CloudFraction);
-        let mut profile = izip!(pres_data, c_data)
+        let pres_data = sndg.sounding().get_profile(Pressure);
+        let lr_data = &sounding_analysis::profile::temperature_lapse_rate(sndg.sounding());
+        let mut profile = izip!(pres_data, lr_data)
             .filter_map(|pair| {
-                if let (Some(p), Some(c)) = (*pair.0, *pair.1) {
-                    Some((p, c))
+                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+                    Some((p, s))
                 } else {
                     None
                 }
             })
             .filter_map(|pair| {
-                let (press, pcnt) = pair;
+                let (press, lapse_rate) = pair;
                 if press > config::MINP {
-                    Some(ac.cloud.convert_pp_to_screen(PPCoords {
-                        pcnt: pcnt / 100.0,
-                        press,
-                    }))
+                    Some(ac.lapse_rate.convert_lp_to_screen(LPCoords { lapse_rate, press }))
                 } else {
                     None
                 }
             });
 
-        let line_width = config.bar_graph_line_width;
-        let mut rgba = config.cloud_rgba;
-        rgba.3 *= 0.75;
-
-        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut previous: Option<ScreenCoords>;
-        let mut curr: Option<ScreenCoords> = None;
-        let mut next: Option<ScreenCoords> = None;
-        loop {
-            previous = curr;
-            curr = next;
-            next = profile.next();
-
-            const XMIN: f64 = 0.0;
-            let xmax: f64;
-            let ymin: f64;
-            let ymax: f64;
-            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
-                // In the middle - most common
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = (n.y - c.y) / 2.0;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
-                // Last point
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = down;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
-                // First point
-                xmax = c.x;
-                let up = (n.y - c.y) / 2.0;
-                let down = up;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(_), None, None) = (previous, curr, next) {
-                // Done - get out of here
-                break;
-            } else if let (None, None, Some(_)) = (previous, curr, next) {
-                // Just getting into the loop - do nothing
-                continue;
-            } else if let (None, None, None) = (previous, curr, next) {
-                // There is no data plot the no data and leave!
-                ac.cloud.set_has_data(false);
-                break;
-            } else {
-                // Impossible state
-                unreachable!();
-            }
-
-            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
-            cr.fill_preserve();
-            cr.stroke();
-        }
+        plot_curve_from_points(
+            cr,
+            config.profile_line_width,
+            config.lapse_rate_profile_rgba,
+            profile,
+        );
     } else {
-        ac.cloud.set_has_data(false);
+        ac.lapse_rate.set_has_data(false);
     }
 
-    if !ac.cloud.has_data() {
-        ac.cloud.draw_no_data(args);
+    if !ac.lapse_rate.has_data() {
+        ac.lapse_rate.draw_no_data(args);
     }
 }

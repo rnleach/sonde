@@ -9,7 +9,7 @@ use sounding_analysis::Analysis;
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext, LapseRateContext};
 
 // Module for configuring application
 pub mod config;
@@ -75,6 +75,9 @@ pub struct AppContext {
 
     // Handle to wind speed profile context
     pub wind_speed: WindSpeedContext,
+
+    // Handle to lapse rate profile context
+    pub lapse_rate: LapseRateContext,
 }
 
 impl AppContext {
@@ -95,6 +98,7 @@ impl AppContext {
             cloud: CloudContext::new(),
             hodo: HodoContext::new(),
             wind_speed: WindSpeedContext::new(),
+            lapse_rate: LapseRateContext::new(),
         })
     }
 
@@ -374,6 +378,7 @@ impl AppContext {
         self.rh_omega.zoom_to_envelope();
         self.cloud.zoom_to_envelope();
         self.wind_speed.zoom_to_envelope();
+        self.lapse_rate.zoom_to_envelope();
         self.mark_background_dirty();
     }
 
@@ -401,6 +406,7 @@ impl AppContext {
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
         self.wind_speed.mark_data_dirty();
+        self.lapse_rate.mark_data_dirty();
     }
 
     pub fn mark_overlay_dirty(&self) {
@@ -409,6 +415,7 @@ impl AppContext {
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
         self.wind_speed.mark_overlay_dirty();
+        self.lapse_rate.mark_overlay_dirty();
     }
 
     pub fn mark_background_dirty(&self) {
@@ -417,5 +424,6 @@ impl AppContext {
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
+        self.lapse_rate.mark_background_dirty();
     }
 }

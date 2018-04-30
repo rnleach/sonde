@@ -208,6 +208,7 @@ impl Drawable for RHOmegaContext {
             }
         }
 
+        self.draw_hail_growth_zone(args);
         self.draw_dendtritic_snow_growth_zone(args);
         self.draw_warm_layer_aloft(args);
     }

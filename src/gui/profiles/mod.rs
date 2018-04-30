@@ -10,10 +10,12 @@ use gui::{Drawable, Gui};
 pub mod cloud;
 pub mod rh_omega;
 pub mod wind_speed;
+pub mod lapse_rate;
 
 pub use self::cloud::CloudContext;
 pub use self::rh_omega::RHOmegaContext;
 pub use self::wind_speed::WindSpeedContext;
+pub use self::lapse_rate::LapseRateContext;
 
 macro_rules! build_profile{
     ($p_box:ident, $label:expr, $c_box:ident, $drawing_area:expr, $acp:ident, $show_var:ident) => {
@@ -72,6 +74,15 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         show_wind_speed_profile
     );
 
+    build_profile!(
+        profile_box,
+        "Lapse rate",
+        control_box,
+        gui.get_lapse_rate_profile_area(),
+        acp,
+        show_lapse_rate_profile
+    );
+
     profile_box.pack_start(&control_box, false, false, 0);
     profile_box.show_all();
     profile_box
@@ -95,10 +106,12 @@ pub fn draw_profiles(gui: &Gui, acp: &AppContextPointer) {
     draw_profile!(config, gui.get_rh_omega_area(), show_rh_omega_frame);
     draw_profile!(config, gui.get_cloud_area(), show_cloud_frame);
     draw_profile!(config, gui.get_wind_speed_profile_area(), show_wind_speed_profile);
+    draw_profile!(config, gui.get_lapse_rate_profile_area(), show_lapse_rate_profile);
 }
 
 pub fn initialize_profiles(gui: &Gui, acp: &AppContextPointer) {
     RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
     CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
     WindSpeedContext::set_up_drawing_area(&gui.get_wind_speed_profile_area(), acp);
+    LapseRateContext::set_up_drawing_area(&gui.get_lapse_rate_profile_area(), acp);
 }

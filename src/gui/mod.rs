@@ -55,6 +55,7 @@ pub struct Gui {
     rh_omega_area: DrawingArea,
     cloud: DrawingArea,
     wind_speed: DrawingArea,
+    lapse_rate: DrawingArea,
 
     // Main window
     window: Window,
@@ -77,6 +78,7 @@ impl Gui {
             rh_omega_area: DrawingArea::new(),
             cloud: DrawingArea::new(),
             wind_speed: DrawingArea::new(),
+            lapse_rate: DrawingArea::new(),
 
             window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
@@ -124,6 +126,10 @@ impl Gui {
 
     pub fn get_wind_speed_profile_area(&self) -> DrawingArea {
         self.wind_speed.clone()
+    }
+
+    pub fn get_lapse_rate_profile_area(&self) -> DrawingArea {
+        self.lapse_rate.clone()
     }
 
     pub fn get_window(&self) -> Window {
@@ -976,6 +982,25 @@ trait SlaveProfileDrawable: Drawable {
             };
 
             let rgba = ac.config.borrow().dendritic_zone_rgba;
+
+            self.draw_layers(args, &layers, rgba);
+        }
+    }
+
+    fn draw_hail_growth_zone(&self, args: DrawingArgs) {
+        let ac = args.ac;
+
+        if !ac.config.borrow().show_hail_zone {
+            return;
+        }
+        
+        if let Some(ref snd) = ac.get_sounding_for_display() {
+            let layers = match ::sounding_analysis::layers::hail_growth_zone(snd.sounding()) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
+
+            let rgba = ac.config.borrow().hail_zone_rgba;
 
             self.draw_layers(args, &layers, rgba);
         }

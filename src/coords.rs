@@ -125,6 +125,18 @@ pub struct SPCoords {
 }
 
 /***************************************************************************************************
+ *                 Lapse rate - Pressure coords for the lapse rate profile
+ * ************************************************************************************************/
+/// Lapse rate-Pressure coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct LPCoords {
+    /// Lapse rate in C/km
+    pub lapse_rate: f64,
+    /// Pressure in hPa
+    pub press: f64,
+}
+
+/***************************************************************************************************
  *                 X - Y Coords for a default plot area that can be zoomed and panned
  * ************************************************************************************************/
 
