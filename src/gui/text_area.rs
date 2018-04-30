@@ -84,7 +84,7 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
                     continue;
                 }
                 text.push_str(&format!(
-                    "{:>4} {:>5} {:>5} {:>5} {:>5} {:>6} {:>4} {:>4} {:>5} {:>4}\n",
+                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:0>3} {:>4} {:>5}  {:>3}\n",
                     unwrap_to_str!(row.pressure, "{:.0}"),
                     unwrap_to_str!(row.height, "{:.0}"),
                     unwrap_to_str!(row.temperature, "{:.1}"),
@@ -106,7 +106,6 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
                 old_adj = None;
             }
 
-            // tb.set_text(&text);
             set_text!(tb, &text);
 
             // I don't totally understand this, but after quite a lot of experimentation this works
@@ -142,11 +141,11 @@ pub fn make_header_text_area() -> TextView {
         let mut text = String::with_capacity(512);
 
         text.push_str(&format!(
-            "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}\n",
-            "Pres", "Hgt", "T", "WB(C)", "DP(C)", "EPT(K)", "DIR", "SPD", "\u{03C9}", "CLD",
+            " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}\n",
+            "Pres", "Hgt", "T", "WB", "DP", "Theta E", "DIR", "SPD", "\u{03C9}", "CLD",
         ));
         text.push_str(&format!(
-            "{:^4} {:^5} {:^5} {:^5} {:^5} {:^6} {:^4} {:^4} {:^5} {:^4}",
+            " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}",
             "hPa",
             "m",
             "\u{00b0}C",
@@ -194,7 +193,7 @@ pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
         for i in 0..(lines - 1) {
             let start_above = tb.get_iter_at_line(i);
             let mut end_above = start_above.clone();
-            end_above.forward_chars(4);
+            end_above.forward_chars(5);
             let above_val: f64 = f64::from_str(
                 tb.get_text(&start_above, &end_above, false)
                     .unwrap_or_else(|| "0.0".to_owned())
@@ -203,7 +202,7 @@ pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
 
             let start_below = tb.get_iter_at_line(i + 1);
             let mut end_below = start_below.clone();
-            end_below.forward_chars(4);
+            end_below.forward_chars(5);
             let below_val: f64 = f64::from_str(
                 tb.get_text(&start_below, &end_below, false)
                     .unwrap_or_else(|| "0.0".to_owned())
