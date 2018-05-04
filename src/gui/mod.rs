@@ -149,9 +149,11 @@ impl Gui {
         }
     }
 
-    pub fn show_popup_menu(&self, evt: &EventButton) {
-        let ev: &::gdk::Event = evt;
-        self.sounding_context_menu.popup_at_pointer(ev);
+    pub fn show_popup_menu(&self, _evt: &EventButton) {
+        // waiting for version 3.22...
+        // let ev: &::gdk::Event = evt;
+        // self.sounding_context_menu.popup_at_pointer(ev);
+        self.sounding_context_menu.popup_easy(3, 0)
     }
 
     fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Menu {
