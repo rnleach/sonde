@@ -100,13 +100,20 @@ macro_rules! draw_profile {
     };
 }
 pub fn draw_profiles(gui: &Gui, acp: &AppContextPointer) {
-    
     let config = acp.config.borrow();
 
     draw_profile!(config, gui.get_rh_omega_area(), show_rh_omega_frame);
     draw_profile!(config, gui.get_cloud_area(), show_cloud_frame);
-    draw_profile!(config, gui.get_wind_speed_profile_area(), show_wind_speed_profile);
-    draw_profile!(config, gui.get_lapse_rate_profile_area(), show_lapse_rate_profile);
+    draw_profile!(
+        config,
+        gui.get_wind_speed_profile_area(),
+        show_wind_speed_profile
+    );
+    draw_profile!(
+        config,
+        gui.get_lapse_rate_profile_area(),
+        show_lapse_rate_profile
+    );
 }
 
 pub fn initialize_profiles(gui: &Gui, acp: &AppContextPointer) {

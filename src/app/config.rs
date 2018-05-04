@@ -1,8 +1,8 @@
 //! Keep configuration data in this module.
 
-use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords, LPCoords};
+use coords::{LPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
 use gui::{HodoContext, SkewTContext};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext, LapseRateContext};
+use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
 
 /// Types of parcels you can use when doing parcel analysis.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -706,7 +706,7 @@ lazy_static! {
             .collect()
     };
 
-    /// Compute points for background lapse rate 
+    /// Compute points for background lapse rate
     pub static ref PROFILE_LAPSE_RATE_PNTS: Vec<[XYCoords; 2]> = {
         PROFILE_LAPSE_RATES
             .into_iter()

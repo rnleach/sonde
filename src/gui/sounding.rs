@@ -820,7 +820,7 @@ fn draw_data_overlays(args: DrawingArgs) {
             MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
             MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
         } {
-            if let Ok(p_profile) = sounding_analysis::profile::lift_parcel(parcel, sndg) {
+            if let Ok(p_profile) = sounding_analysis::parcel::lift_parcel(parcel, sndg) {
                 p_profile
             } else {
                 return;
@@ -856,16 +856,17 @@ fn draw_data_overlays(args: DrawingArgs) {
         }
 
         let env_t = &parcel_profile.environment_t;
-        let cin_layers = parcel_profile.cin_layers();
-        let cape_layers = parcel_profile.cape_layers();
+        let cin_layers = sounding_analysis::parcel::cin_layers(&parcel_profile, sndg);
+        let cape_layers = sounding_analysis::parcel::cape_layers(&parcel_profile, sndg);
 
-        for (bottom, top) in cin_layers {
-            let up_side = izip!(pres_data, parcel_t, env_t)
-                .skip_while(|&(p, _, _)| *p > bottom)
-                .take_while(|&(p, _, _)| *p >= top)
-                .map(|(p, _, e_t)| (*p, *e_t));
+        for lyr in cin_layers {
+            if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+                let up_side = izip!(pres_data, parcel_t, env_t)
+                    .skip_while(|&(p, _, _)| *p > bottom)
+                    .take_while(|&(p, _, _)| *p >= top)
+                    .map(|(p, _, e_t)| (*p, *e_t));
 
-            let down_side = izip!(pres_data, parcel_t, env_t)
+                let down_side = izip!(pres_data, parcel_t, env_t)
                 // Top down
                 .rev()
                 // Skip above top.
@@ -874,28 +875,30 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .take_while(|&(p, _, _)| *p <= bottom)
                 .map(|(p, p_t, _)| (*p, *p_t));
 
-            let negative_polygon = up_side.chain(down_side);
+                let negative_polygon = up_side.chain(down_side);
 
-            let negative_polygon = negative_polygon.map(|(pressure, temperature)| {
-                let tp_coords = TPCoords {
-                    temperature,
-                    pressure,
-                };
-                ac.skew_t.convert_tp_to_screen(tp_coords)
-            });
+                let negative_polygon = negative_polygon.map(|(pressure, temperature)| {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    ac.skew_t.convert_tp_to_screen(tp_coords)
+                });
 
-            let negative_polygon_rgba = config.parcel_negative_rgba;
+                let negative_polygon_rgba = config.parcel_negative_rgba;
 
-            draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
+                draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
+            }
         }
 
-        for (bottom, top) in cape_layers {
-            let up_side = izip!(pres_data, parcel_t, env_t)
-                .skip_while(|&(p, _, _)| *p > bottom)
-                .take_while(|&(p, _, _)| *p >= top)
-                .map(|(p, _, e_t)| (*p, *e_t));
+        for lyr in cape_layers {
+            if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+                let up_side = izip!(pres_data, parcel_t, env_t)
+                    .skip_while(|&(p, _, _)| *p > bottom)
+                    .take_while(|&(p, _, _)| *p >= top)
+                    .map(|(p, _, e_t)| (*p, *e_t));
 
-            let down_side = izip!(pres_data, parcel_t, env_t)
+                let down_side = izip!(pres_data, parcel_t, env_t)
                 // Top down
                 .rev()
                 // Skip above top.
@@ -904,19 +907,20 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .take_while(|&(p, _, _)| *p <= bottom)
                 .map(|(p, p_t, _)| (*p, *p_t));
 
-            let polygon = up_side.chain(down_side);
+                let polygon = up_side.chain(down_side);
 
-            let polygon = polygon.map(|(pressure, temperature)| {
-                let tp_coords = TPCoords {
-                    temperature,
-                    pressure,
-                };
-                ac.skew_t.convert_tp_to_screen(tp_coords)
-            });
+                let polygon = polygon.map(|(pressure, temperature)| {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    ac.skew_t.convert_tp_to_screen(tp_coords)
+                });
 
-            let polygon_rgba = config.parcel_positive_rgba;
+                let polygon_rgba = config.parcel_positive_rgba;
 
-            draw_filled_polygon(cr, polygon_rgba, polygon);
+                draw_filled_polygon(cr, polygon_rgba, polygon);
+            }
         }
     }
 }
@@ -1239,7 +1243,7 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    use sounding_analysis::profile::lift_parcel;
+    use sounding_analysis::parcel::lift_parcel;
     use sounding_analysis::parcel::Parcel;
 
     if let Some(sndg) = ac.get_sounding_for_display() {

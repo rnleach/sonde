@@ -357,7 +357,10 @@ fn draw_lapse_rate_profile(args: DrawingArgs) {
             .filter_map(|pair| {
                 let (press, lapse_rate) = pair;
                 if press > config::MINP {
-                    Some(ac.lapse_rate.convert_lp_to_screen(LPCoords { lapse_rate, press }))
+                    Some(
+                        ac.lapse_rate
+                            .convert_lp_to_screen(LPCoords { lapse_rate, press }),
+                    )
                 } else {
                     None
                 }

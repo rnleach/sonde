@@ -993,7 +993,7 @@ trait SlaveProfileDrawable: Drawable {
         if !ac.config.borrow().show_hail_zone {
             return;
         }
-        
+
         if let Some(ref snd) = ac.get_sounding_for_display() {
             let layers = match ::sounding_analysis::layers::hail_growth_zone(snd.sounding()) {
                 Ok(layers) => layers,

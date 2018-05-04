@@ -4,12 +4,12 @@
 use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
-use sounding_base::{DataRow, Sounding};
+use sounding_base::DataRow;
 use sounding_analysis::Analysis;
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext, LapseRateContext};
+use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
 
 // Module for configuring application
 pub mod config;
@@ -17,32 +17,6 @@ use self::config::Config;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
-
-/// Wrapper for a sounding-analysis pair.
-pub struct SoundingPackage {
-    sounding: Sounding,
-    analysis: Analysis,
-}
-
-impl SoundingPackage {
-    /// Constructor for a package
-    fn new(snd: Sounding, anal: Analysis) -> Self {
-        SoundingPackage {
-            sounding: snd,
-            analysis: anal,
-        }
-    }
-
-    /// Getter for sounding reference.
-    pub fn sounding(&self) -> &Sounding {
-        &self.sounding
-    }
-
-    /// Getter for analysis reference
-    pub fn analysis(&self) -> &Analysis {
-        &self.analysis
-    }
-}
 
 /// Holds the application state. This is a singleton (not enforced) that is shared globally.
 pub struct AppContext {
@@ -54,7 +28,7 @@ pub struct AppContext {
     // name. So whatever function loads a sounding should set this to reflect where it came from.
     source_description: RefCell<Option<String>>,
 
-    list: RefCell<Vec<Rc<SoundingPackage>>>,
+    list: RefCell<Vec<Rc<Analysis>>>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
 
@@ -106,13 +80,11 @@ impl AppContext {
         *self.gui.borrow_mut() = Some(gui);
     }
 
-    pub fn load_data(&self, src: &mut Iterator<Item = (Sounding, Analysis)>) {
+    pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {
         use app::config;
         use sounding_base::Profile::*;
 
-        *self.list.borrow_mut() = src.into_iter()
-            .map(|(snd, anal)| Rc::new(SoundingPackage::new(snd, anal)))
-            .collect();
+        *self.list.borrow_mut() = src.into_iter().map(Rc::new).collect();
         self.currently_displayed_index.set(0);
         *self.source_description.borrow_mut() = None;
 
@@ -132,7 +104,7 @@ impl AppContext {
         };
 
         let snd_list = self.list.borrow();
-        let snd_list = snd_list.iter().map(|package| package.sounding());
+        let snd_list = snd_list.iter().map(|anal| anal.sounding());
 
         for snd in snd_list {
             for pair in snd.get_profile(Pressure)
@@ -329,7 +301,7 @@ impl AppContext {
             if let Some(p) = sample.pressure {
                 self.last_sample.set(
                     ::sounding_analysis::linear_interpolate(
-                        &self.list.borrow()[self.currently_displayed_index.get()].sounding,
+                        self.list.borrow()[self.currently_displayed_index.get()].sounding(),
                         p,
                     ).ok(),
                 );
@@ -349,7 +321,7 @@ impl AppContext {
     }
 
     /// Get the sounding to draw.
-    pub fn get_sounding_for_display(&self) -> Option<Rc<SoundingPackage>> {
+    pub fn get_sounding_for_display(&self) -> Option<Rc<Analysis>> {
         if self.plottable() {
             let shared_ptr = Rc::clone(&self.list.borrow()[self.currently_displayed_index.get()]);
             Some(shared_ptr)
