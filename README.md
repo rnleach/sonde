@@ -78,7 +78,7 @@ profiles. Also, the sample readouts track directly with the one on the skew-t.
 ## Future Development
  - Get the indexes display working.
  - Add more profiles.
-   - Lapse rate.
+   - Lapse rate. *in progress*
    - Theta-e.
  - A data downloader and manager.
  - Support for loading [bufr][bufr] files so that measured data can be inspected too.
