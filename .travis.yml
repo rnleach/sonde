@@ -1,0 +1,45 @@
+ language: rust
+ language: rust
+ env:
+ env:
+    - GTK=3.18
+
+ rust:
+ rust:
+   - stable
+   - stable
+   - beta
+   - beta
+   - nightly
+   - nightly
+ matrix:
+ matrix:
+   allow_failures:
+   allow_failures:
+     - rust: nightly
+     - rust: nightly
+ addons:
+ addons:
+   apt:
+   apt:
+     packages:
+     packages:
+     - libgtk-3-dev
+     - libgtk-3-dev
+ script:
+ script:
+     - WD="$PWD"
+     - WD="$PWD"
+     - cd "$HOME"
+     - cd "$HOME"
+     - curl -LO "https://github.com/gkoz/gtk-bootstrap/releases/download/gtk-3.18.1-2/deps.txz"
+     - curl -LO "https://github.com/gkoz/gtk-bootstrap/releases/download/gtk-3.18.1-2/deps.txz"
+     - tar xf deps.txz
+     - tar xf deps.txz
+     - cd "$WD"
+     - cd "$WD"
+     - export PKG_CONFIG_PATH="$HOME/local/lib/pkgconfig"
+     - export PKG_CONFIG_PATH="$HOME/local/lib/pkgconfig"
+     - export LD_LIBRARY_PATH="$HOME/local/lib/"
+     - export LD_LIBRARY_PATH="$HOME/local/lib/"
+- cargo build --verbose
