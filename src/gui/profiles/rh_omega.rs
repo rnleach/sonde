@@ -379,7 +379,7 @@ impl Drawable for RHOmegaContext {
 
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
-            let sample = ::sounding_analysis::linear_interpolate(
+            let sample = ::sounding_analysis::linear_interpolate_sounding(
                 // will not panic due to ac.plottable
                 &ac.get_sounding_for_display().expect(file!()).sounding(),
                 wp_position.p,

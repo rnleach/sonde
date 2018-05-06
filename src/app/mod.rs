@@ -28,6 +28,7 @@ pub struct AppContext {
     // name. So whatever function loads a sounding should set this to reflect where it came from.
     source_description: RefCell<Option<String>>,
 
+    // Lists of soundings and currently displayed one
     list: RefCell<Vec<Rc<Analysis>>>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
@@ -300,7 +301,7 @@ impl AppContext {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure {
                 self.last_sample.set(
-                    ::sounding_analysis::linear_interpolate(
+                    ::sounding_analysis::linear_interpolate_sounding(
                         self.list.borrow()[self.currently_displayed_index.get()].sounding(),
                         p,
                     ).ok(),

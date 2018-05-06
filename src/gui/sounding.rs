@@ -681,7 +681,7 @@ impl Drawable for SkewTContext {
 
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
-            let sample = ::sounding_analysis::linear_interpolate(
+            let sample = ::sounding_analysis::linear_interpolate_sounding(
                 &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
                 tp_position.pressure,
             );
