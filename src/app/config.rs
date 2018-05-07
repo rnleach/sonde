@@ -636,7 +636,7 @@ lazy_static! {
                 RHOmegaContext::convert_wp_to_xy(tp[1])
             ]
         })
-            .collect()
+        .collect()
     };
 
     /// Compute points for background speed
