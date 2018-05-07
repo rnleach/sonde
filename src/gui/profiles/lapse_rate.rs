@@ -344,7 +344,6 @@ impl SlaveProfileDrawable for LapseRateContext {
 }
 
 fn draw_lapse_rate_profile(args: DrawingArgs) {
-    
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

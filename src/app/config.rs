@@ -610,7 +610,7 @@ lazy_static! {
         ISO_THETA_E_C
         .iter()
         .map(|theta_c| theta_e_saturated_kelvin(1000.0, *theta_c).expect("theta_e isopleth failed"))
-        .map(|theta_e_k| generate_theta_e_isopleth(theta_e_k))
+        .map(generate_theta_e_isopleth)
         .collect()
     };
 
