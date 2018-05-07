@@ -4,7 +4,7 @@ use gdk::{EventMask, EventMotion, EventScroll};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use sounding_base::{DataRow, Sounding};
+use sounding_base::{DataRow, Profile};
 use sounding_analysis;
 
 use app::{config, AppContext, AppContextPointer};
@@ -208,7 +208,7 @@ impl Drawable for LapseRateContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Lapse Rate".to_owned(), "\u{00b0}C/km".to_owned()]
+        vec!["Lapse Rate".to_owned()]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -225,7 +225,7 @@ impl Drawable for LapseRateContext {
         } = self.convert_screen_to_lp(lower_left);
 
         for lapse_rate in &config::PROFILE_LAPSE_RATES {
-            let label = format!("{:.0}", *lapse_rate);
+            let label = format!("{:.1}", *lapse_rate);
 
             let extents = cr.text_extents(&label);
 
@@ -278,15 +278,23 @@ impl Drawable for LapseRateContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<String> {
         let mut results = vec![];
 
-        // if let Some(speed) = vals.speed {
-        //     let spd = speed.round();
-        //     let line = format!("{:.0}kt", spd);
-        //     results.push(line);
-        // }
-        results.push("Filler".to_owned());
+        if let (Some(anal), Some(other_profiles), Some(tgt_pres)) = (
+            ac.get_sounding_for_display(),
+            ac.get_extra_profiles_for_display(),
+            vals.pressure,
+        ) {
+            let pres = anal.sounding().get_profile(Profile::Pressure);
+            let lapse_rate = &other_profiles.lapse_rate;
+
+            if let Some(lr) = sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres) {
+                results.push(format!("{:.1}\u{00b0}C/km", lr));
+            }
+        } else {
+            return results;
+        }
 
         results
     }
@@ -336,16 +344,22 @@ impl SlaveProfileDrawable for LapseRateContext {
 }
 
 fn draw_lapse_rate_profile(args: DrawingArgs) {
+    
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
+    if let (Some(anal), Some(profiles)) = (
+        ac.get_sounding_for_display(),
+        ac.get_extra_profiles_for_display(),
+    ) {
         use sounding_base::Profile::Pressure;
 
         ac.lapse_rate.set_has_data(true);
 
-        let pres_data = sndg.sounding().get_profile(Pressure);
-        let lr_data = &sounding_analysis::profile::temperature_lapse_rate(sndg.sounding());
+        let sndg = anal.sounding();
+
+        let pres_data = sndg.get_profile(Pressure);
+        let lr_data = &profiles.lapse_rate;
         let mut profile = izip!(pres_data, lr_data)
             .filter_map(|pair| {
                 if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
@@ -354,16 +368,12 @@ fn draw_lapse_rate_profile(args: DrawingArgs) {
                     None
                 }
             })
-            .filter_map(|pair| {
-                let (press, lapse_rate) = pair;
-                if press > config::MINP {
-                    Some(
-                        ac.lapse_rate
-                            .convert_lp_to_screen(LPCoords { lapse_rate, press }),
-                    )
-                } else {
-                    None
-                }
+            .take_while(|&(press, _)| press >= config::MINP)
+            .filter_map(|(press, lapse_rate)| {
+                Some(
+                    ac.lapse_rate
+                        .convert_lp_to_screen(LPCoords { lapse_rate, press }),
+                )
             });
 
         plot_curve_from_points(

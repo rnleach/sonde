@@ -9,7 +9,7 @@ use gtk::{DrawingArea, Menu, Notebook, RadioMenuItem, SeparatorMenuItem, TextVie
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
 
-use sounding_base::{DataRow, Sounding};
+use sounding_base::DataRow;
 use sounding_analysis::Layer;
 
 use app::{AppContext, AppContextPointer};
@@ -521,7 +521,7 @@ trait Drawable: PlotContext + PlotContextExt {
      * Active readout Drawing.
      **********************************************************************************************/
     /// Override to activate the active readout/sampling.
-    fn create_active_readout_text(_vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+    fn create_active_readout_text(_vals: &DataRow, _ac: &AppContext) -> Vec<String> {
         vec![]
     }
 
@@ -548,20 +548,13 @@ trait Drawable: PlotContext + PlotContextExt {
             return;
         };
 
-        let snd = if let Some(snd) = ac.get_sounding_for_display() {
-            snd
-        } else {
-            return;
-        };
-        let snd = snd.sounding();
-
         let sample_p = if let Some(sample_p) = vals.pressure {
             sample_p
         } else {
             return;
         };
 
-        let lines = Self::create_active_readout_text(&vals, &snd);
+        let lines = Self::create_active_readout_text(&vals, ac);
 
         if lines.is_empty() {
             return;

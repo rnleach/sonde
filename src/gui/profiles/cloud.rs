@@ -4,7 +4,7 @@ use gdk::{EventMask, EventMotion, EventScroll};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use sounding_base::{DataRow, Sounding};
+use sounding_base::DataRow;
 
 use app::{config, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
@@ -281,7 +281,7 @@ impl Drawable for CloudContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, _snd: &Sounding) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, _ac: &AppContext) -> Vec<String> {
         let mut results = vec![];
 
         if let Some(cloud) = vals.cloud_fraction {

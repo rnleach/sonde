@@ -5,7 +5,7 @@ use gdk::{EventButton, EventMask, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use sounding_base::{DataRow, Sounding};
+use sounding_base::DataRow;
 use sounding_analysis;
 
 use app::{config, AppContext, AppContextPointer};
@@ -461,10 +461,16 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, snd: &Sounding) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<String> {
         use metfor::rh;
 
         let mut results = vec![];
+
+        let anal = if let Some(anal) = ac.get_sounding_for_display() {
+            anal
+        } else {
+            return results;
+        };
 
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
@@ -473,7 +479,7 @@ impl Drawable for SkewTContext {
         let spd = vals.speed;
         let hgt_asl = vals.height;
         let omega = vals.omega;
-        let elevation = snd.get_station_info().elevation();
+        let elevation = anal.sounding().get_station_info().elevation();
 
         if t_c.is_some() || dp_c.is_some() || omega.is_some() {
             let mut line = String::with_capacity(128);

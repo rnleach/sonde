@@ -4,7 +4,8 @@
 use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 
-use sounding_base::DataRow;
+use sounding_base::{DataRow, Sounding};
+use sounding_analysis;
 use sounding_analysis::Analysis;
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
@@ -30,6 +31,7 @@ pub struct AppContext {
 
     // Lists of soundings and currently displayed one
     list: RefCell<Vec<Rc<Analysis>>>,
+    extra_profiles: RefCell<Vec<Rc<ExtraProfiles>>>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
 
@@ -65,6 +67,7 @@ impl AppContext {
             config: RefCell::new(Config::default()),
             source_description: RefCell::new(None),
             list: RefCell::new(vec![]),
+            extra_profiles: RefCell::new(vec![]),
             currently_displayed_index: Cell::new(0),
             last_sample: Cell::new(None),
             gui: RefCell::new(None),
@@ -86,6 +89,12 @@ impl AppContext {
         use sounding_base::Profile::*;
 
         *self.list.borrow_mut() = src.into_iter().map(Rc::new).collect();
+        *self.extra_profiles.borrow_mut() = self.list
+            .borrow()
+            .iter()
+            .map(|anal| ExtraProfiles::new(anal.sounding()))
+            .map(Rc::new)
+            .collect();
         self.currently_displayed_index.set(0);
         *self.source_description.borrow_mut() = None;
 
@@ -331,6 +340,17 @@ impl AppContext {
         }
     }
 
+    /// Get the extra profiles to draw.
+    pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
+        if self.plottable() {
+            let shared_ptr =
+                Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
+            Some(shared_ptr)
+        } else {
+            None
+        }
+    }
+
     /// Set the source name
     pub fn set_source_description(&self, new_name: Option<String>) {
         *self.source_description.borrow_mut() = new_name;
@@ -398,5 +418,18 @@ impl AppContext {
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
         self.lapse_rate.mark_background_dirty();
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ExtraProfiles {
+    pub lapse_rate: Vec<Option<f64>>,
+    // TODO: add more!
+}
+
+impl ExtraProfiles {
+    pub fn new(snd: &Sounding) -> Self {
+        let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
+        ExtraProfiles { lapse_rate }
     }
 }
