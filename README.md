@@ -35,9 +35,10 @@ top priority.
    - Pressure vertical velocity overlaid with relative humidity.
    - Wind speed.
    - Cloud cover.
+   - Lapse rate.
    - More profiles to come.
  - Profile backgrounds.
-   - Highlights dendritic snow growth zone if present in the sounding.
+   - Highlights dendritic snow growth and hail growth zones if present in the sounding.
    - Highlights warm layers aloft (dry bulb and wet bulb) if the surface temperature is below 
      freezing.
    - Freezing level emphasized.
@@ -54,6 +55,8 @@ top priority.
      displayed. Almost all the colors used are configurable too. It is very much a work in progress.
    - Persistence from run to run has been implemented via a config.yml file that is saved every time
      the program shuts down.
+   - Right click menu on the sounding to choose parcel type (surface, mixed layer, most unstable)
+     for parcel analysis.
    - Does not yet support saving and loading configurations, but that is planned.
 
 ## Screenshots
@@ -71,14 +74,14 @@ A hodograph is also included. When sampling the skew-t, a dot appears at the cor
 on the hodograph.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
-The profiles highlight important levels, such as the dendritic snow growth zone shown in these
-profiles. Also, the sample readouts track directly with the one on the skew-t.
+The profiles highlight important levels, such as the hail growth and dendritic snow growth zones 
+shown in these profiles. Also, the sample readouts track directly with the one on the skew-t.
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
 ## Future Development
  - Get the indexes display working.
  - Add more profiles.
-   - Lapse rate. *in progress*
+   - Average lapse rate from surface or mixed layer to * level in the profile.
    - Theta-e.
  - A data downloader and manager.
  - Support for loading [bufr][bufr] files so that measured data can be inspected too.
