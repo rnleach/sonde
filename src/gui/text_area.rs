@@ -93,7 +93,7 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
                     unwrap_to_str!(row.theta_e, "{:.0}"),
                     unwrap_to_str!(row.direction, "{:.0}"),
                     unwrap_to_str!(row.speed, "{:.0}"),
-                    unwrap_to_str!(row.omega, "{:.1}", 10.0),
+                    unwrap_to_str!(row.omega, "{:.1}"),
                     unwrap_to_str!(row.cloud_fraction, "{:.0}"),
                 ));
             }

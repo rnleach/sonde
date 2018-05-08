@@ -501,7 +501,7 @@ impl Drawable for SkewTContext {
                 }
             }
             if let Some(omega) = omega {
-                line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
+                line.push_str(&format!(" {:.1} Pa/s", omega ));
             }
             results.push((line, color));
         }

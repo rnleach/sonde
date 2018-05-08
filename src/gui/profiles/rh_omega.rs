@@ -272,7 +272,7 @@ impl Drawable for RHOmegaContext {
             } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
             for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
-                let label = format!("{:.0}", w * 10.0);
+                let label = format!("{:.0}", w);
 
                 let extents = cr.text_extents(&label);
 
@@ -367,7 +367,7 @@ impl Drawable for RHOmegaContext {
             }
             if config.show_omega {
                 if let Some(omega) = omega {
-                    results.push((format!("{:.1} hPa/s", omega * 10.0), config.omega_rgba));
+                    results.push((format!("{:.1} Pa/s", omega), config.omega_rgba));
                 }
             }
         }

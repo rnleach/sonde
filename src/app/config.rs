@@ -418,7 +418,7 @@ pub const MINT: f64 = -46.5; // C - at MAXP
 pub const MAXT: f64 = 50.5; // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
-pub const MAX_ABS_W: f64 = 10.0;
+pub const MAX_ABS_W: f64 = 15.0;
 /// Minimum allowable vertical velocity in Pa/s, used only for setting scale.
 pub const MIN_ABS_W: f64 = 3.0;
 
