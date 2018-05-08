@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use gtk::CheckButton;
 
 use app::AppContextPointer;
-use gui::{Drawable, Gui};
+use gui::{Drawable, Gui, PlotContext};
 
 pub mod cloud;
 pub mod rh_omega;
@@ -18,7 +18,7 @@ pub use self::wind_speed::WindSpeedContext;
 pub use self::lapse_rate::LapseRateContext;
 
 macro_rules! build_profile{
-    ($p_box:ident, $label:expr, $c_box:ident, $drawing_area:expr, $acp:ident, $show_var:ident) => {
+    ($p_box:ident, $c_box:ident, $drawing_area:expr, $acp:ident, $label:expr, $show_var:ident) => {
 
         let da = $drawing_area;
         $p_box.pack_start(&da, true, true, 0);
@@ -43,6 +43,60 @@ macro_rules! build_profile{
             }
         });
     };
+    ($p_box:ident, $c_box:ident, $drawing_area:expr, $acp:ident, $d_context:ident, $label:expr,
+        $show_var:ident, $label2:expr, $show_var2:ident) => {
+
+        let da = $drawing_area;
+        $p_box.pack_start(&da, true, true, 0);
+
+        let check_button = CheckButton::new_with_label($label);
+        $c_box.pack_start(&check_button, false, false, 0);
+        let show_da1 = $acp.config.borrow().$show_var;
+        check_button.set_active(show_da1);
+
+        let check_button2 = CheckButton::new_with_label($label2);
+        $c_box.pack_start(&check_button2, false, false, 0);
+        let show_da2 = $acp.config.borrow().$show_var2;
+        check_button2.set_active(show_da2);
+
+        let show_da = show_da1 || show_da2;
+
+        if show_da {
+            da.show();
+        } else {
+            da.hide();
+        }
+
+        let ac = Rc::clone(&$acp);
+        let dac = da.clone();
+        check_button.connect_toggled(move |button| {
+            let button_state = button.get_active();
+            ac.config.borrow_mut().$show_var = button_state;
+            let show_da = button_state || ac.config.borrow().$show_var2;
+            if show_da {
+                dac.show();
+                dac.queue_draw();
+                ac.$d_context.mark_data_dirty();
+            } else {
+                dac.hide()
+            }
+        });
+
+        let ac = Rc::clone(&$acp);
+        let dac = da.clone();
+        check_button2.connect_toggled(move |button| {
+            let button_state = button.get_active();
+            ac.config.borrow_mut().$show_var2 = button_state;
+            let show_da = button_state || ac.config.borrow().$show_var;
+            if show_da {
+                dac.show();
+                dac.queue_draw();
+                ac.$d_context.mark_data_dirty();
+            } else {
+                dac.hide()
+            }
+        });
+    };
 }
 
 pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32) -> gtk::Box {
@@ -51,36 +105,42 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
 
     build_profile!(
         profile_box,
-        "RH-Omega",
         control_box,
         gui.get_rh_omega_area(),
         acp,
-        show_rh_omega_frame
+        rh_omega,
+        "RH",
+        show_rh,
+        "Omega",
+        show_omega
     );
     build_profile!(
         profile_box,
-        "Clouds",
         control_box,
         gui.get_cloud_area(),
         acp,
+        "Clouds",
         show_cloud_frame
     );
     build_profile!(
         profile_box,
-        "Wind Spd",
         control_box,
         gui.get_wind_speed_profile_area(),
         acp,
+        "Wind Spd",
         show_wind_speed_profile
     );
 
     build_profile!(
         profile_box,
-        "Lapse rate",
         control_box,
         gui.get_lapse_rate_profile_area(),
         acp,
-        show_lapse_rate_profile
+        lapse_rate,
+        "Lapse rate",
+        show_lapse_rate_profile,
+        "Theta-e lapse rate",
+        show_theta_e_lapse_rate_profile
     );
 
     profile_box.pack_start(&control_box, false, false, 0);
@@ -89,10 +149,10 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
 }
 
 macro_rules! draw_profile {
-    ($config:ident, $da:expr, $show_var:ident) => {
+    ($da:expr, $show:expr) => {
         let da = $da;
-        if $config.$show_var {
-            da.show_all();
+        if $show {
+            da.show();
             da.queue_draw();
         } else {
             da.hide();
@@ -102,17 +162,15 @@ macro_rules! draw_profile {
 pub fn draw_profiles(gui: &Gui, acp: &AppContextPointer) {
     let config = acp.config.borrow();
 
-    draw_profile!(config, gui.get_rh_omega_area(), show_rh_omega_frame);
-    draw_profile!(config, gui.get_cloud_area(), show_cloud_frame);
+    draw_profile!(gui.get_rh_omega_area(), config.show_rh || config.show_omega);
+    draw_profile!(gui.get_cloud_area(), config.show_cloud_frame);
     draw_profile!(
-        config,
         gui.get_wind_speed_profile_area(),
-        show_wind_speed_profile
+        config.show_wind_speed_profile
     );
     draw_profile!(
-        config,
         gui.get_lapse_rate_profile_area(),
-        show_lapse_rate_profile
+        config.show_lapse_rate_profile || config.show_theta_e_lapse_rate_profile
     );
 }
 

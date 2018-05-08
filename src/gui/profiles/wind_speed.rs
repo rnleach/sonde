@@ -220,7 +220,7 @@ impl Drawable for WindSpeedContext {
     }
 
     fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Wind".to_owned(), "Speed".to_owned()]
+        vec!["Wind speed".to_owned()]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {

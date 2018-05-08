@@ -96,8 +96,10 @@ pub struct Config {
     //
     // RH-Omega profile
     //
-    /// Show the rh omega frame
-    pub show_rh_omega_frame: bool,
+    /// Show the omega profile
+    pub show_omega: bool,
+    /// Show the rh profile
+    pub show_rh: bool,
     /// Color used for omega line
     pub omega_rgba: (f64, f64, f64, f64),
     /// RH Color
@@ -120,12 +122,16 @@ pub struct Config {
     pub wind_speed_profile_rgba: (f64, f64, f64, f64),
 
     //
-    // Lapse rate profile
+    // Lapse rate profiles
     //
     /// Show the lapse rate profile frame
     pub show_lapse_rate_profile: bool,
     /// Lapse rate profile color.
     pub lapse_rate_profile_rgba: (f64, f64, f64, f64),
+    /// Show the theta-e lapse rate rate
+    pub show_theta_e_lapse_rate_profile: bool,
+    /// Theta-e lapse rate profile color.
+    pub theta_e_lapse_rate_profile_rgba: (f64, f64, f64, f64),
 
     //
     // Labeling
@@ -292,7 +298,8 @@ impl Default for Config {
             //
             // RH-Omega profile
             //
-            show_rh_omega_frame: true,
+            show_omega: true,
+            show_rh: true,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
             rh_rgba: (0.305_880, 0.603_921, 0.023_529_4, 1.0),
 
@@ -313,6 +320,8 @@ impl Default for Config {
             //
             show_lapse_rate_profile: true,
             lapse_rate_profile_rgba: (0.0, 0.0, 0.0, 1.0),
+            show_theta_e_lapse_rate_profile: true,
+            theta_e_lapse_rate_profile_rgba: (0.3, 0.4, 0.5, 1.0),
 
             //
             // Labeling

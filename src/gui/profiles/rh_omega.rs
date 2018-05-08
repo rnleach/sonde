@@ -314,8 +314,20 @@ impl Drawable for RHOmegaContext {
         labels
     }
 
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["RH & PVV".to_owned()]
+    fn build_legend_strings(ac: &AppContext) -> Vec<String> {
+        let mut result = vec![];
+
+        let config = ac.config.borrow();
+
+        if config.show_rh {
+            result.push("RH".to_owned());
+        }
+
+        if config.show_omega {
+            result.push("PVV".to_owned());
+        }
+
+        result
     }
 
     /***********************************************************************************************
@@ -334,8 +346,10 @@ impl Drawable for RHOmegaContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, _ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<String> {
         use metfor::rh;
+
+        let config = ac.config.borrow();
 
         let mut results = vec![];
 
@@ -343,21 +357,30 @@ impl Drawable for RHOmegaContext {
         let dp_c = vals.dew_point;
         let omega = vals.omega;
 
-        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+        if (t_c.is_some() && dp_c.is_some()) || omega.is_some() {
             let mut line = String::with_capacity(128);
 
-            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
-                if let Ok(rh) = rh(t_c, dp_c) {
-                    line.push_str(&format!("{:.0}%", 100.0 * rh));
+            if config.show_rh {
+                if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                    if let Ok(rh) = rh(t_c, dp_c) {
+                        line.push_str(&format!("{:.0}%", 100.0 * rh));
+                    }
                 }
             }
-            if t_c.is_some() && dp_c.is_some() && omega.is_some() {
+            if t_c.is_some() && dp_c.is_some() && omega.is_some() && config.show_rh
+                && config.show_omega
+            {
                 line.push(' ');
             }
-            if let Some(omega) = omega {
-                line.push_str(&format!("{:.1} hPa/s", omega * 10.0));
+            if config.show_omega {
+                if let Some(omega) = omega {
+                    line.push_str(&format!("{:.1} hPa/s", omega * 10.0));
+                }
             }
-            results.push(line);
+
+            if !line.is_empty() {
+                results.push(line);
+            }
         }
 
         results
@@ -409,6 +432,10 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
 
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
+
+    if !config.show_rh {
+        return false;
+    }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{DewPoint, Pressure, Temperature};
@@ -507,6 +534,10 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
 fn draw_omega_profile(args: DrawingArgs) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
+
+    if !config.show_omega {
+        return false;
+    }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         use sounding_base::Profile::{Pressure, PressureVerticalVelocity};

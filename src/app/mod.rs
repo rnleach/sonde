@@ -424,12 +424,18 @@ impl AppContext {
 #[derive(Debug, Default)]
 pub struct ExtraProfiles {
     pub lapse_rate: Vec<Option<f64>>,
+    pub theta_e_lapse_rate: Vec<Option<f64>>,
     // TODO: add more!
 }
 
 impl ExtraProfiles {
     pub fn new(snd: &Sounding) -> Self {
         let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
-        ExtraProfiles { lapse_rate }
+        let theta_e_lapse_rate = sounding_analysis::profile::theta_e_lapse_rate(snd);
+
+        ExtraProfiles {
+            lapse_rate,
+            theta_e_lapse_rate,
+        }
     }
 }
