@@ -4,7 +4,7 @@ use gdk::EventMask;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use app::{config, AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
@@ -211,8 +211,8 @@ impl Drawable for HodoContext {
         labels
     }
 
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Hodograph".to_owned()]
+    fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
+        vec![("Hodograph".to_owned(), ac.config.borrow().label_rgba)]
     }
 
     /***********************************************************************************************

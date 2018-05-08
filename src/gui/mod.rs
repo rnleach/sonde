@@ -13,7 +13,7 @@ use sounding_base::DataRow;
 use sounding_analysis::Layer;
 
 use app::{AppContext, AppContextPointer};
-use app::config::ParcelType;
+use app::config::{ParcelType, Rgba};
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
 
@@ -274,7 +274,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Override for for a legend.
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
+    fn build_legend_strings(_ac: &AppContext) -> Vec<(String, Rgba)> {
         vec![]
     }
 
@@ -361,14 +361,14 @@ trait Drawable: PlotContext + PlotContextExt {
     fn calculate_legend_box_size(
         args: DrawingArgs,
         font_extents: &FontExtents,
-        legend_text: &[String],
+        legend_text: &[(String, Rgba)],
     ) -> (f64, f64) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let mut box_width: f64 = 0.0;
         let mut box_height: f64 = 0.0;
 
-        for line in legend_text {
+        for &(ref line, _) in legend_text {
             let extents = cr.text_extents(line);
             if extents.width > box_width {
                 box_width = extents.width;
@@ -417,12 +417,9 @@ trait Drawable: PlotContext + PlotContextExt {
         args: DrawingArgs,
         upper_left: &ScreenCoords,
         font_extents: &FontExtents,
-        legend_text: &[String],
+        legend_text: &[(String, Rgba)],
     ) {
         let (config, cr) = (args.ac.config.borrow(), args.cr);
-
-        let rgb = config.label_rgba;
-        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
 
         let (padding_x, padding_y) =
             cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
@@ -431,7 +428,9 @@ trait Drawable: PlotContext + PlotContextExt {
         // Remember how many lines we have drawn so far for setting position of the next line.
         let mut line_num = 1;
 
-        for line in legend_text {
+        for &(ref line, rgb) in legend_text {
+            cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+
             cr.move_to(
                 upper_left.x + padding_x,
                 upper_left.y - padding_y - font_extents.ascent
@@ -521,7 +520,7 @@ trait Drawable: PlotContext + PlotContextExt {
      * Active readout Drawing.
      **********************************************************************************************/
     /// Override to activate the active readout/sampling.
-    fn create_active_readout_text(_vals: &DataRow, _ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(_vals: &DataRow, _ac: &AppContext) -> Vec<(String, Rgba)> {
         vec![]
     }
 
@@ -595,7 +594,7 @@ trait Drawable: PlotContext + PlotContextExt {
     fn calculate_active_readout_box(
         &self,
         args: DrawingArgs,
-        strings: &[String],
+        strings: &[(String, Rgba)],
         sample_p: f64,
     ) -> ScreenRect {
         let cr = args.cr;
@@ -606,7 +605,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let font_extents = cr.font_extents();
 
-        for line in strings.iter() {
+        for &(ref line, _) in strings.iter() {
             let line_extents = cr.text_extents(line);
             if line_extents.width > width {
                 width = line_extents.width;
@@ -681,7 +680,7 @@ trait Drawable: PlotContext + PlotContextExt {
         rect: &ScreenRect,
         cr: &Context,
         ac: &AppContext,
-        lines: &[String],
+        lines: &[(String, Rgba)],
     ) {
         let config = ac.config.borrow();
 
@@ -704,11 +703,12 @@ trait Drawable: PlotContext + PlotContextExt {
         let font_extents = cr.font_extents();
         let mut lines_drawn = 0.0;
 
-        for line in lines {
+        for &(ref line, rgba) in lines {
             cr.move_to(
                 xmin + padding,
                 ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
             );
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.show_text(line);
             lines_drawn += 1.0;
         }

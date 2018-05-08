@@ -7,7 +7,7 @@ use gtk::DrawingArea;
 use sounding_base::{DataRow, Profile};
 use sounding_analysis;
 
-use app::{config, AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, LPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
@@ -207,17 +207,20 @@ impl Drawable for LapseRateContext {
         }
     }
 
-    fn build_legend_strings(ac: &AppContext) -> Vec<String> {
+    fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
         let config = ac.config.borrow();
 
         let mut to_return = vec![];
 
         if config.show_lapse_rate_profile {
-            to_return.push("Lapse rate".to_owned())
+            to_return.push(("Lapse rate".to_owned(), config.lapse_rate_profile_rgba));
         }
 
         if config.show_theta_e_lapse_rate_profile {
-            to_return.push("Theta-e lr".to_owned())
+            to_return.push((
+                "Theta-e lr".to_owned(),
+                config.theta_e_lapse_rate_profile_rgba,
+            ));
         }
 
         to_return
@@ -300,7 +303,7 @@ impl Drawable for LapseRateContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let config = ac.config.borrow();
 
         let mut results = vec![];
@@ -319,7 +322,10 @@ impl Drawable for LapseRateContext {
                     if let Some(lr) =
                         sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
                     {
-                        results.push(format!("{:.1}\u{00b0}C/km", lr));
+                        results.push((
+                            format!("{:.1}\u{00b0}C/km", lr),
+                            config.lapse_rate_profile_rgba,
+                        ));
                     }
                 }
 
@@ -329,7 +335,10 @@ impl Drawable for LapseRateContext {
                     if let Some(lr) =
                         sounding_analysis::linear_interpolate(pres, theta_e_lr, tgt_pres)
                     {
-                        results.push(format!("{:.1}\u{00b0}K/km", lr));
+                        results.push((
+                            format!("{:.1}\u{00b0}K/km", lr),
+                            config.theta_e_lapse_rate_profile_rgba,
+                        ));
                     }
                 }
             }

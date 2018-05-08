@@ -6,7 +6,7 @@ use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
@@ -210,8 +210,8 @@ impl Drawable for CloudContext {
         }
     }
 
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Cloud Cover".to_owned()]
+    fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
+        vec![("Cloud Cover".to_owned(), ac.config.borrow().cloud_rgba)]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -281,13 +281,13 @@ impl Drawable for CloudContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, _ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
         if let Some(cloud) = vals.cloud_fraction {
             let cld = (cloud).round();
             let line = format!("{:.0}%", cld);
-            results.push(line);
+            results.push((line, ac.config.borrow().cloud_rgba));
         }
 
         results

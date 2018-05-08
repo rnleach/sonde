@@ -6,7 +6,7 @@ use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use gui::{Drawable, SlaveProfileDrawable};
@@ -219,8 +219,13 @@ impl Drawable for WindSpeedContext {
         }
     }
 
-    fn build_legend_strings(_ac: &AppContext) -> Vec<String> {
-        vec!["Wind speed".to_owned()]
+    fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
+        vec![
+            (
+                "Wind speed".to_owned(),
+                ac.config.borrow().wind_speed_profile_rgba,
+            ),
+        ]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -290,13 +295,13 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, _ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
         if let Some(speed) = vals.speed {
             let spd = speed.round();
             let line = format!("{:.0}kt", spd);
-            results.push(line);
+            results.push((line, ac.config.borrow().wind_speed_profile_rgba));
         }
 
         results

@@ -8,7 +8,7 @@ use gtk::DrawingArea;
 use sounding_base::DataRow;
 use sounding_analysis;
 
-use app::{config, AppContext, AppContextPointer};
+use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
 use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
@@ -388,13 +388,15 @@ impl Drawable for SkewTContext {
         labels
     }
 
-    fn build_legend_strings(ac: &AppContext) -> Vec<String> {
+    fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
         use chrono::Weekday::*;
+
+        let color = ac.config.borrow().label_rgba;
 
         let mut result = vec![];
 
         if let Some(src_desc) = ac.get_source_description() {
-            result.push(src_desc);
+            result.push((src_desc, color));
         }
 
         if let Some(snd) = ac.get_sounding_for_display() {
@@ -423,7 +425,7 @@ impl Drawable for SkewTContext {
                     temp_string.push_str(&format!(" F{:03}", lt));
                 }
 
-                result.push(temp_string);
+                result.push((temp_string, color));
             }
 
             // Build location part.
@@ -442,7 +444,7 @@ impl Drawable for SkewTContext {
                     location.push_str(&format!("{:.0}m ({:.0}ft)", el, el * 3.28084));
                 }
 
-                result.push(location);
+                result.push((location, color));
             }
         }
 
@@ -461,7 +463,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<String> {
+    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         use metfor::rh;
 
         let mut results = vec![];
@@ -472,6 +474,7 @@ impl Drawable for SkewTContext {
             return results;
         };
 
+        let color = ac.config.borrow().label_rgba;
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
         let pres = vals.pressure;
@@ -500,7 +503,7 @@ impl Drawable for SkewTContext {
             if let Some(omega) = omega {
                 line.push_str(&format!(" {:.1} hPa/s", omega * 10.0));
             }
-            results.push(line);
+            results.push((line, color));
         }
 
         if pres.is_some() || dir.is_some() || spd.is_some() {
@@ -521,11 +524,14 @@ impl Drawable for SkewTContext {
                 }
                 line.push_str(&format!("{:02.0}KT", spd));
             }
-            results.push(line);
+            results.push((line, color));
         }
 
         if let Some(hgt) = hgt_asl {
-            results.push(format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt));
+            results.push((
+                format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt),
+                color,
+            ));
         }
 
         if elevation.is_some() && hgt_asl.is_some() {
@@ -536,7 +542,7 @@ impl Drawable for SkewTContext {
                     hgt - elev,
                     3.28084 * (hgt - elev)
                 ));
-                results.push(line);
+                results.push((line, color));
             }
         }
 

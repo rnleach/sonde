@@ -12,6 +12,9 @@ pub enum ParcelType {
     MostUnstable,
 }
 
+/// Type used for colors in Gtk
+pub type Rgba = (f64, f64, f64, f64);
+
 /// Data that can be changed at run-time affecting the look and feel of the application.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -35,7 +38,7 @@ pub struct Config {
     /// Radius of the dot on a wind barb in pixels.
     pub wind_barb_dot_radius: f64,
     /// Color used for winds plot.
-    pub wind_rgba: (f64, f64, f64, f64),
+    pub wind_rgba: Rgba,
     /// Line width in pixels for wind barbs.
     pub wind_barb_line_width: f64,
     /// Show the wind profile
@@ -45,7 +48,7 @@ pub struct Config {
     // Temperature profile
     //
     /// Color used for temperature plot.
-    pub temperature_rgba: (f64, f64, f64, f64),
+    pub temperature_rgba: Rgba,
     /// Line width in pixels for temperature plot.
     pub temperature_line_width: f64,
     /// Show the temperature profile
@@ -55,7 +58,7 @@ pub struct Config {
     // Wet bulb temperature profile
     //
     /// Color used for wet bulb temperature plot.
-    pub wet_bulb_rgba: (f64, f64, f64, f64),
+    pub wet_bulb_rgba: Rgba,
     /// Line width in pixels for dew point plot.
     pub wet_bulb_line_width: f64,
     /// Show the wet bulb profile
@@ -65,7 +68,7 @@ pub struct Config {
     // Dew point temperature profile
     //
     /// Color used for dew point plot.
-    pub dew_point_rgba: (f64, f64, f64, f64),
+    pub dew_point_rgba: Rgba,
     /// Line width in pixels for dew point plot
     pub dew_point_line_width: f64,
     /// Show the dew point profile
@@ -79,13 +82,13 @@ pub struct Config {
     /// Show parcel trajectory
     pub show_parcel_profile: bool,
     /// Parcel profile color.
-    pub parcel_rgba: (f64, f64, f64, f64),
+    pub parcel_rgba: Rgba,
     /// Fill parcel positive and negative areas
     pub fill_parcel_areas: bool,
     /// Positive parcel area color.
-    pub parcel_positive_rgba: (f64, f64, f64, f64),
+    pub parcel_positive_rgba: Rgba,
     /// Negative parcela rea color.
-    pub parcel_negative_rgba: (f64, f64, f64, f64),
+    pub parcel_negative_rgba: Rgba,
 
     //
     // General profile configuration items
@@ -101,9 +104,9 @@ pub struct Config {
     /// Show the rh profile
     pub show_rh: bool,
     /// Color used for omega line
-    pub omega_rgba: (f64, f64, f64, f64),
+    pub omega_rgba: Rgba,
     /// RH Color
-    pub rh_rgba: (f64, f64, f64, f64),
+    pub rh_rgba: Rgba,
 
     //
     // Cloud profile
@@ -111,7 +114,7 @@ pub struct Config {
     /// Show the cloud frame
     pub show_cloud_frame: bool,
     /// Cloud Color
-    pub cloud_rgba: (f64, f64, f64, f64),
+    pub cloud_rgba: Rgba,
 
     //
     // Wind speed profile
@@ -119,7 +122,7 @@ pub struct Config {
     /// Show the wind speed profile frame
     pub show_wind_speed_profile: bool,
     /// Wind speed profile color.
-    pub wind_speed_profile_rgba: (f64, f64, f64, f64),
+    pub wind_speed_profile_rgba: Rgba,
 
     //
     // Lapse rate profiles
@@ -127,11 +130,11 @@ pub struct Config {
     /// Show the lapse rate profile frame
     pub show_lapse_rate_profile: bool,
     /// Lapse rate profile color.
-    pub lapse_rate_profile_rgba: (f64, f64, f64, f64),
+    pub lapse_rate_profile_rgba: Rgba,
     /// Show the theta-e lapse rate rate
     pub show_theta_e_lapse_rate_profile: bool,
     /// Theta-e lapse rate profile color.
-    pub theta_e_lapse_rate_profile_rgba: (f64, f64, f64, f64),
+    pub theta_e_lapse_rate_profile_rgba: Rgba,
 
     //
     // Labeling
@@ -149,7 +152,7 @@ pub struct Config {
     ///  Default padding for labels and their background in pixels
     pub label_padding: f64,
     /// Label color
-    pub label_rgba: (f64, f64, f64, f64),
+    pub label_rgba: Rgba,
 
     //
     // Background
@@ -157,45 +160,45 @@ pub struct Config {
     /// Line width in pixels for skew-t background lines.
     pub background_line_width: f64,
     /// Background color
-    pub background_rgba: (f64, f64, f64, f64),
+    pub background_rgba: Rgba,
     /// Background banding color for temperature bands.
-    pub background_band_rgba: (f64, f64, f64, f64),
+    pub background_band_rgba: Rgba,
     /// Show or hide background temperature banding.
     pub show_background_bands: bool,
     /// Color used to fill the dendritic snow growth zone
-    pub dendritic_zone_rgba: (f64, f64, f64, f64),
+    pub dendritic_zone_rgba: Rgba,
     /// Show or hide the dendritic zone banding.
     pub show_dendritic_zone: bool,
     /// Color used to fill the hail growth zone
-    pub hail_zone_rgba: (f64, f64, f64, f64),
+    pub hail_zone_rgba: Rgba,
     /// Show or hide the hail growth zone
     pub show_hail_zone: bool,
     /// Color used to fill the warm layer aloft
-    pub warm_layer_rgba: (f64, f64, f64, f64),
+    pub warm_layer_rgba: Rgba,
     /// Color used to fill the wet bulb warm layer aloft
-    pub warm_wet_bulb_aloft_rgba: (f64, f64, f64, f64),
+    pub warm_wet_bulb_aloft_rgba: Rgba,
     /// Show or hide the hail growth zone
     pub show_warm_layer_aloft: bool,
     /// Line width for freezing line
     pub freezing_line_width: f64,
     /// Color for freezing line
-    pub freezing_line_color: (f64, f64, f64, f64),
+    pub freezing_line_color: Rgba,
     /// Show or hide freezing line
     pub show_freezing_line: bool,
     /// Color used for isotherms
-    pub isotherm_rgba: (f64, f64, f64, f64),
+    pub isotherm_rgba: Rgba,
     pub show_isotherms: bool,
     /// Color used for isobars
-    pub isobar_rgba: (f64, f64, f64, f64),
+    pub isobar_rgba: Rgba,
     pub show_isobars: bool,
     /// Color used for isentrops
-    pub isentrop_rgba: (f64, f64, f64, f64),
+    pub isentrop_rgba: Rgba,
     pub show_isentrops: bool,
     /// Color used for isopleths of mixing ration
-    pub iso_mixing_ratio_rgba: (f64, f64, f64, f64),
+    pub iso_mixing_ratio_rgba: Rgba,
     pub show_iso_mixing_ratio: bool,
     /// Color used for isopleths of theta-e
-    pub iso_theta_e_rgba: (f64, f64, f64, f64),
+    pub iso_theta_e_rgba: Rgba,
     /// Show or hide the moist adiabats
     pub show_iso_theta_e: bool,
     /// Show the omega lines
@@ -207,25 +210,25 @@ pub struct Config {
     /// Active readout line width
     pub active_readout_line_width: f64,
     /// Active readout line color
-    pub active_readout_line_rgba: (f64, f64, f64, f64),
+    pub active_readout_line_rgba: Rgba,
     /// Show/hide the active readout
     pub show_active_readout: bool,
     /// Show sample parcel profile
     pub show_sample_parcel_profile: bool,
     /// Color for sample parcel profile
-    pub sample_parcel_profile_color: (f64, f64, f64, f64),
+    pub sample_parcel_profile_color: Rgba,
 
     //
     // Hodograph
     //
     /// Background veclocity color
-    pub iso_speed_rgba: (f64, f64, f64, f64),
+    pub iso_speed_rgba: Rgba,
     /// Show or hide iso speed lines
     pub show_iso_speed: bool,
     /// Velocity plot line width
     pub velocity_line_width: f64,
     /// Velociy line color
-    pub veclocity_rgba: (f64, f64, f64, f64),
+    pub veclocity_rgba: Rgba,
     /// Show or hide the velocity plot.
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
