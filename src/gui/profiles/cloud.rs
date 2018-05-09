@@ -370,8 +370,7 @@ fn draw_cloud_profile(args: DrawingArgs) {
             });
 
         let line_width = config.bar_graph_line_width;
-        let mut rgba = config.cloud_rgba;
-        rgba.3 *= 0.75;
+        let rgba = config.cloud_rgba;
 
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);

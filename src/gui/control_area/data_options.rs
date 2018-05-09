@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gdk::RGBA;
 use gtk;
 use gtk::prelude::*;
-use gtk::{CheckButton, ColorButton, Frame, ScrolledWindow};
+use gtk::{ColorButton, Frame, ScrolledWindow};
 
 use app::AppContextPointer;
 use gui::control_area::{BOX_SPACING, PADDING};
@@ -24,33 +24,32 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     sample_frame.add(&sample_box);
 
     // Active readout
-    build_config_color_and_check!(
-        sample_box,
-        "Sampling",
-        ac,
-        show_active_readout,
-        active_readout_line_rgba
-    );
+    build_config_color!(sample_box, "Sampling marker", ac, active_readout_line_rgba);
+    build_config_color!(sample_box, "Sample profile", ac, sample_parcel_profile_color);
 
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));
     let data_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     data_frame.add(&data_box);
 
-    let acp = Rc::clone(ac);
-    build_config_color_and_check!(data_box, "Wet Bulb", acp, show_wet_bulb, wet_bulb_rgba);
-    build_config_color_and_check!(data_box, "Dew Point", acp, show_dew_point, dew_point_rgba);
-    build_config_color_and_check!(
-        data_box,
-        "Temperature",
-        acp,
-        show_temperature,
-        temperature_rgba
-    );
-    build_config_color_and_check!(data_box, "Wind", acp, show_wind_profile, wind_rgba);
-    build_config_color!(data_box, "Vertical Velocity (\u{03C9})", acp, omega_rgba);
-    build_config_color!(data_box, "Relative Humidity", acp, rh_rgba);
-    build_config_color!(data_box, "Cloud Coverage", acp, cloud_rgba);
+    build_config_color!(data_box, "Temperature", ac, temperature_rgba);
+    build_config_color!(data_box, "Wet Bulb", ac, wet_bulb_rgba);
+    build_config_color!(data_box, "Dew Point", ac, dew_point_rgba);
+    build_config_color!(data_box, "Wind", ac, wind_rgba);
+    build_config_color!(data_box, "Vertical Velocity (\u{03C9})", ac, omega_rgba);
+    build_config_color!(data_box, "Relative Humidity", ac, rh_rgba);
+    build_config_color!(data_box, "Cloud Coverage", ac, cloud_rgba);
+    build_config_color!(data_box, "Lapse rate", ac, lapse_rate_profile_rgba);
+    build_config_color!(data_box, "Theta-e lapse rate", ac, theta_e_lapse_rate_profile_rgba);
+
+    // Third set is overlays
+    let overlays_frame = gtk::Frame::new(Some("Overlays"));
+    let overlays_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    overlays_frame.add(&overlays_box);
+
+    build_config_color!(overlays_box, "Parcel profile", ac, parcel_rgba);
+    build_config_color!(overlays_box, "CAPE", ac, parcel_positive_rgba);
+    build_config_color!(overlays_box, "CIN", ac, parcel_negative_rgba);
 
     //
     // Layout boxes in the frame
@@ -58,6 +57,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     f.add(&v_box);
     v_box.pack_start(&sample_frame, true, true, PADDING);
     v_box.pack_start(&data_frame, true, true, PADDING);
+    v_box.pack_start(&overlays_frame, true, true, PADDING);
     let sw = ScrolledWindow::new(None, None);
     sw.add(&f);
 

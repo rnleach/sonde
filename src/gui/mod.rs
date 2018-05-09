@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gtk::prelude::*;
-use gtk::{DrawingArea, Menu, Notebook, RadioMenuItem, SeparatorMenuItem, TextView, Window,
-          WindowType};
+use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, Notebook, RadioMenuItem, SeparatorMenuItem,
+          TextView, Window, WindowType};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
 
@@ -62,6 +62,30 @@ pub struct Gui {
 
     // Smart pointer.
     app_context: AppContextPointer,
+}
+
+macro_rules! make_heading {
+    ($menu:ident, $label:expr) => {
+        let heading = MenuItem::new_with_label($label);
+        heading.set_sensitive(false);
+        $menu.append(&heading);
+    };
+}
+
+macro_rules! make_check_item {
+    ($menu:ident, $label:expr, $acp: ident, $check_val:ident) => {
+        let check_menu_item = CheckMenuItem::new_with_label($label);
+        check_menu_item.set_active($acp.config.borrow().$check_val);
+
+        let ac = Rc::clone($acp);
+        check_menu_item.connect_toggled(move |button| {
+            ac.config.borrow_mut().$check_val = button.get_active();
+            ac.mark_data_dirty();
+            ac.update_all_gui()
+        });
+
+        $menu.append(&check_menu_item);
+    };
 }
 
 impl Gui {
@@ -157,7 +181,29 @@ impl Gui {
     }
 
     fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Menu {
+        let menu = Menu::new();
+
+        Self::build_active_readout_section_of_context_menu(&menu, acp);
+        menu.append(&SeparatorMenuItem::new());
+        Self::build_parcel_section_of_context_menu(&menu, acp);
+        menu.append(&SeparatorMenuItem::new());
+        Self::build_profiles_section_of_context_menu(&menu, acp);
+
+        menu.show_all();
+
+        menu
+    }
+
+    fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+        make_heading!(menu, "Active readout");
+        make_check_item!(menu, "Show active readout", acp, show_active_readout);
+        make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
+    }
+
+    fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
         use app::config::ParcelType::*;
+
+        make_heading!(menu, "Parcel Type");
 
         let sfc = RadioMenuItem::new_with_label("Surface");
         let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
@@ -193,15 +239,23 @@ impl Gui {
             handle_toggle(button, MostUnstable, &ac);
         });
 
-        let menu = Menu::new();
-        menu.append(&SeparatorMenuItem::new());
         menu.append(&sfc);
         menu.append(&mxd);
         menu.append(&mu);
-        menu.append(&SeparatorMenuItem::new());
-        menu.show_all();
 
-        menu
+        menu.append(&SeparatorMenuItem::new());
+
+        make_heading!(menu, "Parcel Options");
+        make_check_item!(menu, "Show profile", acp, show_parcel_profile);
+        make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+    }
+
+    fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+        make_heading!(menu, "Profiles");
+        make_check_item!(menu, "Temperature", acp, show_temperature);
+        make_check_item!(menu, "Wet bulb", acp, show_wet_bulb);
+        make_check_item!(menu, "Dew point", acp, show_dew_point);
+        make_check_item!(menu, "Wind", acp, show_wind_profile);
     }
 }
 

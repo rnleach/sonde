@@ -75,30 +75,6 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
         freezing_line_color
     );
 
-    // Show hide omega lines
-    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-    let omega = CheckButton::new();
-
-    omega.set_active(acp.config.borrow().show_iso_omega_lines);
-
-    // Create rh_omega callback
-    let ac = Rc::clone(acp);
-    omega.connect_toggled(move |button| {
-        ac.config.borrow_mut().show_iso_omega_lines = button.get_active();
-        ac.update_all_gui();
-    });
-
-    // Layout
-    hbox.pack_start(&omega, false, true, PADDING);
-    hbox.pack_start(
-        &gtk::Label::new("Vertical Velocity (\u{03C9})"),
-        false,
-        true,
-        PADDING,
-    );
-
-    lines_box.pack_start(&hbox, false, true, PADDING);
-
     lines_frame
 }
 

@@ -501,7 +501,7 @@ impl Drawable for SkewTContext {
                 }
             }
             if let Some(omega) = omega {
-                line.push_str(&format!(" {:.1} Pa/s", omega ));
+                line.push_str(&format!(" {:.1} Pa/s", omega));
             }
             results.push((line, color));
         }
@@ -588,12 +588,12 @@ impl Drawable for SkewTContext {
     }
 
     fn draw_active_readout(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_sample_parcel_profile {
-            draw_sample_parcel_profile(args);
-        }
-
         if args.ac.config.borrow().show_active_readout {
             self.draw_active_sample(args);
+
+            if args.ac.config.borrow().show_sample_parcel_profile {
+                draw_sample_parcel_profile(args);
+            }
         }
     }
 

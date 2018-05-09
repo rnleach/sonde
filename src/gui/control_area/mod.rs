@@ -10,6 +10,7 @@ macro_rules! build_config_color_and_check {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let check = CheckButton::new_with_label($label);
         let color = ColorButton::new();
+        color.set_use_alpha(true);
 
         // Inner scope to borrow acp
         {
@@ -70,6 +71,7 @@ macro_rules! build_config_color {
     ($v_box:ident, $label:expr, $acp_in:expr, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let color = ColorButton::new();
+        color.set_use_alpha(true);
 
         // Inner scope to borrow acp
         {

@@ -226,89 +226,85 @@ impl Drawable for RHOmegaContext {
         }
 
         // Draw w-lines
-        if config.show_iso_omega_lines {
-            for v_line in config::ISO_OMEGA_PNTS.iter() {
-                plot_curve_from_points(
-                    cr,
-                    config.background_line_width,
-                    config.isobar_rgba,
-                    v_line
-                        .iter()
-                        .map(|xy_coords| self.convert_xy_to_screen(*xy_coords)),
-                );
-            }
-
-            // Make a thicker zero line
+        for v_line in config::ISO_OMEGA_PNTS.iter() {
             plot_curve_from_points(
                 cr,
-                config.background_line_width * 2.6,
+                config.background_line_width,
                 config.isobar_rgba,
-                ([
-                    WPCoords {
-                        w: 0.0,
-                        p: config::MAXP,
-                    },
-                    WPCoords {
-                        w: 0.0,
-                        p: config::MINP,
-                    },
-                ]).iter()
-                    .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
+                v_line
+                    .iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords)),
             );
         }
+
+        // Make a thicker zero line
+        plot_curve_from_points(
+            cr,
+            config.background_line_width * 2.6,
+            config.isobar_rgba,
+            ([
+                WPCoords {
+                    w: 0.0,
+                    p: config::MAXP,
+                },
+                WPCoords {
+                    w: 0.0,
+                    p: config::MINP,
+                },
+            ]).iter()
+                .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
+        );
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+        let (ac, cr) = (args.ac, args.cr);
 
         let mut labels = vec![];
 
         let screen_edges = ac.rh_omega.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
-        if config.show_iso_omega_lines {
-            let WPCoords {
-                p: screen_max_p, ..
-            } = ac.rh_omega.convert_screen_to_wp(lower_left);
+        let WPCoords {
+            p: screen_max_p, ..
+        } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
-            for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
-                let label = format!("{:.0}", w);
+        for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
+            let label = format!("{:.0}", w);
 
-                let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label);
 
-                let ScreenCoords {
-                    x: mut xpos,
-                    y: mut ypos,
-                } = ac.rh_omega
-                    .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
-                xpos -= extents.width / 2.0; // Center
-                ypos -= extents.height / 2.0; // Center
-                ypos += extents.height; // Move up off bottom axis.
+            let ScreenCoords {
+                x: mut xpos,
+                y: mut ypos,
+            } = ac.rh_omega
+                .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
+            xpos -= extents.width / 2.0; // Center
+            ypos -= extents.height / 2.0; // Center
+            ypos += extents.height; // Move up off bottom axis.
 
-                let ScreenRect {
-                    lower_left: ScreenCoords { x: xmin, .. },
-                    upper_right: ScreenCoords { x: xmax, .. },
-                } = screen_edges;
+            let ScreenRect {
+                lower_left: ScreenCoords { x: xmin, .. },
+                upper_right: ScreenCoords { x: xmax, .. },
+            } = screen_edges;
 
-                if xpos < xmin || xpos + extents.width > xmax {
-                    continue;
-                }
-
-                let label_lower_left = ScreenCoords { x: xpos, y: ypos };
-                let label_upper_right = ScreenCoords {
-                    x: xpos + extents.width,
-                    y: ypos + extents.height,
-                };
-
-                let pair = (
-                    label,
-                    ScreenRect {
-                        lower_left: label_lower_left,
-                        upper_right: label_upper_right,
-                    },
-                );
-                check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
+            if xpos < xmin || xpos + extents.width > xmax {
+                continue;
             }
+
+            let label_lower_left = ScreenCoords { x: xpos, y: ypos };
+            let label_upper_right = ScreenCoords {
+                x: xpos + extents.width,
+                y: ypos + extents.height,
+            };
+
+            let pair = (
+                label,
+                ScreenRect {
+                    lower_left: label_lower_left,
+                    upper_right: label_upper_right,
+                },
+            );
+            check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
         }
 
         labels
@@ -458,8 +454,7 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
             });
 
         let line_width = config.bar_graph_line_width;
-        let mut rgba = config.rh_rgba;
-        rgba.3 *= 0.75;
+        let rgba = config.rh_rgba;
 
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
