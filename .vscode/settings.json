@@ -1,6 +1,7 @@
 {
     "files.exclude": {
         "target": true,
+        "rls": true,
         "Cargo.lock": true,
         "**/*.rs.bk": true,
         "*.sublime*":true
