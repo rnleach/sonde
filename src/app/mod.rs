@@ -1,16 +1,16 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
 
-use std::rc::Rc;
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
-use sounding_base::{DataRow, Sounding};
 use sounding_analysis;
 use sounding_analysis::Analysis;
+use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
+use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 
 // Module for configuring application
 pub mod config;
@@ -424,6 +424,8 @@ impl AppContext {
 #[derive(Debug, Default)]
 pub struct ExtraProfiles {
     pub lapse_rate: Vec<Option<f64>>,
+    pub sfc_avg_lapse_rate: Vec<Option<f64>>,
+    pub ml_avg_lapse_rate: Vec<Option<f64>>,
     pub theta_e_lapse_rate: Vec<Option<f64>>,
     // TODO: add more!
 }
@@ -431,10 +433,15 @@ pub struct ExtraProfiles {
 impl ExtraProfiles {
     pub fn new(snd: &Sounding) -> Self {
         let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
+        let sfc_avg_lapse_rate =
+            sounding_analysis::profile::sfc_to_level_temperature_lapse_rate(snd);
+        let ml_avg_lapse_rate = sounding_analysis::profile::ml_to_level_temperature_lapse_rate(snd);
         let theta_e_lapse_rate = sounding_analysis::profile::theta_e_lapse_rate(snd);
 
         ExtraProfiles {
             lapse_rate,
+            sfc_avg_lapse_rate,
+            ml_avg_lapse_rate,
             theta_e_lapse_rate,
         }
     }

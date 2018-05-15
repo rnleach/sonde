@@ -1,8 +1,8 @@
 //! Keep configuration data in this module.
 
 use coords::{LPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
-use gui::{HodoContext, SkewTContext};
 use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
+use gui::{HodoContext, SkewTContext};
 
 /// Types of parcels you can use when doing parcel analysis.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -127,10 +127,18 @@ pub struct Config {
     //
     // Lapse rate profiles
     //
-    /// Show the lapse rate profile frame
+    /// Show the lapse rate profile.
     pub show_lapse_rate_profile: bool,
     /// Lapse rate profile color.
     pub lapse_rate_profile_rgba: Rgba,
+    /// Show the surface to * average lapse rate profile.
+    pub show_sfc_avg_lapse_rate_profile: bool,
+    /// Surface to * average lapse rate profile color.
+    pub sfc_avg_lapse_rate_profile_rgba: Rgba,
+    /// Show the mixed layer to * average lapse rate profile.
+    pub show_ml_avg_lapse_rate_profile: bool,
+    /// Mixed layer to * average lapse rate profile color.
+    pub ml_avg_lapse_rate_profile_rgba: Rgba,
     /// Show the theta-e lapse rate rate
     pub show_theta_e_lapse_rate_profile: bool,
     /// Theta-e lapse rate profile color.
@@ -321,6 +329,10 @@ impl Default for Config {
             //
             show_lapse_rate_profile: true,
             lapse_rate_profile_rgba: (0.0, 0.0, 0.0, 1.0),
+            show_sfc_avg_lapse_rate_profile: true,
+            sfc_avg_lapse_rate_profile_rgba: (0.7, 0.2, 0.0, 1.0),
+            show_ml_avg_lapse_rate_profile: true,
+            ml_avg_lapse_rate_profile_rgba: (0.2, 0.7, 0.0, 1.0),
             show_theta_e_lapse_rate_profile: true,
             theta_e_lapse_rate_profile_rgba: (0.3, 0.4, 0.5, 1.0),
 
@@ -743,9 +755,9 @@ lazy_static! {
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
-    use std::f64;
     use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
     use metfor::temperature_c_from_theta;
+    use std::f64;
 
     let mut result = vec![];
 

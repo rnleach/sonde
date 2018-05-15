@@ -25,7 +25,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     // Active readout
     build_config_color!(sample_box, "Sampling marker", ac, active_readout_line_rgba);
-    build_config_color!(sample_box, "Sample profile", ac, sample_parcel_profile_color);
+    build_config_color!(
+        sample_box,
+        "Sample profile",
+        ac,
+        sample_parcel_profile_color
+    );
 
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));
@@ -40,7 +45,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(data_box, "Relative Humidity", ac, rh_rgba);
     build_config_color!(data_box, "Cloud Coverage", ac, cloud_rgba);
     build_config_color!(data_box, "Lapse rate", ac, lapse_rate_profile_rgba);
-    build_config_color!(data_box, "Theta-e lapse rate", ac, theta_e_lapse_rate_profile_rgba);
+    build_config_color!(
+        data_box,
+        "Theta-e lapse rate",
+        ac,
+        theta_e_lapse_rate_profile_rgba
+    );
 
     // Third set is overlays
     let overlays_frame = gtk::Frame::new(Some("Overlays"));

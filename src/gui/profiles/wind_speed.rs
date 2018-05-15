@@ -1,17 +1,17 @@
 use std::rc::Rc;
 
 use gdk::{EventMask, EventMotion, EventScroll};
-use gtk::prelude::*;
 use gtk::DrawingArea;
+use gtk::prelude::*;
 
 use sounding_base::DataRow;
 
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
              ScreenRect, XYCoords};
-use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
+use gui::{Drawable, SlaveProfileDrawable};
 
 pub struct WindSpeedContext {
     generic: GenericContext,

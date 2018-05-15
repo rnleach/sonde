@@ -22,8 +22,8 @@ extern crate sounding_base;
 extern crate sounding_bufkit;
 
 use std::fs::File;
-use std::io::Write;
 use std::io::Read;
+use std::io::Write;
 
 // Module for maintaining application state
 mod app;

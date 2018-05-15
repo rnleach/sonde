@@ -1,18 +1,18 @@
 use std::rc::Rc;
 
 use gdk::{EventMask, EventMotion, EventScroll};
-use gtk::prelude::*;
 use gtk::DrawingArea;
+use gtk::prelude::*;
 
-use sounding_base::{DataRow, Profile};
 use sounding_analysis;
+use sounding_base::{DataRow, Profile};
 
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, LPCoords, ScreenCoords,
              ScreenRect, XYCoords};
-use gui::{Drawable, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
+use gui::{Drawable, SlaveProfileDrawable};
 
 const LR_RANGE: f64 = config::MAX_LAPSE_RATE - config::MIN_LAPSE_RATE;
 
@@ -216,6 +216,20 @@ impl Drawable for LapseRateContext {
             to_return.push(("Lapse rate".to_owned(), config.lapse_rate_profile_rgba));
         }
 
+        if config.show_sfc_avg_lapse_rate_profile {
+            to_return.push((
+                "Sfc to * lapse rate".to_owned(),
+                config.sfc_avg_lapse_rate_profile_rgba,
+            ));
+        }
+
+        if config.show_ml_avg_lapse_rate_profile {
+            to_return.push((
+                "ML to * lapse rate".to_owned(),
+                config.ml_avg_lapse_rate_profile_rgba,
+            ));
+        }
+
         if config.show_theta_e_lapse_rate_profile {
             to_return.push((
                 "Theta-e lr".to_owned(),
@@ -290,6 +304,8 @@ impl Drawable for LapseRateContext {
         let ac = args.ac;
 
         let mut some_data = draw_lapse_rate_profile(args);
+        some_data = draw_sfc_avg_lapse_rate_profile(args) || some_data;
+        some_data = draw_ml_avg_lapse_rate_profile(args) || some_data;
         some_data = draw_theta_e_lapse_rate_profile(args) || some_data;
 
         if some_data {
@@ -308,7 +324,9 @@ impl Drawable for LapseRateContext {
 
         let mut results = vec![];
 
-        if config.show_lapse_rate_profile || config.show_theta_e_lapse_rate_profile {
+        if config.show_lapse_rate_profile || config.show_theta_e_lapse_rate_profile
+            || config.show_sfc_avg_lapse_rate_profile
+        {
             if let (Some(anal), Some(other_profiles), Some(tgt_pres)) = (
                 ac.get_sounding_for_display(),
                 ac.get_extra_profiles_for_display(),
@@ -325,6 +343,32 @@ impl Drawable for LapseRateContext {
                         results.push((
                             format!("{:.1}\u{00b0}C/km", lr),
                             config.lapse_rate_profile_rgba,
+                        ));
+                    }
+                }
+
+                if config.show_sfc_avg_lapse_rate_profile {
+                    let lapse_rate = &other_profiles.sfc_avg_lapse_rate;
+
+                    if let Some(lr) =
+                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
+                    {
+                        results.push((
+                            format!("{:.1}\u{00b0}C/km", lr),
+                            config.sfc_avg_lapse_rate_profile_rgba,
+                        ));
+                    }
+                }
+
+                if config.show_ml_avg_lapse_rate_profile {
+                    let lapse_rate = &other_profiles.ml_avg_lapse_rate;
+
+                    if let Some(lr) =
+                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
+                    {
+                        results.push((
+                            format!("{:.1}\u{00b0}C/km", lr),
+                            config.ml_avg_lapse_rate_profile_rgba,
                         ));
                     }
                 }
@@ -429,6 +473,100 @@ fn draw_lapse_rate_profile(args: DrawingArgs) -> bool {
             cr,
             config.profile_line_width,
             config.lapse_rate_profile_rgba,
+            profile,
+        );
+
+        true
+    } else {
+        false
+    }
+}
+
+fn draw_sfc_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if !config.show_sfc_avg_lapse_rate_profile {
+        return false;
+    }
+
+    if let (Some(anal), Some(profiles)) = (
+        ac.get_sounding_for_display(),
+        ac.get_extra_profiles_for_display(),
+    ) {
+        use sounding_base::Profile::Pressure;
+
+        let sndg = anal.sounding();
+
+        let pres_data = sndg.get_profile(Pressure);
+        let lr_data = &profiles.sfc_avg_lapse_rate;
+        let mut profile = izip!(pres_data, lr_data)
+            .filter_map(|pair| {
+                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+                    Some((p, s))
+                } else {
+                    None
+                }
+            })
+            .take_while(|&(press, _)| press >= config::MINP)
+            .filter_map(|(press, lapse_rate)| {
+                Some(
+                    ac.lapse_rate
+                        .convert_lp_to_screen(LPCoords { lapse_rate, press }),
+                )
+            });
+
+        plot_curve_from_points(
+            cr,
+            config.profile_line_width,
+            config.sfc_avg_lapse_rate_profile_rgba,
+            profile,
+        );
+
+        true
+    } else {
+        false
+    }
+}
+
+fn draw_ml_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if !config.show_ml_avg_lapse_rate_profile {
+        return false;
+    }
+
+    if let (Some(anal), Some(profiles)) = (
+        ac.get_sounding_for_display(),
+        ac.get_extra_profiles_for_display(),
+    ) {
+        use sounding_base::Profile::Pressure;
+
+        let sndg = anal.sounding();
+
+        let pres_data = sndg.get_profile(Pressure);
+        let lr_data = &profiles.ml_avg_lapse_rate;
+        let mut profile = izip!(pres_data, lr_data)
+            .filter_map(|pair| {
+                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+                    Some((p, s))
+                } else {
+                    None
+                }
+            })
+            .take_while(|&(press, _)| press >= config::MINP)
+            .filter_map(|(press, lapse_rate)| {
+                Some(
+                    ac.lapse_rate
+                        .convert_lp_to_screen(LPCoords { lapse_rate, press }),
+                )
+            });
+
+        plot_curve_from_points(
+            cr,
+            config.profile_line_width,
+            config.ml_avg_lapse_rate_profile_rgba,
             profile,
         );
 

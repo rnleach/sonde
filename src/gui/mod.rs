@@ -3,17 +3,18 @@
 use std::rc::Rc;
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
+use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
+          ScrollDirection};
 use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, Notebook, RadioMenuItem, SeparatorMenuItem,
           TextView, Window, WindowType};
-use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-          ScrollDirection};
 
-use sounding_base::DataRow;
 use sounding_analysis::Layer;
+use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
+use sounding_base::DataRow;
 
-use app::{AppContext, AppContextPointer};
 use app::config::{ParcelType, Rgba};
+use app::{AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
 
@@ -73,7 +74,7 @@ macro_rules! make_heading {
 }
 
 macro_rules! make_check_item {
-    ($menu:ident, $label:expr, $acp: ident, $check_val:ident) => {
+    ($menu:ident, $label:expr, $acp:ident, $check_val:ident) => {
         let check_menu_item = CheckMenuItem::new_with_label($label);
         check_menu_item.set_active($acp.config.borrow().$check_val);
 
@@ -1063,21 +1064,19 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(snd) = ac.get_sounding_for_display() {
-            let layers =
-                match ::sounding_analysis::layers::warm_temperature_layer_aloft(snd.sounding()) {
-                    Ok(layers) => layers,
-                    Err(_) => return,
-                };
+            let layers = match warm_temperature_layer_aloft(snd.sounding()) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
 
             let rgba = ac.config.borrow().warm_layer_rgba;
 
             self.draw_layers(args, &layers, rgba);
 
-            let layers =
-                match ::sounding_analysis::layers::warm_wet_bulb_layer_aloft(snd.sounding()) {
-                    Ok(layers) => layers,
-                    Err(_) => return,
-                };
+            let layers = match warm_wet_bulb_layer_aloft(snd.sounding()) {
+                Ok(layers) => layers,
+                Err(_) => return,
+            };
 
             let rgba = ac.config.borrow().warm_wet_bulb_aloft_rgba;
 

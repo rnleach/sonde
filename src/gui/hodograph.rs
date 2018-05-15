@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
 use gdk::EventMask;
-use gtk::prelude::*;
 use gtk::DrawingArea;
+use gtk::prelude::*;
 
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
-use gui::{Drawable, DrawingArgs, MasterDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
+use gui::{Drawable, DrawingArgs, MasterDrawable};
 
 pub struct HodoContext {
     generic: GenericContext,

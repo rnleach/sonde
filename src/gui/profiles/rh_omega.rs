@@ -2,17 +2,17 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gdk::{EventMask, EventMotion};
-use gtk::prelude::*;
 use gtk::DrawingArea;
+use gtk::prelude::*;
 
 use sounding_base::DataRow;
 
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, WPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
+use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 
 #[derive(Debug)]
 pub struct RHOmegaContext {

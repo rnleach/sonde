@@ -2,19 +2,19 @@ use std::rc::Rc;
 
 use cairo::Context;
 use gdk::{EventButton, EventMask, EventMotion, EventScroll, ScrollDirection};
-use gtk::prelude::*;
 use gtk::DrawingArea;
+use gtk::prelude::*;
 
-use sounding_base::DataRow;
 use sounding_analysis;
+use sounding_base::DataRow;
 
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
-use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
                    plot_dashed_curve_from_points};
+use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -1255,8 +1255,8 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    use sounding_analysis::parcel::lift_parcel;
     use sounding_analysis::parcel::Parcel;
+    use sounding_analysis::parcel::lift_parcel;
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         // Get a parcel

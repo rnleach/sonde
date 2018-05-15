@@ -1,11 +1,11 @@
-use gtk::{ScrollablePolicy, TextTag, TextView};
 use gtk::prelude::*;
+use gtk::{ScrollablePolicy, TextTag, TextView};
 
 use app::{config, AppContext, AppContextPointer};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
-        if let Some(tag_table) = $tb.get_tag_table(){
+        if let Some(tag_table) = $tb.get_tag_table() {
             let tag = TextTag::new("default");
 
             tag.set_property_font(Some("courier bold 12"));
