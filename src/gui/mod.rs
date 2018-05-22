@@ -7,7 +7,7 @@ use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, 
           ScrollDirection};
 use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, Notebook, RadioMenuItem, SeparatorMenuItem,
-          TextView, Window, WindowType};
+          TextView, Window, Builder};
 
 use sounding_analysis::Layer;
 use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
@@ -35,34 +35,19 @@ pub use self::text_area::update_text_highlight;
 
 use self::utility::{set_font_size, DrawingArgs};
 
-/// Aggregation of the GUI components need for later reference.
+/// Handle to the GUI components
 ///
 /// Note: This is cloneable because Gtk+ Gui objects are cheap to clone, and just increment a
 /// reference count in the gtk-rs library. So cloning this after it is initialized does not copy
 /// the GUI, but instead gives a duplicate of the references to the objects.
 #[derive(Clone)]
 pub struct Gui {
-    // Left pane
-    sounding_area: DrawingArea,
-    sounding_context_menu: Menu,
-
-    // Right pane
-    hodograph_area: DrawingArea,
-    index_area: DrawingArea,
-    control_area: Notebook,
-    text_area: TextView,
-
-    // Profiles
-    rh_omega_area: DrawingArea,
-    cloud: DrawingArea,
-    wind_speed: DrawingArea,
-    lapse_rate: DrawingArea,
-
-    // Main window
-    window: Window,
 
     // Smart pointer.
     app_context: AppContextPointer,
+
+    // Builder
+    builder: Builder,
 }
 
 macro_rules! make_heading {
@@ -91,29 +76,26 @@ macro_rules! make_check_item {
 
 impl Gui {
     pub fn new(acp: &AppContextPointer) -> Gui {
+        let glade_src = include_str!("../sonde.glade");
+        let builder = Builder::new_from_string(glade_src);
+
         let gui = Gui {
-            sounding_area: DrawingArea::new(),
-            sounding_context_menu: Self::build_sounding_area_context_menu(acp),
 
-            hodograph_area: DrawingArea::new(),
-            index_area: DrawingArea::new(),
-            control_area: Notebook::new(),
-            text_area: TextView::new(),
-
-            rh_omega_area: DrawingArea::new(),
-            cloud: DrawingArea::new(),
-            wind_speed: DrawingArea::new(),
-            lapse_rate: DrawingArea::new(),
-
-            window: Window::new(WindowType::Toplevel),
             app_context: Rc::clone(acp),
+
+            builder
         };
+
+        let header: TextView = gui.get_builder().get_object("text_header").unwrap();
+
+        gui.build_sounding_area_context_menu(acp);
 
         sounding::SkewTContext::set_up_drawing_area(&gui.get_sounding_area(), acp);
         hodograph::HodoContext::set_up_drawing_area(&gui.get_hodograph_area(), acp);
         control_area::set_up_control_area(&gui.get_control_area(), acp);
         index_area::set_up_index_area(&gui.get_index_area());
         text_area::set_up_text_area(&gui.get_text_area(), acp);
+        text_area::fill_header_text_area(&header);
         profiles::initialize_profiles(&gui, acp);
 
         main_window::layout(&gui, acp);
@@ -121,68 +103,73 @@ impl Gui {
         gui
     }
 
+    pub fn get_builder(&self) -> Builder {
+        self.builder.clone()
+    }
+
     pub fn get_sounding_area(&self) -> DrawingArea {
-        self.sounding_area.clone()
+        self.builder.get_object("skew_t").unwrap()
     }
 
     pub fn get_hodograph_area(&self) -> DrawingArea {
-        self.hodograph_area.clone()
+        self.builder.get_object("hodograph_area").unwrap()
     }
 
     pub fn get_index_area(&self) -> DrawingArea {
-        self.index_area.clone()
+        self.builder.get_object("index_area").unwrap()
     }
 
     pub fn get_control_area(&self) -> Notebook {
-        self.control_area.clone()
+        self.builder.get_object("control_area").unwrap()
     }
 
     pub fn get_text_area(&self) -> TextView {
-        self.text_area.clone()
+        self.builder.get_object("text_area").unwrap()
     }
 
     pub fn get_rh_omega_area(&self) -> DrawingArea {
-        self.rh_omega_area.clone()
+        self.builder.get_object("rh_omega_area").unwrap()
     }
 
     pub fn get_cloud_area(&self) -> DrawingArea {
-        self.cloud.clone()
+        self.builder.get_object("cloud_area").unwrap()
     }
 
     pub fn get_wind_speed_profile_area(&self) -> DrawingArea {
-        self.wind_speed.clone()
+        self.builder.get_object("wind_speed_area").unwrap()
     }
 
     pub fn get_lapse_rate_profile_area(&self) -> DrawingArea {
-        self.lapse_rate.clone()
+        self.builder.get_object("lapse_rate_area").unwrap()
     }
 
     pub fn get_window(&self) -> Window {
-        self.window.clone()
+        self.builder.get_object("main_window").unwrap()
     }
 
     pub fn draw_all(&self) {
-        self.sounding_area.queue_draw();
-        self.hodograph_area.queue_draw();
+        self.get_sounding_area().queue_draw();
+        self.get_hodograph_area().queue_draw();
         profiles::draw_profiles(self, &self.app_context);
     }
 
     pub fn update_text_view(&self, ac: &AppContext) {
-        if self.text_area.is_visible() {
-            self::text_area::update_text_area(&self.text_area, ac);
-            self::text_area::update_text_highlight(&self.text_area, ac);
+        if self.get_text_area().is_visible() {
+            self::text_area::update_text_area(&self.get_text_area(), ac);
+            self::text_area::update_text_highlight(&self.get_text_area(), ac);
         }
     }
 
     pub fn show_popup_menu(&self, _evt: &EventButton) {
+        let menu: Menu = self.builder.get_object("sounding_context_menu").unwrap();
         // waiting for version 3.22...
         // let ev: &::gdk::Event = evt;
-        // self.sounding_context_menu.popup_at_pointer(ev);
-        self.sounding_context_menu.popup_easy(3, 0)
+        // menu.popup_at_pointer(ev);
+        menu.popup_easy(3, 0)
     }
 
-    fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Menu {
-        let menu = Menu::new();
+    fn build_sounding_area_context_menu(&self, acp: &AppContextPointer) {
+        let menu: Menu = self.builder.get_object("sounding_context_menu").unwrap();
 
         Self::build_active_readout_section_of_context_menu(&menu, acp);
         menu.append(&SeparatorMenuItem::new());
@@ -191,8 +178,6 @@ impl Gui {
         Self::build_profiles_section_of_context_menu(&menu, acp);
 
         menu.show_all();
-
-        menu
     }
 
     fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {

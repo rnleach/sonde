@@ -26,8 +26,6 @@ macro_rules! set_text {
 }
 
 pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
-    text_area.set_hexpand(true);
-    text_area.set_vexpand(true);
     text_area.set_editable(false);
     text_area.set_property_margin(config::WIDGET_MARGIN);
     text_area.set_vscroll_policy(ScrollablePolicy::Natural);
@@ -127,11 +125,8 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
     }
 }
 
-pub fn make_header_text_area() -> TextView {
-    let header = TextView::new();
-
-    header.set_hexpand(true);
-    header.set_vexpand(false);
+pub fn fill_header_text_area(header: &TextView) {
+    
     header.set_editable(false);
     header.set_property_margin(config::WIDGET_MARGIN);
     header.set_margin_bottom(0);
@@ -161,8 +156,6 @@ pub fn make_header_text_area() -> TextView {
         make_default_tag!(tb);
         set_text!(tb, &text);
     }
-
-    header
 }
 
 pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {

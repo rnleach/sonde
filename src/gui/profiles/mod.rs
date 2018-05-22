@@ -18,9 +18,8 @@ pub use self::rh_omega::RHOmegaContext;
 pub use self::wind_speed::WindSpeedContext;
 
 macro_rules! build_profile {
-    ($p_box:ident, $c_box:ident, $drawing_area:expr, $acp:ident, $label:expr, $show_var:ident) => {
+    ($c_box:ident, $drawing_area:expr, $acp:ident, $label:expr, $show_var:ident) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
         let show_da = $acp.config.borrow().$show_var;
@@ -43,7 +42,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -54,7 +52,6 @@ macro_rules! build_profile {
         $show_var2:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -105,7 +102,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -118,7 +114,6 @@ macro_rules! build_profile {
         $show_var3:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -192,7 +187,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -207,7 +201,6 @@ macro_rules! build_profile {
         $show_var4:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -303,12 +296,10 @@ macro_rules! build_profile {
     };
 }
 
-pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32) -> gtk::Box {
-    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, box_spacing);
-    let control_box = gtk::Box::new(gtk::Orientation::Vertical, box_spacing);
+pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer) {
+    let control_box: gtk::Box = gui.get_builder().get_object("profile_control_box").unwrap();
 
     build_profile!(
-        profile_box,
         control_box,
         gui.get_rh_omega_area(),
         acp,
@@ -319,7 +310,6 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         show_omega
     );
     build_profile!(
-        profile_box,
         control_box,
         gui.get_cloud_area(),
         acp,
@@ -327,7 +317,6 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         show_cloud_frame
     );
     build_profile!(
-        profile_box,
         control_box,
         gui.get_wind_speed_profile_area(),
         acp,
@@ -336,7 +325,6 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
     );
 
     build_profile!(
-        profile_box,
         control_box,
         gui.get_lapse_rate_profile_area(),
         acp,
@@ -350,10 +338,6 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         "Theta-e lapse rate",
         show_theta_e_lapse_rate_profile
     );
-
-    profile_box.pack_start(&control_box, false, false, 0);
-    profile_box.show_all();
-    profile_box
 }
 
 macro_rules! draw_profile {
@@ -388,4 +372,6 @@ pub fn initialize_profiles(gui: &Gui, acp: &AppContextPointer) {
     CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
     WindSpeedContext::set_up_drawing_area(&gui.get_wind_speed_profile_area(), acp);
     LapseRateContext::set_up_drawing_area(&gui.get_lapse_rate_profile_area(), acp);
+
+    set_up_profiles_box(gui, acp);
 }
