@@ -20,3 +20,8 @@ Cargo.lock
 // Application specific
 //
 config.yml
+
+//
+// misc
+//
+*~
