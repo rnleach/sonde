@@ -35,18 +35,14 @@ pub use self::text_area::update_text_highlight;
 
 use self::utility::{set_font_size, DrawingArgs};
 
-/// Handle to the GUI components
+/// Handle to the GUI.
 ///
 /// Note: This is cloneable because Gtk+ Gui objects are cheap to clone, and just increment a
 /// reference count in the gtk-rs library. So cloning this after it is initialized does not copy
 /// the GUI, but instead gives a duplicate of the references to the objects.
 #[derive(Clone)]
 pub struct Gui {
-
-    // Smart pointer.
     app_context: AppContextPointer,
-
-    // Builder
     builder: Builder,
 }
 
@@ -80,12 +76,18 @@ impl Gui {
         let builder = Builder::new_from_string(glade_src);
 
         let gui = Gui {
-
             app_context: Rc::clone(acp),
-
             builder
         };
 
+        Gui::initialize_widgets(&gui);
+
+        gui
+    }
+
+    fn initialize_widgets(gui: &Gui){
+        let acp = &gui.app_context;
+        
         let header: TextView = gui.get_builder().get_object("text_header").unwrap();
 
         gui.build_sounding_area_context_menu(acp);
@@ -99,8 +101,6 @@ impl Gui {
         profiles::initialize_profiles(&gui, acp);
 
         main_window::layout(&gui, acp);
-
-        gui
     }
 
     pub fn get_builder(&self) -> Builder {
