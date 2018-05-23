@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use cairo::Context;
-use gdk::{EventButton, EventMask, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
@@ -155,9 +155,6 @@ impl Drawable for SkewTContext {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("skew_t")?;
 
-        da.set_hexpand(true); // FIXME:
-        da.set_vexpand(true); // FIXME:
-
         let ac = Rc::clone(acp);
         da.connect_draw(move |_da, cr| ac.skew_t.draw_callback(cr, &ac));
 
@@ -184,15 +181,6 @@ impl Drawable for SkewTContext {
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.skew_t.size_allocate_event(da));
-
-        da.set_can_focus(true); // FIXME:
-
-        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-            | EventMask::BUTTON_RELEASE_MASK
-            | EventMask::POINTER_MOTION_HINT_MASK
-            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_PRESS_MASK)
-            .bits() as i32); // FIXME: Can this be removed via glade?
 
         Ok(())
     }

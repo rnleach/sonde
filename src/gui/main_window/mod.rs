@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Menu, MenuItem, Window, Paned};
+use gtk::{Menu, MenuItem, Paned, Window};
 
 use app::AppContextPointer;
 use errors::SondeError;
@@ -47,7 +47,7 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
 fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     let window: Window = ac.fetch_widget("main_window")?;
-    let pane: Paned =  ac.fetch_widget("main_pane_view")?;
+    let pane: Paned = ac.fetch_widget("main_pane_view")?;
 
     let (width, height, pane_position) = {
         let cfg = ac.config.borrow();

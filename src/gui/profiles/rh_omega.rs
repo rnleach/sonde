@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use gdk::{EventMask, EventMotion};
+use gdk::EventMotion;
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
@@ -137,9 +137,6 @@ impl Drawable for RHOmegaContext {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("rh_omega_area")?;
 
-        da.set_hexpand(true); // FIXME:
-        da.set_vexpand(true); // FIXME:
-
         let ac = Rc::clone(acp);
         da.connect_draw(move |_da, cr| ac.rh_omega.draw_callback(cr, &ac));
 
@@ -157,17 +154,6 @@ impl Drawable for RHOmegaContext {
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.rh_omega.size_allocate_event(da));
-
-        da.set_can_focus(true);
-
-        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-            | EventMask::BUTTON_RELEASE_MASK
-            | EventMask::POINTER_MOTION_HINT_MASK
-            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_PRESS_MASK)
-            .bits() as i32); // FIXME:
-
-        da.set_no_show_all(true); // FIXME:
 
         Ok(())
     }
