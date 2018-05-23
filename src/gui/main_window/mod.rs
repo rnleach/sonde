@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Menu, MenuItem, Window};
+use gtk::{Menu, MenuItem, Window, Paned};
 
 use app::AppContextPointer;
 use errors::SondeError;
@@ -47,28 +47,35 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
 fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     let window: Window = ac.fetch_widget("main_window")?;
+    let pane: Paned =  ac.fetch_widget("main_pane_view")?;
 
-    let (width, height) = {
+    let (width, height, pane_position) = {
         let cfg = ac.config.borrow();
-        (cfg.window_width, cfg.window_height)
+        (cfg.window_width, cfg.window_height, cfg.pane_position)
     };
 
     if width > 0 || height > 0 {
         window.resize(width, height);
     }
 
-    window.connect_delete_event(|_, _| {
-        gtk::main_quit();
-        Inhibit(false)
-    });
+    if pane_position > 0 {
+        pane.set_position(pane_position);
+    }
 
     let ac1 = Rc::clone(ac);
-    window.connect_configure_event(move |win, _evt| {
-        let (width, height) = win.get_size();
+    let pane2 = pane.clone();
+    window.connect_delete_event(move |win, _| {
         let mut config = ac1.config.borrow_mut();
+
+        let (width, height) = win.get_size();
         config.window_width = width;
         config.window_height = height;
-        false
+
+        let pos = pane2.get_position();
+        config.pane_position = pos;
+
+        gtk::main_quit();
+        Inhibit(false)
     });
 
     window.show_all();
