@@ -409,12 +409,6 @@ impl Default for Config {
 *                         Constant, compile time configuration items.
 **************************************************************************************************/
 //
-// Window Layout
-//
-/// Margin around selected widgets.
-pub const WIDGET_MARGIN: i32 = 4;
-
-//
 // Constants for defining a standard x-y coordinate system
 //
 

@@ -1,7 +1,7 @@
 use gtk::prelude::*;
-use gtk::{ScrollablePolicy, TextTag, TextView};
+use gtk::{TextTag, TextView};
 
-use app::{config, AppContext, AppContextPointer};
+use app::{AppContext, AppContextPointer};
 use errors::SondeError;
 
 macro_rules! make_default_tag {
@@ -29,11 +29,6 @@ macro_rules! set_text {
 pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     const TEXT_AREA_ID: &str = "text_area";
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
-
-    text_area.set_editable(false); // FIXME:
-    text_area.set_property_margin(config::WIDGET_MARGIN); // FIXME:
-    text_area.set_vscroll_policy(ScrollablePolicy::Natural); // FIXME:
-    text_area.set_hscroll_policy(ScrollablePolicy::Natural); // FIXME:
 
     fill_header_text_area(acp)?;
 
@@ -148,10 +143,6 @@ pub fn update_text_area(ac: &AppContext) {
 pub fn fill_header_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     const HEADER_ID: &str = "text_header";
     let header: TextView = acp.fetch_widget(HEADER_ID)?;
-    header.set_editable(false); // FIXME:
-    header.set_property_margin(config::WIDGET_MARGIN); // FIXME:
-    header.set_margin_bottom(0); // FIXME:
-    header.set_hscroll_policy(ScrollablePolicy::Minimum); // FIXME:
 
     if let Some(tb) = header.get_buffer() {
         let mut text = String::with_capacity(512);

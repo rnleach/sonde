@@ -128,7 +128,11 @@
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">False</property>
+                        <property name="hscroll_policy">natural</property>
                         <property name="editable">False</property>
+                        <property name="left_margin">4</property>
+                        <property name="right_margin">4</property>
+                        <property name="top_margin">4</property>
                         <property name="cursor_visible">False</property>
                         <property name="accepts_tab">False</property>
                         <property name="monospace">True</property>
@@ -150,7 +154,13 @@
                             <property name="can_focus">True</property>
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
+                            <property name="hscroll_policy">natural</property>
+                            <property name="vscroll_policy">natural</property>
                             <property name="editable">False</property>
+                            <property name="left_margin">4</property>
+                            <property name="right_margin">4</property>
+                            <property name="top_margin">4</property>
+                            <property name="bottom_margin">4</property>
                             <property name="cursor_visible">False</property>
                             <property name="accepts_tab">False</property>
                             <property name="monospace">True</property>

@@ -59,7 +59,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     }
 
     if pane_position > 0 {
-        pane.set_position(pane_position);
+        pane.set_position(pane_position / pane.get_scale_factor());
     }
 
     let ac1 = Rc::clone(ac);
