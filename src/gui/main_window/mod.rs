@@ -51,8 +51,7 @@ fn configure_main_window(gui: &Gui, ac: &AppContextPointer) {
     };
 
     if width > 0 || height > 0 {
-        window.set_default_size(width, height);
-        println!("Set default size with: {}x{}", width, height);
+        window.resize(width, height);
     }
 
     window.connect_delete_event(|_, _| {
@@ -66,7 +65,6 @@ fn configure_main_window(gui: &Gui, ac: &AppContextPointer) {
         let mut config = ac1.config.borrow_mut();
         config.window_width = width;
         config.window_height = height;
-        println!("Configure window called with: {}x{}", width, height);
         false
     });
 
