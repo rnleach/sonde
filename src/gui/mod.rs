@@ -6,8 +6,7 @@ use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Opera
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
 use gtk::prelude::*;
-use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, Notebook, RadioMenuItem, SeparatorMenuItem,
-          TextView, Window, Builder};
+use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
 use sounding_analysis::Layer;
 use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
@@ -17,10 +16,10 @@ use app::config::{ParcelType, Rgba};
 use app::{AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
+use errors::SondeError;
 
 mod control_area;
 mod hodograph;
-mod index_area;
 mod main_window;
 mod plot_context;
 pub mod profiles;
@@ -34,17 +33,6 @@ pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
 use self::utility::{set_font_size, DrawingArgs};
-
-/// Handle to the GUI.
-///
-/// Note: This is cloneable because Gtk+ Gui objects are cheap to clone, and just increment a
-/// reference count in the gtk-rs library. So cloning this after it is initialized does not copy
-/// the GUI, but instead gives a duplicate of the references to the objects.
-#[derive(Clone)]
-pub struct Gui {
-    app_context: AppContextPointer,
-    builder: Builder,
-}
 
 macro_rules! make_heading {
     ($menu:ident, $label:expr) => {
@@ -70,179 +58,121 @@ macro_rules! make_check_item {
     };
 }
 
-impl Gui {
-    pub fn new(acp: &AppContextPointer) -> Gui {
-        let glade_src = include_str!("../sonde.glade");
-        let builder = Builder::new_from_string(glade_src);
+pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
+    sounding::SkewTContext::set_up_drawing_area(&app)?;
+    build_sounding_area_context_menu(&app)?;
+    hodograph::HodoContext::set_up_drawing_area(&app)?;
+    control_area::set_up_control_area(&app)?;
+    text_area::set_up_text_area(&app)?;
+    profiles::initialize_profiles(&app)?;
+    main_window::set_up_main_window(&app)?;
 
-        let gui = Gui {
-            app_context: Rc::clone(acp),
-            builder
-        };
+    Ok(())
+}
 
-        Gui::initialize_widgets(&gui);
+pub fn draw_all(app: &AppContext) {
+    const DRAWING_AREAS: [&'static str; 2] = ["skew_t", "hodograph_area"];
 
-        gui
-    }
-
-    fn initialize_widgets(gui: &Gui){
-        let acp = &gui.app_context;
-        
-        let header: TextView = gui.get_builder().get_object("text_header").unwrap();
-
-        gui.build_sounding_area_context_menu(acp);
-
-        sounding::SkewTContext::set_up_drawing_area(&gui.get_sounding_area(), acp);
-        hodograph::HodoContext::set_up_drawing_area(&gui.get_hodograph_area(), acp);
-        control_area::set_up_control_area(&gui.get_control_area(), acp);
-        index_area::set_up_index_area(&gui.get_index_area());
-        text_area::set_up_text_area(&gui.get_text_area(), acp);
-        text_area::fill_header_text_area(&header);
-        profiles::initialize_profiles(&gui, acp);
-
-        main_window::layout(&gui, acp);
-    }
-
-    pub fn get_builder(&self) -> Builder {
-        self.builder.clone()
-    }
-
-    pub fn get_sounding_area(&self) -> DrawingArea {
-        self.builder.get_object("skew_t").unwrap()
-    }
-
-    pub fn get_hodograph_area(&self) -> DrawingArea {
-        self.builder.get_object("hodograph_area").unwrap()
-    }
-
-    pub fn get_index_area(&self) -> DrawingArea {
-        self.builder.get_object("index_area").unwrap()
-    }
-
-    pub fn get_control_area(&self) -> Notebook {
-        self.builder.get_object("control_area").unwrap()
-    }
-
-    pub fn get_text_area(&self) -> TextView {
-        self.builder.get_object("text_area").unwrap()
-    }
-
-    pub fn get_rh_omega_area(&self) -> DrawingArea {
-        self.builder.get_object("rh_omega_area").unwrap()
-    }
-
-    pub fn get_cloud_area(&self) -> DrawingArea {
-        self.builder.get_object("cloud_area").unwrap()
-    }
-
-    pub fn get_wind_speed_profile_area(&self) -> DrawingArea {
-        self.builder.get_object("wind_speed_area").unwrap()
-    }
-
-    pub fn get_lapse_rate_profile_area(&self) -> DrawingArea {
-        self.builder.get_object("lapse_rate_area").unwrap()
-    }
-
-    pub fn get_window(&self) -> Window {
-        self.builder.get_object("main_window").unwrap()
-    }
-
-    pub fn draw_all(&self) {
-        self.get_sounding_area().queue_draw();
-        self.get_hodograph_area().queue_draw();
-        profiles::draw_profiles(self, &self.app_context);
-    }
-
-    pub fn update_text_view(&self, ac: &AppContext) {
-        if self.get_text_area().is_visible() {
-            self::text_area::update_text_area(&self.get_text_area(), ac);
-            self::text_area::update_text_highlight(&self.get_text_area(), ac);
+    for &da in DRAWING_AREAS.iter() {
+        if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
+            da.queue_draw();
         }
     }
 
-    pub fn show_popup_menu(&self, _evt: &EventButton) {
-        let menu: Menu = self.builder.get_object("sounding_context_menu").unwrap();
+    profiles::draw_profiles(&app);
+}
+
+pub fn update_text_view(app: &AppContext) {
+    self::text_area::update_text_area(app);
+    self::text_area::update_text_highlight(app);
+}
+
+pub fn show_pop_up_menu(app: &AppContext, _evt: &EventButton) {
+    if let Ok(menu) = app.fetch_widget::<Menu>("sounding_context_menu") {
         // waiting for version 3.22...
         // let ev: &::gdk::Event = evt;
         // menu.popup_at_pointer(ev);
         menu.popup_easy(3, 0)
     }
+}
 
-    fn build_sounding_area_context_menu(&self, acp: &AppContextPointer) {
-        let menu: Menu = self.builder.get_object("sounding_context_menu").unwrap();
+// FIXME: move these to the sounding module and add to set_up_drawing_area?
+fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Result<(), SondeError> {
+    let menu: Menu = acp.fetch_widget("sounding_context_menu")?;
 
-        Self::build_active_readout_section_of_context_menu(&menu, acp);
-        menu.append(&SeparatorMenuItem::new());
-        Self::build_parcel_section_of_context_menu(&menu, acp);
-        menu.append(&SeparatorMenuItem::new());
-        Self::build_profiles_section_of_context_menu(&menu, acp);
+    build_active_readout_section_of_context_menu(&menu, acp);
+    menu.append(&SeparatorMenuItem::new());
+    build_parcel_section_of_context_menu(&menu, acp);
+    menu.append(&SeparatorMenuItem::new());
+    build_profiles_section_of_context_menu(&menu, acp);
 
-        menu.show_all();
+    menu.show_all();
+
+    Ok(())
+}
+
+fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    make_heading!(menu, "Active readout");
+    make_check_item!(menu, "Show active readout", acp, show_active_readout);
+    make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
+}
+
+fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    use app::config::ParcelType::*;
+
+    make_heading!(menu, "Parcel Type");
+
+    let sfc = RadioMenuItem::new_with_label("Surface");
+    let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
+    let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
+
+    let p_type = acp.config.borrow().parcel_type;
+    match p_type {
+        Surface => sfc.set_active(true),
+        MixedLayer => mxd.set_active(true),
+        MostUnstable => mu.set_active(true),
     }
 
-    fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
-        make_heading!(menu, "Active readout");
-        make_check_item!(menu, "Show active readout", acp, show_active_readout);
-        make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
-    }
-
-    fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
-        use app::config::ParcelType::*;
-
-        make_heading!(menu, "Parcel Type");
-
-        let sfc = RadioMenuItem::new_with_label("Surface");
-        let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
-        let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
-
-        let p_type = acp.config.borrow().parcel_type;
-        match p_type {
-            Surface => sfc.set_active(true),
-            MixedLayer => mxd.set_active(true),
-            MostUnstable => mu.set_active(true),
+    fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
+        if button.get_active() {
+            ac.config.borrow_mut().parcel_type = parcel_type;
+            ac.mark_data_dirty();
+            ac.update_all_gui();
         }
-
-        fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
-            if button.get_active() {
-                ac.config.borrow_mut().parcel_type = parcel_type;
-                ac.mark_data_dirty();
-                ac.update_all_gui();
-            }
-        }
-
-        let ac = Rc::clone(acp);
-        sfc.connect_toggled(move |button| {
-            handle_toggle(button, Surface, &ac);
-        });
-
-        let ac = Rc::clone(acp);
-        mxd.connect_toggled(move |button| {
-            handle_toggle(button, MixedLayer, &ac);
-        });
-
-        let ac = Rc::clone(acp);
-        mu.connect_toggled(move |button| {
-            handle_toggle(button, MostUnstable, &ac);
-        });
-
-        menu.append(&sfc);
-        menu.append(&mxd);
-        menu.append(&mu);
-
-        menu.append(&SeparatorMenuItem::new());
-
-        make_heading!(menu, "Parcel Options");
-        make_check_item!(menu, "Show profile", acp, show_parcel_profile);
-        make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
     }
 
-    fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
-        make_heading!(menu, "Profiles");
-        make_check_item!(menu, "Temperature", acp, show_temperature);
-        make_check_item!(menu, "Wet bulb", acp, show_wet_bulb);
-        make_check_item!(menu, "Dew point", acp, show_dew_point);
-        make_check_item!(menu, "Wind", acp, show_wind_profile);
-    }
+    let ac = Rc::clone(acp);
+    sfc.connect_toggled(move |button| {
+        handle_toggle(button, Surface, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    mxd.connect_toggled(move |button| {
+        handle_toggle(button, MixedLayer, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    mu.connect_toggled(move |button| {
+        handle_toggle(button, MostUnstable, &ac);
+    });
+
+    menu.append(&sfc);
+    menu.append(&mxd);
+    menu.append(&mu);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    make_heading!(menu, "Parcel Options");
+    make_check_item!(menu, "Show profile", acp, show_parcel_profile);
+    make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+}
+
+fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    make_heading!(menu, "Profiles");
+    make_check_item!(menu, "Temperature", acp, show_temperature);
+    make_check_item!(menu, "Wet bulb", acp, show_wet_bulb);
+    make_check_item!(menu, "Dew point", acp, show_dew_point);
+    make_check_item!(menu, "Wind", acp, show_wind_profile);
 }
 
 trait Drawable: PlotContext + PlotContextExt {
@@ -250,7 +180,7 @@ trait Drawable: PlotContext + PlotContextExt {
      * Initialization
      **********************************************************************************************/
     /// Required to implement.
-    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer);
+    fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError>;
 
     /// Not recommended to override.
     fn init_matrix(&self, args: DrawingArgs) {

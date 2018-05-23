@@ -10,6 +10,7 @@ use sounding_base::{DataRow, Profile};
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, LPCoords, ScreenCoords,
              ScreenRect, XYCoords};
+use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 use gui::{Drawable, SlaveProfileDrawable};
@@ -120,9 +121,11 @@ impl Drawable for LapseRateContext {
     /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
-    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        da.set_hexpand(true);
-        da.set_vexpand(true);
+    fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+        let da: DrawingArea = acp.fetch_widget("lapse_rate_area")?;
+
+        da.set_hexpand(true); // FIXME:
+        da.set_vexpand(true); // FIXME:
 
         let ac = Rc::clone(acp);
         da.connect_draw(move |_da, cr| ac.lapse_rate.draw_callback(cr, &ac));
@@ -142,16 +145,18 @@ impl Drawable for LapseRateContext {
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.lapse_rate.size_allocate_event(da));
 
-        da.set_can_focus(true);
+        da.set_can_focus(true); // FIXME:
 
         da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
             | EventMask::BUTTON_RELEASE_MASK
             | EventMask::POINTER_MOTION_HINT_MASK
             | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
             | EventMask::KEY_PRESS_MASK)
-            .bits() as i32);
+            .bits() as i32); // FIXME:
 
-        da.set_no_show_all(true);
+        da.set_no_show_all(true); // FIXME:
+
+        Ok(())
     }
 
     /***********************************************************************************************

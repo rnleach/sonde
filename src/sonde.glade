@@ -183,30 +183,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkDrawingArea" id="index_area">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="position">2</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
-                  </packing>
-                </child>
-                <child type="tab">
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Indexes</property>
-                  </object>
-                  <packing>
-                    <property name="position">2</property>
-                    <property name="tab_fill">False</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkNotebook" id="control_area">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>

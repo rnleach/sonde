@@ -1,4 +1,5 @@
 extern crate chrono;
+#[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate itertools;
@@ -22,8 +23,7 @@ extern crate sounding_base;
 extern crate sounding_bufkit;
 
 use std::fs::File;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 
 // Module for maintaining application state
 mod app;
@@ -66,9 +66,7 @@ pub fn run() -> Result<(), Error> {
         });
 
     // Build the GUI
-    let gui = gui::Gui::new(&app);
-
-    app.set_gui(gui.clone());
+    gui::initialize(&app)?;
 
     // Initialize the main loop.
     gtk::main();

@@ -2,6 +2,7 @@ use gtk::prelude::*;
 use gtk::{ScrollablePolicy, TextTag, TextView};
 
 use app::{config, AppContext, AppContextPointer};
+use errors::SondeError;
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -25,11 +26,16 @@ macro_rules! set_text {
     };
 }
 
-pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
-    text_area.set_editable(false);
-    text_area.set_property_margin(config::WIDGET_MARGIN);
-    text_area.set_vscroll_policy(ScrollablePolicy::Natural);
-    text_area.set_hscroll_policy(ScrollablePolicy::Natural);
+pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+    const TEXT_AREA_ID: &str = "text_area";
+    let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
+
+    text_area.set_editable(false); // FIXME:
+    text_area.set_property_margin(config::WIDGET_MARGIN); // FIXME:
+    text_area.set_vscroll_policy(ScrollablePolicy::Natural); // FIXME:
+    text_area.set_hscroll_policy(ScrollablePolicy::Natural); // FIXME:
+
+    fill_header_text_area(acp)?;
 
     if let Some(tb) = text_area.get_buffer() {
         make_default_tag!(tb);
@@ -46,10 +52,14 @@ pub fn set_up_text_area(text_area: &TextView, _acp: &AppContextPointer) {
         }
 
         tb.create_mark("scroll_mark", &tb.get_start_iter(), true);
+
+        Ok(())
+    } else {
+        Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
     }
 }
 
-pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
+pub fn update_text_area(ac: &AppContext) {
     use app::config;
 
     macro_rules! unwrap_to_str {
@@ -67,6 +77,16 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
                 "".to_owned()
             }
         };
+    }
+
+    let text_area: TextView = if let Ok(ta) = ac.fetch_widget("text_area") {
+        ta
+    } else {
+        return;
+    };
+
+    if !text_area.is_visible() {
+        return;
     }
 
     if let Some(tb) = text_area.get_buffer() {
@@ -125,12 +145,13 @@ pub fn update_text_area(text_area: &TextView, ac: &AppContext) {
     }
 }
 
-pub fn fill_header_text_area(header: &TextView) {
-    
-    header.set_editable(false);
-    header.set_property_margin(config::WIDGET_MARGIN);
-    header.set_margin_bottom(0);
-    header.set_hscroll_policy(ScrollablePolicy::Minimum);
+pub fn fill_header_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+    const HEADER_ID: &str = "text_header";
+    let header: TextView = acp.fetch_widget(HEADER_ID)?;
+    header.set_editable(false); // FIXME:
+    header.set_property_margin(config::WIDGET_MARGIN); // FIXME:
+    header.set_margin_bottom(0); // FIXME:
+    header.set_hscroll_policy(ScrollablePolicy::Minimum); // FIXME:
 
     if let Some(tb) = header.get_buffer() {
         let mut text = String::with_capacity(512);
@@ -155,14 +176,28 @@ pub fn fill_header_text_area(header: &TextView) {
 
         make_default_tag!(tb);
         set_text!(tb, &text);
+
+        Ok(())
+    } else {
+        Err(SondeError::TextBufferLoadError(HEADER_ID))
     }
 }
 
-pub fn update_text_highlight(text_area: &TextView, ac: &AppContext) {
+pub fn update_text_highlight(ac: &AppContext) {
     use std::str::FromStr;
     let config = ac.config.borrow();
 
     if !config.show_active_readout {
+        return;
+    }
+
+    let text_area: TextView = if let Ok(ta) = ac.fetch_widget("text_area") {
+        ta
+    } else {
+        return;
+    };
+
+    if !text_area.is_visible() {
         return;
     }
 

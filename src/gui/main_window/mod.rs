@@ -2,27 +2,28 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
-use gtk::{Menu, MenuItem};
+use gtk::{Menu, MenuItem, Window};
 
 use app::AppContextPointer;
-use gui::Gui;
+use errors::SondeError;
 
 mod menu_callbacks;
 
-pub fn layout(gui: &Gui, ac: &AppContextPointer) {
-    // Build the menu bar
-    build_menu_bar(ac, gui);
-    configure_main_window(gui, ac);
+pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
+    build_menu_bar(ac)?;
+    configure_main_window(ac)?;
+
+    Ok(())
 }
 
-fn build_menu_bar(ac: &AppContextPointer, gui: &Gui) {
+fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     //
     // The file menu.
     //
 
     // The open item
     let open_item = MenuItem::new_with_label("Open");
-    let win1 = gui.get_window().clone();
+    let win1: Window = ac.fetch_widget("main_window")?;
     let ac1 = Rc::clone(ac);
     open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
@@ -33,17 +34,19 @@ fn build_menu_bar(ac: &AppContextPointer, gui: &Gui) {
     });
 
     // Build the file menu
-    let file_menu: Menu = gui.get_builder().get_object("main_menu_file").unwrap();
+    let file_menu: Menu = ac.fetch_widget("main_menu_file")?;
     file_menu.append(&open_item);
     file_menu.append(&quit_item);
 
     //
     // End the file menu
     //
+
+    Ok(())
 }
 
-fn configure_main_window(gui: &Gui, ac: &AppContextPointer) {
-    let window = gui.get_window();
+fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
+    let window: Window = ac.fetch_widget("main_window")?;
 
     let (width, height) = {
         let cfg = ac.config.borrow();
@@ -69,4 +72,6 @@ fn configure_main_window(gui: &Gui, ac: &AppContextPointer) {
     });
 
     window.show_all();
+
+    Ok(())
 }
