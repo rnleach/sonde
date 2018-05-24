@@ -2,20 +2,20 @@ use std::rc::Rc;
 
 use cairo::Context;
 use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
-use gtk::{DrawingArea, Menu, SeparatorMenuItem, RadioMenuItem, MenuItem, CheckMenuItem};
 use gtk::prelude::*;
+use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
 use sounding_analysis;
 use sounding_base::DataRow;
 
-use app::{AppContext, AppContextPointer, config::{self, Rgba, ParcelType}};
+use app::{AppContext, AppContextPointer, config::{self, ParcelType, Rgba}};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
                    plot_dashed_curve_from_points};
-use gui::{self, Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
+use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -645,7 +645,12 @@ impl Drawable for SkewTContext {
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else if event.get_button() == 3 {
-            gui::show_pop_up_menu(ac, event);
+            if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
+                // waiting for version 3.22...
+                // let ev: &::gdk::Event = evt;
+                // menu.popup_at_pointer(ev);
+                menu.popup_easy(3, 0)
+            }
             Inhibit(false)
         } else {
             Inhibit(false)

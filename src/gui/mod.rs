@@ -3,14 +3,14 @@
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
+use gtk::DrawingArea;
 use gtk::prelude::*;
-use gtk::{DrawingArea, Menu};
 
 use sounding_analysis::Layer;
 use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
 use sounding_base::DataRow;
 
-use app::config::{Rgba};
+use app::config::Rgba;
 use app::{AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
              XYCoords};
@@ -58,15 +58,6 @@ pub fn draw_all(app: &AppContext) {
 pub fn update_text_view(app: &AppContext) {
     self::text_area::update_text_area(app);
     self::text_area::update_text_highlight(app);
-}
-
-pub fn show_pop_up_menu(app: &AppContext, _evt: &EventButton) {
-    if let Ok(menu) = app.fetch_widget::<Menu>("sounding_context_menu") {
-        // waiting for version 3.22...
-        // let ev: &::gdk::Event = evt;
-        // menu.popup_at_pointer(ev);
-        menu.popup_easy(3, 0)
-    }
 }
 
 trait Drawable: PlotContext + PlotContextExt {
