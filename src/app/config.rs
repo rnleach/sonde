@@ -26,7 +26,7 @@ pub struct Config {
     /// Height of window in pixels.
     pub window_height: i32,
     /// Position of the main pane
-    pub pane_position: i32,
+    pub pane_position: f32,
 
     //
     // Wind profile
@@ -258,7 +258,7 @@ impl Default for Config {
             //
             window_width: 1100,
             window_height: 550,
-            pane_position: 550,
+            pane_position: 0.5,
 
             //
             // Wind profile

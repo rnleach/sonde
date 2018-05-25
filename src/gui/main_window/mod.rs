@@ -58,8 +58,12 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
         window.resize(width, height);
     }
 
-    if pane_position > 0 {
-        pane.set_position(pane_position / pane.get_scale_factor());
+    if pane_position > 0.0 {
+        let (width, _) = window.get_size();
+        let pos = (width as f32 * pane_position).round() as i32;
+
+        debug_assert!(pos < width);
+        pane.set_position(pos);
     }
 
     let ac1 = Rc::clone(ac);
@@ -71,7 +75,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
         config.window_width = width;
         config.window_height = height;
 
-        let pos = pane2.get_position();
+        let pos = (pane2.get_position() as f32) / (width as f32);
         config.pane_position = pos;
 
         gtk::main_quit();
