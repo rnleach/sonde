@@ -58,6 +58,8 @@
               <object class="GtkNotebook" id="left_notebook">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="scrollable">True</property>
+                <property name="enable_popup">True</property>
                 <property name="group_name">main_group</property>
                 <child>
                   <object class="GtkDrawingArea" id="skew_t">
@@ -95,6 +97,8 @@
                 <property name="name">right_notebook</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="scrollable">True</property>
+                <property name="enable_popup">True</property>
                 <property name="group_name">main_group</property>
                 <child>
                   <object class="GtkDrawingArea" id="hodograph_area">
