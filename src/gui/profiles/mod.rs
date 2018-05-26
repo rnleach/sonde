@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use gtk;
-use gtk::CheckButton;
 use gtk::prelude::*;
+use gtk::{self, CheckButton, DrawingArea};
 
-use app::AppContextPointer;
-use gui::{Drawable, Gui, PlotContext};
+use app::{AppContext, AppContextPointer};
+use errors::SondeError;
+use gui::{Drawable, PlotContext};
 
 pub mod cloud;
 pub mod lapse_rate;
@@ -18,9 +18,8 @@ pub use self::rh_omega::RHOmegaContext;
 pub use self::wind_speed::WindSpeedContext;
 
 macro_rules! build_profile {
-    ($p_box:ident, $c_box:ident, $drawing_area:expr, $acp:ident, $label:expr, $show_var:ident) => {
+    ($c_box:ident, $drawing_area:expr, $acp:ident, $label:expr, $show_var:ident) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
         let show_da = $acp.config.borrow().$show_var;
@@ -43,7 +42,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -54,7 +52,6 @@ macro_rules! build_profile {
         $show_var2:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -105,7 +102,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -118,7 +114,6 @@ macro_rules! build_profile {
         $show_var3:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -192,7 +187,6 @@ macro_rules! build_profile {
         });
     };
     (
-        $p_box:ident,
         $c_box:ident,
         $drawing_area:expr,
         $acp:ident,
@@ -207,7 +201,6 @@ macro_rules! build_profile {
         $show_var4:ident
     ) => {
         let da = $drawing_area;
-        $p_box.pack_start(&da, true, true, 0);
 
         let check_button = CheckButton::new_with_label($label);
         $c_box.pack_start(&check_button, false, false, 0);
@@ -242,8 +235,9 @@ macro_rules! build_profile {
         check_button.connect_toggled(move |button| {
             let button_state = button.get_active();
             ac.config.borrow_mut().$show_var = button_state;
-            let show_da =
-                button_state || ac.config.borrow().$show_var2 || ac.config.borrow().$show_var3 || ac.config.borrow().$show_var4;
+            let show_da = button_state || ac.config.borrow().$show_var2
+                || ac.config.borrow().$show_var3
+                || ac.config.borrow().$show_var4;
             if show_da {
                 dac.show();
                 dac.queue_draw();
@@ -258,8 +252,9 @@ macro_rules! build_profile {
         check_button2.connect_toggled(move |button| {
             let button_state = button.get_active();
             ac.config.borrow_mut().$show_var2 = button_state;
-            let show_da =
-                button_state || ac.config.borrow().$show_var || ac.config.borrow().$show_var3 || ac.config.borrow().$show_var4;
+            let show_da = button_state || ac.config.borrow().$show_var
+                || ac.config.borrow().$show_var3
+                || ac.config.borrow().$show_var4;
             if show_da {
                 dac.show();
                 dac.queue_draw();
@@ -274,8 +269,9 @@ macro_rules! build_profile {
         check_button3.connect_toggled(move |button| {
             let button_state = button.get_active();
             ac.config.borrow_mut().$show_var3 = button_state;
-            let show_da =
-                button_state || ac.config.borrow().$show_var || ac.config.borrow().$show_var2 || ac.config.borrow().$show_var4;
+            let show_da = button_state || ac.config.borrow().$show_var
+                || ac.config.borrow().$show_var2
+                || ac.config.borrow().$show_var4;
             if show_da {
                 dac.show();
                 dac.queue_draw();
@@ -290,8 +286,9 @@ macro_rules! build_profile {
         check_button4.connect_toggled(move |button| {
             let button_state = button.get_active();
             ac.config.borrow_mut().$show_var4 = button_state;
-            let show_da =
-                button_state || ac.config.borrow().$show_var || ac.config.borrow().$show_var2 || ac.config.borrow().$show_var3;
+            let show_da = button_state || ac.config.borrow().$show_var
+                || ac.config.borrow().$show_var2
+                || ac.config.borrow().$show_var3;
             if show_da {
                 dac.show();
                 dac.queue_draw();
@@ -303,14 +300,17 @@ macro_rules! build_profile {
     };
 }
 
-pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32) -> gtk::Box {
-    let profile_box = gtk::Box::new(gtk::Orientation::Horizontal, box_spacing);
-    let control_box = gtk::Box::new(gtk::Orientation::Vertical, box_spacing);
+pub fn set_up_profiles_box(acp: &AppContextPointer) -> Result<(), SondeError> {
+    let control_box: gtk::Box = acp.fetch_widget("profile_control_box")?;
+
+    let rh_omega: DrawingArea = acp.fetch_widget("rh_omega_area")?;
+    let cloud: DrawingArea = acp.fetch_widget("cloud_area")?;
+    let wind_speed: DrawingArea = acp.fetch_widget("wind_speed_area")?;
+    let lapse_rate: DrawingArea = acp.fetch_widget("lapse_rate_area")?;
 
     build_profile!(
-        profile_box,
         control_box,
-        gui.get_rh_omega_area(),
+        rh_omega,
         acp,
         rh_omega,
         "RH",
@@ -318,27 +318,18 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         "Omega",
         show_omega
     );
+    build_profile!(control_box, cloud, acp, "Clouds", show_cloud_frame);
     build_profile!(
-        profile_box,
         control_box,
-        gui.get_cloud_area(),
-        acp,
-        "Clouds",
-        show_cloud_frame
-    );
-    build_profile!(
-        profile_box,
-        control_box,
-        gui.get_wind_speed_profile_area(),
+        wind_speed,
         acp,
         "Wind Spd",
         show_wind_speed_profile
     );
 
     build_profile!(
-        profile_box,
         control_box,
-        gui.get_lapse_rate_profile_area(),
+        lapse_rate,
         acp,
         lapse_rate,
         "Lapse rate",
@@ -351,41 +342,46 @@ pub fn set_up_profiles_box(gui: &Gui, acp: &AppContextPointer, box_spacing: i32)
         show_theta_e_lapse_rate_profile
     );
 
-    profile_box.pack_start(&control_box, false, false, 0);
-    profile_box.show_all();
-    profile_box
+    Ok(())
 }
 
-macro_rules! draw_profile {
-    ($da:expr, $show:expr) => {
-        let da = $da;
-        if $show {
-            da.show();
-            da.queue_draw();
-        } else {
-            da.hide();
-        }
-    };
-}
-pub fn draw_profiles(gui: &Gui, acp: &AppContextPointer) {
+pub fn draw_profiles(acp: &AppContext) {
     let config = acp.config.borrow();
 
-    draw_profile!(gui.get_rh_omega_area(), config.show_rh || config.show_omega);
-    draw_profile!(gui.get_cloud_area(), config.show_cloud_frame);
-    draw_profile!(
-        gui.get_wind_speed_profile_area(),
-        config.show_wind_speed_profile
-    );
-    draw_profile!(
-        gui.get_lapse_rate_profile_area(),
+    const DRAWING_AREAS: [&'static str; 4] = [
+        "rh_omega_area",
+        "cloud_area",
+        "wind_speed_area",
+        "lapse_rate_area",
+    ];
+
+    let do_draw = [
+        config.show_rh || config.show_omega,
+        config.show_cloud_frame,
+        config.show_wind_speed_profile,
         config.show_lapse_rate_profile || config.show_theta_e_lapse_rate_profile
-            || config.show_sfc_avg_lapse_rate_profile
-    );
+            || config.show_sfc_avg_lapse_rate_profile,
+    ];
+
+    for (&da, &show) in izip!(DRAWING_AREAS.iter(), do_draw.iter()) {
+        if let Ok(da) = acp.fetch_widget::<DrawingArea>(da) {
+            if show {
+                da.show();
+                da.queue_draw();
+            } else {
+                da.hide();
+            }
+        }
+    }
 }
 
-pub fn initialize_profiles(gui: &Gui, acp: &AppContextPointer) {
-    RHOmegaContext::set_up_drawing_area(&gui.get_rh_omega_area(), acp);
-    CloudContext::set_up_drawing_area(&gui.get_cloud_area(), acp);
-    WindSpeedContext::set_up_drawing_area(&gui.get_wind_speed_profile_area(), acp);
-    LapseRateContext::set_up_drawing_area(&gui.get_lapse_rate_profile_area(), acp);
+pub fn initialize_profiles(acp: &AppContextPointer) -> Result<(), SondeError> {
+    RHOmegaContext::set_up_drawing_area(acp)?;
+    CloudContext::set_up_drawing_area(acp)?;
+    WindSpeedContext::set_up_drawing_area(acp)?;
+    LapseRateContext::set_up_drawing_area(acp)?;
+
+    set_up_profiles_box(acp)?;
+
+    Ok(())
 }

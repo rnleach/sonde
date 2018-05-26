@@ -1,16 +1,17 @@
 use std::rc::Rc;
 
 use cairo::Context;
-use gdk::{EventButton, EventMask, EventMotion, EventScroll, ScrollDirection};
-use gtk::DrawingArea;
+use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
+use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
 use sounding_analysis;
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
+use app::{AppContext, AppContextPointer, config::{self, ParcelType, Rgba}};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
+use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext};
 use gui::utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
                    plot_dashed_curve_from_points};
@@ -151,9 +152,8 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
-    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        da.set_hexpand(true);
-        da.set_vexpand(true);
+    fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+        let da: DrawingArea = acp.fetch_widget("skew_t")?;
 
         let ac = Rc::clone(acp);
         da.connect_draw(move |_da, cr| ac.skew_t.draw_callback(cr, &ac));
@@ -182,14 +182,9 @@ impl Drawable for SkewTContext {
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.skew_t.size_allocate_event(da));
 
-        da.set_can_focus(true);
+        build_sounding_area_context_menu(acp)?;
 
-        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-            | EventMask::BUTTON_RELEASE_MASK
-            | EventMask::POINTER_MOTION_HINT_MASK
-            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_PRESS_MASK)
-            .bits() as i32);
+        Ok(())
     }
 
     /***********************************************************************************************
@@ -650,8 +645,11 @@ impl Drawable for SkewTContext {
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else if event.get_button() == 3 {
-            if let Some(ref gui) = *ac.gui.borrow() {
-                gui.show_popup_menu(event);
+            if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
+                // waiting for version 3.22...
+                // let ev: &::gdk::Event = evt;
+                // menu.popup_at_pointer(ev);
+                menu.popup_easy(3, 0)
             }
             Inhibit(false)
         } else {
@@ -706,6 +704,111 @@ impl Drawable for SkewTContext {
 }
 
 impl MasterDrawable for SkewTContext {}
+
+/**************************************************************************************************
+ *                                   DrawingArea set up
+ **************************************************************************************************/
+fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Result<(), SondeError> {
+    let menu: Menu = acp.fetch_widget("sounding_context_menu")?;
+
+    build_active_readout_section_of_context_menu(&menu, acp);
+    menu.append(&SeparatorMenuItem::new());
+    build_parcel_section_of_context_menu(&menu, acp);
+    menu.append(&SeparatorMenuItem::new());
+    build_profiles_section_of_context_menu(&menu, acp);
+
+    menu.show_all();
+
+    Ok(())
+}
+
+macro_rules! make_heading {
+    ($menu:ident, $label:expr) => {
+        let heading = MenuItem::new_with_label($label);
+        heading.set_sensitive(false);
+        $menu.append(&heading);
+    };
+}
+
+macro_rules! make_check_item {
+    ($menu:ident, $label:expr, $acp:ident, $check_val:ident) => {
+        let check_menu_item = CheckMenuItem::new_with_label($label);
+        check_menu_item.set_active($acp.config.borrow().$check_val);
+
+        let ac = Rc::clone($acp);
+        check_menu_item.connect_toggled(move |button| {
+            ac.config.borrow_mut().$check_val = button.get_active();
+            ac.mark_data_dirty();
+            ac.update_all_gui()
+        });
+
+        $menu.append(&check_menu_item);
+    };
+}
+
+fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    make_heading!(menu, "Active readout");
+    make_check_item!(menu, "Show active readout", acp, show_active_readout);
+    make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
+}
+
+fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    use app::config::ParcelType::*;
+
+    make_heading!(menu, "Parcel Type");
+
+    let sfc = RadioMenuItem::new_with_label("Surface");
+    let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
+    let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
+
+    let p_type = acp.config.borrow().parcel_type;
+    match p_type {
+        Surface => sfc.set_active(true),
+        MixedLayer => mxd.set_active(true),
+        MostUnstable => mu.set_active(true),
+    }
+
+    fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
+        if button.get_active() {
+            ac.config.borrow_mut().parcel_type = parcel_type;
+            ac.mark_data_dirty();
+            ac.update_all_gui();
+        }
+    }
+
+    let ac = Rc::clone(acp);
+    sfc.connect_toggled(move |button| {
+        handle_toggle(button, Surface, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    mxd.connect_toggled(move |button| {
+        handle_toggle(button, MixedLayer, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    mu.connect_toggled(move |button| {
+        handle_toggle(button, MostUnstable, &ac);
+    });
+
+    menu.append(&sfc);
+    menu.append(&mxd);
+    menu.append(&mu);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    make_heading!(menu, "Parcel Options");
+    make_check_item!(menu, "Show profile", acp, show_parcel_profile);
+    make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+}
+
+fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+    make_heading!(menu, "Profiles");
+    make_check_item!(menu, "Temperature", acp, show_temperature);
+    make_check_item!(menu, "Wet bulb", acp, show_wet_bulb);
+    make_check_item!(menu, "Dew point", acp, show_dew_point);
+    make_check_item!(menu, "Wind", acp, show_wind_profile);
+}
 
 /**************************************************************************************************
  *                                   Data Layer Drawing

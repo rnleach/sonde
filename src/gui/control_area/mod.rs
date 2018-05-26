@@ -4,6 +4,7 @@ use gtk::Notebook;
 use gtk::prelude::*;
 
 use app::AppContextPointer;
+use errors::SondeError;
 
 macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {
@@ -113,7 +114,8 @@ mod data_options;
 const PADDING: u32 = 2;
 const BOX_SPACING: i32 = 5;
 
-pub fn set_up_control_area(control_area: &Notebook, acp: &AppContextPointer) {
+pub fn set_up_control_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+    let control_area: Notebook = acp.fetch_widget("control_area")?;
     control_area.set_hexpand(true);
     control_area.set_vexpand(true);
     control_area.set_scrollable(true);
@@ -125,4 +127,6 @@ pub fn set_up_control_area(control_area: &Notebook, acp: &AppContextPointer) {
     let background_options = background_options::make_background_frame(acp);
     control_area.add(&background_options);
     control_area.set_tab_label_text(&background_options, "Background");
+
+    Ok(())
 }

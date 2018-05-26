@@ -4,11 +4,7 @@
         "rls": true,
         "Cargo.lock": true,
         "**/*.rs.bk": true,
-        "*.sublime*":true
+        "*.sublime*":true,
+        "**/*~":true
     },
-
-"cSpell.words": [
-    "adiabats",
-    "hodograph"
-]
 }

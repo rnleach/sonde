@@ -10,11 +10,16 @@ use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
 use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
-use gui::{Gui, HodoContext, PlotContext, PlotContextExt, SkewTContext};
+use gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
+
+use glib;
+use gtk::Builder;
 
 // Module for configuring application
 pub mod config;
 use self::config::Config;
+
+use errors::SondeError;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
@@ -36,7 +41,7 @@ pub struct AppContext {
     last_sample: Cell<Option<DataRow>>,
 
     // Handle to the GUI
-    pub gui: RefCell<Option<Gui>>,
+    gui: Builder,
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
@@ -63,6 +68,8 @@ impl AppContext {
     /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
     /// drawn on the GUI.
     pub fn new() -> AppContextPointer {
+        let glade_src = include_str!("../sonde.glade");
+
         Rc::new(AppContext {
             config: RefCell::new(Config::default()),
             source_description: RefCell::new(None),
@@ -70,7 +77,7 @@ impl AppContext {
             extra_profiles: RefCell::new(vec![]),
             currently_displayed_index: Cell::new(0),
             last_sample: Cell::new(None),
-            gui: RefCell::new(None),
+            gui: Builder::new_from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),
@@ -80,8 +87,13 @@ impl AppContext {
         })
     }
 
-    pub fn set_gui(&self, gui: Gui) {
-        *self.gui.borrow_mut() = Some(gui);
+    pub fn fetch_widget<T>(&self, widget_id: &'static str) -> Result<T, SondeError>
+    where
+        T: glib::IsA<glib::Object>,
+    {
+        self.gui
+            .get_object(widget_id)
+            .ok_or(SondeError::WidgetLoadError(widget_id))
     }
 
     pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {
@@ -258,11 +270,7 @@ impl AppContext {
         self.cloud.set_xy_envelope(cloud_envelope);
 
         self.fit_to_data();
-
-        if let Some(ref gui) = *self.gui.borrow() {
-            gui.draw_all();
-            gui.update_text_view(self);
-        }
+        self.update_all_gui();
     }
 
     /// Is there any data to plot?
@@ -324,10 +332,8 @@ impl AppContext {
 
     // Update all the gui elements
     pub fn update_all_gui(&self) {
-        if let Some(ref gui) = *self.gui.borrow() {
-            gui.draw_all();
-            gui.update_text_view(self);
-        }
+        gui::draw_all(&self);
+        gui::update_text_view(&self);
     }
 
     /// Get the sounding to draw.
@@ -384,12 +390,7 @@ impl AppContext {
         Option<DataRow>: From<T>,
     {
         self.last_sample.set(Option::from(sample));
-
-        if let Some(ref gui) = *self.gui.borrow() {
-            let ta = gui.get_text_area();
-            ::gui::update_text_highlight(&ta, self);
-        }
-
+        gui::update_text_highlight(&self);
         self.mark_overlay_dirty();
     }
 

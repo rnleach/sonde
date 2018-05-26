@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use gdk::{EventMask, EventMotion, EventScroll};
+use gdk::{EventMotion, EventScroll};
 use gtk::DrawingArea;
 use gtk::prelude::*;
 
@@ -9,6 +9,7 @@ use sounding_base::DataRow;
 use app::{config, AppContext, AppContextPointer, config::Rgba};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
              ScreenRect, XYCoords};
+use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
 use gui::{Drawable, SlaveProfileDrawable};
@@ -119,9 +120,8 @@ impl Drawable for CloudContext {
     /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
-    fn set_up_drawing_area(da: &DrawingArea, acp: &AppContextPointer) {
-        da.set_hexpand(true);
-        da.set_vexpand(true);
+    fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+        let da: DrawingArea = acp.fetch_widget("cloud_area")?;
 
         let ac = Rc::clone(acp);
         da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
@@ -141,16 +141,7 @@ impl Drawable for CloudContext {
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));
 
-        da.set_can_focus(true);
-
-        da.add_events((EventMask::SCROLL_MASK | EventMask::BUTTON_PRESS_MASK
-            | EventMask::BUTTON_RELEASE_MASK
-            | EventMask::POINTER_MOTION_HINT_MASK
-            | EventMask::POINTER_MOTION_MASK | EventMask::LEAVE_NOTIFY_MASK
-            | EventMask::KEY_PRESS_MASK)
-            .bits() as i32);
-
-        da.set_no_show_all(true);
+        Ok(())
     }
 
     /***********************************************************************************************

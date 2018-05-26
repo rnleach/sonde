@@ -1,43 +1,36 @@
 use std::rc::Rc;
 
-use glib;
+use gdk::Event;
+use gtk::{self, Menu, MenuItem, Notebook, Paned, Widget, Window, prelude::*};
 
-use gtk;
-use gtk::prelude::*;
-use gtk::{Menu, MenuBar, MenuItem, Notebook, ScrolledWindow, Window};
-
-use app::AppContextPointer;
-use app::config;
-use gui::Gui;
+use app::{AppContext, AppContextPointer};
+use errors::SondeError;
 
 mod menu_callbacks;
 
-pub fn layout(gui: &Gui, ac: &AppContextPointer) {
-    let window = gui.get_window();
+const TABS: [(&str,&str); 5] = [
+    ("skew_t","Skew T"),
+    ("hodograph_area","Hodograph"),
+    ("text_area_container","Text"),
+    ("control_area","Controls"),
+    ("profiles_area_container","Profiles"),
+];
 
-    // Build the menu bar
-    let menu_bar = build_menu_bar(ac, &window);
+pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
+    build_menu_bar(ac)?;
+    configure_main_window(ac)?;
 
-    // Layout main gui areas
-    let frames = layout_frames(gui, ac);
-
-    // Layout everything else
-    let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    v_box.pack_start(&menu_bar, false, false, 0);
-    v_box.pack_start(&frames, true, true, 0);
-    window.add(&v_box);
-
-    configure_main_window(&window, ac);
+    Ok(())
 }
 
-fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
+fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     //
     // The file menu.
     //
 
     // The open item
     let open_item = MenuItem::new_with_label("Open");
-    let win1 = win.clone();
+    let win1: Window = ac.fetch_widget("main_window")?;
     let ac1 = Rc::clone(ac);
     open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
@@ -48,118 +41,141 @@ fn build_menu_bar(ac: &AppContextPointer, win: &Window) -> MenuBar {
     });
 
     // Build the file menu
-    let file_menu = Menu::new();
+    let file_menu: Menu = ac.fetch_widget("main_menu_file")?;
     file_menu.append(&open_item);
     file_menu.append(&quit_item);
-
-    // Build the file menu item
-    let file = MenuItem::new_with_label("File");
-    file.set_submenu(&file_menu);
 
     //
     // End the file menu
     //
 
-    //
-    // Build the menu bar
-    //
-    let menu_bar = MenuBar::new();
-    menu_bar.append(&file);
-    menu_bar
+    Ok(())
 }
 
-fn layout_frames(gui: &Gui, ac: &AppContextPointer) -> gtk::Paned {
-    macro_rules! add_tab {
-        ($notebook:ident, $widget:expr, $label:expr) => {
-            $widget.set_property_margin(config::WIDGET_MARGIN);
-            $notebook.add(&$widget);
-            $notebook.set_tab_label_text(&$widget, $label);
-        };
-    }
+fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
+    let window: Window = ac.fetch_widget("main_window")?;
 
-    const BOX_SPACING: i32 = 2;
-
-    let main_pane = gtk::Paned::new(gtk::Orientation::Horizontal);
-
-    // Left pane
-    let skew_t = gui.get_sounding_area();
-
-    // Set up scrolled window for text area.
-    let text_win = ScrolledWindow::new(None, None);
-    text_win.add(&gui.get_text_area());
-    let v_text_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    v_text_box.pack_start(&::gui::text_area::make_header_text_area(), false, true, 0);
-    v_text_box.pack_start(&text_win, true, true, 0);
-
-    // Set up hbox for profiles
-    let profile_box = super::profiles::set_up_profiles_box(gui, ac, BOX_SPACING);
-
-    // Right pane
-    let notebook = Notebook::new();
-    add_tab!(notebook, gui.get_hodograph_area(), "Hodograph");
-    add_tab!(notebook, profile_box, "Profiles");
-    add_tab!(notebook, gui.get_index_area(), "Indexes");
-    add_tab!(notebook, v_text_box, "Text");
-    add_tab!(notebook, gui.get_control_area(), "Controls");
-    notebook.set_tab_pos(gtk::PositionType::Right);
-
-    main_pane.add1(&add_border_frame(&skew_t));
-    main_pane.add2(&notebook);
-
-    let (width, height) = {
-        let cfg = ac.config.borrow();
-        (cfg.window_width, cfg.window_height)
-    };
-
-    let position = if width > height {
-        height
-    } else {
-        width * 2 / 3
-    };
-
-    main_pane.set_position(position);
-
-    main_pane
-}
-
-fn configure_main_window(window: &Window, ac: &AppContextPointer) {
-    let (width, height) = {
-        let cfg = ac.config.borrow();
-        (cfg.window_width, cfg.window_height)
-    };
-
-    if width > 0 || height > 0 {
-        window.set_default_size(width, height);
-    }
-
-    window.set_position(gtk::WindowPosition::Center);
-
-    window.set_title("Sonde");
-    window.set_decorated(true);
-    window.show_all();
-
-    window.connect_delete_event(|_, _| {
-        gtk::main_quit();
-        Inhibit(false)
-    });
+    layout_tabs_window(&window, ac)?;
 
     let ac1 = Rc::clone(ac);
-    window.connect_configure_event(move |win, _evt| {
-        let (width, height) = win.get_size();
-        let mut config = ac1.config.borrow_mut();
-        config.window_width = width;
-        config.window_height = height;
-        false
-    });
+    window.connect_delete_event(move |win, ev| on_delete(win, ev, &ac1));
+
+    window.show_all();
+
+    Ok(())
 }
 
-fn add_border_frame<P: glib::IsA<gtk::Widget>>(widget: &P) -> gtk::Frame {
-    let f = gtk::Frame::new(None);
-    f.add(widget);
-    f.set_border_width(config::BORDER_WIDTH);
-    f.set_hexpand(true);
-    f.set_vexpand(true);
-    f.set_shadow_type(gtk::ShadowType::In);
+fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
+    let mut config = ac.config.borrow_mut();
 
-    f
+    // Save the window dimensions
+    let (width, height) = win.get_size();
+    config.window_width = width;
+    config.window_height = height;
+
+    // Save the Paned view slider position.
+    if let Ok(pane) = ac.fetch_widget::<Paned>("main_pane_view") {
+        let pos = (pane.get_position() as f32) / (width as f32);
+        config.pane_position = pos;
+    }
+
+    // Save the tabs, which notebook they are in, their order, and which ones were selected.
+    if let (Ok(lnb), Ok(rnb)) = (
+        ac.fetch_widget::<Notebook>("left_notebook"),
+        ac.fetch_widget::<Notebook>("right_notebook"),
+    ) {
+        let tabs: Vec<Widget> = TABS
+            .iter()
+            // If there is an error here, it will ALWAYS fail. So go ahead and unwrap.
+            .map(|&widget_id| ac.fetch_widget::<Widget>(widget_id.0)
+                .expect("Error loading widget!"))
+            .collect();
+
+        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook|{
+            cfg_tabs.clear();
+            for child in nb.get_children(){
+                for (idx, tab) in tabs.iter().enumerate(){
+                    if child == *tab {
+                        cfg_tabs.push(TABS[idx].0.to_owned());
+                    }
+                }
+            }
+        };
+
+        save_tabs(&mut config.left_tabs, &lnb);
+        save_tabs(&mut config.right_tabs, &rnb);
+
+        config.left_page_selected = lnb.get_property_page();
+        config.right_page_selected = rnb.get_property_page();
+    }
+
+    gtk::main_quit();
+    Inhibit(false)
+}
+
+fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
+    let cfg = ac.config.borrow();
+
+    let pane: Paned = ac.fetch_widget("main_pane_view")?;
+
+    let (width, height, pane_position) =
+        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
+
+    if width > 0 || height > 0 {
+        win.resize(width, height);
+    }
+
+    if pane_position > 0.0 {
+        let (width, _) = win.get_size();
+        let pos = (width as f32 * pane_position).round() as i32;
+
+        debug_assert!(pos < width);
+        pane.set_position(pos);
+    }
+
+    if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
+        println!("found tab status.");
+        if let (Ok(lnb), Ok(rnb)) = (
+            ac.fetch_widget::<Notebook>("left_notebook"),
+            ac.fetch_widget::<Notebook>("right_notebook"),
+        ) {
+
+            let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook|{
+                for tab_id in cfg_tabs {
+                    TABS
+                        .iter()
+                        .position(|&s| s.0 == tab_id)
+                        .and_then(|idx|{
+                            ac.fetch_widget::<Widget>(TABS[idx].0)
+                                .ok()
+                                .and_then(|widget|{
+                                    let tgt_children = tgt_nb.get_children();
+                                    let other_children = other_nb.get_children();
+
+                                    if tgt_children.contains(&widget){
+                                        tgt_nb.remove(&widget);
+                                    } else if other_children.contains(&widget) {
+                                        other_nb.remove(&widget);
+                                    }
+
+                                    tgt_nb.add(&widget);
+                                    tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
+                                    tgt_nb.set_tab_detachable(&widget, true);
+                                    tgt_nb.set_tab_reorderable(&widget, true);
+
+                                    Some(())
+                                })
+                        });
+                }
+            };
+
+            restore_tabs(&cfg.left_tabs, &lnb, &rnb);
+            restore_tabs(&cfg.right_tabs, &rnb, &lnb);
+
+            lnb.set_property_page(cfg.left_page_selected);
+            rnb.set_property_page(cfg.right_page_selected);
+        }
+    }
+
+    Ok(())
 }
