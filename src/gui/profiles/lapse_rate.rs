@@ -221,13 +221,6 @@ impl Drawable for LapseRateContext {
             ));
         }
 
-        if config.show_theta_e_lapse_rate_profile {
-            to_return.push((
-                "Theta-e lr".to_owned(),
-                config.theta_e_lapse_rate_profile_rgba,
-            ));
-        }
-
         to_return
     }
 
@@ -297,7 +290,6 @@ impl Drawable for LapseRateContext {
         let mut some_data = draw_lapse_rate_profile(args);
         some_data = draw_sfc_avg_lapse_rate_profile(args) || some_data;
         some_data = draw_ml_avg_lapse_rate_profile(args) || some_data;
-        some_data = draw_theta_e_lapse_rate_profile(args) || some_data;
 
         if some_data {
             ac.lapse_rate.set_has_data(true);
@@ -315,9 +307,7 @@ impl Drawable for LapseRateContext {
 
         let mut results = vec![];
 
-        if config.show_lapse_rate_profile || config.show_theta_e_lapse_rate_profile
-            || config.show_sfc_avg_lapse_rate_profile
-        {
+        if config.show_lapse_rate_profile || config.show_sfc_avg_lapse_rate_profile {
             if let (Some(anal), Some(other_profiles), Some(tgt_pres)) = (
                 ac.get_sounding_for_display(),
                 ac.get_extra_profiles_for_display(),
@@ -360,19 +350,6 @@ impl Drawable for LapseRateContext {
                         results.push((
                             format!("{:.1}\u{00b0}C/km", lr),
                             config.ml_avg_lapse_rate_profile_rgba,
-                        ));
-                    }
-                }
-
-                if config.show_theta_e_lapse_rate_profile {
-                    let theta_e_lr = &other_profiles.theta_e_lapse_rate;
-
-                    if let Some(lr) =
-                        sounding_analysis::linear_interpolate(pres, theta_e_lr, tgt_pres)
-                    {
-                        results.push((
-                            format!("{:.1}\u{00b0}K/km", lr),
-                            config.theta_e_lapse_rate_profile_rgba,
                         ));
                     }
                 }
@@ -558,53 +535,6 @@ fn draw_ml_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
             cr,
             config.profile_line_width,
             config.ml_avg_lapse_rate_profile_rgba,
-            profile,
-        );
-
-        true
-    } else {
-        false
-    }
-}
-
-fn draw_theta_e_lapse_rate_profile(args: DrawingArgs) -> bool {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    if !config.show_theta_e_lapse_rate_profile {
-        return false;
-    }
-
-    if let (Some(anal), Some(profiles)) = (
-        ac.get_sounding_for_display(),
-        ac.get_extra_profiles_for_display(),
-    ) {
-        use sounding_base::Profile::Pressure;
-
-        let sndg = anal.sounding();
-
-        let pres_data = sndg.get_profile(Pressure);
-        let lr_data = &profiles.theta_e_lapse_rate;
-        let mut profile = izip!(pres_data, lr_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
-                    Some((p, s))
-                } else {
-                    None
-                }
-            })
-            .take_while(|&(press, _)| press >= config::MINP)
-            .filter_map(|(press, lapse_rate)| {
-                Some(
-                    ac.lapse_rate
-                        .convert_lp_to_screen(LPCoords { lapse_rate, press }),
-                )
-            });
-
-        plot_curve_from_points(
-            cr,
-            config.profile_line_width,
-            config.theta_e_lapse_rate_profile_rgba,
             profile,
         );
 

@@ -427,8 +427,6 @@ pub struct ExtraProfiles {
     pub lapse_rate: Vec<Option<f64>>,
     pub sfc_avg_lapse_rate: Vec<Option<f64>>,
     pub ml_avg_lapse_rate: Vec<Option<f64>>,
-    pub theta_e_lapse_rate: Vec<Option<f64>>,
-    // TODO: add more!
 }
 
 impl ExtraProfiles {
@@ -437,13 +435,11 @@ impl ExtraProfiles {
         let sfc_avg_lapse_rate =
             sounding_analysis::profile::sfc_to_level_temperature_lapse_rate(snd);
         let ml_avg_lapse_rate = sounding_analysis::profile::ml_to_level_temperature_lapse_rate(snd);
-        let theta_e_lapse_rate = sounding_analysis::profile::theta_e_lapse_rate(snd);
 
         ExtraProfiles {
             lapse_rate,
             sfc_avg_lapse_rate,
             ml_avg_lapse_rate,
-            theta_e_lapse_rate,
         }
     }
 }
