@@ -44,9 +44,9 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&'static str; 2] = ["skew_t", "hodograph_area"];
+    const DRAWING_AREAS: [&str; 2] = ["skew_t", "hodograph_area"];
 
-    for &da in DRAWING_AREAS.iter() {
+    for &da in &DRAWING_AREAS {
         if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
             da.queue_draw();
         }

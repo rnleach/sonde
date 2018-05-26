@@ -45,12 +45,6 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(data_box, "Relative Humidity", ac, rh_rgba);
     build_config_color!(data_box, "Cloud Coverage", ac, cloud_rgba);
     build_config_color!(data_box, "Lapse rate", ac, lapse_rate_profile_rgba);
-    build_config_color!(
-        data_box,
-        "Theta-e lapse rate",
-        ac,
-        theta_e_lapse_rate_profile_rgba
-    );
 
     // Third set is overlays
     let overlays_frame = gtk::Frame::new(Some("Overlays"));

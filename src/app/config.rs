@@ -149,10 +149,6 @@ pub struct Config {
     pub show_ml_avg_lapse_rate_profile: bool,
     /// Mixed layer to * average lapse rate profile color.
     pub ml_avg_lapse_rate_profile_rgba: Rgba,
-    /// Show the theta-e lapse rate rate
-    pub show_theta_e_lapse_rate_profile: bool,
-    /// Theta-e lapse rate profile color.
-    pub theta_e_lapse_rate_profile_rgba: Rgba,
 
     //
     // Labeling
@@ -348,8 +344,6 @@ impl Default for Config {
             sfc_avg_lapse_rate_profile_rgba: (0.7, 0.2, 0.0, 1.0),
             show_ml_avg_lapse_rate_profile: true,
             ml_avg_lapse_rate_profile_rgba: (0.2, 0.7, 0.0, 1.0),
-            show_theta_e_lapse_rate_profile: true,
-            theta_e_lapse_rate_profile_rgba: (0.3, 0.4, 0.5, 1.0),
 
             //
             // Labeling
