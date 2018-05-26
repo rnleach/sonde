@@ -27,6 +27,14 @@ pub struct Config {
     pub window_height: i32,
     /// Position of the main pane
     pub pane_position: f32,
+    /// Tabs on the left
+    pub left_tabs: Vec<String>,
+    /// Tabs on the right
+    pub right_tabs: Vec<String>,
+    /// Selected tab on left notebook
+    pub left_page_selected: i32,
+    /// Selected tab on right notebook
+    pub right_page_selected: i32,
 
     //
     // Wind profile
@@ -259,6 +267,10 @@ impl Default for Config {
             window_width: 1100,
             window_height: 550,
             pane_position: 0.5,
+            left_tabs: vec![],
+            right_tabs: vec![],
+            left_page_selected: 0,
+            right_page_selected: 0,
 
             //
             // Wind profile
