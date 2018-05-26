@@ -345,10 +345,11 @@ pub fn set_up_profiles_box(acp: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(possible_missing_comma))]
 pub fn draw_profiles(acp: &AppContext) {
     let config = acp.config.borrow();
 
-    const DRAWING_AREAS: [&'static str; 4] = [
+    const DRAWING_AREAS: [&str; 4] = [
         "rh_omega_area",
         "cloud_area",
         "wind_speed_area",

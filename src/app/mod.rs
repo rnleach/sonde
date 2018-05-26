@@ -93,7 +93,7 @@ impl AppContext {
     {
         self.gui
             .get_object(widget_id)
-            .ok_or(SondeError::WidgetLoadError(widget_id))
+            .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
     }
 
     pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {

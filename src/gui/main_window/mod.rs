@@ -8,12 +8,12 @@ use errors::SondeError;
 
 mod menu_callbacks;
 
-const TABS: [(&str,&str); 5] = [
-    ("skew_t","Skew T"),
-    ("hodograph_area","Hodograph"),
-    ("text_area_container","Text"),
-    ("control_area","Controls"),
-    ("profiles_area_container","Profiles"),
+const TABS: [(&str, &str); 5] = [
+    ("skew_t", "Skew T"),
+    ("hodograph_area", "Hodograph"),
+    ("text_area_container", "Text"),
+    ("control_area", "Controls"),
+    ("profiles_area_container", "Profiles"),
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
@@ -91,10 +91,10 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
                 .expect("Error loading widget!"))
             .collect();
 
-        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook|{
+        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();
-            for child in nb.get_children(){
-                for (idx, tab) in tabs.iter().enumerate(){
+            for child in nb.get_children() {
+                for (idx, tab) in tabs.iter().enumerate() {
                     if child == *tab {
                         cfg_tabs.push(TABS[idx].0.to_owned());
                     }
@@ -139,33 +139,29 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             ac.fetch_widget::<Notebook>("left_notebook"),
             ac.fetch_widget::<Notebook>("right_notebook"),
         ) {
-
-            let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook|{
+            let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
-                    TABS
-                        .iter()
-                        .position(|&s| s.0 == tab_id)
-                        .and_then(|idx|{
-                            ac.fetch_widget::<Widget>(TABS[idx].0)
-                                .ok()
-                                .and_then(|widget|{
-                                    let tgt_children = tgt_nb.get_children();
-                                    let other_children = other_nb.get_children();
+                    TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
+                        ac.fetch_widget::<Widget>(TABS[idx].0)
+                            .ok()
+                            .and_then(|widget| {
+                                let tgt_children = tgt_nb.get_children();
+                                let other_children = other_nb.get_children();
 
-                                    if tgt_children.contains(&widget){
-                                        tgt_nb.remove(&widget);
-                                    } else if other_children.contains(&widget) {
-                                        other_nb.remove(&widget);
-                                    }
+                                if tgt_children.contains(&widget) {
+                                    tgt_nb.remove(&widget);
+                                } else if other_children.contains(&widget) {
+                                    other_nb.remove(&widget);
+                                }
 
-                                    tgt_nb.add(&widget);
-                                    tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
-                                    tgt_nb.set_tab_detachable(&widget, true);
-                                    tgt_nb.set_tab_reorderable(&widget, true);
+                                tgt_nb.add(&widget);
+                                tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
+                                tgt_nb.set_tab_detachable(&widget, true);
+                                tgt_nb.set_tab_reorderable(&widget, true);
 
-                                    Some(())
-                                })
-                        });
+                                Some(())
+                            })
+                    });
                 }
             };
 
