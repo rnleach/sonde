@@ -134,7 +134,6 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
     }
 
     if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
-        println!("found tab status.");
         if let (Ok(lnb), Ok(rnb)) = (
             ac.fetch_widget::<Notebook>("left_notebook"),
             ac.fetch_widget::<Notebook>("right_notebook"),
