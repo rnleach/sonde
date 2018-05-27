@@ -5,8 +5,8 @@ use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
-use sounding_analysis;
-use sounding_base::DataRow;
+use sounding_analysis::{self, AnalysisError, Parcel, ParcelProfile};
+use sounding_base::{DataRow, Sounding};
 
 use app::{AppContext, AppContextPointer, config::{self, ParcelType, Rgba}};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
@@ -583,11 +583,19 @@ impl Drawable for SkewTContext {
     }
 
     fn draw_active_readout(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
+        let config = args.ac.config.borrow();
+
+        if config.show_active_readout {
             self.draw_active_sample(args);
 
-            if args.ac.config.borrow().show_sample_parcel_profile {
-                draw_sample_parcel_profile(args);
+            if let Some(sample_parcel) = get_sample_parcel(args) {
+                if config.show_sample_parcel_profile {
+                    draw_sample_parcel_profile(args, sample_parcel);
+                }
+
+                if config.show_sample_mix_down {
+                    draw_sample_mix_down_profile(args, sample_parcel);
+                }
             }
         }
     }
@@ -750,6 +758,7 @@ fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPoi
     make_heading!(menu, "Active readout");
     make_check_item!(menu, "Show active readout", acp, show_active_readout);
     make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
+    make_check_item!(menu, "Draw sample mix down", acp, show_sample_mix_down);
 }
 
 fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
@@ -1354,40 +1363,40 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 /**************************************************************************************************
  *                              Active Readout Layer Drawing
  **************************************************************************************************/
-fn draw_sample_parcel_profile(args: DrawingArgs) {
+fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
+    let color = args.ac.config.borrow().sample_parcel_profile_color;
+
+    draw_parcel_profile(
+        args,
+        sample_parcel,
+        sounding_analysis::parcel::lift_parcel,
+        color,
+    );
+}
+
+fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
+    let color = args.ac.config.borrow().sample_mix_down_rgba;
+
+    draw_parcel_profile(
+        args,
+        sample_parcel,
+        sounding_analysis::parcel::descend_dry_adiabatically,
+        color,
+    );
+}
+
+fn draw_parcel_profile<F>(args: DrawingArgs, sample_parcel: Parcel, gen_profile: F, line_rgba: Rgba)
+where
+    F: FnOnce(Parcel, &Sounding) -> ::std::result::Result<ParcelProfile, AnalysisError>,
+{
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    use sounding_analysis::parcel::Parcel;
-    use sounding_analysis::parcel::lift_parcel;
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let sndg = anal.sounding();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        // Get a parcel
-        let sample_parcel = if let Some(vals) = ac.get_sample() {
-            let sample_parcel_opt = vals.pressure.and_then(|p| {
-                vals.temperature.and_then(|t| {
-                    vals.dew_point.and_then(|dp| {
-                        Some(Parcel {
-                            temperature: t,
-                            pressure: p,
-                            dew_point: dp,
-                        })
-                    })
-                })
-            });
-
-            match sample_parcel_opt {
-                Some(parcel) => parcel,
-                None => return,
-            }
-        } else {
-            return;
-        };
-
-        let sndg = sndg.sounding();
-
-        // Lift the parcel
-        let profile = if let Ok(profile) = lift_parcel(sample_parcel, sndg) {
+        // build the parcel profile
+        let profile = if let Ok(profile) = gen_profile(sample_parcel, sndg) {
             profile
         } else {
             return;
@@ -1397,7 +1406,6 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
         let temp_data = profile.parcel_t;
 
         let line_width = config.temperature_line_width;
-        let line_rgba = config.sample_parcel_profile_color;
 
         let profile_data = izip!(pres_data, temp_data).filter_map(|(pressure, temperature)| {
             if pressure > config::MINP {
@@ -1412,5 +1420,25 @@ fn draw_sample_parcel_profile(args: DrawingArgs) {
         });
 
         plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
+    }
+}
+
+fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
+    let ac = args.ac;
+
+    if let Some(vals) = ac.get_sample() {
+        vals.pressure.and_then(|p| {
+            vals.temperature.and_then(|t| {
+                vals.dew_point.and_then(|dp| {
+                    Some(Parcel {
+                        temperature: t,
+                        pressure: p,
+                        dew_point: dp,
+                    })
+                })
+            })
+        })
+    } else {
+        None
     }
 }

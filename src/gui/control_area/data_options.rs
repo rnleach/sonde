@@ -31,6 +31,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         ac,
         sample_parcel_profile_color
     );
+    build_config_color!(
+        sample_box,
+        "Sample mix down profile",
+        ac,
+        sample_mix_down_rgba
+    );
 
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));

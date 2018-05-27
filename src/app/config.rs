@@ -229,6 +229,10 @@ pub struct Config {
     pub show_sample_parcel_profile: bool,
     /// Color for sample parcel profile
     pub sample_parcel_profile_color: Rgba,
+    /// Show mix down profile of sample parcel
+    pub show_sample_mix_down: bool,
+    /// Sample mix down profile color
+    pub sample_mix_down_rgba: Rgba,
 
     //
     // Hodograph
@@ -392,6 +396,8 @@ impl Default for Config {
             show_active_readout: true,
             show_sample_parcel_profile: true,
             sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
+            show_sample_mix_down: true,
+            sample_mix_down_rgba: (0.7, 0.0, 0.5, 1.0),
 
             //
             // Hodograph
