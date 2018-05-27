@@ -397,7 +397,7 @@ impl Default for Config {
             show_sample_parcel_profile: true,
             sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
             show_sample_mix_down: true,
-            sample_mix_down_rgba: (0.7, 0.0, 0.5, 1.0),
+            sample_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
 
             //
             // Hodograph
