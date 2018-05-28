@@ -809,6 +809,11 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     make_heading!(menu, "Parcel Options");
     make_check_item!(menu, "Show profile", acp, show_parcel_profile);
     make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    make_heading!(menu, "Inversions");
+    make_check_item!(menu, "Show inv. mix-down", acp, show_inversion_mix_down);
 }
 
 fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
@@ -932,37 +937,50 @@ fn draw_data_overlays(args: DrawingArgs) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
-    if !config.show_parcel_profile {
-        return;
-    }
-
     if let Some(sndg) = ac.get_sounding_for_display() {
         let sndg = sndg.sounding();
 
-        let parcel_profile = if let Ok(parcel) = match config.parcel_type {
-            Surface => sounding_analysis::parcel::surface_parcel(sndg),
-            MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
-            MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
-        } {
-            if let Ok(p_profile) = sounding_analysis::parcel::lift_parcel(parcel, sndg) {
-                p_profile
-            } else {
-                return;
-            }
-        } else {
-            return;
-        };
+        if config.show_parcel_profile {
+            match config.parcel_type {
+                Surface => sounding_analysis::parcel::surface_parcel(sndg),
+                MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
+                MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
+            }.ok()
+                .and_then(|parcel| sounding_analysis::parcel::lift_parcel(parcel, sndg).ok())
+                .and_then(|p_profile| {
+                    let color = config.parcel_rgba;
+                    draw_parcel_profile(args, &p_profile, color);
 
-        let color = config.parcel_rgba;
-        draw_parcel_profile(args, &parcel_profile, color);
+                    if config.fill_parcel_areas {
+                        draw_cape_cin_fill(args, &p_profile, sndg);
+                    }
 
-        if config.fill_parcel_areas {
-            draw_cape_cin_fill(args, &parcel_profile, sndg);
-        }   
+                    Some(())
+                });
+        }
+
+        if config.show_inversion_mix_down {
+            sounding_analysis::layers::inversions(sndg, 690.0)
+                .ok()
+                .and_then(|lyrs| {
+                    lyrs.into_iter()
+                        .map(|lyr| lyr.top)
+                        .filter_map(|data_row| Parcel::from_datarow(data_row))
+                        .filter_map(|parcel| {
+                            sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
+                        })
+                        .for_each(|parcel_profile| {
+                            let color = config.inversion_mix_down_rgba;
+                            draw_parcel_profile(args, &parcel_profile, color);
+                        });
+
+                    Some(())
+                });
+        }
     }
 }
 
-fn draw_cape_cin_fill(args: DrawingArgs, parcel_profile: &ParcelProfile, sndg: &Sounding){
+fn draw_cape_cin_fill(args: DrawingArgs, parcel_profile: &ParcelProfile, sndg: &Sounding) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
