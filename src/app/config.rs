@@ -99,6 +99,10 @@ pub struct Config {
     pub parcel_positive_rgba: Rgba,
     /// Negative parcela rea color.
     pub parcel_negative_rgba: Rgba,
+    /// Show the inversion mix downs
+    pub show_inversion_mix_down: bool,
+    /// Inversion mix downs color
+    pub inversion_mix_down_rgba: Rgba,
 
     //
     // General profile configuration items
@@ -229,6 +233,10 @@ pub struct Config {
     pub show_sample_parcel_profile: bool,
     /// Color for sample parcel profile
     pub sample_parcel_profile_color: Rgba,
+    /// Show mix down profile of sample parcel
+    pub show_sample_mix_down: bool,
+    /// Sample mix down profile color
+    pub sample_mix_down_rgba: Rgba,
 
     //
     // Hodograph
@@ -309,6 +317,8 @@ impl Default for Config {
             fill_parcel_areas: true,
             parcel_positive_rgba: (0.80, 0.0, 0.0, 0.5),
             parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),
+            show_inversion_mix_down: true,
+            inversion_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
 
             //
             // General profile configuration items
@@ -392,6 +402,8 @@ impl Default for Config {
             show_active_readout: true,
             show_sample_parcel_profile: true,
             sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
+            show_sample_mix_down: true,
+            sample_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
 
             //
             // Hodograph

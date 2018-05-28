@@ -31,6 +31,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         ac,
         sample_parcel_profile_color
     );
+    build_config_color!(
+        sample_box,
+        "Sample mix down profile",
+        ac,
+        sample_mix_down_rgba
+    );
 
     // Second set is data
     let data_frame = gtk::Frame::new(Some("Profiles"));
@@ -52,6 +58,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     overlays_frame.add(&overlays_box);
 
     build_config_color!(overlays_box, "Parcel profile", ac, parcel_rgba);
+    build_config_color!(
+        overlays_box,
+        "Inversion mix down profile",
+        ac,
+        inversion_mix_down_rgba
+    );
     build_config_color!(overlays_box, "CAPE", ac, parcel_positive_rgba);
     build_config_color!(overlays_box, "CIN", ac, parcel_negative_rgba);
 

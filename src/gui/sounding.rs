@@ -5,8 +5,8 @@ use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
-use sounding_analysis;
-use sounding_base::DataRow;
+use sounding_analysis::{self, Parcel, ParcelProfile};
+use sounding_base::{DataRow, Sounding};
 
 use app::{AppContext, AppContextPointer, config::{self, ParcelType, Rgba}};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
@@ -583,11 +583,19 @@ impl Drawable for SkewTContext {
     }
 
     fn draw_active_readout(&self, args: DrawingArgs) {
-        if args.ac.config.borrow().show_active_readout {
+        let config = args.ac.config.borrow();
+
+        if config.show_active_readout {
             self.draw_active_sample(args);
 
-            if args.ac.config.borrow().show_sample_parcel_profile {
-                draw_sample_parcel_profile(args);
+            if let Some(sample_parcel) = get_sample_parcel(args) {
+                if config.show_sample_parcel_profile {
+                    draw_sample_parcel_profile(args, sample_parcel);
+                }
+
+                if config.show_sample_mix_down {
+                    draw_sample_mix_down_profile(args, sample_parcel);
+                }
             }
         }
     }
@@ -713,7 +721,7 @@ fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Result<(), Sonde
 
     build_active_readout_section_of_context_menu(&menu, acp);
     menu.append(&SeparatorMenuItem::new());
-    build_parcel_section_of_context_menu(&menu, acp);
+    build_overlays_section_of_context_menu(&menu, acp);
     menu.append(&SeparatorMenuItem::new());
     build_profiles_section_of_context_menu(&menu, acp);
 
@@ -750,9 +758,10 @@ fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPoi
     make_heading!(menu, "Active readout");
     make_check_item!(menu, "Show active readout", acp, show_active_readout);
     make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
+    make_check_item!(menu, "Draw sample mix down", acp, show_sample_mix_down);
 }
 
-fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
+fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
     use app::config::ParcelType::*;
 
     make_heading!(menu, "Parcel Type");
@@ -800,6 +809,11 @@ fn build_parcel_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
     make_heading!(menu, "Parcel Options");
     make_check_item!(menu, "Show profile", acp, show_parcel_profile);
     make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    make_heading!(menu, "Inversions");
+    make_check_item!(menu, "Show inv. mix-down", acp, show_inversion_mix_down);
 }
 
 fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
@@ -920,43 +934,81 @@ fn draw_wind_profile(args: DrawingArgs) {
 fn draw_data_overlays(args: DrawingArgs) {
     use app::config::ParcelType::*;
 
-    let (ac, cr) = (args.ac, args.cr);
+    let ac = args.ac;
     let config = ac.config.borrow();
-
-    if !config.show_parcel_profile {
-        return;
-    }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         let sndg = sndg.sounding();
 
-        let parcel_profile = if let Ok(parcel) = match config.parcel_type {
-            Surface => sounding_analysis::parcel::surface_parcel(sndg),
-            MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
-            MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
-        } {
-            if let Ok(p_profile) = sounding_analysis::parcel::lift_parcel(parcel, sndg) {
-                p_profile
-            } else {
-                return;
-            }
-        } else {
-            return;
-        };
+        if config.show_parcel_profile {
+            match config.parcel_type {
+                Surface => sounding_analysis::parcel::surface_parcel(sndg),
+                MixedLayer => sounding_analysis::parcel::mixed_layer_parcel(sndg),
+                MostUnstable => sounding_analysis::parcel::most_unstable_parcel(sndg),
+            }.ok()
+                .and_then(|parcel| sounding_analysis::parcel::lift_parcel(parcel, sndg).ok())
+                .and_then(|p_profile| {
+                    let color = config.parcel_rgba;
+                    draw_parcel_profile(args, &p_profile, color);
 
-        let pres_data = &parcel_profile.pressure;
-        let parcel_t = &parcel_profile.parcel_t;
+                    if config.fill_parcel_areas {
+                        draw_cape_cin_fill(args, &p_profile, sndg);
+                    }
 
-        let line_width = config.profile_line_width;
-        let line_rgba = config.parcel_rgba;
+                    Some(())
+                });
+        }
 
-        let profile_data = izip!(pres_data, parcel_t)
-            .filter(|val_pair| {
-                let pressure = *val_pair.0;
-                pressure >= config::MINP
-            })
-            .map(|val_pair| {
-                let (pressure, temperature) = (*val_pair.0, *val_pair.1);
+        if config.show_inversion_mix_down {
+            sounding_analysis::layers::inversions(sndg, 690.0)
+                .ok()
+                .and_then(|lyrs| {
+                    lyrs.into_iter()
+                        .map(|lyr| lyr.top)
+                        .filter_map(|data_row| Parcel::from_datarow(data_row))
+                        .filter_map(|parcel| {
+                            sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
+                        })
+                        .for_each(|parcel_profile| {
+                            let color = config.inversion_mix_down_rgba;
+                            draw_parcel_profile(args, &parcel_profile, color);
+                        });
+
+                    Some(())
+                });
+        }
+    }
+}
+
+fn draw_cape_cin_fill(args: DrawingArgs, parcel_profile: &ParcelProfile, sndg: &Sounding) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    let pres_data = &parcel_profile.pressure;
+    let parcel_t = &parcel_profile.parcel_t;
+    let env_t = &parcel_profile.environment_t;
+    let cin_layers = sounding_analysis::parcel::cin_layers(&parcel_profile, sndg);
+    let cape_layers = sounding_analysis::parcel::cape_layers(&parcel_profile, sndg);
+
+    for lyr in cin_layers {
+        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+            let up_side = izip!(pres_data, parcel_t, env_t)
+                .skip_while(|&(p, _, _)| *p > bottom)
+                .take_while(|&(p, _, _)| *p >= top)
+                .map(|(p, _, e_t)| (*p, *e_t));
+
+            let down_side = izip!(pres_data, parcel_t, env_t)
+            // Top down
+            .rev()
+            // Skip above top.
+            .skip_while(|&(p, _, _)| *p < top)
+            // Now we're in the CIN area!
+            .take_while(|&(p, _, _)| *p <= bottom)
+            .map(|(p, p_t, _)| (*p, *p_t));
+
+            let negative_polygon = up_side.chain(down_side);
+
+            let negative_polygon = negative_polygon.map(|(pressure, temperature)| {
                 let tp_coords = TPCoords {
                     temperature,
                     pressure,
@@ -964,78 +1016,41 @@ fn draw_data_overlays(args: DrawingArgs) {
                 ac.skew_t.convert_tp_to_screen(tp_coords)
             });
 
-        plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
+            let negative_polygon_rgba = config.parcel_negative_rgba;
 
-        if !config.fill_parcel_areas {
-            return;
+            draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
         }
+    }
 
-        let env_t = &parcel_profile.environment_t;
-        let cin_layers = sounding_analysis::parcel::cin_layers(&parcel_profile, sndg);
-        let cape_layers = sounding_analysis::parcel::cape_layers(&parcel_profile, sndg);
+    for lyr in cape_layers {
+        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+            let up_side = izip!(pres_data, parcel_t, env_t)
+                .skip_while(|&(p, _, _)| *p > bottom)
+                .take_while(|&(p, _, _)| *p >= top)
+                .map(|(p, _, e_t)| (*p, *e_t));
 
-        for lyr in cin_layers {
-            if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
-                let up_side = izip!(pres_data, parcel_t, env_t)
-                    .skip_while(|&(p, _, _)| *p > bottom)
-                    .take_while(|&(p, _, _)| *p >= top)
-                    .map(|(p, _, e_t)| (*p, *e_t));
+            let down_side = izip!(pres_data, parcel_t, env_t)
+            // Top down
+            .rev()
+            // Skip above top.
+            .skip_while(|&(p, _, _)| *p < top)
+            // Now we're in the CIN area!
+            .take_while(|&(p, _, _)| *p <= bottom)
+            .map(|(p, p_t, _)| (*p, *p_t));
 
-                let down_side = izip!(pres_data, parcel_t, env_t)
-                // Top down
-                .rev()
-                // Skip above top.
-                .skip_while(|&(p, _, _)| *p < top)
-                // Now we're in the CIN area!
-                .take_while(|&(p, _, _)| *p <= bottom)
-                .map(|(p, p_t, _)| (*p, *p_t));
+            let polygon = up_side.chain(down_side);
 
-                let negative_polygon = up_side.chain(down_side);
+            let polygon = polygon.map(|(pressure, temperature)| {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
 
-                let negative_polygon = negative_polygon.map(|(pressure, temperature)| {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    ac.skew_t.convert_tp_to_screen(tp_coords)
-                });
+            let polygon_rgba = config.parcel_positive_rgba;
 
-                let negative_polygon_rgba = config.parcel_negative_rgba;
-
-                draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
-            }
-        }
-
-        for lyr in cape_layers {
-            if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
-                let up_side = izip!(pres_data, parcel_t, env_t)
-                    .skip_while(|&(p, _, _)| *p > bottom)
-                    .take_while(|&(p, _, _)| *p >= top)
-                    .map(|(p, _, e_t)| (*p, *e_t));
-
-                let down_side = izip!(pres_data, parcel_t, env_t)
-                // Top down
-                .rev()
-                // Skip above top.
-                .skip_while(|&(p, _, _)| *p < top)
-                // Now we're in the CIN area!
-                .take_while(|&(p, _, _)| *p <= bottom)
-                .map(|(p, p_t, _)| (*p, *p_t));
-
-                let polygon = up_side.chain(down_side);
-
-                let polygon = polygon.map(|(pressure, temperature)| {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    ac.skew_t.convert_tp_to_screen(tp_coords)
-                });
-
-                let polygon_rgba = config.parcel_positive_rgba;
-
-                draw_filled_polygon(cr, polygon_rgba, polygon);
-            }
+            draw_filled_polygon(cr, polygon_rgba, polygon);
         }
     }
 }
@@ -1354,63 +1369,75 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 /**************************************************************************************************
  *                              Active Readout Layer Drawing
  **************************************************************************************************/
-fn draw_sample_parcel_profile(args: DrawingArgs) {
-    let (ac, cr) = (args.ac, args.cr);
+fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
+    let ac = args.ac;
     let config = ac.config.borrow();
 
-    use sounding_analysis::parcel::Parcel;
-    use sounding_analysis::parcel::lift_parcel;
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let sndg = anal.sounding();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        // Get a parcel
-        let sample_parcel = if let Some(vals) = ac.get_sample() {
-            let sample_parcel_opt = vals.pressure.and_then(|p| {
-                vals.temperature.and_then(|t| {
-                    vals.dew_point.and_then(|dp| {
-                        Some(Parcel {
-                            temperature: t,
-                            pressure: p,
-                            dew_point: dp,
-                        })
-                    })
-                })
-            });
+        // build the parcel profile
+        let profile =
+            if let Ok(profile) = sounding_analysis::parcel::lift_parcel(sample_parcel, sndg) {
+                profile
+            } else {
+                return;
+            };
 
-            match sample_parcel_opt {
-                Some(parcel) => parcel,
-                None => return,
-            }
-        } else {
-            return;
-        };
+        let color = config.sample_parcel_profile_color;
 
-        let sndg = sndg.sounding();
+        draw_parcel_profile(args, &profile, color);
+    }
+}
 
-        // Lift the parcel
-        let profile = if let Ok(profile) = lift_parcel(sample_parcel, sndg) {
+fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
+    let ac = args.ac;
+    let config = ac.config.borrow();
+
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let sndg = anal.sounding();
+
+        // build the parcel profile
+        let profile = if let Ok(profile) =
+            sounding_analysis::parcel::descend_dry_adiabatically(sample_parcel, sndg)
+        {
             profile
         } else {
             return;
         };
 
-        let pres_data = profile.pressure;
-        let temp_data = profile.parcel_t;
+        let color = config.sample_mix_down_rgba;
 
-        let line_width = config.temperature_line_width;
-        let line_rgba = config.sample_parcel_profile_color;
-
-        let profile_data = izip!(pres_data, temp_data).filter_map(|(pressure, temperature)| {
-            if pressure > config::MINP {
-                let tp_coords = TPCoords {
-                    temperature,
-                    pressure,
-                };
-                Some(ac.skew_t.convert_tp_to_screen(tp_coords))
-            } else {
-                None
-            }
-        });
-
-        plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
+        draw_parcel_profile(args, &profile, color);
     }
+}
+
+fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rgba) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    let pres_data = &profile.pressure;
+    let temp_data = &profile.parcel_t;
+
+    let line_width = config.temperature_line_width;
+
+    let profile_data = izip!(pres_data, temp_data).filter_map(|(&pressure, &temperature)| {
+        if pressure > config::MINP {
+            let tp_coords = TPCoords {
+                temperature,
+                pressure,
+            };
+            Some(ac.skew_t.convert_tp_to_screen(tp_coords))
+        } else {
+            None
+        }
+    });
+
+    plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
+}
+
+fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
+    args.ac
+        .get_sample()
+        .and_then(|data_row| Parcel::from_datarow(data_row))
 }
