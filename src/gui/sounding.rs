@@ -986,7 +986,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .ok()
                 .and_then(|lyr| lyr) // unwrap a layer of options
                 .map(|lyr| lyr.top)
-                .and_then(|data_row| Parcel::from_datarow(data_row))
+                .and_then(Parcel::from_datarow)
                 .and_then(|parcel| {
                     sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
                 })
@@ -1456,7 +1456,5 @@ fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rg
 }
 
 fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
-    args.ac
-        .get_sample()
-        .and_then(|data_row| Parcel::from_datarow(data_row))
+    args.ac.get_sample().and_then(Parcel::from_datarow)
 }
