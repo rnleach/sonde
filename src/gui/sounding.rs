@@ -960,20 +960,17 @@ fn draw_data_overlays(args: DrawingArgs) {
         }
 
         if config.show_inversion_mix_down {
-            sounding_analysis::layers::inversions(sndg, 690.0)
+            sounding_analysis::layers::sfc_based_inversion(sndg)
                 .ok()
-                .and_then(|lyrs| {
-                    lyrs.into_iter()
-                        .map(|lyr| lyr.top)
-                        .filter_map(|data_row| Parcel::from_datarow(data_row))
-                        .filter_map(|parcel| {
-                            sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
-                        })
-                        .for_each(|parcel_profile| {
-                            let color = config.inversion_mix_down_rgba;
-                            draw_parcel_profile(args, &parcel_profile, color);
-                        });
-
+                .and_then(|lyr| lyr) // unwrap a layer of options
+                .map(|lyr| lyr.top)
+                .and_then(|data_row| Parcel::from_datarow(data_row))
+                .and_then(|parcel| {
+                    sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
+                })
+                .and_then(|parcel_profile| {
+                    let color = config.inversion_mix_down_rgba;
+                    draw_parcel_profile(args, &parcel_profile, color);
                     Some(())
                 });
         }
