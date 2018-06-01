@@ -277,7 +277,7 @@ impl Drawable for CloudContext {
 
         if let Some(cloud) = vals.cloud_fraction {
             let cld = (cloud).round();
-            let line = format!("{:.0}%", cld);
+            let line = format!("{:.0}%\n", cld);
             results.push((line, ac.config.borrow().cloud_rgba));
         }
 

@@ -322,7 +322,7 @@ impl Drawable for LapseRateContext {
                         sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
                     {
                         results.push((
-                            format!("{:.1}\u{00b0}C/km", lr),
+                            format!("{:.1}\u{00b0}C/km\n", lr),
                             config.lapse_rate_profile_rgba,
                         ));
                     }
@@ -335,7 +335,7 @@ impl Drawable for LapseRateContext {
                         sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
                     {
                         results.push((
-                            format!("{:.1}\u{00b0}C/km", lr),
+                            format!("{:.1}\u{00b0}C/km\n", lr),
                             config.sfc_avg_lapse_rate_profile_rgba,
                         ));
                     }
@@ -348,7 +348,7 @@ impl Drawable for LapseRateContext {
                         sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
                     {
                         results.push((
-                            format!("{:.1}\u{00b0}C/km", lr),
+                            format!("{:.1}\u{00b0}C/km\n", lr),
                             config.ml_avg_lapse_rate_profile_rgba,
                         ));
                     }

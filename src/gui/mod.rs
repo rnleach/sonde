@@ -177,7 +177,7 @@ trait Drawable: PlotContext + PlotContextExt {
     /// Override to draw data
     fn draw_data(&self, args: DrawingArgs);
 
-    fn draw_data_and_legend(&self, args: DrawingArgs){
+    fn draw_data_and_legend(&self, args: DrawingArgs) {
         self.draw_data(args);
 
         if args.ac.config.borrow().show_legend {
@@ -463,12 +463,21 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let font_extents = cr.font_extents();
 
-        for &(ref line, _) in strings.iter() {
-            let line_extents = cr.text_extents(line);
-            if line_extents.width > width {
-                width = line_extents.width;
+        let mut line = String::with_capacity(100);
+        for &(ref val, _) in strings.iter() {
+            line.push_str(val);
+
+            if !val.ends_with('\n') {
+                continue;
+            } else {
+                let line_extents = cr.text_extents(line.trim());
+                if line_extents.width > width {
+                    width = line_extents.width;
+                }
+                height += font_extents.height;
+
+                line.clear();
             }
-            height += font_extents.height;
         }
 
         let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
@@ -559,16 +568,31 @@ trait Drawable: PlotContext + PlotContextExt {
         let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
 
         let font_extents = cr.font_extents();
-        let mut lines_drawn = 0.0;
 
-        for &(ref line, rgba) in lines {
+        let mut lines_drawn = 0.0;
+        let mut start_x = xmin + padding;
+
+        for &(ref val, rgba) in lines {
+            let show_val = if val.ends_with('\n') {
+                val.trim_right()
+            } else {
+                val
+            };
+
+            let text_extents = cr.text_extents(show_val);
+
             cr.move_to(
-                xmin + padding,
+                start_x,
                 ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
             );
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            cr.show_text(line);
-            lines_drawn += 1.0;
+            cr.show_text(show_val);
+            if val.ends_with('\n') {
+                lines_drawn += 1.0;
+                start_x = xmin + padding;
+            } else {
+                start_x += text_extents.x_advance;
+            }
         }
     }
 
