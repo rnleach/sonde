@@ -128,11 +128,6 @@ trait Drawable: PlotContext + PlotContextExt {
         vec![]
     }
 
-    /// Override for for a legend.
-    fn build_legend_strings(_ac: &AppContext) -> Vec<(String, Rgba)> {
-        vec![]
-    }
-
     /// Not recommended to override.
     fn draw_background_labels(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
@@ -164,7 +159,40 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_background_legend(&self, args: DrawingArgs) {
+    fn draw_background(&self, args: DrawingArgs) {
+        let config = args.ac.config.borrow();
+
+        self.draw_background_fill(args);
+        self.draw_background_lines(args);
+
+        if config.show_labels {
+            self.prepare_to_make_text(args);
+            self.draw_background_labels(args);
+        }
+    }
+
+    /***********************************************************************************************
+     * Data Drawing.
+     **********************************************************************************************/
+    /// Override to draw data
+    fn draw_data(&self, args: DrawingArgs);
+
+    fn draw_data_and_legend(&self, args: DrawingArgs){
+        self.draw_data(args);
+
+        if args.ac.config.borrow().show_legend {
+            self.prepare_to_make_text(args);
+            self.draw_legend(args);
+        }
+    }
+
+    /// Override for for a legend.
+    fn build_legend_strings(_ac: &AppContext) -> Vec<(String, Rgba)> {
+        vec![]
+    }
+
+    /// Not recommended to override.
+    fn draw_legend(&self, args: DrawingArgs) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if !ac.plottable() {
@@ -296,31 +324,6 @@ trait Drawable: PlotContext + PlotContextExt {
             line_num += 1;
         }
     }
-
-    /// Not recommended to override.
-    fn draw_background(&self, args: DrawingArgs) {
-        let config = args.ac.config.borrow();
-
-        self.draw_background_fill(args);
-        self.draw_background_lines(args);
-
-        if config.show_labels || config.show_legend {
-            self.prepare_to_make_text(args);
-        }
-
-        if config.show_labels {
-            self.draw_background_labels(args);
-        }
-
-        if config.show_legend {
-            self.draw_background_legend(args);
-        }
-    }
-
-    /***********************************************************************************************
-     * Data Drawing.
-     **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs);
 
     /// Not recommended to override.
     fn draw_no_data(&self, args: DrawingArgs) {
@@ -748,7 +751,7 @@ trait Drawable: PlotContext + PlotContextExt {
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
-            self.draw_data(tmp_args);
+            self.draw_data_and_legend(tmp_args);
 
             self.clear_data_dirty();
         }
