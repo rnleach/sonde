@@ -469,7 +469,10 @@ impl Drawable for SkewTContext {
             return results;
         };
 
-        let color = ac.config.borrow().label_rgba;
+        let config = ac.config.borrow();
+
+        let default_color = config.label_rgba;
+
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
         let pres = vals.pressure;
@@ -480,60 +483,79 @@ impl Drawable for SkewTContext {
         let elevation = anal.sounding().get_station_info().elevation();
 
         if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            let mut line = String::with_capacity(128);
             if let Some(t_c) = t_c {
+                let mut line = String::with_capacity(10);
                 line.push_str(&format!("{:.0}C", t_c));
+                if dp_c.is_none() && omega.is_none() {
+                    line.push('\n');
+                } else if dp_c.is_none() {
+                    line.push(' ');
+                }
+                results.push((line, config.temperature_rgba));
             }
             if let Some(dp_c) = dp_c {
                 if t_c.is_some() {
-                    line.push('/');
+                    results.push(("/".to_owned(), default_color));
                 }
+                let mut line = String::with_capacity(10);
                 line.push_str(&format!("{:.0}C", dp_c));
+                if t_c.is_none() && omega.is_none() {
+                    line.push('\n');
+                } else {
+                    line.push(' ');
+                }
+                results.push((line, config.dew_point_rgba));
             }
+
             if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
                 if let Ok(rh) = rh(t_c, dp_c) {
+                    let mut line = String::with_capacity(5);
                     line.push_str(&format!(" {:.0}%", 100.0 * rh));
+                    if omega.is_none() {
+                        line.push('\n');
+                    } else {
+                        line.push(' ');
+                    }
+                    results.push((line, config.rh_rgba));
                 }
             }
+
             if let Some(omega) = omega {
-                line.push_str(&format!(" {:.1} Pa/s", omega));
+                results.push((format!(" {:.1} Pa/s\n", omega), config.omega_rgba));
             }
-            results.push((line, color));
         }
 
         if pres.is_some() || dir.is_some() || spd.is_some() {
-            let mut line = String::with_capacity(128);
             if let Some(pres) = pres {
+                let mut line = String::with_capacity(10);
                 line.push_str(&format!("{:.0}hPa", pres));
-            }
-            if let Some(dir) = dir {
-                if pres.is_some() {
+                if dir.is_none() && spd.is_none() {
+                    line.push('\n');
+                } else {
                     line.push(' ');
                 }
-                let dir = (dir / 10.0).round() * 10.0;
-                line.push_str(&format!("{:03.0}", dir));
+                results.push((line, config.isobar_rgba));
             }
-            if let Some(spd) = spd {
-                if pres.is_some() && dir.is_none() {
-                    line.push(' ');
-                }
-                line.push_str(&format!("{:02.0}KT", spd));
+            if let (Some(dir), Some(spd)) = (dir, spd) {
+                results.push((format!("{:03.0} {:.0}KT\n", dir, spd), config.wind_rgba));
             }
-            results.push((line, color));
         }
 
         if let Some(hgt) = hgt_asl {
+            let color = config.active_readout_line_rgba;
+
             results.push((
-                format!("ASL: {:5.0}m ({:5.0}ft)", hgt, 3.28084 * hgt),
+                format!("ASL: {:5.0}m ({:5.0}ft)\n", hgt, 3.28084 * hgt),
                 color,
             ));
         }
 
         if elevation.is_some() && hgt_asl.is_some() {
             if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
+                let color = config.active_readout_line_rgba;
                 let mut line = String::with_capacity(128);
                 line.push_str(&format!(
-                    "AGL: {:5.0}m ({:5.0}ft)",
+                    "AGL: {:5.0}m ({:5.0}ft)\n",
                     hgt - elev,
                     3.28084 * (hgt - elev)
                 ));
@@ -964,7 +986,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .ok()
                 .and_then(|lyr| lyr) // unwrap a layer of options
                 .map(|lyr| lyr.top)
-                .and_then(|data_row| Parcel::from_datarow(data_row))
+                .and_then(Parcel::from_datarow)
                 .and_then(|parcel| {
                     sounding_analysis::parcel::descend_dry_adiabatically(parcel, sndg).ok()
                 })
@@ -1434,7 +1456,5 @@ fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rg
 }
 
 fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
-    args.ac
-        .get_sample()
-        .and_then(|data_row| Parcel::from_datarow(data_row))
+    args.ac.get_sample().and_then(Parcel::from_datarow)
 }

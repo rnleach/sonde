@@ -291,7 +291,7 @@ impl Drawable for WindSpeedContext {
 
         if let Some(speed) = vals.speed {
             let spd = speed.round();
-            let line = format!("{:.0}kt", spd);
+            let line = format!("{:.0}kt\n", spd);
             results.push((line, ac.config.borrow().wind_speed_profile_rgba));
         }
 

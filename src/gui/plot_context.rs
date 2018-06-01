@@ -466,8 +466,8 @@ where
     }
 
     fn mark_data_dirty(&self) {
-        self.get_generic_context().dirty_background.set(true);
         self.get_generic_context().dirty_data.set(true);
+        self.get_generic_context().dirty_overlay.set(true);
     }
 
     fn clear_data_dirty(&self) {

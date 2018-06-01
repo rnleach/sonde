@@ -348,13 +348,13 @@ impl Drawable for RHOmegaContext {
             if config.show_rh {
                 if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
                     if let Ok(rh) = rh(t_c, dp_c) {
-                        results.push((format!("{:.0}%", 100.0 * rh), config.rh_rgba));
+                        results.push((format!("{:.0}%\n", 100.0 * rh), config.rh_rgba));
                     }
                 }
             }
             if config.show_omega {
                 if let Some(omega) = omega {
-                    results.push((format!("{:.1} Pa/s", omega), config.omega_rgba));
+                    results.push((format!("{:.1} Pa/s\n", omega), config.omega_rgba));
                 }
             }
         }
