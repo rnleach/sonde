@@ -161,7 +161,7 @@ pub fn fill_header_text_area(acp: &AppContextPointer) -> Result<(), SondeError> 
             "\u{00b0}K",
             "deg",
             "KT",
-            "hPa/s",
+            "Pa/s",
             "%",
         ));
 
