@@ -149,7 +149,7 @@ impl HasGenericContext for SkewTContext {
 impl PlotContextExt for SkewTContext {}
 
 impl Drawable for SkewTContext {
-    /***********************************************************************************************
+    /********************** *************************************************************************
      * Initialization
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
@@ -993,6 +993,20 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .and_then(|parcel_profile| {
                     let color = config.inversion_mix_down_rgba;
                     draw_parcel_profile(args, &parcel_profile, color);
+
+                    if let (Some(&pressure), Some(&temperature)) =
+                    (
+                        parcel_profile.pressure.iter().nth(0),
+                        parcel_profile.parcel_t.iter().nth(0),
+                    ){
+                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords{temperature, pressure});
+                        let deg_f = ::metfor::celsius_to_f(temperature)
+                            .map(|t| format!("{:.0}\u{00b0}F/", t))
+                            .unwrap_or_else(|_|"".to_owned());
+                        ac.skew_t
+                            .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+                    }
+
                     Some(())
                 });
         }
@@ -1428,6 +1442,21 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
         let color = config.sample_mix_down_rgba;
 
         draw_parcel_profile(args, &profile, color);
+
+        if let (Some(&pressure), Some(&temperature)) = (
+            profile.pressure.iter().nth(0),
+            profile.parcel_t.iter().nth(0),
+        ) {
+            let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+                temperature,
+                pressure,
+            });
+            let deg_f = ::metfor::celsius_to_f(temperature)
+                .map(|t| format!("{:.0}\u{00b0}F/", t))
+                .unwrap_or_else(|_|"".to_owned());
+            ac.skew_t
+                .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+        }
     }
 }
 

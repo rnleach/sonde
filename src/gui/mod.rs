@@ -30,7 +30,7 @@ pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
-use self::utility::{set_font_size, DrawingArgs};
+use self::utility::DrawingArgs;
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
@@ -111,7 +111,7 @@ trait Drawable: PlotContext + PlotContextExt {
             FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
-        set_font_size(self, config.label_font_size, cr);
+        self.set_font_size(config.label_font_size, cr);
     }
 
     /***********************************************************************************************
@@ -343,7 +343,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let width = xmax - xmin;
         let text_width = cr.text_extents(MESSAGE).width;
         let ratio = 0.75 * width / text_width;
-        set_font_size(self, config.label_font_size * ratio, cr);
+        self.set_font_size(config.label_font_size * ratio, cr);
 
         // Calculate the starting position
         let text_extents = cr.text_extents(MESSAGE);
@@ -594,6 +594,62 @@ trait Drawable: PlotContext + PlotContextExt {
                 start_x += text_extents.x_advance;
             }
         }
+    }
+
+    /***********************************************************************************************
+     *                                     Drawing utilities
+     **********************************************************************************************/
+    fn set_font_size(&self, size_in_pct: f64, cr: &Context) {
+        let height = self.get_device_rect().height();
+
+        let mut font_size = size_in_pct / 100.0 * height;
+        font_size = cr.device_to_user_distance(font_size, 0.0).0;
+
+        // Flip the y-coordinate so it displays the font right side up
+        cr.set_font_matrix(Matrix {
+            xx: 1.0 * font_size,
+            yx: 0.0,
+            xy: 0.0,
+            yy: -1.0 * font_size, // Reflect it to be right side up!
+            x0: 0.0,
+            y0: 0.0,
+        });
+    }
+
+    fn draw_tag(&self, text: &str, location: ScreenCoords, color: Rgba, args: DrawingArgs) {
+        self.prepare_to_make_text(args);
+
+        let cr = args.cr;
+        let config = args.ac.config.borrow();
+
+        // Calculate the box
+        let text_extents = cr.text_extents(text);
+        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+
+        let width: f64 = text_extents.width + 2.0 * padding;
+        let height: f64 = text_extents.height + 2.0 * padding;
+        let leader = height * 2.0 / 3.0;
+        let home_x = location.x + leader + padding;
+        let home_y = location.y - text_extents.height / 2.0;
+
+        // Draw the box
+        cr.move_to(location.x, location.y);
+        cr.rel_line_to(leader, height / 2.0);
+        cr.rel_line_to(width, 0.0);
+        cr.rel_line_to(0.0, -height);
+        cr.rel_line_to(-width, 0.0);
+        cr.rel_line_to(-leader, height / 2.0);
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.fill_preserve();
+        let rgba = color;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+        cr.stroke();
+
+        // Fill with text
+        cr.move_to(home_x, home_y);
+        cr.show_text(text);
     }
 
     /***********************************************************************************************
