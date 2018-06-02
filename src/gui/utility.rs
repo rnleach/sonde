@@ -1,16 +1,12 @@
-use cairo::{Context, Matrix};
+use cairo::Context;
 
 use app::AppContext;
+use app::config::Rgba;
 use coords::{Rect, ScreenCoords, ScreenRect};
-use gui::PlotContext;
 
 // Draw a curve connecting a list of points.
-pub fn plot_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
+pub fn plot_curve_from_points<I>(cr: &Context, line_width_pixels: f64, rgba: Rgba, points: I)
+where
     I: Iterator<Item = ScreenCoords>,
 {
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
@@ -27,8 +23,18 @@ pub fn plot_curve_from_points<I>(
     }
 }
 
+// Draw a dashed line on the graph.
+pub fn plot_dashed_curve_from_points<I>(cr: &Context, line_width_pixels: f64, rgba: Rgba, points: I)
+where
+    I: Iterator<Item = ScreenCoords>,
+{
+    cr.set_dash(&[0.02], 0.0);
+    plot_curve_from_points(cr, line_width_pixels, rgba, points);
+    cr.set_dash(&[], 0.0);
+}
+
 // Draw a filled polygon
-pub fn draw_filled_polygon<I>(cr: &Context, rgba: (f64, f64, f64, f64), points: I)
+pub fn draw_filled_polygon<I>(cr: &Context, rgba: Rgba, points: I)
 where
     I: Iterator<Item = ScreenCoords>,
 {
@@ -46,20 +52,6 @@ where
 
         cr.fill();
     }
-}
-
-// Draw a dashed line on the graph.
-pub fn plot_dashed_curve_from_points<I>(
-    cr: &Context,
-    line_width_pixels: f64,
-    rgba: (f64, f64, f64, f64),
-    points: I,
-) where
-    I: Iterator<Item = ScreenCoords>,
-{
-    cr.set_dash(&[0.02], 0.0);
-    plot_curve_from_points(cr, line_width_pixels, rgba, points);
-    cr.set_dash(&[], 0.0);
 }
 
 pub fn check_overlap_then_add(
@@ -99,21 +91,4 @@ impl<'a, 'b> DrawingArgs<'a, 'b> {
     pub fn new(ac: &'a AppContext, cr: &'b Context) -> Self {
         DrawingArgs { ac, cr }
     }
-}
-
-pub fn set_font_size<T: PlotContext>(pc: &T, size_in_pct: f64, cr: &Context) {
-    let height = pc.get_device_rect().height();
-
-    let mut font_size = size_in_pct / 100.0 * height;
-    font_size = cr.device_to_user_distance(font_size, 0.0).0;
-
-    // Flip the y-coordinate so it displays the font right side up
-    cr.set_font_matrix(Matrix {
-        xx: 1.0 * font_size,
-        yx: 0.0,
-        xy: 0.0,
-        yy: -1.0 * font_size, // Reflect it to be right side up!
-        x0: 0.0,
-        y0: 0.0,
-    });
 }

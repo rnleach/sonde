@@ -149,7 +149,7 @@ impl HasGenericContext for SkewTContext {
 impl PlotContextExt for SkewTContext {}
 
 impl Drawable for SkewTContext {
-    /***********************************************************************************************
+    /********************** *************************************************************************
      * Initialization
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
