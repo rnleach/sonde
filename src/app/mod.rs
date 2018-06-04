@@ -234,7 +234,9 @@ impl AppContext {
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
             ).filter_map(|(p, ws, wd)| {
-                if let (Some(p), Some(s), Some(d)) = (Into::<Option<f64>>::into(p), ws.into(), wd.into()) {
+                if let (Some(p), Some(s), Some(d)) =
+                    (Into::<Option<f64>>::into(p), ws.into(), wd.into())
+                {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {

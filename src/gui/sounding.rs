@@ -536,7 +536,10 @@ impl Drawable for SkewTContext {
                 }
                 results.push((line, config.isobar_rgba));
             }
-            if let (Some(dir), Some(spd)) = (Into::<Option<f64>>::into(dir), Into::<Option<f64>>::into(spd)) {
+            if let (Some(dir), Some(spd)) = (
+                Into::<Option<f64>>::into(dir),
+                Into::<Option<f64>>::into(spd),
+            ) {
                 results.push((format!("{:03.0} {:.0}KT\n", dir, spd), config.wind_rgba));
             }
         }
@@ -551,7 +554,10 @@ impl Drawable for SkewTContext {
         }
 
         if elevation.is_some() && hgt_asl.is_some() {
-            if let (Some(elev), Some(hgt)) = (Into::<Option<f64>>::into(elevation), Into::<Option<f64>>::into(hgt_asl)) {
+            if let (Some(elev), Some(hgt)) = (
+                Into::<Option<f64>>::into(elevation),
+                Into::<Option<f64>>::into(hgt_asl),
+            ) {
                 let color = config.active_readout_line_rgba;
                 let mut line = String::with_capacity(128);
                 line.push_str(&format!(
@@ -901,22 +907,21 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
             TemperatureType::DewPoint => config.dew_point_rgba,
         };
 
-        let profile_data = izip!(pres_data, temp_data)
-            .filter_map(|(pres, temp)| {
-                if let (Some(pressure), Some(temperature)) = (pres.into(), temp.into()) {
-                    if pressure > config::MINP {
-                        let tp_coords = TPCoords {
-                            temperature,
-                            pressure,
-                        };
-                        Some(ac.skew_t.convert_tp_to_screen(tp_coords))
-                    } else {
-                        None
-                    }
+        let profile_data = izip!(pres_data, temp_data).filter_map(|(pres, temp)| {
+            if let (Some(pressure), Some(temperature)) = (pres.into(), temp.into()) {
+                if pressure > config::MINP {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    Some(ac.skew_t.convert_tp_to_screen(tp_coords))
                 } else {
                     None
                 }
-            });
+            } else {
+                None
+            }
+        });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
@@ -1451,9 +1456,13 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
             });
             let deg_f = ::metfor::celsius_to_f(temperature)
                 .map(|t| format!("{:.0}\u{00b0}F/", t))
-                .unwrap_or_else(|_|"".to_owned());
-            ac.skew_t
-                .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+                .unwrap_or_else(|_| "".to_owned());
+            ac.skew_t.draw_tag(
+                &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                pos,
+                color,
+                args,
+            );
         }
     }
 }

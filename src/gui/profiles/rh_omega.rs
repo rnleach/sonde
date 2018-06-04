@@ -522,19 +522,18 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 
-        let profile_data = izip!(pres_data, omega_data)
-            .filter_map(|(p, w)| {
-                if let (Some(p), Some(w)) = (p.into(), w.into()) {
-                    if p > config::MINP {
-                        let wp_coords = WPCoords { w, p };
-                        Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
-                    } else {
-                        None
-                    }
+        let profile_data = izip!(pres_data, omega_data).filter_map(|(p, w)| {
+            if let (Some(p), Some(w)) = (p.into(), w.into()) {
+                if p > config::MINP {
+                    let wp_coords = WPCoords { w, p };
+                    Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
                 } else {
                     None
                 }
-            });
+            } else {
+                None
+            }
+        });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     } else {
