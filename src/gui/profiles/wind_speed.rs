@@ -289,7 +289,7 @@ impl Drawable for WindSpeedContext {
     fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(speed) = vals.speed {
+        if let Some(speed) = Into::<Option<f64>>::into(vals.speed) {
             let spd = speed.round();
             let line = format!("{:.0}kt\n", spd);
             results.push((line, ac.config.borrow().wind_speed_profile_rgba));
@@ -354,8 +354,8 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
         let pres_data = sndg.sounding().get_profile(Pressure);
         let spd_data = sndg.sounding().get_profile(WindSpeed);
         let mut profile = izip!(pres_data, spd_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+            .filter_map(|(p, spd)| {
+                if let (Some(p), Some(s)) = (p.into(), spd.into()) {
                     Some((p, s))
                 } else {
                     None

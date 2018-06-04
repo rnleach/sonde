@@ -311,15 +311,15 @@ impl Drawable for LapseRateContext {
             if let (Some(anal), Some(other_profiles), Some(tgt_pres)) = (
                 ac.get_sounding_for_display(),
                 ac.get_extra_profiles_for_display(),
-                vals.pressure,
+                vals.pressure.into(),
             ) {
                 let pres = anal.sounding().get_profile(Profile::Pressure);
 
                 if config.show_lapse_rate_profile {
                     let lapse_rate = &other_profiles.lapse_rate;
 
-                    if let Some(lr) =
-                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
+                    if let Some(lr) = Into::<Option<f64>>::into(
+                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres))
                     {
                         results.push((
                             format!("{:.1}\u{00b0}C/km\n", lr),
@@ -331,8 +331,8 @@ impl Drawable for LapseRateContext {
                 if config.show_sfc_avg_lapse_rate_profile {
                     let lapse_rate = &other_profiles.sfc_avg_lapse_rate;
 
-                    if let Some(lr) =
-                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
+                    if let Some(lr) = Into::<Option<f64>>::into(
+                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres))
                     {
                         results.push((
                             format!("{:.1}\u{00b0}C/km\n", lr),
@@ -344,8 +344,8 @@ impl Drawable for LapseRateContext {
                 if config.show_ml_avg_lapse_rate_profile {
                     let lapse_rate = &other_profiles.ml_avg_lapse_rate;
 
-                    if let Some(lr) =
-                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres)
+                    if let Some(lr) = Into::<Option<f64>>::into(
+                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres))
                     {
                         results.push((
                             format!("{:.1}\u{00b0}C/km\n", lr),
@@ -422,9 +422,9 @@ fn draw_lapse_rate_profile(args: DrawingArgs) -> bool {
         let pres_data = sndg.get_profile(Pressure);
         let lr_data = &profiles.lapse_rate;
         let mut profile = izip!(pres_data, lr_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
-                    Some((p, s))
+            .filter_map(|(p, lr)| {
+                if let (Some(p), Some(lr)) = (p.into(), lr.into()) {
+                    Some((p, lr))
                 } else {
                     None
                 }
@@ -469,8 +469,8 @@ fn draw_sfc_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
         let pres_data = sndg.get_profile(Pressure);
         let lr_data = &profiles.sfc_avg_lapse_rate;
         let mut profile = izip!(pres_data, lr_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+            .filter_map(|(p, lr)| {
+                if let (Some(p), Some(s)) = (p.into(), lr.into()) {
                     Some((p, s))
                 } else {
                     None
@@ -516,9 +516,9 @@ fn draw_ml_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
         let pres_data = sndg.get_profile(Pressure);
         let lr_data = &profiles.ml_avg_lapse_rate;
         let mut profile = izip!(pres_data, lr_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
-                    Some((p, s))
+            .filter_map(|(p, lr)| {
+                if let (Some(p), Some(lr)) = (p.into(), lr.into()) {
+                    Some((p, lr))
                 } else {
                     None
                 }

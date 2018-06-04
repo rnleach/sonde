@@ -405,7 +405,7 @@ trait Drawable: PlotContext + PlotContextExt {
             return;
         };
 
-        let sample_p = if let Some(sample_p) = vals.pressure {
+        let sample_p = if let Some(sample_p) = vals.pressure.into() {
             sample_p
         } else {
             return;
@@ -976,13 +976,13 @@ trait SlaveProfileDrawable: Drawable {
         cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
 
         for layer in layers {
-            let bottom_press = if let Some(press) = layer.bottom.pressure {
+            let bottom_press = if let Some(press) = layer.bottom.pressure.into() {
                 press
             } else {
                 continue;
             };
 
-            let top_press = if let Some(press) = layer.top.pressure {
+            let top_press = if let Some(press) = layer.top.pressure.into() {
                 press
             } else {
                 continue;

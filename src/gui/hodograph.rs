@@ -226,7 +226,7 @@ impl Drawable for HodoContext {
 
         let (speed, dir) = if let Some(sample) = ac.get_sample() {
             if let (Some(pressure), Some(speed), Some(dir)) =
-                (sample.pressure, sample.speed, sample.direction)
+                (Into::<Option<f64>>::into(sample.pressure), sample.speed.into(), sample.direction.into())
             {
                 if pressure >= config.min_hodo_pressure {
                     (speed, dir)
@@ -274,8 +274,8 @@ fn draw_data(args: DrawingArgs) {
         let speed_data = sndg.get_profile(WindSpeed);
         let dir_data = sndg.get_profile(WindDirection);
 
-        let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|triplet| {
-            if let (Some(p), Some(speed), Some(dir)) = (*triplet.0, *triplet.1, *triplet.2) {
+        let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|(p, spd, dir)| {
+            if let (Some(p), Some(speed), Some(dir)) = (Into::<Option<f64>>::into(p), spd.into(), dir.into()) {
                 if p >= config.min_hodo_pressure {
                     let sd_coords = SDCoords { speed, dir };
                     Some(ac.hodo.convert_sd_to_screen(sd_coords))

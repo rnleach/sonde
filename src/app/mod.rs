@@ -4,6 +4,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use optional::Optioned;
 use sounding_analysis;
 use sounding_analysis::Analysis;
 use sounding_base::{DataRow, Sounding};
@@ -132,8 +133,8 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(Temperature))
-                .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
+                .filter_map(|(p, t)| {
+                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
                             None
                         } else {
@@ -166,8 +167,8 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(DewPoint))
-                .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
+                .filter_map(|(p, t)| {
+                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
                             None
                         } else {
@@ -200,13 +201,13 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
-                .filter_map(|p| {
-                    if let (Some(p), Some(o)) = (*p.0, *p.1) {
+                .filter_map(|(p, omega)| {
+                    if let (Some(p), Some(o)) = (p.into(), omega.into()) {
                         if p < config::MINP {
                             None
                         } else {
                             Some(WPCoords {
-                                w: { f64::max(o.abs(), config::MIN_ABS_W) },
+                                w: { f64::max(f64::abs(o), config::MIN_ABS_W) },
                                 p,
                             })
                         }
@@ -232,8 +233,8 @@ impl AppContext {
                 snd.get_profile(Pressure),
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
-            ).filter_map(|tuple| {
-                if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
+            ).filter_map(|(p, ws, wd)| {
+                if let (Some(p), Some(s), Some(d)) = (Into::<Option<f64>>::into(p), ws.into(), wd.into()) {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {
@@ -316,7 +317,7 @@ impl AppContext {
 
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
-            if let Some(p) = sample.pressure {
+            if let Some(p) = sample.pressure.into() {
                 self.last_sample.set(
                     ::sounding_analysis::linear_interpolate_sounding(
                         self.list.borrow()[self.currently_displayed_index.get()].sounding(),
@@ -424,9 +425,9 @@ impl AppContext {
 
 #[derive(Debug, Default)]
 pub struct ExtraProfiles {
-    pub lapse_rate: Vec<Option<f64>>,
-    pub sfc_avg_lapse_rate: Vec<Option<f64>>,
-    pub ml_avg_lapse_rate: Vec<Option<f64>>,
+    pub lapse_rate: Vec<Optioned<f64>>,
+    pub sfc_avg_lapse_rate: Vec<Optioned<f64>>,
+    pub ml_avg_lapse_rate: Vec<Optioned<f64>>,
 }
 
 impl ExtraProfiles {
