@@ -22,7 +22,7 @@ sounding-bufkit = "^0.7"
 sounding-analysis = "^0.7"
 
 [patch.crates-io]
-optional = {git="https://github.com/rnleach/optional.git", branch="refinto"}
+optional = {git="https://github.com/rnleach/optional.git", branch="master"}
 
 [profile.release]
 lto = true
