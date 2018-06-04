@@ -22,5 +22,4 @@
      - export LD_LIBRARY_PATH="$HOME/local/lib/"
      - cargo build --verbose
      - cargo test --verbose
-     - echo $TRAVIS_BRANCH
-     - test $TRAVIS_BRANCH = master && cargo package --verbose
+     - test $TRAVIS_BRANCH = master && echo "Working on master branch" && cargo package --verbose
