@@ -21,3 +21,5 @@
      - export PKG_CONFIG_PATH="$HOME/local/lib/pkgconfig"
      - export LD_LIBRARY_PATH="$HOME/local/lib/"
      - cargo build --verbose
+     - cargo test --verbose
+     - test $TRAVIS_BRANCH = master && echo "Working on master branch" && cargo package --verbose
