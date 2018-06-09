@@ -416,7 +416,7 @@ impl Drawable for SkewTContext {
                     vt.hour()
                 );
 
-                if let Some(lt) = snd.get_lead_time() {
+                if let Some(lt) = Into::<Option<i32>>::into(snd.get_lead_time()) {
                     temp_string.push_str(&format!(" F{:03}", lt));
                 }
 
@@ -435,7 +435,7 @@ impl Drawable for SkewTContext {
                         location.push_str(", ");
                     }
                 }
-                if let Some(el) = elevation {
+                if let Some(el) = Into::<Option<f64>>::into(elevation) {
                     location.push_str(&format!("{:.0}m ({:.0}ft)", el, el * 3.28084));
                 }
 
@@ -483,7 +483,7 @@ impl Drawable for SkewTContext {
         let elevation = anal.sounding().get_station_info().elevation();
 
         if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            if let Some(t_c) = t_c {
+            if let Some(t_c) = Into::<Option<f64>>::into(t_c) {
                 let mut line = String::with_capacity(10);
                 line.push_str(&format!("{:.0}C", t_c));
                 if dp_c.is_none() && omega.is_none() {
@@ -493,7 +493,7 @@ impl Drawable for SkewTContext {
                 }
                 results.push((line, config.temperature_rgba));
             }
-            if let Some(dp_c) = dp_c {
+            if let Some(dp_c) = Into::<Option<f64>>::into(dp_c) {
                 if t_c.is_some() {
                     results.push(("/".to_owned(), default_color));
                 }
@@ -507,7 +507,7 @@ impl Drawable for SkewTContext {
                 results.push((line, config.dew_point_rgba));
             }
 
-            if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+            if let (Some(t_c), Some(dp_c)) = (t_c.into(), dp_c.into()) {
                 if let Ok(rh) = rh(t_c, dp_c) {
                     let mut line = String::with_capacity(5);
                     line.push_str(&format!(" {:.0}%", 100.0 * rh));
@@ -520,13 +520,13 @@ impl Drawable for SkewTContext {
                 }
             }
 
-            if let Some(omega) = omega {
+            if let Some(omega) = Into::<Option<f64>>::into(omega) {
                 results.push((format!(" {:.1} Pa/s\n", omega), config.omega_rgba));
             }
         }
 
         if pres.is_some() || dir.is_some() || spd.is_some() {
-            if let Some(pres) = pres {
+            if let Some(pres) = Into::<Option<f64>>::into(pres) {
                 let mut line = String::with_capacity(10);
                 line.push_str(&format!("{:.0}hPa", pres));
                 if dir.is_none() && spd.is_none() {
@@ -536,12 +536,15 @@ impl Drawable for SkewTContext {
                 }
                 results.push((line, config.isobar_rgba));
             }
-            if let (Some(dir), Some(spd)) = (dir, spd) {
+            if let (Some(dir), Some(spd)) = (
+                Into::<Option<f64>>::into(dir),
+                Into::<Option<f64>>::into(spd),
+            ) {
                 results.push((format!("{:03.0} {:.0}KT\n", dir, spd), config.wind_rgba));
             }
         }
 
-        if let Some(hgt) = hgt_asl {
+        if let Some(hgt) = Into::<Option<f64>>::into(hgt_asl) {
             let color = config.active_readout_line_rgba;
 
             results.push((
@@ -551,7 +554,10 @@ impl Drawable for SkewTContext {
         }
 
         if elevation.is_some() && hgt_asl.is_some() {
-            if let (Some(elev), Some(hgt)) = (elevation, hgt_asl) {
+            if let (Some(elev), Some(hgt)) = (
+                Into::<Option<f64>>::into(elevation),
+                Into::<Option<f64>>::into(hgt_asl),
+            ) {
                 let color = config.active_readout_line_rgba;
                 let mut line = String::with_capacity(128);
                 line.push_str(&format!(
@@ -901,24 +907,21 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
             TemperatureType::DewPoint => config.dew_point_rgba,
         };
 
-        let profile_data = pres_data
-            .iter()
-            .zip(temp_data.iter())
-            .filter_map(|val_pair| {
-                if let (Some(pressure), Some(temperature)) = (*val_pair.0, *val_pair.1) {
-                    if pressure > config::MINP {
-                        let tp_coords = TPCoords {
-                            temperature,
-                            pressure,
-                        };
-                        Some(ac.skew_t.convert_tp_to_screen(tp_coords))
-                    } else {
-                        None
-                    }
+        let profile_data = izip!(pres_data, temp_data).filter_map(|(pres, temp)| {
+            if let (Some(pressure), Some(temperature)) = (pres.into(), temp.into()) {
+                if pressure > config::MINP {
+                    let tp_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    Some(ac.skew_t.convert_tp_to_screen(tp_coords))
                 } else {
                     None
                 }
-            });
+            } else {
+                None
+            }
+        });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
@@ -1024,7 +1027,7 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_profile: &ParcelProfile, sndg: &
     let cape_layers = sounding_analysis::parcel::cape_layers(&parcel_profile, sndg);
 
     for lyr in cin_layers {
-        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure.into(), lyr.top.pressure.into()) {
             let up_side = izip!(pres_data, parcel_t, env_t)
                 .skip_while(|&(p, _, _)| *p > bottom)
                 .take_while(|&(p, _, _)| *p >= top)
@@ -1056,7 +1059,7 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_profile: &ParcelProfile, sndg: &
     }
 
     for lyr in cape_layers {
-        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure, lyr.top.pressure) {
+        if let (Some(bottom), Some(top)) = (lyr.bottom.pressure.into(), lyr.top.pressure.into()) {
             let up_side = izip!(pres_data, parcel_t, env_t)
                 .skip_while(|&(p, _, _)| *p > bottom)
                 .take_while(|&(p, _, _)| *p >= top)
@@ -1102,7 +1105,7 @@ fn gather_wind_data(
     izip!(pres, dir, spd)
         .filter_map(|tuple| {
             let (p, d, s) = (*tuple.0, *tuple.1, *tuple.2);
-            if let (Some(p), Some(d), Some(s)) = (p, d, s) {
+            if let (Some(p), Some(d), Some(s)) = (p.into(), d.into(), s.into()) {
                 if p > config::MINP {
                     Some((p, d, s))
                 } else {
@@ -1453,9 +1456,13 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
             });
             let deg_f = ::metfor::celsius_to_f(temperature)
                 .map(|t| format!("{:.0}\u{00b0}F/", t))
-                .unwrap_or_else(|_|"".to_owned());
-            ac.skew_t
-                .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+                .unwrap_or_else(|_| "".to_owned());
+            ac.skew_t.draw_tag(
+                &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                pos,
+                color,
+                args,
+            );
         }
     }
 }
