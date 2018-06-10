@@ -311,6 +311,11 @@ impl AppContext {
     fn set_currently_displayed(&self, idx: usize) {
         self.currently_displayed_index.set(idx);
         debug!("currently_displayed_index = {}", idx);
+
+        if log_enabled!(::log::Level::Trace) {
+            self.log_anal_summary();
+        }
+
         self.update_sample();
         self.mark_data_dirty();
         self.update_all_gui();
@@ -421,6 +426,25 @@ impl AppContext {
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
         self.lapse_rate.mark_background_dirty();
+    }
+
+    fn log_anal_summary(&self) {
+        let anal = if let Some(anal) = self.get_sounding_for_display() {
+            anal
+        } else {
+            error!("Could not retrieve analysis!");
+            return;
+        };
+
+        trace!(
+            "Provider analysis for {:?} at index {}.",
+            self.get_source_description(),
+            self.currently_displayed_index.get()
+        );
+
+        for (key, val) in anal.provider_analysis().iter() {
+            trace!("{} => {}", key, val);
+        }
     }
 }
 

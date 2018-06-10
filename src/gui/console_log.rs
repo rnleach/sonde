@@ -1,7 +1,10 @@
 use gtk::{idle_add, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView, TextViewExt};
 use log::{self, Level, LevelFilter, Log, Metadata, Record};
+use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
-use std::sync::mpsc::{sync_channel, TryRecvError};
+use std::sync::mpsc::{sync_channel, TryRecvError, TrySendError};
+use std::sync::Mutex;
 
 use app::AppContextPointer;
 use errors::SondeError;
@@ -26,14 +29,18 @@ pub fn set_up_console_log(acp: &AppContextPointer) -> Result<(), SondeError> {
 
     let (tx, rx) = sync_channel::<String>(256);
 
-    let logger = Box::new(AppLogger(tx));
+    let logger = Box::new(AppLogger::new(tx));
     let acp2 = Rc::clone(acp);
 
     idle_add(move || {
-        match rx.try_recv() {
-            Ok(ref msg) => log_msg(&acp2, msg),
-            Err(TryRecvError::Disconnected) => log_msg(&acp2, "\n\nLOGGER DISCONNECTED\n\n"),
-            Err(TryRecvError::Empty) => {}
+        loop {
+            match rx.try_recv() {
+                Ok(ref msg) => log_msg(&acp2, msg),
+                Err(TryRecvError::Disconnected) => log_msg(&acp2, "\n\nLOGGER DISCONNECTED\n\n"),
+                Err(TryRecvError::Empty) => {
+                    break;
+                }
+            }
         }
 
         ::glib::source::Continue(true)
@@ -45,7 +52,19 @@ pub fn set_up_console_log(acp: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-struct AppLogger(::std::sync::mpsc::SyncSender<String>);
+struct AppLogger {
+    tx: ::std::sync::mpsc::SyncSender<String>,
+    overflow: Mutex<RefCell<VecDeque<String>>>,
+}
+
+impl AppLogger {
+    fn new(tx: ::std::sync::mpsc::SyncSender<String>) -> Self {
+        AppLogger {
+            tx,
+            overflow: Mutex::new(RefCell::new(VecDeque::new())),
+        }
+    }
+}
 
 impl Log for AppLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
@@ -53,16 +72,23 @@ impl Log for AppLogger {
     }
 
     fn log(&self, record: &Record) {
-        eprintln!(
-            "{} - {} - {}\n",
-            record.level(),
-            record.args(),
-            self.enabled(record.metadata())
-        );
         if self.enabled(record.metadata()) {
-            self.0
-                .send(format!("{} - {}\n", record.level(), record.args()))
-                .ok();
+            // put it on the overflow, and then try to empty
+            let overflow = self.overflow.lock().unwrap();
+            let mut overflow = overflow.borrow_mut();
+            overflow.push_back(format!("{} - {}\n", record.level(), record.args()));
+
+            // empty the overflow
+            while let Some(msg) = overflow.pop_front() {
+                match self.tx.try_send(msg) {
+                    Ok(_) => {}
+                    Err(TrySendError::Full(msg_back)) => {
+                        overflow.push_front(msg_back);
+                        break;
+                    }
+                    Err(TrySendError::Disconnected(_)) => {}
+                }
+            }
         }
     }
 
@@ -77,7 +103,18 @@ fn log_msg(acp: &AppContextPointer, msg: &str) {
 
             let start = &buf.get_start_iter();
             buf.apply_tag_by_name("default", start, end);
-            text_area.scroll_to_iter(end, 0.0, false, 1.0, 1.0);
         }
     }
+
+    let acp2 = Rc::clone(acp);
+    idle_add(move || {
+        if let Ok(ta) = acp2.fetch_widget::<TextView>(TEXT_AREA_ID) {
+            if let Some(buf) = ta.get_buffer() {
+                let end = &mut buf.get_end_iter();
+                ta.scroll_to_iter(end, 0.0, false, 1.0, 1.0);
+            }
+        }
+
+        ::glib::source::Continue(false)
+    });
 }
