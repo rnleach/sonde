@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use gdk::{EventMotion, EventScroll};
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use errors::SondeError;

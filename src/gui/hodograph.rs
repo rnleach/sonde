@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
 use coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
@@ -135,7 +135,7 @@ impl Drawable for HodoContext {
                 dir: 360.0,
             });
             for pnts in [
-                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0
+                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0,
             ].iter()
                 .map(|d| {
                     let end_point = self.convert_sd_to_screen(SDCoords {

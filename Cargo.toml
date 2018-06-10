@@ -12,6 +12,7 @@ glib = "^0.5"
 gtk = { version = "^0.4", features = ["v3_18"] }
 itertools = "^0.7"
 lazy_static = "^1"
+log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
 metfor = "^0.2.1"
 optional = "^0.4.3"
 serde = "1.0"

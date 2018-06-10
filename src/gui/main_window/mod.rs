@@ -1,19 +1,20 @@
 use std::rc::Rc;
 
 use gdk::Event;
-use gtk::{self, Menu, MenuItem, Notebook, Paned, Widget, Window, prelude::*};
+use gtk::{self, prelude::*, Menu, MenuItem, Notebook, Paned, Widget, Window};
 
 use app::{AppContext, AppContextPointer};
 use errors::SondeError;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 5] = [
+const TABS: [(&str, &str); 6] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
     ("text_area_container", "Text"),
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),
+    ("console_log_container", "Console"),
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {

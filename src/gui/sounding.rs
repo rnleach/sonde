@@ -8,7 +8,9 @@ use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMe
 use sounding_analysis::{self, Parcel, ParcelProfile};
 use sounding_base::{DataRow, Sounding};
 
-use app::{AppContext, AppContextPointer, config::{self, ParcelType, Rgba}};
+use app::{config::{self, ParcelType, Rgba},
+          AppContext,
+          AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
              ScreenRect, TPCoords, XYCoords};
 use errors::SondeError;

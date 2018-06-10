@@ -3,11 +3,10 @@
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
 use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
           ScrollDirection};
-use gtk::DrawingArea;
-use gtk::prelude::*;
+use gtk::{prelude::*, DrawingArea};
 
-use sounding_analysis::Layer;
 use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
+use sounding_analysis::Layer;
 use sounding_base::DataRow;
 
 use app::config::Rgba;
@@ -16,6 +15,7 @@ use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords
              XYCoords};
 use errors::SondeError;
 
+mod console_log;
 mod control_area;
 mod hodograph;
 mod main_window;
@@ -39,6 +39,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
     main_window::set_up_main_window(&app)?;
+    console_log::set_up_console_log(&app)?;
 
     Ok(())
 }
