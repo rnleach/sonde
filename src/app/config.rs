@@ -481,7 +481,7 @@ pub const ISOTHERMS: [f64; 31] = [
 
 /// Isobars to plot on the chart background.
 pub const ISOBARS: [f64; 9] = [
-    1050.0, 1000.0, 925.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0
+    1050.0, 1000.0, 925.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0,
 ];
 
 /// Isentrops to plot on the chart background.
@@ -530,7 +530,7 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
     56.0,
     60.0,
     68.0,
-//    76.0, // Uncomment this when we can have arrays larger than 32.
+    //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
 pub const ISO_OMEGA: [f64; 21] = [
@@ -544,7 +544,7 @@ pub const ISO_SPEED: [f64; 25] = [
 ];
 
 pub const PERCENTS: [f64; 11] = [
-    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0
+    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0,
 ];
 
 pub const PROFILE_SPEEDS: [f64; 20] = [

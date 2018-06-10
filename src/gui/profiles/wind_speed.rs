@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use gdk::{EventMotion, EventScroll};
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
 use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
              ScreenRect, XYCoords};
 use errors::SondeError;
@@ -211,12 +211,10 @@ impl Drawable for WindSpeedContext {
     }
 
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
-        vec![
-            (
-                "Wind speed".to_owned(),
-                ac.config.borrow().wind_speed_profile_rgba,
-            ),
-        ]
+        vec![(
+            "Wind speed".to_owned(),
+            ac.config.borrow().wind_speed_profile_rgba,
+        )]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {

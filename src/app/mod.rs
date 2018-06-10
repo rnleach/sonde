@@ -290,13 +290,8 @@ impl AppContext {
             } else {
                 curr_index = 0;
             }
-            self.currently_displayed_index.set(curr_index);
-            self.update_sample();
+            self.set_currently_displayed(curr_index);
         }
-
-        self.mark_data_dirty();
-
-        self.update_all_gui();
     }
 
     /// Set the previous one as the one to display, or wrap to the end.
@@ -308,12 +303,16 @@ impl AppContext {
             } else {
                 curr_index = self.list.borrow().len() - 1;
             }
-            self.currently_displayed_index.set(curr_index);
-            self.update_sample();
+            self.set_currently_displayed(curr_index);
         }
+    }
 
+    #[inline]
+    fn set_currently_displayed(&self, idx: usize) {
+        self.currently_displayed_index.set(idx);
+        debug!("currently_displayed_index = {}", idx);
+        self.update_sample();
         self.mark_data_dirty();
-
         self.update_all_gui();
     }
 

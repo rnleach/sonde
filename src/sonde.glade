@@ -202,37 +202,13 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkNotebook" id="control_area">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                  </object>
-                  <packing>
-                    <property name="position">3</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
-                  </packing>
-                </child>
-                <child type="tab">
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Controls</property>
-                  </object>
-                  <packing>
-                    <property name="position">3</property>
-                    <property name="tab_fill">False</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkBox" id="profiles_area_container">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
                       <object class="GtkDrawingArea" id="rh_omega_area">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
                         <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
@@ -247,7 +223,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="cloud_area">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
                         <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
@@ -262,7 +238,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="wind_speed_area">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
                         <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
@@ -277,7 +253,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="lapse_rate_area">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can_focus">False</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
                         <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
@@ -307,9 +283,7 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="position">4</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
                 <child type="tab">
@@ -319,10 +293,57 @@
                     <property name="label" translatable="yes">Profiles</property>
                   </object>
                   <packing>
+                    <property name="position">2</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkNotebook" id="control_area">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Controls</property>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="console_log_container">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkTextView" id="console_log">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="editable">False</property>
+                        <property name="monospace">True</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Console</property>
+                  </object>
+                  <packing>
                     <property name="position">4</property>
                     <property name="tab_fill">False</property>
-                    <property name="reorderable">True</property>
-                    <property name="detachable">True</property>
                   </packing>
                 </child>
               </object>
