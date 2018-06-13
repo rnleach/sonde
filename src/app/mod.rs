@@ -310,7 +310,6 @@ impl AppContext {
     #[inline]
     fn set_currently_displayed(&self, idx: usize) {
         self.currently_displayed_index.set(idx);
-        debug!("currently_displayed_index = {}", idx);
 
         if log_enabled!(::log::Level::Trace) {
             self.log_anal_summary();
@@ -436,15 +435,23 @@ impl AppContext {
             return;
         };
 
-        trace!(
-            "Provider analysis for {:?} at index {}.",
-            self.get_source_description(),
-            self.currently_displayed_index.get()
-        );
-
-        for (key, val) in anal.provider_analysis().iter() {
-            trace!("{} => {}", key, val);
+        if let Some(pwat) = anal.provider_analysis().get("PWAT") {
+            let snd = anal.sounding();
+            sounding_analysis::indexes::precipitable_water(snd).and_then(|pw|{
+                trace!("(Bufkit,Sonde,Diff,%) => ({:5.2}, {:5.2}, {:5.2}, {:6.2}%)", pwat, pw, pwat - pw, (pwat-pw)/pwat*100.0);
+                Ok(())
+            }).ok();
         }
+
+        // trace!(
+        //     "Provider analysis for {:?} at index {}.",
+        //     self.get_source_description(),
+        //     self.currently_displayed_index.get()
+        // );
+    
+        // for (key, val) in anal.provider_analysis().iter() {
+        //     trace!("{} => {}", key, val);
+        // }
     }
 }
 
