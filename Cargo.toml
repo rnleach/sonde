@@ -13,7 +13,7 @@ gtk = { version = "^0.4", features = ["v3_18"] }
 itertools = "^0.7"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
-metfor = "^0.2.1"
+metfor = "^0.3.0"
 optional = "^0.4.3"
 serde = "1.0"
 serde_derive = "^1.0"
@@ -24,7 +24,7 @@ sounding-analysis = "^0.7.1"
 
 [patch.crates-io]
 optional = {git="https://github.com/rnleach/optional.git", branch="master"}
-sounding-analysis = {git="https://github.com/rnleach/sounding-analysis.git", branch="dev"}
+sounding-analysis = {path="../sounding-analysis"}
 
 [profile.release]
 lto = true
