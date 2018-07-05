@@ -430,11 +430,10 @@ impl AppContext {
     }
 
     fn log_anal_summary(&self) {
-        use sounding_analysis::ProfileIndex::*;
         use sounding_analysis::ParcelIndex::*;
 
-        // const IDX_ENUM: sounding_analysis::ProfileIndex = Showalter;
-        const IDX_KEY: &str = "LI";
+        const IDX_ENUM: sounding_analysis::ParcelIndex = CAPE;
+        const IDX_KEY: &str = "CAPE";
 
         let anal = if let Some(anal) = self.get_sounding_for_display() {
             anal
@@ -453,18 +452,18 @@ impl AppContext {
                                 sounding_analysis::ParcelAnalysis::create(pcl, anal.sounding())
                                     .ok()
                                     .and_then(|pa|{
-                                        pa.get_index(LI)
+                                        pa.get_index(IDX_ENUM)
                                     })
                             })
                         });
 
-
                         trace!(
-                            "LI: {} SFC: {:?} ML: {:?} MU: {:?} FST_ROW: {:?}",
+                            "{} {} SFC: {:?} ML: {:?} MU: {:?} FST_ROW: {:?}",
+                            IDX_KEY,
                             val,
-                            sfc_pa.get_index(LI),
-                            ml_pa.get_index(LI),
-                            mu_pa.get_index(LI),
+                            sfc_pa.get_index(IDX_ENUM),
+                            ml_pa.get_index(IDX_ENUM),
+                            mu_pa.get_index(IDX_ENUM),
                             fst_row,
                         );
                         Some(())
