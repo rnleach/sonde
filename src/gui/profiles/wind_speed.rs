@@ -7,8 +7,10 @@ use gtk::DrawingArea;
 use sounding_base::DataRow;
 
 use app::{config, config::Rgba, AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
-             ScreenRect, XYCoords};
+use coords::{
+    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords, ScreenRect,
+    XYCoords,
+};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};

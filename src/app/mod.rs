@@ -443,17 +443,14 @@ impl AppContext {
         };
 
         if let Some(val) = anal.provider_analysis().get(IDX_KEY) {
-            anal.get_surface_parcel_analysis().and_then(|sfc_pa|{
-                anal.get_mixed_layer_parcel_analysis().and_then(|ml_pa|{
-                    anal.get_most_unstable_parcel_analysis().and_then(|mu_pa|{
-
-                        let fst_row = anal.sounding().get_data_row(1).and_then(|dr|{
-                            sounding_analysis::Parcel::from_datarow(dr).and_then(|pcl|{
+            anal.get_surface_parcel_analysis().and_then(|sfc_pa| {
+                anal.get_mixed_layer_parcel_analysis().and_then(|ml_pa| {
+                    anal.get_most_unstable_parcel_analysis().and_then(|mu_pa| {
+                        let fst_row = anal.sounding().get_data_row(1).and_then(|dr| {
+                            sounding_analysis::Parcel::from_datarow(dr).and_then(|pcl| {
                                 sounding_analysis::ParcelAnalysis::create(pcl, anal.sounding())
                                     .ok()
-                                    .and_then(|pa|{
-                                        pa.get_index(IDX_ENUM)
-                                    })
+                                    .and_then(|pa| pa.get_index(IDX_ENUM))
                             })
                         });
 
@@ -471,23 +468,23 @@ impl AppContext {
                 })
             });
 
-            // if let Some(my_val) = anal.get_profile_index(IDX_ENUM) {
-            //     trace!(
-            //         "(Bufkit,Sonde,Diff,%) => ({:5.2}, {:5.2}, {:5.2}, {:6.2}%)",
-            //         val,
-            //         my_val,
-            //         val - my_val,
-            //         (val - my_val) / val * 100.0
-            //     );
-            // } else {
-            //  trace!("Analysis value was None for {:?}, but the provider had {}", IDX_ENUM, val);
-            // }
-         } else {
-             trace!("Error loading {} from provider analysis.\n\n", IDX_KEY);
-             for (key, val) in anal.provider_analysis().iter() {
-                 trace!("{} => {}", key, val);
-             }
-         }
+        // if let Some(my_val) = anal.get_profile_index(IDX_ENUM) {
+        //     trace!(
+        //         "(Bufkit,Sonde,Diff,%) => ({:5.2}, {:5.2}, {:5.2}, {:6.2}%)",
+        //         val,
+        //         my_val,
+        //         val - my_val,
+        //         (val - my_val) / val * 100.0
+        //     );
+        // } else {
+        //  trace!("Analysis value was None for {:?}, but the provider had {}", IDX_ENUM, val);
+        // }
+        } else {
+            trace!("Error loading {} from provider analysis.\n\n", IDX_KEY);
+            for (key, val) in anal.provider_analysis().iter() {
+                trace!("{} => {}", key, val);
+            }
+        }
 
         // trace!(
         //     "Provider analysis for {:?} at index {}.",

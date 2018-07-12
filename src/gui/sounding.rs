@@ -8,15 +8,19 @@ use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMe
 use sounding_analysis::{self, Parcel, ParcelProfile};
 use sounding_base::{DataRow, Sounding};
 
-use app::{config::{self, ParcelType, Rgba},
-          AppContext,
-          AppContextPointer};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
-             ScreenRect, TPCoords, XYCoords};
+use app::{
+    config::{self, ParcelType, Rgba}, AppContext, AppContextPointer,
+};
+use coords::{
+    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
+    TPCoords, XYCoords,
+};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext};
-use gui::utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
-                   plot_dashed_curve_from_points};
+use gui::utility::{
+    check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
+    plot_dashed_curve_from_points,
+};
 use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 
 pub struct SkewTContext {

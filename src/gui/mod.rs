@@ -1,8 +1,10 @@
 //! Module for the GUI components of the application.
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-          ScrollDirection};
+use gdk::{
+    keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
+    ScrollDirection,
+};
 use gtk::{prelude::*, DrawingArea};
 
 use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
@@ -11,8 +13,9 @@ use sounding_base::DataRow;
 
 use app::config::Rgba;
 use app::{AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
-             XYCoords};
+use coords::{
+    convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords,
+};
 use errors::SondeError;
 
 mod console_log;
@@ -317,7 +320,9 @@ trait Drawable: PlotContext + PlotContextExt {
 
             cr.move_to(
                 upper_left.x + padding_x,
-                upper_left.y - padding_y - font_extents.ascent
+                upper_left.y
+                    - padding_y
+                    - font_extents.ascent
                     - f64::from(line_num - 1) * font_extents.height,
             );
 

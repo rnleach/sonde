@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
-use gtk::{DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt,
-          FileFilter, FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window};
+use gtk::{
+    DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt, FileFilter,
+    FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
+};
 
 use sounding_bufkit::BufkitFile;
 
