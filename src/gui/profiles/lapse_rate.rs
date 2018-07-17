@@ -19,6 +19,7 @@ use gui::{Drawable, SlaveProfileDrawable};
 
 const LR_RANGE: f64 = config::MAX_LAPSE_RATE - config::MIN_LAPSE_RATE;
 
+#[derive(Debug)]
 pub struct LapseRateContext {
     generic: GenericContext,
 }
@@ -216,13 +217,6 @@ impl Drawable for LapseRateContext {
             ));
         }
 
-        if config.show_ml_avg_lapse_rate_profile {
-            to_return.push((
-                "ML to * lapse rate".to_owned(),
-                config.ml_avg_lapse_rate_profile_rgba,
-            ));
-        }
-
         to_return
     }
 
@@ -291,7 +285,6 @@ impl Drawable for LapseRateContext {
 
         let mut some_data = draw_lapse_rate_profile(args);
         some_data = draw_sfc_avg_lapse_rate_profile(args) || some_data;
-        some_data = draw_ml_avg_lapse_rate_profile(args) || some_data;
 
         if some_data {
             ac.lapse_rate.set_has_data(true);
@@ -342,19 +335,6 @@ impl Drawable for LapseRateContext {
                         ));
                     }
                 }
-
-                if config.show_ml_avg_lapse_rate_profile {
-                    let lapse_rate = &other_profiles.ml_avg_lapse_rate;
-
-                    if let Some(lr) = Into::<Option<f64>>::into(
-                        sounding_analysis::linear_interpolate(pres, lapse_rate, tgt_pres),
-                    ) {
-                        results.push((
-                            format!("{:.1}\u{00b0}C/km\n", lr),
-                            config.ml_avg_lapse_rate_profile_rgba,
-                        ));
-                    }
-                }
             }
         }
 
@@ -382,7 +362,8 @@ impl Drawable for LapseRateContext {
             self.set_last_cursor_position(Some(position));
             let sp_position = self.convert_device_to_lp(position);
             let sample = ::sounding_analysis::linear_interpolate_sounding(
-                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
+                // ac.plottable() call ensures unwrap below panic
+                &ac.get_sounding_for_display().unwrap().sounding(), 
                 sp_position.press,
             );
             ac.set_sample(sample.ok());
@@ -490,53 +471,6 @@ fn draw_sfc_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
             cr,
             config.profile_line_width,
             config.sfc_avg_lapse_rate_profile_rgba,
-            profile,
-        );
-
-        true
-    } else {
-        false
-    }
-}
-
-fn draw_ml_avg_lapse_rate_profile(args: DrawingArgs) -> bool {
-    let (ac, cr) = (args.ac, args.cr);
-    let config = ac.config.borrow();
-
-    if !config.show_ml_avg_lapse_rate_profile {
-        return false;
-    }
-
-    if let (Some(anal), Some(profiles)) = (
-        ac.get_sounding_for_display(),
-        ac.get_extra_profiles_for_display(),
-    ) {
-        use sounding_base::Profile::Pressure;
-
-        let sndg = anal.sounding();
-
-        let pres_data = sndg.get_profile(Pressure);
-        let lr_data = &profiles.ml_avg_lapse_rate;
-        let mut profile = izip!(pres_data, lr_data)
-            .filter_map(|(p, lr)| {
-                if let (Some(p), Some(lr)) = (p.into(), lr.into()) {
-                    Some((p, lr))
-                } else {
-                    None
-                }
-            })
-            .take_while(|&(press, _)| press >= config::MINP)
-            .filter_map(|(press, lapse_rate)| {
-                Some(
-                    ac.lapse_rate
-                        .convert_lp_to_screen(LPCoords { lapse_rate, press }),
-                )
-            });
-
-        plot_curve_from_points(
-            cr,
-            config.profile_line_width,
-            config.ml_avg_lapse_rate_profile_rgba,
             profile,
         );
 
