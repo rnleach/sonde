@@ -1,4 +1,3 @@
-
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
@@ -17,11 +16,7 @@ pub use self::wind_speed::WindSpeedContext;
 pub fn draw_profiles(acp: &AppContext) {
     let config = acp.config.borrow();
 
-    const DRAWING_AREAS: [&str; 3] = [
-        "rh_omega_area",
-        "cloud_area",
-        "wind_speed_area",
-    ];
+    const DRAWING_AREAS: [&str; 3] = ["rh_omega_area", "cloud_area", "wind_speed_area"];
 
     let do_draw = [
         config.show_rh || config.show_omega,

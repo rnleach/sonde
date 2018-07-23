@@ -7,8 +7,7 @@ use gdk::{
 };
 use gtk::{prelude::*, DrawingArea};
 
-use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
-use sounding_analysis::Layer;
+use sounding_analysis::{self, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft, Layer};
 use sounding_base::DataRow;
 
 use app::config::Rgba;
@@ -915,7 +914,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match ::sounding_analysis::layers::dendritic_snow_zone(snd.sounding()) {
+            let layers = match sounding_analysis::dendritic_snow_zone(snd.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -934,7 +933,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match ::sounding_analysis::layers::hail_growth_zone(snd.sounding()) {
+            let layers = match sounding_analysis::hail_growth_zone(snd.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };

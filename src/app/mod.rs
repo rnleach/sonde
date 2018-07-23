@@ -437,22 +437,13 @@ impl AppContext {
             anal.get_surface_parcel_analysis().and_then(|sfc_pa| {
                 anal.get_mixed_layer_parcel_analysis().and_then(|ml_pa| {
                     anal.get_most_unstable_parcel_analysis().and_then(|mu_pa| {
-                        let fst_row = anal.sounding().get_data_row(1).and_then(|dr| {
-                            sounding_analysis::Parcel::from_datarow(dr).and_then(|pcl| {
-                                sounding_analysis::ParcelAnalysis::create(pcl, anal.sounding())
-                                    .ok()
-                                    .and_then(|pa| pa.get_index(IDX_ENUM))
-                            })
-                        });
-
                         trace!(
-                            "{} {} SFC: {:?} ML: {:?} MU: {:?} FST_ROW: {:?}",
+                            "{} {} SFC: {:?} ML: {:?} MU: {:?}",
                             IDX_KEY,
                             val,
                             sfc_pa.get_index(IDX_ENUM),
                             ml_pa.get_index(IDX_ENUM),
                             mu_pa.get_index(IDX_ENUM),
-                            fst_row,
                         );
                         Some(())
                     })
@@ -492,7 +483,7 @@ impl AppContext {
 #[derive(Debug, Default)]
 pub struct ExtraProfiles {
     // pub lapse_rate: Vec<Optioned<f64>>,
-    // pub sfc_avg_lapse_rate: Vec<Optioned<f64>>,
+// pub sfc_avg_lapse_rate: Vec<Optioned<f64>>,
 }
 
 impl ExtraProfiles {
