@@ -6,7 +6,7 @@ use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
 use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelIndex, ParcelProfile};
-use sounding_base::{DataRow, Sounding};
+use sounding_base::DataRow;
 
 use app::{
     config::{self, ParcelType, Rgba}, AppContext, AppContextPointer,
@@ -975,24 +975,21 @@ fn draw_data_overlays(args: DrawingArgs) {
 
         if config.show_parcel_profile {
             match config.parcel_type {
-                Surface => sounding_analysis::surface_parcel(sndg),
-                MixedLayer => sounding_analysis::mixed_layer_parcel(sndg),
-                MostUnstable => sounding_analysis::most_unstable_parcel(sndg),
-            }.ok()
-            // FIXME: get these from analysis
-                .and_then(|parcel| sounding_analysis::lift_parcel(parcel, sndg).ok())
-                .and_then(|p_analysis| {
-                    let color = config.parcel_rgba;
-                    let p_profile = p_analysis.get_profile();
+                Surface => sndg_anal.get_surface_parcel_analysis(),
+                MixedLayer => sndg_anal.get_mixed_layer_parcel_analysis(),
+                MostUnstable => sndg_anal.get_most_unstable_parcel_analysis(),
+            }.and_then(|p_analysis| {
+                let color = config.parcel_rgba;
+                let p_profile = p_analysis.get_profile();
 
-                    draw_parcel_profile(args, &p_profile, color);
+                draw_parcel_profile(args, &p_profile, color);
 
-                    if config.fill_parcel_areas {
-                        draw_cape_cin_fill(args, &p_analysis, sndg);
-                    }
+                if config.fill_parcel_areas {
+                    draw_cape_cin_fill(args, &p_analysis);
+                }
 
-                    Some(())
-                });
+                Some(())
+            });
         }
 
         if config.show_downburst {
@@ -1031,7 +1028,7 @@ fn draw_data_overlays(args: DrawingArgs) {
     }
 }
 
-fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis, _sndg: &Sounding) {
+fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     let cape = match parcel_analysis.get_index(ParcelIndex::CAPE) {
         Some(cape) => cape,
         None => return,
