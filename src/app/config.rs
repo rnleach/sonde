@@ -103,6 +103,14 @@ pub struct Config {
     pub show_inversion_mix_down: bool,
     /// Inversion mix downs color
     pub inversion_mix_down_rgba: Rgba,
+    /// Show the downburst profile
+    pub show_downburst: bool,
+    /// Downburst profile color
+    pub downburst_rgba: Rgba,
+    /// Fill the DCAPE area
+    pub fill_dcape_area: bool,
+    /// DCAPE area fill color
+    pub dcape_area_color: Rgba,
 
     //
     // General profile configuration items
@@ -303,6 +311,10 @@ impl Default for Config {
             parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),
             show_inversion_mix_down: true,
             inversion_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
+            show_downburst: true,
+            downburst_rgba: (0.0, 0.6, 0.0, 1.0),
+            fill_dcape_area: true,
+            dcape_area_color: (0.0, 0.6, 0.0, 0.5),
 
             //
             // General profile configuration items

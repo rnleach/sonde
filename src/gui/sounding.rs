@@ -5,7 +5,7 @@ use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 
-use sounding_analysis::{self, Parcel, ParcelAnalysis, ParcelIndex, ParcelProfile};
+use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelIndex, ParcelProfile};
 use sounding_base::{DataRow, Sounding};
 
 use app::{
@@ -843,6 +843,8 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     make_heading!(menu, "Parcel Options");
     make_check_item!(menu, "Show profile", acp, show_parcel_profile);
     make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
+    make_check_item!(menu, "Show downburst", acp, show_downburst);
+    make_check_item!(menu, "Fill downburst", acp, fill_dcape_area);
 
     menu.append(&SeparatorMenuItem::new());
 
@@ -968,8 +970,8 @@ fn draw_data_overlays(args: DrawingArgs) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(sndg_anal) = ac.get_sounding_for_display() {
+        let sndg = sndg_anal.sounding();
 
         if config.show_parcel_profile {
             match config.parcel_type {
@@ -977,6 +979,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 MixedLayer => sounding_analysis::mixed_layer_parcel(sndg),
                 MostUnstable => sounding_analysis::most_unstable_parcel(sndg),
             }.ok()
+            // FIXME: get these from analysis
                 .and_then(|parcel| sounding_analysis::lift_parcel(parcel, sndg).ok())
                 .and_then(|p_analysis| {
                     let color = config.parcel_rgba;
@@ -992,6 +995,10 @@ fn draw_data_overlays(args: DrawingArgs) {
                 });
         }
 
+        if config.show_downburst {
+            draw_downburst(args, &sndg_anal);
+        }
+
         if config.show_inversion_mix_down {
             sounding_analysis::sfc_based_inversion(sndg)
                 .ok()
@@ -999,7 +1006,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .map(|lyr| lyr.top)
                 .and_then(Parcel::from_datarow)
                 .and_then(|parcel| {
-                    sounding_analysis::descend_dry(parcel, sndg).ok()
+                    sounding_analysis::mix_down(parcel, sndg).ok()
                 })
                 .and_then(|parcel_profile| {
                     let color = config.inversion_mix_down_rgba;
@@ -1135,6 +1142,43 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis, _sndg
     let polygon_rgba = config.parcel_positive_rgba;
 
     draw_filled_polygon(cr, polygon_rgba, polygon);
+}
+
+fn draw_downburst(args: DrawingArgs, sounding_analysis: &Analysis) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    let parcel_profile = if let Some(pp) = sounding_analysis.get_downburst_profile() {
+        pp
+    } else {
+        return;
+    };
+
+    let color = config.downburst_rgba;
+    draw_parcel_profile(args, parcel_profile, color);
+
+    if config.fill_dcape_area {
+        let pres_data = &parcel_profile.pressure;
+        let parcel_t = &parcel_profile.parcel_t;
+        let env_t = &parcel_profile.environment_t;
+
+        let up_side = izip!(pres_data, env_t);
+        let down_side = izip!(pres_data, parcel_t).rev();
+
+        let polygon = up_side.chain(down_side);
+
+        let polygon = polygon.map(|(&pressure, &temperature)| {
+            let tp_coords = TPCoords {
+                temperature,
+                pressure,
+            };
+            ac.skew_t.convert_tp_to_screen(tp_coords)
+        });
+
+        let polygon_rgba = config.dcape_area_color;
+
+        draw_filled_polygon(cr, polygon_rgba, polygon);
+    }
 }
 
 fn gather_wind_data(
@@ -1480,7 +1524,7 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
         let sndg = anal.sounding();
 
         // build the parcel profile
-        let profile = if let Ok(profile) = sounding_analysis::descend_dry(sample_parcel, sndg) {
+        let profile = if let Ok(profile) = sounding_analysis::mix_down(sample_parcel, sndg) {
             profile
         } else {
             return;
