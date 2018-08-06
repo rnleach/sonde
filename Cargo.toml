@@ -23,7 +23,6 @@ sounding-bufkit = "^0.8.0"
 sounding-analysis = "^0.8.0"
 
 [patch.crates-io]
-optional = {git="https://github.com/rnleach/optional.git", branch="master"}
 sounding-analysis = {git="https://github.com/rnleach/sounding-analysis.git", branch="dev"}
 sounding-bufkit = {git="https://github.com/rnleach/sounding-bufkit.git", branch="dev"}
 
