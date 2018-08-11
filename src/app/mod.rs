@@ -350,15 +350,15 @@ impl AppContext {
     }
 
     /// Get the extra profiles to draw.
-    pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
-        if self.plottable() {
-            let shared_ptr =
-                Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
-            Some(shared_ptr)
-        } else {
-            None
-        }
-    }
+    // pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
+    //     if self.plottable() {
+    //         let shared_ptr =
+    //             Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
+    //         Some(shared_ptr)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     /// Set the source name
     pub fn set_source_description(&self, new_name: Option<String>) {
