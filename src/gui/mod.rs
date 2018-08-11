@@ -906,7 +906,7 @@ trait SlaveProfileDrawable: Drawable {
         Inhibit(false)
     }
 
-    fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
+    fn draw_dendritic_snow_growth_zone(&self, args: DrawingArgs) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_dendritic_zone {
