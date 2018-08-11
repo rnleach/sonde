@@ -179,7 +179,7 @@ impl Drawable for CloudContext {
         }
 
         self.draw_hail_growth_zone(args);
-        self.draw_dendtritic_snow_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
         self.draw_warm_layer_aloft(args);
     }
 
@@ -189,7 +189,8 @@ impl Drawable for CloudContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
             }
@@ -197,7 +198,8 @@ impl Drawable for CloudContext {
 
         // Draw percent values
         for line in config::CLOUD_PERCENT_PNTS.iter() {
-            let pnts = line.iter()
+            let pnts = line
+                .iter()
                 .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
@@ -268,6 +270,8 @@ impl Drawable for CloudContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_wet_bulb_zero_levels(args);
+        self.draw_freezing_levels(args);
         draw_cloud_profile(args);
     }
 

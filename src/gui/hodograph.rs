@@ -92,7 +92,8 @@ impl Drawable for HodoContext {
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
         for pnts in config::ISO_SPEED_PNTS.iter() {
-            let mut pnts = pnts.iter()
+            let mut pnts = pnts
+                .iter()
                 .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
 
             if let Some(pnt) = pnts.by_ref().next() {
@@ -120,7 +121,8 @@ impl Drawable for HodoContext {
 
         if config.show_iso_speed {
             for pnts in config::ISO_SPEED_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(
                     cr,

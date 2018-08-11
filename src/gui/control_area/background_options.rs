@@ -74,6 +74,13 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
         show_freezing_line,
         freezing_line_color
     );
+    build_config_color_and_check!(
+        lines_box,
+        "Wet Bulb Zero Line",
+        acp,
+        show_wet_bulb_zero_line,
+        wet_bulb_zero_line_color
+    );
 
     lines_frame
 }
