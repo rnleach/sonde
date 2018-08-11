@@ -189,7 +189,8 @@ impl Drawable for CloudContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
             }
@@ -197,7 +198,8 @@ impl Drawable for CloudContext {
 
         // Draw percent values
         for line in config::CLOUD_PERCENT_PNTS.iter() {
-            let pnts = line.iter()
+            let pnts = line
+                .iter()
                 .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }

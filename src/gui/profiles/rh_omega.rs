@@ -212,7 +212,8 @@ impl Drawable for RHOmegaContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
             }
@@ -269,7 +270,8 @@ impl Drawable for RHOmegaContext {
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.rh_omega
+            } = ac
+                .rh_omega
                 .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
             xpos -= extents.width / 2.0; // Center
             ypos -= extents.height / 2.0; // Center

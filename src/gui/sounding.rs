@@ -9,7 +9,8 @@ use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelIndex, Par
 use sounding_base::DataRow;
 
 use app::{
-    config::{self, ParcelType, Rgba}, AppContext, AppContextPointer,
+    config::{self, ParcelType, Rgba},
+    AppContext, AppContextPointer,
 };
 use coords::{
     convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
@@ -220,7 +221,8 @@ impl Drawable for SkewTContext {
         // Draw isentrops
         if config.show_isentrops {
             for pnts in config::ISENTROP_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(
                     cr,
@@ -234,7 +236,8 @@ impl Drawable for SkewTContext {
         // Draw theta-e lines
         if config.show_iso_theta_e {
             for pnts in config::ISO_THETA_E_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(
                     cr,
@@ -248,7 +251,8 @@ impl Drawable for SkewTContext {
         // Draw mixing ratio lines
         if config.show_iso_mixing_ratio {
             for pnts in config::ISO_MIXING_RATIO_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_dashed_curve_from_points(
                     cr,
@@ -262,7 +266,8 @@ impl Drawable for SkewTContext {
         // Draw isotherms
         if config.show_isotherms {
             for pnts in config::ISOTHERM_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|tp_coords| self.convert_xy_to_screen(*tp_coords));
                 plot_curve_from_points(
                     cr,
@@ -276,7 +281,8 @@ impl Drawable for SkewTContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
 
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
@@ -295,7 +301,8 @@ impl Drawable for SkewTContext {
                     pressure: config::MINP,
                 },
             ];
-            let pnts = pnts.iter()
+            let pnts = pnts
+                .iter()
                 .map(|tp_coords| self.convert_tp_to_screen(*tp_coords));
             plot_curve_from_points(
                 cr,
@@ -1250,15 +1257,11 @@ impl WindBarbConfig {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
-        let (shaft_length, barb_length) = cr.device_to_user_distance(
-            config.wind_barb_shaft_length,
-            -config.wind_barb_barb_length,
-        );
+        let (shaft_length, barb_length) = cr
+            .device_to_user_distance(config.wind_barb_shaft_length, -config.wind_barb_barb_length);
 
-        let (dot_size, pennant_width) = cr.device_to_user_distance(
-            config.wind_barb_dot_radius,
-            -config.wind_barb_pennant_width,
-        );
+        let (dot_size, pennant_width) = cr
+            .device_to_user_distance(config.wind_barb_dot_radius, -config.wind_barb_pennant_width);
         let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
 
         let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();

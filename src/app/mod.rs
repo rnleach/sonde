@@ -96,10 +96,12 @@ impl AppContext {
         use app::config;
         use sounding_base::Profile::*;
 
-        *self.list.borrow_mut() = src.into_iter()
+        *self.list.borrow_mut() = src
+            .into_iter()
             .map(|anal| Rc::new(anal.fill_in_missing_analysis()))
             .collect();
-        *self.extra_profiles.borrow_mut() = self.list
+        *self.extra_profiles.borrow_mut() = self
+            .list
             .borrow()
             .iter()
             .map(|anal| ExtraProfiles::new(anal.sounding()))
@@ -127,7 +129,8 @@ impl AppContext {
         let snd_list = snd_list.iter().map(|anal| anal.sounding());
 
         for snd in snd_list {
-            for pair in snd.get_profile(Pressure)
+            for pair in snd
+                .get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(Temperature))
                 .filter_map(|(p, t)| {
@@ -161,7 +164,8 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.get_profile(Pressure)
+            for pair in snd
+                .get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(DewPoint))
                 .filter_map(|(p, t)| {
@@ -195,7 +199,8 @@ impl AppContext {
                 }
             }
 
-            for pair in snd.get_profile(Pressure)
+            for pair in snd
+                .get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
                 .filter_map(|(p, omega)| {

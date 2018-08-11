@@ -61,7 +61,8 @@ pub fn check_overlap_then_add(
     plot_edges: &ScreenRect,
     label_pair: (String, ScreenRect),
 ) {
-    let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+    let padding = cr
+        .device_to_user_distance(ac.config.borrow().label_padding, 0.0)
         .0;
     let padded_rect = label_pair.1.add_padding(padding);
 
