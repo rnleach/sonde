@@ -268,6 +268,8 @@ impl Drawable for CloudContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_wet_bulb_zero_levels(args);
+        self.draw_freezing_levels(args);
         draw_cloud_profile(args);
     }
 

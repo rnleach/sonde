@@ -195,6 +195,12 @@ pub struct Config {
     pub freezing_line_color: Rgba,
     /// Show or hide freezing line
     pub show_freezing_line: bool,
+    /// Line width for wet bulb zero line
+    pub wet_bulb_zero_line_width: f64,
+    /// Color for wet bulb zero line
+    pub wet_bulb_zero_line_color: Rgba,
+    /// Show or hide wet bulb zero line
+    pub show_wet_bulb_zero_line: bool,
     /// Color used for isotherms
     pub isotherm_rgba: Rgba,
     pub show_isotherms: bool,
@@ -369,6 +375,9 @@ impl Default for Config {
             freezing_line_width: 3.0,
             freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
             show_freezing_line: true,
+            wet_bulb_zero_line_width: 3.0,
+            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_98, 0.4, 1.0),
+            show_wet_bulb_zero_line: true,
             isotherm_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isotherms: true,
             isobar_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),

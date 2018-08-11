@@ -323,6 +323,9 @@ impl Drawable for RHOmegaContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_wet_bulb_zero_levels(args);
+        self.draw_freezing_levels(args);
+
         let rh_drawn = draw_rh_profile(args);
         let omega_drawn = draw_omega_profile(args);
         let has_data = rh_drawn || omega_drawn;
