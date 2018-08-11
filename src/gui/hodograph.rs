@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
 use coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
@@ -135,7 +135,7 @@ impl Drawable for HodoContext {
                 dir: 360.0,
             });
             for pnts in [
-                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0
+                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0,
             ].iter()
                 .map(|d| {
                     let end_point = self.convert_sd_to_screen(SDCoords {
@@ -225,9 +225,11 @@ impl Drawable for HodoContext {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let (speed, dir) = if let Some(sample) = ac.get_sample() {
-            if let (Some(pressure), Some(speed), Some(dir)) =
-                (sample.pressure, sample.speed, sample.direction)
-            {
+            if let (Some(pressure), Some(speed), Some(dir)) = (
+                Into::<Option<f64>>::into(sample.pressure),
+                sample.speed.into(),
+                sample.direction.into(),
+            ) {
                 if pressure >= config.min_hodo_pressure {
                     (speed, dir)
                 } else {
@@ -274,8 +276,10 @@ fn draw_data(args: DrawingArgs) {
         let speed_data = sndg.get_profile(WindSpeed);
         let dir_data = sndg.get_profile(WindDirection);
 
-        let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|triplet| {
-            if let (Some(p), Some(speed), Some(dir)) = (*triplet.0, *triplet.1, *triplet.2) {
+        let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|(p, spd, dir)| {
+            if let (Some(p), Some(speed), Some(dir)) =
+                (Into::<Option<f64>>::into(p), spd.into(), dir.into())
+            {
                 if p >= config.min_hodo_pressure {
                     let sd_coords = SDCoords { speed, dir };
                     Some(ac.hodo.convert_sd_to_screen(sd_coords))

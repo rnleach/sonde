@@ -59,7 +59,7 @@ pub fn update_text_area(ac: &AppContext) {
 
     macro_rules! unwrap_to_str {
         ($opt_val:expr, $fmt:expr) => {
-            if let Some(val) = $opt_val {
+            if let Some(val) = Into::<Option<f64>>::into($opt_val) {
                 format!($fmt, val)
             } else {
                 "".to_owned()
@@ -89,7 +89,7 @@ pub fn update_text_area(ac: &AppContext) {
             let mut text = String::with_capacity(4096);
 
             for row in snd.sounding().top_down() {
-                if let Some(p) = row.pressure {
+                if let Some(p) = Into::<Option<f64>>::into(row.pressure) {
                     if p < config::MINP {
                         continue;
                     }
@@ -193,7 +193,7 @@ pub fn update_text_highlight(ac: &AppContext) {
     }
 
     let tp = if let Some(sample) = ac.get_sample() {
-        if let Some(tp) = sample.pressure {
+        if let Some(tp) = Into::<Option<f64>>::into(sample.pressure) {
             tp
         } else {
             return;

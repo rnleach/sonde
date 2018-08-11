@@ -1,7 +1,7 @@
 use cairo::Context;
 
-use app::AppContext;
 use app::config::Rgba;
+use app::AppContext;
 use coords::{Rect, ScreenCoords, ScreenRect};
 
 // Draw a curve connecting a list of points.

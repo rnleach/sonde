@@ -1,21 +1,23 @@
 //! Module for the GUI components of the application.
 
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-          ScrollDirection};
-use gtk::DrawingArea;
-use gtk::prelude::*;
+use gdk::{
+    keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
+    ScrollDirection,
+};
+use gtk::{prelude::*, DrawingArea};
 
-use sounding_analysis::Layer;
-use sounding_analysis::layers::{warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft};
+use sounding_analysis::{self, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft, Layer};
 use sounding_base::DataRow;
 
 use app::config::Rgba;
 use app::{AppContext, AppContextPointer};
-use coords::{convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect,
-             XYCoords};
+use coords::{
+    convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords,
+};
 use errors::SondeError;
 
+mod console_log;
 mod control_area;
 mod hodograph;
 mod main_window;
@@ -39,6 +41,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
     main_window::set_up_main_window(&app)?;
+    console_log::set_up_console_log(&app)?;
 
     Ok(())
 }
@@ -316,7 +319,9 @@ trait Drawable: PlotContext + PlotContextExt {
 
             cr.move_to(
                 upper_left.x + padding_x,
-                upper_left.y - padding_y - font_extents.ascent
+                upper_left.y
+                    - padding_y
+                    - font_extents.ascent
                     - f64::from(line_num - 1) * font_extents.height,
             );
 
@@ -405,7 +410,7 @@ trait Drawable: PlotContext + PlotContextExt {
             return;
         };
 
-        let sample_p = if let Some(sample_p) = vals.pressure {
+        let sample_p = if let Some(sample_p) = vals.pressure.into() {
             sample_p
         } else {
             return;
@@ -909,7 +914,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match ::sounding_analysis::layers::dendritic_snow_zone(snd.sounding()) {
+            let layers = match sounding_analysis::dendritic_snow_zone(snd.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -928,7 +933,7 @@ trait SlaveProfileDrawable: Drawable {
         }
 
         if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match ::sounding_analysis::layers::hail_growth_zone(snd.sounding()) {
+            let layers = match sounding_analysis::hail_growth_zone(snd.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -976,13 +981,13 @@ trait SlaveProfileDrawable: Drawable {
         cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
 
         for layer in layers {
-            let bottom_press = if let Some(press) = layer.bottom.pressure {
+            let bottom_press = if let Some(press) = layer.bottom.pressure.into() {
                 press
             } else {
                 continue;
             };
 
-            let top_press = if let Some(press) = layer.top.pressure {
+            let top_press = if let Some(press) = layer.top.pressure.into() {
                 press
             } else {
                 continue;

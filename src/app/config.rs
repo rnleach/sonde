@@ -1,7 +1,7 @@
 //! Keep configuration data in this module.
 
-use coords::{LPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
-use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
+use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 use gui::{HodoContext, SkewTContext};
 
 /// Types of parcels you can use when doing parcel analysis.
@@ -103,6 +103,14 @@ pub struct Config {
     pub show_inversion_mix_down: bool,
     /// Inversion mix downs color
     pub inversion_mix_down_rgba: Rgba,
+    /// Show the downburst profile
+    pub show_downburst: bool,
+    /// Downburst profile color
+    pub downburst_rgba: Rgba,
+    /// Fill the DCAPE area
+    pub fill_dcape_area: bool,
+    /// DCAPE area fill color
+    pub dcape_area_color: Rgba,
 
     //
     // General profile configuration items
@@ -137,22 +145,6 @@ pub struct Config {
     pub show_wind_speed_profile: bool,
     /// Wind speed profile color.
     pub wind_speed_profile_rgba: Rgba,
-
-    //
-    // Lapse rate profiles
-    //
-    /// Show the lapse rate profile.
-    pub show_lapse_rate_profile: bool,
-    /// Lapse rate profile color.
-    pub lapse_rate_profile_rgba: Rgba,
-    /// Show the surface to * average lapse rate profile.
-    pub show_sfc_avg_lapse_rate_profile: bool,
-    /// Surface to * average lapse rate profile color.
-    pub sfc_avg_lapse_rate_profile_rgba: Rgba,
-    /// Show the mixed layer to * average lapse rate profile.
-    pub show_ml_avg_lapse_rate_profile: bool,
-    /// Mixed layer to * average lapse rate profile color.
-    pub ml_avg_lapse_rate_profile_rgba: Rgba,
 
     //
     // Labeling
@@ -319,6 +311,10 @@ impl Default for Config {
             parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),
             show_inversion_mix_down: true,
             inversion_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
+            show_downburst: true,
+            downburst_rgba: (0.0, 0.6, 0.0, 1.0),
+            fill_dcape_area: true,
+            dcape_area_color: (0.0, 0.6, 0.0, 0.5),
 
             //
             // General profile configuration items
@@ -344,16 +340,6 @@ impl Default for Config {
             //
             show_wind_speed_profile: true,
             wind_speed_profile_rgba: (0.0, 0.0, 0.0, 1.0),
-
-            //
-            // Lapse rate profile
-            //
-            show_lapse_rate_profile: true,
-            lapse_rate_profile_rgba: (0.0, 0.0, 0.0, 1.0),
-            show_sfc_avg_lapse_rate_profile: true,
-            sfc_avg_lapse_rate_profile_rgba: (0.7, 0.2, 0.0, 1.0),
-            show_ml_avg_lapse_rate_profile: true,
-            ml_avg_lapse_rate_profile_rgba: (0.2, 0.7, 0.0, 1.0),
 
             //
             // Labeling
@@ -450,11 +436,6 @@ pub const MAX_SPEED: f64 = 250.0;
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: f64 = MAX_SPEED;
 
-/// Maximum lapse rate on the lapse rate profile in C/km
-pub const MAX_LAPSE_RATE: f64 = 12.0;
-/// Minimum lapse rate in the lapse rate profile in C/km
-pub const MIN_LAPSE_RATE: f64 = -12.0;
-
 //
 // Limits on the top pressure level for some background lines.
 //
@@ -481,7 +462,7 @@ pub const ISOTHERMS: [f64; 31] = [
 
 /// Isobars to plot on the chart background.
 pub const ISOBARS: [f64; 9] = [
-    1050.0, 1000.0, 925.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0
+    1050.0, 1000.0, 925.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0,
 ];
 
 /// Isentrops to plot on the chart background.
@@ -530,7 +511,7 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
     56.0,
     60.0,
     68.0,
-//    76.0, // Uncomment this when we can have arrays larger than 32.
+    //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
 pub const ISO_OMEGA: [f64; 21] = [
@@ -544,15 +525,13 @@ pub const ISO_SPEED: [f64; 25] = [
 ];
 
 pub const PERCENTS: [f64; 11] = [
-    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0
+    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0,
 ];
 
 pub const PROFILE_SPEEDS: [f64; 20] = [
     1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0,
     90.0, 100.0, 200.0,
 ];
-
-pub const PROFILE_LAPSE_RATES: [f64; 7] = [-12.0, -9.8, -7.2, 0.0, 5.0, 10.0, 12.0];
 
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
@@ -735,31 +714,6 @@ lazy_static! {
             [
                 WindSpeedContext::convert_sp_to_xy(sp[0]),
                 WindSpeedContext::convert_sp_to_xy(sp[1])
-            ]
-        })
-            .collect()
-    };
-
-    /// Compute points for background lapse rate
-    pub static ref PROFILE_LAPSE_RATE_PNTS: Vec<[XYCoords; 2]> = {
-        PROFILE_LAPSE_RATES
-            .into_iter()
-            .map(|lr| {
-                [
-                LPCoords {
-                    lapse_rate: *lr,
-                    press: MINP,
-                },
-                LPCoords {
-                    lapse_rate: *lr,
-                    press: MAXP,
-                },
-            ]
-            })
-        .map(|lr| {
-            [
-                LapseRateContext::convert_lp_to_xy(lr[0]),
-                LapseRateContext::convert_lp_to_xy(lr[1])
             ]
         })
             .collect()

@@ -9,7 +9,7 @@ use sounding_analysis::Analysis;
 use sounding_base::{DataRow, Sounding};
 
 use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use gui::profiles::{CloudContext, LapseRateContext, RHOmegaContext, WindSpeedContext};
+use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 use gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 
 use glib;
@@ -57,9 +57,6 @@ pub struct AppContext {
 
     // Handle to wind speed profile context
     pub wind_speed: WindSpeedContext,
-
-    // Handle to lapse rate profile context
-    pub lapse_rate: LapseRateContext,
 }
 
 impl AppContext {
@@ -83,7 +80,6 @@ impl AppContext {
             cloud: CloudContext::new(),
             hodo: HodoContext::new(),
             wind_speed: WindSpeedContext::new(),
-            lapse_rate: LapseRateContext::new(),
         })
     }
 
@@ -100,7 +96,9 @@ impl AppContext {
         use app::config;
         use sounding_base::Profile::*;
 
-        *self.list.borrow_mut() = src.into_iter().map(Rc::new).collect();
+        *self.list.borrow_mut() = src.into_iter()
+            .map(|anal| Rc::new(anal.fill_in_missing_analysis()))
+            .collect();
         *self.extra_profiles.borrow_mut() = self.list
             .borrow()
             .iter()
@@ -132,8 +130,8 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(Temperature))
-                .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
+                .filter_map(|(p, t)| {
+                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
                             None
                         } else {
@@ -166,8 +164,8 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(DewPoint))
-                .filter_map(|p| {
-                    if let (Some(p), Some(t)) = (*p.0, *p.1) {
+                .filter_map(|(p, t)| {
+                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
                             None
                         } else {
@@ -200,13 +198,13 @@ impl AppContext {
             for pair in snd.get_profile(Pressure)
                 .iter()
                 .zip(snd.get_profile(PressureVerticalVelocity))
-                .filter_map(|p| {
-                    if let (Some(p), Some(o)) = (*p.0, *p.1) {
+                .filter_map(|(p, omega)| {
+                    if let (Some(p), Some(o)) = (p.into(), omega.into()) {
                         if p < config::MINP {
                             None
                         } else {
                             Some(WPCoords {
-                                w: { f64::max(o.abs(), config::MIN_ABS_W) },
+                                w: { f64::max(f64::abs(o), config::MIN_ABS_W) },
                                 p,
                             })
                         }
@@ -232,8 +230,10 @@ impl AppContext {
                 snd.get_profile(Pressure),
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
-            ).filter_map(|tuple| {
-                if let (Some(p), Some(s), Some(d)) = (*tuple.0, *tuple.1, *tuple.2) {
+            ).filter_map(|(p, ws, wd)| {
+                if let (Some(p), Some(s), Some(d)) =
+                    (Into::<Option<f64>>::into(p), ws.into(), wd.into())
+                {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {
@@ -270,7 +270,7 @@ impl AppContext {
         self.cloud.set_xy_envelope(cloud_envelope);
 
         self.fit_to_data();
-        self.update_all_gui();
+        self.set_currently_displayed(0);
     }
 
     /// Is there any data to plot?
@@ -287,13 +287,8 @@ impl AppContext {
             } else {
                 curr_index = 0;
             }
-            self.currently_displayed_index.set(curr_index);
-            self.update_sample();
+            self.set_currently_displayed(curr_index);
         }
-
-        self.mark_data_dirty();
-
-        self.update_all_gui();
     }
 
     /// Set the previous one as the one to display, or wrap to the end.
@@ -305,18 +300,26 @@ impl AppContext {
             } else {
                 curr_index = self.list.borrow().len() - 1;
             }
-            self.currently_displayed_index.set(curr_index);
-            self.update_sample();
+            self.set_currently_displayed(curr_index);
+        }
+    }
+
+    #[inline]
+    fn set_currently_displayed(&self, idx: usize) {
+        self.currently_displayed_index.set(idx);
+
+        if log_enabled!(::log::Level::Trace) {
+            self.log_anal_summary();
         }
 
+        self.update_sample();
         self.mark_data_dirty();
-
         self.update_all_gui();
     }
 
     fn update_sample(&self) {
         if let Some(sample) = self.last_sample.get() {
-            if let Some(p) = sample.pressure {
+            if let Some(p) = sample.pressure.into() {
                 self.last_sample.set(
                     ::sounding_analysis::linear_interpolate_sounding(
                         self.list.borrow()[self.currently_displayed_index.get()].sounding(),
@@ -347,15 +350,15 @@ impl AppContext {
     }
 
     /// Get the extra profiles to draw.
-    pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
-        if self.plottable() {
-            let shared_ptr =
-                Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
-            Some(shared_ptr)
-        } else {
-            None
-        }
-    }
+    // pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
+    //     if self.plottable() {
+    //         let shared_ptr =
+    //             Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
+    //         Some(shared_ptr)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     /// Set the source name
     pub fn set_source_description(&self, new_name: Option<String>) {
@@ -377,7 +380,6 @@ impl AppContext {
         self.rh_omega.zoom_to_envelope();
         self.cloud.zoom_to_envelope();
         self.wind_speed.zoom_to_envelope();
-        self.lapse_rate.zoom_to_envelope();
         self.mark_background_dirty();
     }
 
@@ -400,7 +402,6 @@ impl AppContext {
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
         self.wind_speed.mark_data_dirty();
-        self.lapse_rate.mark_data_dirty();
     }
 
     pub fn mark_overlay_dirty(&self) {
@@ -409,7 +410,6 @@ impl AppContext {
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
         self.wind_speed.mark_overlay_dirty();
-        self.lapse_rate.mark_overlay_dirty();
     }
 
     pub fn mark_background_dirty(&self) {
@@ -418,28 +418,83 @@ impl AppContext {
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
-        self.lapse_rate.mark_background_dirty();
+    }
+
+    fn log_anal_summary(&self) {
+        use sounding_analysis::ParcelIndex::*;
+
+        const IDX_ENUM: sounding_analysis::ParcelIndex = CAPE;
+        const IDX_KEY: &str = "CAPE";
+
+        let anal = if let Some(anal) = self.get_sounding_for_display() {
+            anal
+        } else {
+            error!("Could not retrieve analysis!");
+            return;
+        };
+
+        if let Some(val) = anal.provider_analysis().get(IDX_KEY) {
+            anal.get_surface_parcel_analysis().and_then(|sfc_pa| {
+                anal.get_mixed_layer_parcel_analysis().and_then(|ml_pa| {
+                    anal.get_most_unstable_parcel_analysis().and_then(|mu_pa| {
+                        trace!(
+                            "{} {} SFC: {:?} ML: {:?} MU: {:?}",
+                            IDX_KEY,
+                            val,
+                            sfc_pa.get_index(IDX_ENUM),
+                            ml_pa.get_index(IDX_ENUM),
+                            mu_pa.get_index(IDX_ENUM),
+                        );
+                        Some(())
+                    })
+                })
+            });
+
+        // if let Some(my_val) = anal.get_profile_index(IDX_ENUM) {
+        //     trace!(
+        //         "(Bufkit,Sonde,Diff,%) => ({:5.2}, {:5.2}, {:5.2}, {:6.2}%)",
+        //         val,
+        //         my_val,
+        //         val - my_val,
+        //         (val - my_val) / val * 100.0
+        //     );
+        // } else {
+        //  trace!("Analysis value was None for {:?}, but the provider had {}", IDX_ENUM, val);
+        // }
+        } else {
+            trace!("Error loading {} from provider analysis.\n\n", IDX_KEY);
+            for (key, val) in anal.provider_analysis().iter() {
+                trace!("{} => {}", key, val);
+            }
+        }
+
+        // trace!(
+        //     "Provider analysis for {:?} at index {}.",
+        //     self.get_source_description(),
+        //     self.currently_displayed_index.get()
+        // );
+
+        // for (key, val) in anal.provider_analysis().iter() {
+        //     trace!("{} => {}", key, val);
+        // }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ExtraProfiles {
-    pub lapse_rate: Vec<Option<f64>>,
-    pub sfc_avg_lapse_rate: Vec<Option<f64>>,
-    pub ml_avg_lapse_rate: Vec<Option<f64>>,
+    // pub lapse_rate: Vec<Optioned<f64>>,
+// pub sfc_avg_lapse_rate: Vec<Optioned<f64>>,
 }
 
 impl ExtraProfiles {
-    pub fn new(snd: &Sounding) -> Self {
-        let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
-        let sfc_avg_lapse_rate =
-            sounding_analysis::profile::sfc_to_level_temperature_lapse_rate(snd);
-        let ml_avg_lapse_rate = sounding_analysis::profile::ml_to_level_temperature_lapse_rate(snd);
+    pub fn new(_snd: &Sounding) -> Self {
+        // let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
+        // let sfc_avg_lapse_rate =
+        //     sounding_analysis::profile::sfc_to_level_temperature_lapse_rate(snd);
 
         ExtraProfiles {
-            lapse_rate,
-            sfc_avg_lapse_rate,
-            ml_avg_lapse_rate,
+            // lapse_rate,
+            // sfc_avg_lapse_rate,
         }
     }
 }

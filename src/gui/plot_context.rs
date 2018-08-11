@@ -1,8 +1,8 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
 use gui::AppContext;

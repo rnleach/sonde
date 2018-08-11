@@ -1,7 +1,7 @@
 #![macro_use]
 
-use gtk::Notebook;
 use gtk::prelude::*;
+use gtk::Notebook;
 
 use app::AppContextPointer;
 use errors::SondeError;

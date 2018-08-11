@@ -2,14 +2,16 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gdk::EventMotion;
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords,
-             ScreenRect, WPCoords, XYCoords};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
+use coords::{
+    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
+    WPCoords, XYCoords,
+};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points};
@@ -346,14 +348,14 @@ impl Drawable for RHOmegaContext {
 
         if (t_c.is_some() && dp_c.is_some()) || omega.is_some() {
             if config.show_rh {
-                if let (Some(t_c), Some(dp_c)) = (t_c, dp_c) {
+                if let (Some(t_c), Some(dp_c)) = (t_c.into(), dp_c.into()) {
                     if let Ok(rh) = rh(t_c, dp_c) {
                         results.push((format!("{:.0}%\n", 100.0 * rh), config.rh_rgba));
                     }
                 }
             }
             if config.show_omega {
-                if let Some(omega) = omega {
+                if let Some(omega) = Into::<Option<f64>>::into(omega) {
                     results.push((format!("{:.1} Pa/s\n", omega), config.omega_rgba));
                 }
             }
@@ -420,8 +422,8 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
         let t_data = sndg.sounding().get_profile(Temperature);
         let td_data = sndg.sounding().get_profile(DewPoint);
         let mut profile = izip!(pres_data, t_data, td_data)
-            .filter_map(|triplet| {
-                if let (Some(p), Some(t), Some(td)) = (*triplet.0, *triplet.1, *triplet.2) {
+            .filter_map(|(p, t, td)| {
+                if let (Some(p), Some(t), Some(td)) = (p.into(), t.into(), td.into()) {
                     match rh(t, td) {
                         Ok(rh) => Some((p, rh)),
                         Err(_) => None,
@@ -522,21 +524,18 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 
-        let profile_data = pres_data
-            .iter()
-            .zip(omega_data.iter())
-            .filter_map(|val_pair| {
-                if let (Some(p), Some(w)) = (*val_pair.0, *val_pair.1) {
-                    if p > config::MINP {
-                        let wp_coords = WPCoords { w, p };
-                        Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
-                    } else {
-                        None
-                    }
+        let profile_data = izip!(pres_data, omega_data).filter_map(|(p, w)| {
+            if let (Some(p), Some(w)) = (p.into(), w.into()) {
+                if p > config::MINP {
+                    let wp_coords = WPCoords { w, p };
+                    Some(ac.rh_omega.convert_wp_to_screen(wp_coords))
                 } else {
                     None
                 }
-            });
+            } else {
+                None
+            }
+        });
 
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     } else {

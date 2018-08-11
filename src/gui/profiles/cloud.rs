@@ -1,14 +1,16 @@
 use std::rc::Rc;
 
 use gdk::{EventMotion, EventScroll};
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
-             ScreenRect, XYCoords};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
+use coords::{
+    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords, ScreenRect,
+    XYCoords,
+};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
@@ -275,7 +277,7 @@ impl Drawable for CloudContext {
     fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(cloud) = vals.cloud_fraction {
+        if let Some(cloud) = Into::<Option<f64>>::into(vals.cloud_fraction) {
             let cld = (cloud).round();
             let line = format!("{:.0}%\n", cld);
             results.push((line, ac.config.borrow().cloud_rgba));
@@ -341,15 +343,14 @@ fn draw_cloud_profile(args: DrawingArgs) {
         let pres_data = sndg.get_profile(Pressure);
         let c_data = sndg.get_profile(CloudFraction);
         let mut profile = izip!(pres_data, c_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(c)) = (*pair.0, *pair.1) {
+            .filter_map(|(p, cld)| {
+                if let (Some(p), Some(c)) = (p.into(), cld.into()) {
                     Some((p, c))
                 } else {
                     None
                 }
             })
-            .filter_map(|pair| {
-                let (press, pcnt) = pair;
+            .filter_map(|(press, pcnt): (f64, f64)| {
                 if press > config::MINP {
                     Some(ac.cloud.convert_pp_to_screen(PPCoords {
                         pcnt: pcnt / 100.0,

@@ -1,14 +1,16 @@
 use std::rc::Rc;
 
 use gdk::{EventMotion, EventScroll};
-use gtk::DrawingArea;
 use gtk::prelude::*;
+use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, AppContext, AppContextPointer, config::Rgba};
-use coords::{convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
-             ScreenRect, XYCoords};
+use app::{config, config::Rgba, AppContext, AppContextPointer};
+use coords::{
+    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords, ScreenRect,
+    XYCoords,
+};
 use errors::SondeError;
 use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
 use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
@@ -211,12 +213,10 @@ impl Drawable for WindSpeedContext {
     }
 
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
-        vec![
-            (
-                "Wind speed".to_owned(),
-                ac.config.borrow().wind_speed_profile_rgba,
-            ),
-        ]
+        vec![(
+            "Wind speed".to_owned(),
+            ac.config.borrow().wind_speed_profile_rgba,
+        )]
     }
 
     fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
@@ -289,7 +289,7 @@ impl Drawable for WindSpeedContext {
     fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(speed) = vals.speed {
+        if let Some(speed) = Into::<Option<f64>>::into(vals.speed) {
             let spd = speed.round();
             let line = format!("{:.0}kt\n", spd);
             results.push((line, ac.config.borrow().wind_speed_profile_rgba));
@@ -354,8 +354,8 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
         let pres_data = sndg.sounding().get_profile(Pressure);
         let spd_data = sndg.sounding().get_profile(WindSpeed);
         let mut profile = izip!(pres_data, spd_data)
-            .filter_map(|pair| {
-                if let (Some(p), Some(s)) = (*pair.0, *pair.1) {
+            .filter_map(|(p, spd)| {
+                if let (Some(p), Some(s)) = (p.into(), spd.into()) {
                     Some((p, s))
                 } else {
                     None
