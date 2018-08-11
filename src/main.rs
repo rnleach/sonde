@@ -7,7 +7,7 @@ fn main() {
     if let Err(ref e) = sonde::run() {
         println!("error: {}", e);
 
-        let mut fail: &Fail = e.cause();
+        let mut fail: &Fail = e.as_fail();
 
         while let Some(cause) = fail.cause() {
             println!("caused by: {}", cause);
