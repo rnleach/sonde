@@ -14,8 +14,8 @@ I used [GKT+][gtk] via [Gtk-rs][gtkrs] and [Rust][rust] to implement it.
 Probably the most frequently thought of use case for sounding analysis is thunderstorms and 
 convection. However, they are also used heavily in forecasting winds and precipitation type during 
 the winter. My main interests in meteorology are fire weather and winter weather, so that is the 
-emphasis I am taking as I develop this. Of course convection will be considered too, but is not my
-top priority.
+emphasis I am taking as I develop this. Of course convection will be considered too, but it is not 
+my top priority.
 
 ## Features
  - Data views
@@ -35,8 +35,6 @@ top priority.
    - Pressure vertical velocity overlaid with relative humidity.
    - Wind speed.
    - Cloud cover.
-   - Lapse rate.
-   - More profiles to come.
  - Profile backgrounds.
    - Highlights dendritic snow growth and hail growth zones if present in the sounding.
    - Highlights warm layers aloft (dry bulb and wet bulb) if the surface temperature is below 
@@ -47,6 +45,14 @@ top priority.
    - Wet bulb plot added.
    - Progressive disclosure of winds.
    - Sample readout synchronized across views (skew-t, hodograph, text, profiles).
+ - Analysis
+   - Convective parcel analysis is drawn using virtual temperature. This is the most appropriate for
+     CAPE/CIN calculations.
+   - DCAPE/Down rush profiles are drawn and the area is shaded, using virtual temperature.
+   - Inversion mix downs can be drawn.
+   - Sample readout shows the currently sampled parcel profile and dry adiabatic mix down.
+   - Convective parcel analysis has three parcels to choose from.
+   - Most analysis options are configurable via a right click menu in the sounding area.
  - Data sources
    - Currently only supports Bufkit files, but I have plans to expand it to include bufr data.
    - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
@@ -71,7 +77,7 @@ interpolation and shades according to the weight each had in the interpolated va
 ![screenshot with the text view](./screenshots/Text.png)
 
 A hodograph is also included. When sampling the skew-t, a dot appears at the corresponding location
-on the hodograph.
+on the hodograph. Future development will add storm motion and helicity analysis for this view.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
 The profiles highlight important levels, such as the hail growth and dendritic snow growth zones 
@@ -79,10 +85,7 @@ shown in these profiles. Also, the sample readouts track directly with the one o
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
 ## Future Development
- - Get the indexes display working.
- - Add more profiles.
-   - Average lapse rate from surface or mixed layer to * level in the profile.
-   - Theta-e.
+ - Display indexes such as CAPE, CIN, Haines, etc.
  - A data downloader and manager.
  - Support for loading [bufr][bufr] files so that measured data can be inspected too.
  - Saving and loading of the configuration and colors.
