@@ -177,10 +177,6 @@ impl Drawable for CloudContext {
                 prev = curr;
             }
         }
-
-        self.draw_hail_growth_zone(args);
-        self.draw_dendritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
@@ -270,6 +266,10 @@ impl Drawable for CloudContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_hail_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
+        self.draw_warm_layer_aloft(args);
+        
         self.draw_wet_bulb_zero_levels(args);
         self.draw_freezing_levels(args);
         draw_cloud_profile(args);
