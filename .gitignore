@@ -9,7 +9,7 @@ Cargo.lock
 //
 // Sublime editor
 //
-*.sublime-workspace
+*.sublime*
 
 //
 // OS specific
