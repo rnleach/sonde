@@ -7,7 +7,10 @@ use gdk::{
 };
 use gtk::{prelude::*, DrawingArea};
 
-use sounding_analysis::{self, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft, Layer};
+use sounding_analysis::{
+    self, freezing_levels, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft,
+    wet_bulb_zero_levels, Layer,
+};
 use sounding_base::DataRow;
 
 use app::config::Rgba;
@@ -32,7 +35,7 @@ pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
 pub use self::text_area::update_text_highlight;
 
-use self::utility::DrawingArgs;
+use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
@@ -906,7 +909,7 @@ trait SlaveProfileDrawable: Drawable {
         Inhibit(false)
     }
 
-    fn draw_dendtritic_snow_growth_zone(&self, args: DrawingArgs) {
+    fn draw_dendritic_snow_growth_zone(&self, args: DrawingArgs) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_dendritic_zone {
@@ -972,7 +975,49 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_layers(&self, args: DrawingArgs, layers: &[Layer], color_rgba: (f64, f64, f64, f64)) {
+    fn draw_freezing_levels(&self, args: DrawingArgs) {
+        let ac = args.ac;
+
+        if !ac.config.borrow().show_freezing_line {
+            return;
+        }
+
+        if let Some(snd) = ac.get_sounding_for_display() {
+            let levels = match freezing_levels(snd.sounding()) {
+                Ok(levels) => levels,
+                Err(_) => return,
+            };
+
+            let config = ac.config.borrow();
+            let rgba = config.freezing_line_color;
+            let line_width = config.freezing_line_width;
+
+            self.draw_levels(args, &levels, rgba, line_width);
+        }
+    }
+
+    fn draw_wet_bulb_zero_levels(&self, args: DrawingArgs) {
+        let ac = args.ac;
+
+        if !ac.config.borrow().show_wet_bulb_zero_line {
+            return;
+        }
+
+        if let Some(snd) = ac.get_sounding_for_display() {
+            let levels = match wet_bulb_zero_levels(snd.sounding()) {
+                Ok(levels) => levels,
+                Err(_) => return,
+            };
+
+            let config = ac.config.borrow();
+            let rgba = config.wet_bulb_zero_line_color;
+            let line_width = config.wet_bulb_zero_line_width;
+
+            self.draw_levels(args, &levels, rgba, line_width);
+        }
+    }
+
+    fn draw_layers(&self, args: DrawingArgs, layers: &[Layer], color_rgba: Rgba) {
         let cr = args.cr;
 
         let bb = self.bounding_box_in_screen_coords();
@@ -1023,6 +1068,51 @@ trait SlaveProfileDrawable: Drawable {
 
             cr.close_path();
             cr.fill();
+        }
+    }
+
+    fn draw_levels(
+        &self,
+        args: DrawingArgs,
+        levels: &[DataRow],
+        color_rgba: Rgba,
+        line_width: f64,
+    ) {
+        let cr = args.cr;
+
+        let bb = self.bounding_box_in_screen_coords();
+        let (left, right) = (bb.lower_left.x, bb.upper_right.x);
+
+        cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
+
+        for level in levels {
+            let press = if let Some(press) = level.pressure.into() {
+                press
+            } else {
+                continue;
+            };
+
+            let mut coords = [(left, press), (right, press)];
+
+            // Convert points to screen coords
+            for coord in &mut coords {
+                coord.1 = convert_pressure_to_y(coord.1);
+
+                let screen_coords = self.convert_xy_to_screen(XYCoords {
+                    x: coord.0,
+                    y: coord.1,
+                });
+
+                coord.0 = screen_coords.x;
+                coord.1 = screen_coords.y;
+            }
+
+            plot_curve_from_points(
+                cr,
+                line_width,
+                color_rgba,
+                coords.iter().map(|&(x, y)| ScreenCoords { x, y }),
+            );
         }
     }
 }

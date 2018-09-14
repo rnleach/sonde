@@ -190,7 +190,8 @@ pub trait PlotContextExt: PlotContext {
         }
 
         // Add some padding to keep away from the window edge
-        let padding = cr.device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+        let padding = cr
+            .device_to_user_distance(ac.config.borrow().label_padding, 0.0)
             .0;
         screen_x_max -= padding;
         screen_y_max -= padding;

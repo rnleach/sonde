@@ -186,10 +186,6 @@ impl Drawable for WindSpeedContext {
                 prev = curr;
             }
         }
-
-        self.draw_hail_growth_zone(args);
-        self.draw_dendtritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
@@ -198,7 +194,8 @@ impl Drawable for WindSpeedContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
             }
@@ -206,7 +203,8 @@ impl Drawable for WindSpeedContext {
 
         // Draw percent values
         for line in config::PROFILE_SPEED_PNTS.iter() {
-            let pnts = line.iter()
+            let pnts = line
+                .iter()
                 .map(|xy_coord| self.convert_xy_to_screen(*xy_coord));
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
@@ -280,6 +278,10 @@ impl Drawable for WindSpeedContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_hail_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
+        self.draw_warm_layer_aloft(args);
+        
         draw_wind_speed_profile(args);
     }
 

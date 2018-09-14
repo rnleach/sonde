@@ -200,10 +200,6 @@ impl Drawable for RHOmegaContext {
                 prev = curr;
             }
         }
-
-        self.draw_hail_growth_zone(args);
-        self.draw_dendtritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
@@ -212,7 +208,8 @@ impl Drawable for RHOmegaContext {
         // Draw isobars
         if config.show_isobars {
             for pnts in config::ISOBAR_PNTS.iter() {
-                let pnts = pnts.iter()
+                let pnts = pnts
+                    .iter()
                     .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
                 plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
             }
@@ -269,7 +266,8 @@ impl Drawable for RHOmegaContext {
             let ScreenCoords {
                 x: mut xpos,
                 y: mut ypos,
-            } = ac.rh_omega
+            } = ac
+                .rh_omega
                 .convert_wp_to_screen(WPCoords { w, p: screen_max_p });
             xpos -= extents.width / 2.0; // Center
             ypos -= extents.height / 2.0; // Center
@@ -323,6 +321,14 @@ impl Drawable for RHOmegaContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        
+        self.draw_hail_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
+        self.draw_warm_layer_aloft(args);
+
+        self.draw_wet_bulb_zero_levels(args);
+        self.draw_freezing_levels(args);
+
         let rh_drawn = draw_rh_profile(args);
         let omega_drawn = draw_omega_profile(args);
         let has_data = rh_drawn || omega_drawn;

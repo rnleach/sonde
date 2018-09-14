@@ -111,6 +111,32 @@ pub struct Config {
     pub fill_dcape_area: bool,
     /// DCAPE area fill color
     pub dcape_area_color: Rgba,
+    /// Color used to fill the dendritic snow growth zone
+    pub dendritic_zone_rgba: Rgba,
+    /// Show or hide the dendritic zone banding.
+    pub show_dendritic_zone: bool,
+    /// Color used to fill the hail growth zone
+    pub hail_zone_rgba: Rgba,
+    /// Show or hide the hail growth zone
+    pub show_hail_zone: bool,
+    /// Color used to fill the warm layer aloft
+    pub warm_layer_rgba: Rgba,
+    /// Color used to fill the wet bulb warm layer aloft
+    pub warm_wet_bulb_aloft_rgba: Rgba,
+    /// Show or hide the hail growth zone
+    pub show_warm_layer_aloft: bool,
+    /// Line width for freezing line
+    pub freezing_line_width: f64,
+    /// Color for freezing line
+    pub freezing_line_color: Rgba,
+    /// Show or hide freezing line
+    pub show_freezing_line: bool,
+    /// Line width for wet bulb zero line
+    pub wet_bulb_zero_line_width: f64,
+    /// Color for wet bulb zero line
+    pub wet_bulb_zero_line_color: Rgba,
+    /// Show or hide wet bulb zero line
+    pub show_wet_bulb_zero_line: bool,
 
     //
     // General profile configuration items
@@ -175,26 +201,7 @@ pub struct Config {
     pub background_band_rgba: Rgba,
     /// Show or hide background temperature banding.
     pub show_background_bands: bool,
-    /// Color used to fill the dendritic snow growth zone
-    pub dendritic_zone_rgba: Rgba,
-    /// Show or hide the dendritic zone banding.
-    pub show_dendritic_zone: bool,
-    /// Color used to fill the hail growth zone
-    pub hail_zone_rgba: Rgba,
-    /// Show or hide the hail growth zone
-    pub show_hail_zone: bool,
-    /// Color used to fill the warm layer aloft
-    pub warm_layer_rgba: Rgba,
-    /// Color used to fill the wet bulb warm layer aloft
-    pub warm_wet_bulb_aloft_rgba: Rgba,
-    /// Show or hide the hail growth zone
-    pub show_warm_layer_aloft: bool,
-    /// Line width for freezing line
-    pub freezing_line_width: f64,
-    /// Color for freezing line
-    pub freezing_line_color: Rgba,
-    /// Show or hide freezing line
-    pub show_freezing_line: bool,
+    
     /// Color used for isotherms
     pub isotherm_rgba: Rgba,
     pub show_isotherms: bool,
@@ -315,6 +322,19 @@ impl Default for Config {
             downburst_rgba: (0.0, 0.6, 0.0, 1.0),
             fill_dcape_area: true,
             dcape_area_color: (0.0, 0.6, 0.0, 0.5),
+            dendritic_zone_rgba: (0.0, 0.466_666_667, 0.780_392_157, 0.55),
+            show_dendritic_zone: true,
+            hail_zone_rgba: (0.0, 0.803_921_569, 0.803_921_569, 0.55),
+            show_hail_zone: true,
+            warm_layer_rgba: (0.717_647, 0.254_9, 0.054_9, 0.55),
+            warm_wet_bulb_aloft_rgba: (0.8, 0.0, 0.0, 1.0),
+            show_warm_layer_aloft: true,
+            freezing_line_width: 3.0,
+            freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
+            show_freezing_line: true,
+            wet_bulb_zero_line_width: 3.0,
+            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_98, 0.4, 1.0),
+            show_wet_bulb_zero_line: true,
 
             //
             // General profile configuration items
@@ -359,16 +379,6 @@ impl Default for Config {
             background_rgba: (1.0, 1.0, 1.0, 1.0),
             background_band_rgba: (0.933_333_333, 0.964_705_882, 0.917_647_059, 1.0),
             show_background_bands: true,
-            dendritic_zone_rgba: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
-            show_dendritic_zone: true,
-            hail_zone_rgba: (0.0, 0.803_921_569, 0.803_921_569, 1.0),
-            show_hail_zone: true,
-            warm_layer_rgba: (0.717_647, 0.254_9, 0.054_9, 1.0),
-            warm_wet_bulb_aloft_rgba: (0.8, 0.0, 0.0, 1.0),
-            show_warm_layer_aloft: true,
-            freezing_line_width: 3.0,
-            freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
-            show_freezing_line: true,
             isotherm_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isotherms: true,
             isobar_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
@@ -479,37 +489,8 @@ pub const ISO_THETA_E_C: [f64; 31] = [
 
 /// Isopleths of mixing ratio
 pub const ISO_MIXING_RATIO: [f64; 32] = [
-    0.1,
-    0.2,
-    0.4,
-    0.6,
-    0.8,
-    1.0,
-    1.5,
-    2.0,
-    2.5,
-    3.0,
-    4.0,
-    5.0,
-    6.0,
-    7.0,
-    8.0,
-    10.0,
-    12.0,
-    14.0,
-    16.0,
-    18.0,
-    20.0,
-    24.0,
-    28.0,
-    32.0,
-    36.0,
-    40.0,
-    44.0,
-    48.0,
-    52.0,
-    56.0,
-    60.0,
+    0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0,
+    16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0,
     68.0,
     //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
