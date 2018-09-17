@@ -4,12 +4,12 @@ version = "0.1.0"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
-cairo-rs = "^0.4.1"
+cairo-rs = "^0.5"
 chrono = "^0.4"
 failure = "^0.1.1"
-gdk = "^0.8"
-glib = "^0.5"
-gtk = { version = "^0.4", features = ["v3_18"] }
+gdk = "^0.9"
+glib = "^0.6"
+gtk = { version = "^0.5", features = ["v3_18"] }
 itertools = "^0.7"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
@@ -20,7 +20,7 @@ serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-base = "^0.7"
 sounding-bufkit = "^0.8.0"
-sounding-analysis = "^0.8.0"
+sounding-analysis = "^0.8.1"
 
 [profile.release]
 lto = true

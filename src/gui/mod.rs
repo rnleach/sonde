@@ -114,7 +114,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let font_face =
-            FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+            &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
         cr.set_font_face(font_face);
 
         self.set_font_size(config.label_font_size, cr);
