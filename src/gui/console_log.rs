@@ -1,4 +1,7 @@
-use gtk::{timeout_add_seconds, idle_add, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView, TextViewExt};
+use gtk::{
+    idle_add, timeout_add_seconds, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView,
+    TextViewExt,
+};
 use log::{self, Level, LevelFilter, Log, Metadata, Record};
 use std::cell::RefCell;
 use std::collections::VecDeque;

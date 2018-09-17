@@ -1208,12 +1208,10 @@ fn gather_wind_data(
             } else {
                 None
             }
-        })
-        .map(|tuple| {
+        }).map(|tuple| {
             let (p, d, s) = tuple;
             WindBarbData::create(p, d, s, barb_config, args)
-        })
-        .collect()
+        }).collect()
 }
 
 fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {

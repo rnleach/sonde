@@ -201,7 +201,7 @@ pub struct Config {
     pub background_band_rgba: Rgba,
     /// Show or hide background temperature banding.
     pub show_background_bands: bool,
-    
+
     /// Color used for isotherms
     pub isotherm_rgba: Rgba,
     pub show_isotherms: bool,
