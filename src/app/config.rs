@@ -10,6 +10,7 @@ pub enum ParcelType {
     Surface,
     MixedLayer,
     MostUnstable,
+    Convective,
 }
 
 /// Type used for colors in Gtk

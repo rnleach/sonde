@@ -810,12 +810,14 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     let sfc = RadioMenuItem::new_with_label("Surface");
     let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
     let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
+    let con = RadioMenuItem::new_with_label_from_widget(&sfc, "Convective");
 
     let p_type = acp.config.borrow().parcel_type;
     match p_type {
         Surface => sfc.set_active(true),
         MixedLayer => mxd.set_active(true),
         MostUnstable => mu.set_active(true),
+        Convective => con.set_active(true),
     }
 
     fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
@@ -841,9 +843,15 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
         handle_toggle(button, MostUnstable, &ac);
     });
 
+    let ac = Rc::clone(acp);
+    con.connect_toggled(move |button| {
+        handle_toggle(button, Convective, &ac);
+    });
+
     menu.append(&sfc);
     menu.append(&mxd);
     menu.append(&mu);
+    menu.append(&con);
 
     menu.append(&SeparatorMenuItem::new());
 
@@ -985,6 +993,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 Surface => sndg_anal.get_surface_parcel_analysis(),
                 MixedLayer => sndg_anal.get_mixed_layer_parcel_analysis(),
                 MostUnstable => sndg_anal.get_most_unstable_parcel_analysis(),
+                Convective => sndg_anal.get_convective_parcel_analysis(),
             }.and_then(|p_analysis| {
                 let color = config.parcel_rgba;
                 let p_profile = p_analysis.get_profile();
@@ -995,6 +1004,10 @@ fn draw_data_overlays(args: DrawingArgs) {
                     draw_cape_cin_fill(args, &p_analysis);
                 }
 
+                Some(())
+            })
+            .or_else(|| {
+                warn!("Parcel analysis returned None.");
                 Some(())
             });
         }
