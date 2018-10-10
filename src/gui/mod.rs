@@ -23,6 +23,7 @@ use errors::SondeError;
 mod console_log;
 mod control_area;
 mod hodograph;
+mod indexes_area;
 mod main_window;
 mod plot_context;
 pub mod profiles;
@@ -44,6 +45,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
     main_window::set_up_main_window(&app)?;
+    indexes_area::set_up_indexes_area(&app)?;
     console_log::set_up_console_log(&app)?;
 
     Ok(())
@@ -61,9 +63,10 @@ pub fn draw_all(app: &AppContext) {
     profiles::draw_profiles(&app);
 }
 
-pub fn update_text_view(app: &AppContext) {
+pub fn update_text_views(app: &AppContext) {
     self::text_area::update_text_area(app);
     self::text_area::update_text_highlight(app);
+    self::indexes_area::update_indexes_area(app);
 }
 
 trait Drawable: PlotContext + PlotContextExt {

@@ -8,13 +8,14 @@ use errors::SondeError;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 6] = [
+const TABS: [(&str, &str); 7] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
     ("text_area_container", "Text"),
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),
     ("console_log_container", "Console"),
+    ("indexes_scrolled_window", "Indexes"),
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
