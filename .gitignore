@@ -6,9 +6,11 @@
 Cargo.lock
 
 //
-// Sublime editor
+// Dev tools (editor, IDE, Glade, etc)
 //
 *.sublime*
+.vscode
+\#*.glade\#
 
 //
 // OS specific
