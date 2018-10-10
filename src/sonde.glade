@@ -52,7 +52,7 @@
           <object class="GtkPaned" id="main_pane_view">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="position">471</property>
+            <property name="position">458</property>
             <property name="position_set">True</property>
             <property name="wide_handle">True</property>
             <child>
@@ -374,7 +374,7 @@
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="position">470</property>
           </packing>
         </child>
       </object>
