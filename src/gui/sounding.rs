@@ -1005,8 +1005,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 }
 
                 Some(())
-            })
-            .or_else(|| {
+            }).or_else(|| {
                 warn!("Parcel analysis returned None.");
                 Some(())
             });
@@ -1022,24 +1021,28 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .and_then(|lyr| lyr) // unwrap a layer of options
                 .map(|lyr| lyr.top)
                 .and_then(Parcel::from_datarow)
-                .and_then(|parcel| {
-                    sounding_analysis::mix_down(parcel, sndg).ok()
-                })
+                .and_then(|parcel| sounding_analysis::mix_down(parcel, sndg).ok())
                 .and_then(|parcel_profile| {
                     let color = config.inversion_mix_down_rgba;
                     draw_parcel_profile(args, &parcel_profile, color);
 
-                    if let (Some(&pressure), Some(&temperature)) =
-                    (
+                    if let (Some(&pressure), Some(&temperature)) = (
                         parcel_profile.pressure.iter().nth(0),
                         parcel_profile.parcel_t.iter().nth(0),
-                    ){
-                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords{temperature, pressure});
+                    ) {
+                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+                            temperature,
+                            pressure,
+                        });
                         let deg_f = ::metfor::celsius_to_f(temperature)
                             .map(|t| format!("{:.0}\u{00b0}F/", t))
-                            .unwrap_or_else(|_|"".to_owned());
-                        ac.skew_t
-                            .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+                            .unwrap_or_else(|_| "".to_owned());
+                        ac.skew_t.draw_tag(
+                            &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                            pos,
+                            color,
+                            args,
+                        );
                     }
 
                     Some(())
@@ -1106,13 +1109,13 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
                 .map(|(p, _, e_t)| (*p, *e_t));
 
             let down_side = izip!(pres_data, parcel_t, env_t)
-            // Top down
-            .rev()
-            // Skip above top.
-            .skip_while(|&(&p, _, _)| p < lfc)
-            // Now we're in the CIN area!
-            .take_while(|&(&p, _, _)| p < bottom)
-            .map(|(p, p_t, _)| (*p, *p_t));
+                // Top down
+                .rev()
+                // Skip above top.
+                .skip_while(|&(&p, _, _)| p < lfc)
+                // Now we're in the CIN area!
+                .take_while(|&(&p, _, _)| p < bottom)
+                .map(|(p, p_t, _)| (*p, *p_t));
 
             let negative_polygon = up_side.chain(down_side);
 
@@ -1138,13 +1141,13 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
         .map(|(p, _, e_t)| (*p, *e_t));
 
     let down_side = izip!(pres_data, parcel_t, env_t)
-    // Top down
-    .rev()
-    // Skip above top.
-    .skip_while(|&(p, _, _)| *p < el)
-    // Now we're in the CAPE area!
-    .take_while(|&(p, _, _)| *p <= lfc)
-    .map(|(p, p_t, _)| (*p, *p_t));
+        // Top down
+        .rev()
+        // Skip above top.
+        .skip_while(|&(p, _, _)| *p < el)
+        // Now we're in the CAPE area!
+        .take_while(|&(p, _, _)| *p <= lfc)
+        .map(|(p, p_t, _)| (*p, *p_t));
 
     let polygon = up_side.chain(down_side);
 

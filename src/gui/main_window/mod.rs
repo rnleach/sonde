@@ -89,9 +89,10 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
         let tabs: Vec<Widget> = TABS
             .iter()
             // If there is an error here, it will ALWAYS fail. So go ahead and unwrap.
-            .map(|&widget_id| ac.fetch_widget::<Widget>(widget_id.0)
-                .expect("Error loading widget!"))
-            .collect();
+            .map(|&widget_id| {
+                ac.fetch_widget::<Widget>(widget_id.0)
+                    .expect("Error loading widget!")
+            }).collect();
 
         let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();
