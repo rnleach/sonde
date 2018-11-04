@@ -20,7 +20,10 @@ serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-base = "^0.7"
 sounding-bufkit = "^0.8.2"
-sounding-analysis = "^0.8.3"
+sounding-analysis = "^0.8.4"
+
+[patch.crates-io]
+sounding-analysis = {path="../sounding-analysis"}
 
 [profile.release]
 lto = true

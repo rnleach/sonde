@@ -1,5 +1,6 @@
 use gtk::prelude::*;
 use gtk::{TextTag, TextView};
+use sounding_analysis::{partition_cape, Analysis};
 
 use app::{AppContext, AppContextPointer};
 use errors::SondeError;
@@ -53,24 +54,7 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     }
 }
 
-macro_rules! push_profile_index {
-    ($anal: expr, $buf:ident, $name:expr, $selector:expr, $format:expr, $empty_val:ident) => (
-        $buf.push_str($name);
-        $anal.get_profile_index($selector)
-            .and_then(|val| {
-                $buf.push_str(&format!($format, val));
-                Some(())
-            }).or_else(||{
-                $buf.push_str($empty_val);
-                Some(())
-            });
-        $buf.push('\n');
-    )
-}
-
 pub fn update_indexes_area(ac: &AppContext) {
-    use sounding_analysis::ProfileIndex::*;
-
     let text_area: TextView = if let Ok(ta) = ac.fetch_widget(TEXT_AREA_ID) {
         ta
     } else {
@@ -82,24 +66,144 @@ pub fn update_indexes_area(ac: &AppContext) {
     }
 
     if let Some(tb) = text_area.get_buffer() {
-        if let Some(anal) = ac.get_sounding_for_display() {
-            let mut text = String::with_capacity(4096);
-            let empty_val = "    -    ";
+        if let Some(ref anal) = ac.get_sounding_for_display() {
+            let text = &mut String::with_capacity(4096);
 
-            text.push_str("Convection\n");
+            push_profile_indexes(text, anal);
+            push_parcel_indexes(text, anal);
+            push_fire_indexes(text, anal);
 
-            push_profile_index!(anal, text, "SWeT        ", SWeT, "{:>9.0}", empty_val);
-            push_profile_index!(anal, text, "K           ", K, "{:>9.0}", empty_val);
-            push_profile_index!(anal, text, "Total Totals", TotalTotals, "{:>9.0}", empty_val);
-            push_profile_index!(anal, text, "DCAPE       ", DCAPE, "{:>9.0}", empty_val);
-            push_profile_index!(anal, text, "Downrush T  ", DownrushT, "{:>6.0} \u{00b0}C", empty_val);
-            push_profile_index!(anal, text, "PWAT        ", PWAT, "{:>6.0} mm", empty_val);
-            
-
-            text.push_str("\nFire\n");
-            push_profile_index!(anal, text, "Haines      ", Haines, "{:>9.0}", empty_val);
-            
             set_text!(tb, &text);
+        }
+    }
+}
+
+macro_rules! push_profile_index {
+    ($anal: expr, $buf:ident, $name:expr, $selector:expr, $format:expr, $empty_val:expr) => {
+        $buf.push_str($name);
+        $anal
+            .get_profile_index($selector)
+            .and_then(|val| {
+                $buf.push_str(&format!($format, val));
+                Some(())
+            }).or_else(|| {
+                $buf.push_str($empty_val);
+                Some(())
+            });
+        $buf.push('\n');
+    };
+}
+
+#[inline]
+#[rustfmt::skip]
+fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
+    use sounding_analysis::ProfileIndex::*;
+    let empty_val = "    -    ";
+
+    buffer.push_str("\n-------- Profile ---------\n");
+
+    push_profile_index!(anal, buffer, "SWeT        ", SWeT,        "{:>10.0}",          empty_val);
+    push_profile_index!(anal, buffer, "K           ", K,           "{:>10.0}",          empty_val);
+    push_profile_index!(anal, buffer, "Total Totals", TotalTotals, "{:>10.0}",          empty_val);
+    push_profile_index!(anal, buffer, "DCAPE       ", DCAPE,       "{:>5.0} J/kg",      empty_val);
+    push_profile_index!(anal, buffer, "PWAT        ", PWAT,        "{:>7.0} mm",        empty_val);
+    push_profile_index!(anal, buffer, "Downrush T  ", DownrushT,   "{:>7.0} \u{00b0}C", empty_val);
+    push_profile_index!(anal, buffer, "Convective T", ConvectiveT, "{:>7.0} \u{00b0}C", empty_val);
+}
+
+#[inline]
+#[rustfmt::skip]
+fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
+    use sounding_analysis::ParcelIndex::*;
+
+    buffer.push_str("\n-------- Parcels ---------\n");
+
+    macro_rules! push_var {
+        ($buf:ident, $opt_anal:ident, $selector:ident, $fmt:expr,$empty:expr) => {
+            $opt_anal.and_then(|anal| {
+                anal.get_index($selector).and_then(|val|{
+                    $buf.push_str(&format!($fmt, val));
+                    Some(())
+                }).or_else(||{
+                    $buf.push_str($empty);
+                    Some(())
+                });
+                Some(())
+            });
+        }
+    }
+
+    macro_rules! parcel_row {
+        ($buf:ident, $pcl_name:expr, $opt_pcl_anal:ident, $empty:expr) => {
+            $buf.push_str($pcl_name);
+
+            push_var!($buf, $opt_pcl_anal, CAPE,        " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, CIN,         " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LCLPressure, " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LFC,         " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, ELPressure,  " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LI,          " {:>5.1}", $empty);
+            push_var!($buf, $opt_pcl_anal, NCAPE,       " {:>5.2}", $empty);
+
+            $buf.push('\n');
+        }
+    }
+
+    let sfc = anal.get_surface_parcel_analysis();
+    let ml = anal.get_mixed_layer_parcel_analysis();
+    let mu = anal.get_most_unstable_parcel_analysis();
+    let con = anal.get_convective_parcel_analysis();
+
+    let empty = "     -";
+    buffer.push_str("Parcel          CAPE   CIN   LCL   LFC    EL    LI NCAPE\n");
+    buffer.push_str("                J/Kg  J/Kg   hPa   hPa   hPa     C      \n");
+    buffer.push_str("--------------------------------------------------------\n");
+    parcel_row!(buffer, "Surface       ", sfc, empty);
+    parcel_row!(buffer, "Mixed Layer   ", ml,  empty);
+    parcel_row!(buffer, "Most Unstable ", mu,  empty);
+    parcel_row!(buffer, "Convective    ", con, empty);
+}
+
+#[inline]
+#[rustfmt::skip]
+fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
+    use sounding_analysis::ProfileIndex::*;
+
+    macro_rules! push_fire_index {
+        ($buf:ident, $label:expr, $anal:ident, $selector:ident, $fmt:expr, $empty:expr) => {
+            $buf.push_str($label);
+            if let Some(val) = $anal.get_profile_index($selector) {
+                $buf.push_str(&format!($fmt, val));
+            } else {
+                $buf.push_str($empty);
+            }
+        };
+    }
+
+    buffer.push_str("\n---------- Fire ----------\n");
+
+    buffer.push_str("Haines   Low   Mid  High\n");
+    buffer.push_str("       ");
+
+    let empty = "  -   ";
+    for &hns in [HainesLow, HainesMid, HainesHigh].into_iter() {
+        if let Some(val) = anal.get_profile_index(hns) {
+            buffer.push_str(&format!("{:>5.0} ", val));
+        } else {
+            buffer.push_str(empty);
+        }
+    }
+    buffer.push_str("\n\n");
+
+    let empty = " - \n";
+
+    push_fire_index!(buffer, "HDW         ", anal, Hdw,               "{:>6.0}\n", empty);
+    push_fire_index!(buffer, "Conv. T def.", anal, ConvectiveDeficit, "{:>3.0} \u{00b0}C\n", empty);
+    push_fire_index!(buffer, "CAPE ratio  ", anal, CapeRatio,         "{:>6.2}\n", empty);
+
+    if let Some(parcel_anal) = anal.get_convective_parcel_analysis(){
+        if let Ok((dry, wet)) = partition_cape(parcel_anal){
+            buffer.push_str(&format!("\nDry cape: {:>7.2}  Wet cape: {:>7.2}\n", dry, wet));
         }
     }
 }
