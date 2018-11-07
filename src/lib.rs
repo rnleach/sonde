@@ -1,7 +1,5 @@
 extern crate chrono;
 #[macro_use]
-extern crate failure;
-#[macro_use]
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
@@ -42,7 +40,7 @@ use errors::*;
 // GUI module
 mod gui;
 
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), Box<dyn Error>> {
     // Set up Gtk+
     gtk::init()?;
 

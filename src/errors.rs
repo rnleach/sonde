@@ -1,14 +1,22 @@
-pub use failure::Error;
+pub use std::error::Error;
+use std::fmt::Display;
 
-#[derive(Clone, Copy, Debug, Fail)]
+#[derive(Clone, Copy, Debug)]
 pub enum SondeError {
-    #[fail(display = "Could not load widget with id = {}.", _0)]
     WidgetLoadError(&'static str),
-    #[fail(
-        display = "Could not load buffer for text area with id = {}.",
-        _0
-    )]
     TextBufferLoadError(&'static str),
-    #[fail(display = "Error with logger = {}.", _0)]
     LogError(&'static str),
 }
+
+impl Display for SondeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        use SondeError::*;
+        match self {
+            WidgetLoadError(id) => write!(f, "Could not load widget with id = {}.", id),
+            TextBufferLoadError(id) => write!(f, "Could not load buffer for text area with id = {}.", id),
+            LogError(msg) => write!(f, "Error with logger = {}.", msg),
+        }
+    }
+}
+
+impl Error for SondeError {}

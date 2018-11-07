@@ -36,7 +36,7 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     dialog.destroy();
 }
 
-fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Error> {
+fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let file = BufkitFile::load(path)?;
     let data = file.data()?;
 
