@@ -100,7 +100,7 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
     use sounding_analysis::ProfileIndex::*;
     let empty_val = "    -    ";
 
-    buffer.push_str("\n-------- Profile ---------\n");
+    buffer.push('\n');
 
     push_profile_index!(anal, buffer, "SWeT        ", SWeT,        "{:>10.0}",          empty_val);
     push_profile_index!(anal, buffer, "K           ", K,           "{:>10.0}",          empty_val);
@@ -116,7 +116,7 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
 fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     use sounding_analysis::ParcelIndex::*;
 
-    buffer.push_str("\n-------- Parcels ---------\n");
+    buffer.push('\n');
 
     macro_rules! push_var {
         ($buf:ident, $opt_anal:ident, $selector:ident, $fmt:expr,$empty:expr) => {
@@ -133,17 +133,30 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
         }
     }
 
-    macro_rules! parcel_row {
+    macro_rules! parcel_index_row {
         ($buf:ident, $pcl_name:expr, $opt_pcl_anal:ident, $empty:expr) => {
             $buf.push_str($pcl_name);
 
             push_var!($buf, $opt_pcl_anal, CAPE,        " {:>5.0}", $empty);
             push_var!($buf, $opt_pcl_anal, CIN,         " {:>5.0}", $empty);
-            push_var!($buf, $opt_pcl_anal, LCLPressure, " {:>5.0}", $empty);
-            push_var!($buf, $opt_pcl_anal, LFC,         " {:>5.0}", $empty);
-            push_var!($buf, $opt_pcl_anal, ELPressure,  " {:>5.0}", $empty);
-            push_var!($buf, $opt_pcl_anal, LI,          " {:>5.1}", $empty);
             push_var!($buf, $opt_pcl_anal, NCAPE,       " {:>5.2}", $empty);
+            push_var!($buf, $opt_pcl_anal, CAPEHail,    " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LI,          " {:>5.1}", $empty);
+
+            $buf.push('\n');
+        }
+    }
+
+    macro_rules! parcel_level_row {
+        ($buf:ident, $pcl_name:expr, $opt_pcl_anal:ident, $empty:expr) => {
+            $buf.push_str($pcl_name);
+
+            push_var!($buf, $opt_pcl_anal, LCLPressure,   " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LCLHeightAGL,  " {:>6.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, LFC,           " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, ELPressure,    " {:>5.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, ELHeightASL,   " {:>6.0}", $empty);
+            push_var!($buf, $opt_pcl_anal, ELTemperature, " {:>5.0}", $empty);
 
             $buf.push('\n');
         }
@@ -155,13 +168,21 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     let con = anal.get_convective_parcel_analysis();
 
     let empty = "     -";
-    buffer.push_str("Parcel          CAPE   CIN   LCL   LFC    EL    LI NCAPE\n");
-    buffer.push_str("                J/Kg  J/Kg   hPa   hPa   hPa     C      \n");
-    buffer.push_str("--------------------------------------------------------\n");
-    parcel_row!(buffer, "Surface       ", sfc, empty);
-    parcel_row!(buffer, "Mixed Layer   ", ml,  empty);
-    parcel_row!(buffer, "Most Unstable ", mu,  empty);
-    parcel_row!(buffer, "Convective    ", con, empty);
+    buffer.push_str("Parcel          CAPE   CIN NCAPE  Hail    LI\n");
+    buffer.push_str("                J/Kg  J/Kg        CAPE     C\n");
+    buffer.push_str("--------------------------------------------\n");
+    parcel_index_row!(buffer, "Surface       ", sfc, empty);
+    parcel_index_row!(buffer, "Mixed Layer   ", ml,  empty);
+    parcel_index_row!(buffer, "Most Unstable ", mu,  empty);
+    parcel_index_row!(buffer, "Convective    ", con, empty);
+    buffer.push('\n');
+    buffer.push_str("Parcel           LCL    LCL   LFC    EL     EL    EL\n");
+    buffer.push_str("                 hPa  m AGL   hPa   hPa  m ASL     C\n");
+    buffer.push_str("----------------------------------------------------\n");
+    parcel_level_row!(buffer, "Surface       ", sfc, empty);
+    parcel_level_row!(buffer, "Mixed Layer   ", ml,  empty);
+    parcel_level_row!(buffer, "Most Unstable ", mu,  empty);
+    parcel_level_row!(buffer, "Convective    ", con, empty);
 }
 
 #[inline]
@@ -180,7 +201,7 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
         };
     }
 
-    buffer.push_str("\n---------- Fire ----------\n");
+    buffer.push('\n');
 
     buffer.push_str("Haines   Low   Mid  High\n");
     buffer.push_str("       ");
@@ -197,9 +218,9 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
 
     let empty = " - \n";
 
-    push_fire_index!(buffer, "HDW         ", anal, Hdw,               "{:>6.0}\n", empty);
-    push_fire_index!(buffer, "Conv. T def.", anal, ConvectiveDeficit, "{:>3.0} \u{00b0}C\n", empty);
-    push_fire_index!(buffer, "CAPE ratio  ", anal, CapeRatio,         "{:>6.2}\n", empty);
+    push_fire_index!(buffer, "HDW         ", anal, Hdw,               "{:>7.0}\n", empty);
+    push_fire_index!(buffer, "Conv. T def.", anal, ConvectiveDeficit, "{:>4.1} \u{00b0}C\n", empty);
+    push_fire_index!(buffer, "CAPE ratio  ", anal, CapeRatio,         "{:>7.2}\n", empty);
 
     if let Some(parcel_anal) = anal.get_convective_parcel_analysis(){
         if let Ok((dry, wet)) = partition_cape(parcel_anal){
