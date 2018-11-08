@@ -1005,25 +1005,49 @@ fn draw_data_overlays(args: DrawingArgs) {
                 }
 
                 // Draw overlay tags
-                if p_analysis.get_index(ParcelIndex::CAPE).map(|cape| cape > 0.0).unwrap_or(false) {
+                if p_analysis
+                    .get_index(ParcelIndex::CAPE)
+                    .map(|cape| cape > 0.0)
+                    .unwrap_or(false)
+                {
                     // LCL
                     p_analysis
                         .get_index(ParcelIndex::LCLPressure)
                         .and_then(|p| {
-                            p_analysis.get_index(ParcelIndex::LCLTemperature).map(|t| (p,t))
-                        })
-                        .map(|(p,t)| {
+                            p_analysis
+                                .get_index(ParcelIndex::LCLTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| {
                             let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
                             (p, vt)
-                        })
-                        .map(|(p,t)| TPCoords {temperature: t, pressure: p})
-                        .map(|coords| {
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        })
-                        .and_then(|pos| {
+                        }).and_then(|pos| {
                             ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
+                            Some(())
+                        });
+
+                    // LFC
+                    p_analysis
+                        .get_index(ParcelIndex::LFC)
+                        .and_then(|p| {
+                            p_analysis
+                                .get_index(ParcelIndex::LFCVirtualTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
+                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                            coords.x += 0.025;
+                            coords
+                        }).and_then(|pos| {
+                            ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
                             Some(())
                         });
 
@@ -1031,25 +1055,24 @@ fn draw_data_overlays(args: DrawingArgs) {
                     p_analysis
                         .get_index(ParcelIndex::ELPressure)
                         .and_then(|p| {
-                            p_analysis.get_index(ParcelIndex::ELTemperature).map(|t| (p,t))
-                        })
-                        .map(|(p,t)| {
+                            p_analysis
+                                .get_index(ParcelIndex::ELTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| {
                             let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
                             (p, vt)
-                        })
-                        .map(|(p,t)| TPCoords {temperature: t, pressure: p})
-                        .map(|coords| {
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        })
-                        .and_then(|pos| {
+                        }).and_then(|pos| {
                             ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
                             Some(())
-                        });    
+                        });
                 }
-
-
 
                 Some(())
             }).or_else(|| {

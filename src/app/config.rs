@@ -737,11 +737,7 @@ fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords> {
     let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
 
     while p < MAXP + 1.0001 * dp {
-        match find_root(
-            &|t| Ok(theta_e_kelvin(t, t, p)? - theta_e_k),
-            -80.0,
-            50.0,
-        ).and_then(|t| {
+        match find_root(&|t| Ok(theta_e_kelvin(t, t, p)? - theta_e_k), -80.0, 50.0).and_then(|t| {
             v.push(SkewTContext::convert_tp_to_xy(TPCoords {
                 temperature: t,
                 pressure: p,

@@ -13,7 +13,9 @@ impl Display for SondeError {
         use SondeError::*;
         match self {
             WidgetLoadError(id) => write!(f, "Could not load widget with id = {}.", id),
-            TextBufferLoadError(id) => write!(f, "Could not load buffer for text area with id = {}.", id),
+            TextBufferLoadError(id) => {
+                write!(f, "Could not load buffer for text area with id = {}.", id)
+            }
             LogError(msg) => write!(f, "Error with logger = {}.", msg),
         }
     }

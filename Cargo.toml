@@ -19,7 +19,7 @@ serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-base = "^0.8"
 sounding-bufkit = "^0.9"
-sounding-analysis = "^0.9"
+sounding-analysis = "^0.9.2"
 
 [profile.release]
 lto = true
