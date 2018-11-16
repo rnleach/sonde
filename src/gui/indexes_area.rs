@@ -69,12 +69,37 @@ pub fn update_indexes_area(ac: &AppContext) {
         if let Some(ref anal) = ac.get_sounding_for_display() {
             let text = &mut String::with_capacity(4096);
 
+            push_header(text, ac.get_source_description(), anal);
             push_profile_indexes(text, anal);
             push_parcel_indexes(text, anal);
             push_fire_indexes(text, anal);
 
             set_text!(tb, &text);
         }
+    }
+}
+
+#[inline]
+fn push_header(buffer: &mut String, source_desc: Option<String>, anal: &Analysis) {
+    if let Some(desc) = source_desc {
+        buffer.push_str(&desc);
+        buffer.push('\n');
+    }
+
+    if let Some(vt) = anal.sounding().get_valid_time() {
+        buffer.push_str(&format!("     Valid: {}Z\n", vt));
+    }
+
+    let station_info = anal.sounding().get_station_info();
+    if let Some((lat, lon)) = station_info.location() {
+        buffer.push_str(&format!("(lat, lon): ({:.6},{:.6})\n", lat, lon));
+    }
+    if let Some(elev_m) = station_info.elevation().into_option() {
+        buffer.push_str(&format!(
+            " Elevation: {:.0}m ({:.0}ft)\n",
+            elev_m,
+            elev_m * 3.28084
+        ));
     }
 }
 
@@ -101,14 +126,17 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
     let empty_val = "    -    ";
 
     buffer.push('\n');
+    buffer.push('\n');
 
-    push_profile_index!(anal, buffer, "SWeT        ", SWeT,        "{:>10.0}",          empty_val);
-    push_profile_index!(anal, buffer, "K           ", K,           "{:>10.0}",          empty_val);
-    push_profile_index!(anal, buffer, "Total Totals", TotalTotals, "{:>10.0}",          empty_val);
-    push_profile_index!(anal, buffer, "DCAPE       ", DCAPE,       "{:>5.0} J/kg",      empty_val);
-    push_profile_index!(anal, buffer, "PWAT        ", PWAT,        "{:>7.0} mm",        empty_val);
-    push_profile_index!(anal, buffer, "Downrush T  ", DownrushT,   "{:>7.0} \u{00b0}C", empty_val);
-    push_profile_index!(anal, buffer, "Convective T", ConvectiveT, "{:>7.0} \u{00b0}C", empty_val);
+    buffer.push_str("Index        Value\n");
+    buffer.push_str("-----------------------\n");
+    push_profile_index!(anal, buffer, "SWeT         ", SWeT,        "{:>10.0}",          empty_val);
+    push_profile_index!(anal, buffer, "K            ", K,           "{:>7.0} \u{00b0}C", empty_val);
+    push_profile_index!(anal, buffer, "Total Totals ", TotalTotals, "{:>10.0}",          empty_val);
+    push_profile_index!(anal, buffer, "DCAPE        ", DCAPE,       "{:>5.0} J/kg",      empty_val);
+    push_profile_index!(anal, buffer, "PWAT         ", PWAT,        "{:>7.0} mm",        empty_val);
+    push_profile_index!(anal, buffer, "Downrush T   ", DownrushT,   "{:>7.0} \u{00b0}C", empty_val);
+    push_profile_index!(anal, buffer, "Convective T ", ConvectiveT, "{:>7.0} \u{00b0}C", empty_val);
 }
 
 #[inline]
@@ -116,6 +144,7 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
 fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     use sounding_analysis::ParcelIndex::*;
 
+    buffer.push('\n');
     buffer.push('\n');
 
     macro_rules! push_var {
@@ -202,6 +231,9 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     }
 
     buffer.push('\n');
+    buffer.push('\n');
+    buffer.push_str("Fire Weather\n");
+    buffer.push_str("------------------------\n\n");
 
     buffer.push_str("Haines   Low   Mid  High\n");
     buffer.push_str("       ");
@@ -214,17 +246,19 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
             buffer.push_str(empty);
         }
     }
-    buffer.push_str("\n\n");
+    buffer.push('\n');
+    push_fire_index!(buffer, "HDW         ", anal, Hdw, "{:>12.0}\n\n", empty);
 
     let empty = " - \n";
 
-    push_fire_index!(buffer, "HDW         ", anal, Hdw,               "{:>7.0}\n", empty);
-    push_fire_index!(buffer, "Conv. T def.", anal, ConvectiveDeficit, "{:>4.1} \u{00b0}C\n", empty);
-    push_fire_index!(buffer, "CAPE ratio  ", anal, CapeRatio,         "{:>7.2}\n", empty);
+    buffer.push_str("Experimental\n");
+    buffer.push_str("------------------------\n\n");
+    push_fire_index!(buffer, "Conv. T def.", anal, ConvectiveDeficit, "{:>9.1} \u{00b0}C\n", empty);
+    push_fire_index!(buffer, "CAPE ratio  ", anal, CapeRatio,         "{:>12.2}\n", empty);
 
     if let Some(parcel_anal) = anal.get_convective_parcel_analysis(){
         if let Ok((dry, wet)) = partition_cape(parcel_anal){
-            buffer.push_str(&format!("\nDry cape: {:>7.2}  Wet cape: {:>7.2}\n", dry, wet));
+            buffer.push_str(&format!("Dry cape    {:>7.0} J/kg\nWet cape    {:>7.0} J/kg\n", dry, wet));
         }
     }
 }
