@@ -1,7 +1,5 @@
 extern crate chrono;
 #[macro_use]
-extern crate failure;
-#[macro_use]
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
@@ -42,7 +40,7 @@ use errors::*;
 // GUI module
 mod gui;
 
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), Box<dyn Error>> {
     // Set up Gtk+
     gtk::init()?;
 
@@ -59,11 +57,9 @@ pub fn run() -> Result<(), Error> {
                 Ok(_) => Some(serialized_config),
                 Err(_) => None,
             }
-        })
-        .and_then(|serialized_config| {
+        }).and_then(|serialized_config| {
             serde_yaml::from_str::<app::config::Config>(&serialized_config).ok()
-        })
-        .and_then(|deserialized_config| {
+        }).and_then(|deserialized_config| {
             *app.config.borrow_mut() = deserialized_config;
             Some(())
         });

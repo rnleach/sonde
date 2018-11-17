@@ -138,7 +138,8 @@ impl Drawable for HodoContext {
             });
             for pnts in [
                 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0,
-            ].iter()
+            ]
+                .iter()
                 .map(|d| {
                     let end_point = self.convert_sd_to_screen(SDCoords {
                         speed: config::MAX_SPEED,

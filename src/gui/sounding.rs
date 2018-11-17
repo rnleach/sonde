@@ -76,6 +76,17 @@ impl SkewTContext {
     /***********************************************************************************************
      * Support methods for drawing the background..
      **********************************************************************************************/
+    fn draw_clear_background(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        const MINT: f64 = -160.0;
+        const MAXT: f64 = 100.0;
+        self.draw_temperature_band(MINT, MAXT, args);
+    }
+
     fn draw_temperature_banding(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
@@ -199,6 +210,8 @@ impl Drawable for SkewTContext {
      **********************************************************************************************/
     fn draw_background_fill(&self, args: DrawingArgs) {
         let config = args.ac.config.borrow();
+
+        self.draw_clear_background(args);
 
         if config.show_background_bands {
             self.draw_temperature_banding(args);
@@ -810,12 +823,14 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     let sfc = RadioMenuItem::new_with_label("Surface");
     let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
     let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
+    let con = RadioMenuItem::new_with_label_from_widget(&sfc, "Convective");
 
     let p_type = acp.config.borrow().parcel_type;
     match p_type {
         Surface => sfc.set_active(true),
         MixedLayer => mxd.set_active(true),
         MostUnstable => mu.set_active(true),
+        Convective => con.set_active(true),
     }
 
     fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
@@ -841,9 +856,15 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
         handle_toggle(button, MostUnstable, &ac);
     });
 
+    let ac = Rc::clone(acp);
+    con.connect_toggled(move |button| {
+        handle_toggle(button, Convective, &ac);
+    });
+
     menu.append(&sfc);
     menu.append(&mxd);
     menu.append(&mu);
+    menu.append(&con);
 
     menu.append(&SeparatorMenuItem::new());
 
@@ -985,6 +1006,7 @@ fn draw_data_overlays(args: DrawingArgs) {
                 Surface => sndg_anal.get_surface_parcel_analysis(),
                 MixedLayer => sndg_anal.get_mixed_layer_parcel_analysis(),
                 MostUnstable => sndg_anal.get_most_unstable_parcel_analysis(),
+                Convective => sndg_anal.get_convective_parcel_analysis(),
             }.and_then(|p_analysis| {
                 let color = config.parcel_rgba;
                 let p_profile = p_analysis.get_profile();
@@ -995,6 +1017,79 @@ fn draw_data_overlays(args: DrawingArgs) {
                     draw_cape_cin_fill(args, &p_analysis);
                 }
 
+                // Draw overlay tags
+                if p_analysis
+                    .get_index(ParcelIndex::CAPE)
+                    .map(|cape| cape > 0.0)
+                    .unwrap_or(false)
+                {
+                    // LCL
+                    p_analysis
+                        .get_index(ParcelIndex::LCLPressure)
+                        .and_then(|p| {
+                            p_analysis
+                                .get_index(ParcelIndex::LCLTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| {
+                            let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
+                            (p, vt)
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
+                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                            coords.x += 0.025;
+                            coords
+                        }).and_then(|pos| {
+                            ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
+                            Some(())
+                        });
+
+                    // LFC
+                    p_analysis
+                        .get_index(ParcelIndex::LFC)
+                        .and_then(|p| {
+                            p_analysis
+                                .get_index(ParcelIndex::LFCVirtualTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
+                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                            coords.x += 0.025;
+                            coords
+                        }).and_then(|pos| {
+                            ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
+                            Some(())
+                        });
+
+                    // EL
+                    p_analysis
+                        .get_index(ParcelIndex::ELPressure)
+                        .and_then(|p| {
+                            p_analysis
+                                .get_index(ParcelIndex::ELTemperature)
+                                .map(|t| (p, t))
+                        }).map(|(p, t)| {
+                            let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
+                            (p, vt)
+                        }).map(|(p, t)| TPCoords {
+                            temperature: t,
+                            pressure: p,
+                        }).map(|coords| {
+                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                            coords.x += 0.025;
+                            coords
+                        }).and_then(|pos| {
+                            ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
+                            Some(())
+                        });
+                }
+
+                Some(())
+            }).or_else(|| {
+                warn!("Parcel analysis returned None.");
                 Some(())
             });
         }
@@ -1009,24 +1104,28 @@ fn draw_data_overlays(args: DrawingArgs) {
                 .and_then(|lyr| lyr) // unwrap a layer of options
                 .map(|lyr| lyr.top)
                 .and_then(Parcel::from_datarow)
-                .and_then(|parcel| {
-                    sounding_analysis::mix_down(parcel, sndg).ok()
-                })
+                .and_then(|parcel| sounding_analysis::mix_down(parcel, sndg).ok())
                 .and_then(|parcel_profile| {
                     let color = config.inversion_mix_down_rgba;
                     draw_parcel_profile(args, &parcel_profile, color);
 
-                    if let (Some(&pressure), Some(&temperature)) =
-                    (
+                    if let (Some(&pressure), Some(&temperature)) = (
                         parcel_profile.pressure.iter().nth(0),
                         parcel_profile.parcel_t.iter().nth(0),
-                    ){
-                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords{temperature, pressure});
+                    ) {
+                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+                            temperature,
+                            pressure,
+                        });
                         let deg_f = ::metfor::celsius_to_f(temperature)
                             .map(|t| format!("{:.0}\u{00b0}F/", t))
-                            .unwrap_or_else(|_|"".to_owned());
-                        ac.skew_t
-                            .draw_tag(&format!("{}{:.0}\u{00b0}C", deg_f, temperature), pos, color, args);
+                            .unwrap_or_else(|_| "".to_owned());
+                        ac.skew_t.draw_tag(
+                            &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                            pos,
+                            color,
+                            args,
+                        );
                     }
 
                     Some(())
@@ -1093,13 +1192,13 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
                 .map(|(p, _, e_t)| (*p, *e_t));
 
             let down_side = izip!(pres_data, parcel_t, env_t)
-            // Top down
-            .rev()
-            // Skip above top.
-            .skip_while(|&(&p, _, _)| p < lfc)
-            // Now we're in the CIN area!
-            .take_while(|&(&p, _, _)| p < bottom)
-            .map(|(p, p_t, _)| (*p, *p_t));
+                // Top down
+                .rev()
+                // Skip above top.
+                .skip_while(|&(&p, _, _)| p < lfc)
+                // Now we're in the CIN area!
+                .take_while(|&(&p, _, _)| p < bottom)
+                .map(|(p, p_t, _)| (*p, *p_t));
 
             let negative_polygon = up_side.chain(down_side);
 
@@ -1125,13 +1224,13 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
         .map(|(p, _, e_t)| (*p, *e_t));
 
     let down_side = izip!(pres_data, parcel_t, env_t)
-    // Top down
-    .rev()
-    // Skip above top.
-    .skip_while(|&(p, _, _)| *p < el)
-    // Now we're in the CAPE area!
-    .take_while(|&(p, _, _)| *p <= lfc)
-    .map(|(p, p_t, _)| (*p, *p_t));
+        // Top down
+        .rev()
+        // Skip above top.
+        .skip_while(|&(p, _, _)| *p < el)
+        // Now we're in the CAPE area!
+        .take_while(|&(p, _, _)| *p <= lfc)
+        .map(|(p, p_t, _)| (*p, *p_t));
 
     let polygon = up_side.chain(down_side);
 
@@ -1208,12 +1307,10 @@ fn gather_wind_data(
             } else {
                 None
             }
-        })
-        .map(|tuple| {
+        }).map(|tuple| {
             let (p, d, s) = tuple;
             WindBarbData::create(p, d, s, barb_config, args)
-        })
-        .collect()
+        }).collect()
 }
 
 fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {

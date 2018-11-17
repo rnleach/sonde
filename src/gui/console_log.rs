@@ -1,4 +1,7 @@
-use gtk::{idle_add, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView, TextViewExt};
+use gtk::{
+    idle_add, timeout_add_seconds, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView,
+    TextViewExt,
+};
 use log::{self, Level, LevelFilter, Log, Metadata, Record};
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -32,7 +35,7 @@ pub fn set_up_console_log(acp: &AppContextPointer) -> Result<(), SondeError> {
     let logger = Box::new(AppLogger::new(tx));
     let acp2 = Rc::clone(acp);
 
-    idle_add(move || {
+    timeout_add_seconds(1, move || {
         loop {
             match rx.try_recv() {
                 Ok(ref msg) => log_msg(&acp2, msg),

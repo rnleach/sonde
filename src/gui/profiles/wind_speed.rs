@@ -186,10 +186,6 @@ impl Drawable for WindSpeedContext {
                 prev = curr;
             }
         }
-
-        self.draw_hail_growth_zone(args);
-        self.draw_dendritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
@@ -282,6 +278,10 @@ impl Drawable for WindSpeedContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_hail_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
+        self.draw_warm_layer_aloft(args);
+
         draw_wind_speed_profile(args);
     }
 
@@ -362,8 +362,7 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
                 } else {
                     None
                 }
-            })
-            .filter_map(|pair| {
+            }).filter_map(|pair| {
                 let (press, spd) = pair;
                 if press > config::MINP {
                     Some(ac.wind_speed.convert_sp_to_screen(SPCoords { spd, press }))

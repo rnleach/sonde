@@ -341,7 +341,7 @@ impl AppContext {
     // Update all the gui elements
     pub fn update_all_gui(&self) {
         gui::draw_all(&self);
-        gui::update_text_view(&self);
+        gui::update_text_views(&self);
     }
 
     /// Get the sounding to draw.

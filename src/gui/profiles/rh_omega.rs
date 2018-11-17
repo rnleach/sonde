@@ -200,10 +200,6 @@ impl Drawable for RHOmegaContext {
                 prev = curr;
             }
         }
-
-        self.draw_hail_growth_zone(args);
-        self.draw_dendritic_snow_growth_zone(args);
-        self.draw_warm_layer_aloft(args);
     }
 
     fn draw_background_lines(&self, args: DrawingArgs) {
@@ -245,7 +241,8 @@ impl Drawable for RHOmegaContext {
                     w: 0.0,
                     p: config::MINP,
                 },
-            ]).iter()
+            ])
+                .iter()
                 .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
         );
     }
@@ -325,6 +322,10 @@ impl Drawable for RHOmegaContext {
      * Data Drawing.
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs) {
+        self.draw_hail_growth_zone(args);
+        self.draw_dendritic_snow_growth_zone(args);
+        self.draw_warm_layer_aloft(args);
+
         self.draw_wet_bulb_zero_levels(args);
         self.draw_freezing_levels(args);
 
@@ -436,8 +437,7 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
                 } else {
                     None
                 }
-            })
-            .filter_map(|pair| {
+            }).filter_map(|pair| {
                 let (p, rh) = pair;
                 if p > config::MINP {
                     let ScreenCoords { y, .. } =

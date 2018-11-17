@@ -8,13 +8,14 @@ use errors::SondeError;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 6] = [
+const TABS: [(&str, &str); 7] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
     ("text_area_container", "Text"),
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),
     ("console_log_container", "Console"),
+    ("indexes_scrolled_window", "Indexes"),
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
@@ -35,6 +36,12 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let ac1 = Rc::clone(ac);
     open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
+    // The save image item
+    let save_image_item = MenuItem::new_with_label("Save Image");
+    let win1: Window = ac.fetch_widget("main_window")?;
+    let ac1 = Rc::clone(ac);
+    save_image_item.connect_activate(move |m| menu_callbacks::save_image_callback(m, &ac1, &win1));
+
     // The quit item
     let quit_item = MenuItem::new_with_label("Quit");
     quit_item.connect_activate(|_| {
@@ -44,6 +51,7 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     // Build the file menu
     let file_menu: Menu = ac.fetch_widget("main_menu_file")?;
     file_menu.append(&open_item);
+    file_menu.append(&save_image_item);
     file_menu.append(&quit_item);
 
     //
@@ -88,9 +96,10 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
         let tabs: Vec<Widget> = TABS
             .iter()
             // If there is an error here, it will ALWAYS fail. So go ahead and unwrap.
-            .map(|&widget_id| ac.fetch_widget::<Widget>(widget_id.0)
-                .expect("Error loading widget!"))
-            .collect();
+            .map(|&widget_id| {
+                ac.fetch_widget::<Widget>(widget_id.0)
+                    .expect("Error loading widget!")
+            }).collect();
 
         let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();
