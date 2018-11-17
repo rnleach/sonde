@@ -1,3 +1,4 @@
+use cairo;
 pub use std::error::Error;
 use std::fmt::Display;
 
@@ -6,6 +7,7 @@ pub enum SondeError {
     WidgetLoadError(&'static str),
     TextBufferLoadError(&'static str),
     LogError(&'static str),
+    CairoError(cairo::Status),
 }
 
 impl Display for SondeError {
@@ -17,7 +19,14 @@ impl Display for SondeError {
                 write!(f, "Could not load buffer for text area with id = {}.", id)
             }
             LogError(msg) => write!(f, "Error with logger = {}.", msg),
+            CairoError(status) => write!(f, "Error with cairo = {:?}.", status),
         }
+    }
+}
+
+impl From<cairo::Status> for SondeError {
+    fn from(status: cairo::Status) -> Self {
+        SondeError::CairoError(status)
     }
 }
 

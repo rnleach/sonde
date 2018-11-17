@@ -76,6 +76,17 @@ impl SkewTContext {
     /***********************************************************************************************
      * Support methods for drawing the background..
      **********************************************************************************************/
+    fn draw_clear_background(&self, args: DrawingArgs) {
+        let (cr, config) = (args.cr, args.ac.config.borrow());
+
+        let rgba = config.background_rgba;
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        const MINT: f64 = -160.0;
+        const MAXT: f64 = 100.0;
+        self.draw_temperature_band(MINT, MAXT, args);
+    }
+
     fn draw_temperature_banding(&self, args: DrawingArgs) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
@@ -199,6 +210,8 @@ impl Drawable for SkewTContext {
      **********************************************************************************************/
     fn draw_background_fill(&self, args: DrawingArgs) {
         let config = args.ac.config.borrow();
+
+        self.draw_clear_background(args);
 
         if config.show_background_bands {
             self.draw_temperature_banding(args);

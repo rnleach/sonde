@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 
 [dependencies]
-cairo-rs = "^0.5"
+cairo-rs = { version = "^0.5", features = ["png"] }
 chrono = "^0.4"
 gdk = "^0.9"
 glib = "^0.6"
