@@ -146,7 +146,8 @@ impl AppContext {
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -181,7 +182,8 @@ impl AppContext {
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -216,7 +218,8 @@ impl AppContext {
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
                 if x > rh_omega_xy_envelope.upper_right.x {
                     rh_omega_xy_envelope.upper_right.x = x;
@@ -235,7 +238,8 @@ impl AppContext {
                 snd.get_profile(Pressure),
                 snd.get_profile(WindSpeed),
                 snd.get_profile(WindDirection)
-            ).filter_map(|(p, ws, wd)| {
+            )
+            .filter_map(|(p, ws, wd)| {
                 if let (Some(p), Some(s), Some(d)) =
                     (Into::<Option<f64>>::into(p), ws.into(), wd.into())
                 {
@@ -329,7 +333,8 @@ impl AppContext {
                     ::sounding_analysis::linear_interpolate_sounding(
                         self.list.borrow()[self.currently_displayed_index.get()].sounding(),
                         p,
-                    ).ok(),
+                    )
+                    .ok(),
                 );
             } else {
                 self.last_sample.set(None);

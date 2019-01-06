@@ -362,7 +362,8 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
                 } else {
                     None
                 }
-            }).filter_map(|pair| {
+            })
+            .filter_map(|pair| {
                 let (press, spd) = pair;
                 if press > config::MINP {
                     Some(ac.wind_speed.convert_sp_to_screen(SPCoords { spd, press }))

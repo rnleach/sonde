@@ -353,7 +353,8 @@ fn draw_cloud_profile(args: DrawingArgs) {
                 } else {
                     None
                 }
-            }).filter_map(|(press, pcnt): (f64, f64)| {
+            })
+            .filter_map(|(press, pcnt): (f64, f64)| {
                 if press > config::MINP {
                     Some(ac.cloud.convert_pp_to_screen(PPCoords {
                         pcnt: pcnt / 100.0,

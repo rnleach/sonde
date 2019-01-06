@@ -242,8 +242,8 @@ impl Drawable for RHOmegaContext {
                     p: config::MINP,
                 },
             ])
-                .iter()
-                .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
+            .iter()
+            .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
         );
     }
 
@@ -437,7 +437,8 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
                 } else {
                     None
                 }
-            }).filter_map(|pair| {
+            })
+            .filter_map(|pair| {
                 let (p, rh) = pair;
                 if p > config::MINP {
                     let ScreenCoords { y, .. } =

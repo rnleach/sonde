@@ -1007,7 +1007,8 @@ fn draw_data_overlays(args: DrawingArgs) {
                 MixedLayer => sndg_anal.get_mixed_layer_parcel_analysis(),
                 MostUnstable => sndg_anal.get_most_unstable_parcel_analysis(),
                 Convective => sndg_anal.get_convective_parcel_analysis(),
-            }.and_then(|p_analysis| {
+            }
+            .and_then(|p_analysis| {
                 let color = config.parcel_rgba;
                 let p_profile = p_analysis.get_profile();
 
@@ -1030,17 +1031,21 @@ fn draw_data_overlays(args: DrawingArgs) {
                             p_analysis
                                 .get_index(ParcelIndex::LCLTemperature)
                                 .map(|t| (p, t))
-                        }).map(|(p, t)| {
+                        })
+                        .map(|(p, t)| {
                             let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
                             (p, vt)
-                        }).map(|(p, t)| TPCoords {
+                        })
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
                             Some(())
                         });
@@ -1052,14 +1057,17 @@ fn draw_data_overlays(args: DrawingArgs) {
                             p_analysis
                                 .get_index(ParcelIndex::LFCVirtualTemperature)
                                 .map(|t| (p, t))
-                        }).map(|(p, t)| TPCoords {
+                        })
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
                             Some(())
                         });
@@ -1071,24 +1079,29 @@ fn draw_data_overlays(args: DrawingArgs) {
                             p_analysis
                                 .get_index(ParcelIndex::ELTemperature)
                                 .map(|t| (p, t))
-                        }).map(|(p, t)| {
+                        })
+                        .map(|(p, t)| {
                             let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
                             (p, vt)
-                        }).map(|(p, t)| TPCoords {
+                        })
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
                             Some(())
                         });
                 }
 
                 Some(())
-            }).or_else(|| {
+            })
+            .or_else(|| {
                 warn!("Parcel analysis returned None.");
                 Some(())
             });
@@ -1307,10 +1320,12 @@ fn gather_wind_data(
             } else {
                 None
             }
-        }).map(|tuple| {
+        })
+        .map(|tuple| {
             let (p, d, s) = tuple;
             WindBarbData::create(p, d, s, barb_config, args)
-        }).collect()
+        })
+        .collect()
 }
 
 fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {

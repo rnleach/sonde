@@ -111,7 +111,8 @@ macro_rules! push_profile_index {
             .and_then(|val| {
                 $buf.push_str(&format!($format, val));
                 Some(())
-            }).or_else(|| {
+            })
+            .or_else(|| {
                 $buf.push_str($empty_val);
                 Some(())
             });

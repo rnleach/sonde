@@ -99,7 +99,8 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
             .map(|&widget_id| {
                 ac.fetch_widget::<Widget>(widget_id.0)
                     .expect("Error loading widget!")
-            }).collect();
+            })
+            .collect();
 
         let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();

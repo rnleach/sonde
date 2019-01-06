@@ -217,7 +217,8 @@ pub fn update_text_highlight(ac: &AppContext) {
                 tb.get_text(&start_above, &end_above, false)
                     .unwrap_or_else(|| "0.0".to_owned())
                     .trim(),
-            ).unwrap_or(0.0);
+            )
+            .unwrap_or(0.0);
 
             let start_below = tb.get_iter_at_line(i + 1);
             let mut end_below = start_below.clone();
@@ -226,7 +227,8 @@ pub fn update_text_highlight(ac: &AppContext) {
                 tb.get_text(&start_below, &end_below, false)
                     .unwrap_or_else(|| "0.0".to_owned())
                     .trim(),
-            ).unwrap_or(0.0);
+            )
+            .unwrap_or(0.0);
 
             if tp > above_val && tp <= below_val {
                 if let Some(tt) = tb.get_tag_table() {

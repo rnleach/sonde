@@ -750,7 +750,8 @@ fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords> {
                     &|p| Ok(theta_e_kelvin(-79.999, -79.999, p)? - theta_e_k),
                     THETA_E_TOP_P,
                     MAXP,
-                ).unwrap_or_else(|_| p + 1.0)
+                )
+                .unwrap_or_else(|_| p + 1.0)
             }
         }
     }
