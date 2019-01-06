@@ -3,8 +3,8 @@
 use gtk::prelude::*;
 use gtk::Notebook;
 
-use app::AppContextPointer;
-use errors::SondeError;
+use crate::app::AppContextPointer;
+use crate::errors::SondeError;
 
 macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {

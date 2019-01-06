@@ -2,6 +2,7 @@
 name = "sonde"
 version = "0.1.0"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 cairo-rs = { version = "^0.5", features = ["png"] }

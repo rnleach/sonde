@@ -13,12 +13,12 @@ use sounding_analysis::{
 };
 use sounding_base::DataRow;
 
-use app::config::Rgba;
-use app::{AppContext, AppContextPointer};
-use coords::{
+use crate::app::config::Rgba;
+use crate::app::{AppContext, AppContextPointer};
+use crate::coords::{
     convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords,
 };
-use errors::SondeError;
+use crate::errors::SondeError;
 
 mod console_log;
 mod control_area;

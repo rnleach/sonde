@@ -9,8 +9,8 @@ use std::rc::Rc;
 use std::sync::mpsc::{sync_channel, TryRecvError, TrySendError};
 use std::sync::Mutex;
 
-use app::AppContextPointer;
-use errors::SondeError;
+use crate::app::AppContextPointer;
+use crate::errors::SondeError;
 
 const LOG_LEVEL: Level = Level::Trace;
 

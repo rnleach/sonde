@@ -1,8 +1,8 @@
 use gtk::prelude::*;
 use gtk::{TextTag, TextView};
 
-use app::{AppContext, AppContextPointer};
-use errors::SondeError;
+use crate::app::{AppContext, AppContextPointer};
+use crate::errors::SondeError;
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -55,7 +55,7 @@ pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn update_text_area(ac: &AppContext) {
-    use app::config;
+    use crate::app::config;
 
     macro_rules! unwrap_to_str {
         ($opt_val:expr, $fmt:expr) => {

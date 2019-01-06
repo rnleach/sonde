@@ -28,14 +28,14 @@ use std::io::{Read, Write};
 
 // Module for maintaining application state
 mod app;
-use app::AppContext;
+use crate::app::AppContext;
 
 // Module for coordinate systems
 mod coords;
 
 // Errors
 mod errors;
-use errors::*;
+use crate::errors::*;
 
 // GUI module
 mod gui;

@@ -5,8 +5,8 @@ use gtk;
 use gtk::prelude::*;
 use gtk::{ColorButton, Frame, ScrolledWindow};
 
-use app::AppContextPointer;
-use gui::control_area::{BOX_SPACING, PADDING};
+use crate::app::AppContextPointer;
+use crate::gui::control_area::{BOX_SPACING, PADDING};
 
 pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);

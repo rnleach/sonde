@@ -1,8 +1,8 @@
 use cairo::Context;
 
-use app::config::Rgba;
-use app::AppContext;
-use coords::{Rect, ScreenCoords, ScreenRect};
+use crate::app::config::Rgba;
+use crate::app::AppContext;
+use crate::coords::{Rect, ScreenCoords, ScreenRect};
 
 // Draw a curve connecting a list of points.
 pub fn plot_curve_from_points<I>(cr: &Context, line_width_pixels: f64, rgba: Rgba, points: I)

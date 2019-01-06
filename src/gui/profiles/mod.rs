@@ -1,9 +1,9 @@
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
-use app::{AppContext, AppContextPointer};
-use errors::SondeError;
-use gui::Drawable;
+use crate::app::{AppContext, AppContextPointer};
+use crate::errors::SondeError;
+use crate::gui::Drawable;
 
 pub mod cloud;
 pub mod rh_omega;

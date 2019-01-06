@@ -3,8 +3,8 @@ use std::rc::Rc;
 use gdk::Event;
 use gtk::{self, prelude::*, Menu, MenuItem, Notebook, Paned, Widget, Window};
 
-use app::{AppContext, AppContextPointer};
-use errors::SondeError;
+use crate::app::{AppContext, AppContextPointer};
+use crate::errors::SondeError;
 
 mod menu_callbacks;
 

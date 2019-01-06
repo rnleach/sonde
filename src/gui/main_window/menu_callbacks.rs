@@ -8,10 +8,10 @@ use gtk::{
 
 use sounding_bufkit::BufkitFile;
 
-use app::AppContextPointer;
-use coords::DeviceRect;
-use errors::*;
-use gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable};
+use crate::app::AppContextPointer;
+use crate::coords::DeviceRect;
+use crate::errors::*;
+use crate::gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable};
 
 pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);

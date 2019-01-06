@@ -8,9 +8,9 @@ use sounding_analysis;
 use sounding_analysis::Analysis;
 use sounding_base::{DataRow, Sounding};
 
-use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
+use crate::coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
+use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+use crate::gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 
 use glib;
 use gtk::Builder;
@@ -19,7 +19,7 @@ use gtk::Builder;
 pub mod config;
 use self::config::Config;
 
-use errors::SondeError;
+use crate::errors::SondeError;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
@@ -93,7 +93,7 @@ impl AppContext {
     }
 
     pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {
-        use app::config;
+        use crate::app::config;
         use sounding_base::Profile::*;
 
         *self.list.borrow_mut() = src

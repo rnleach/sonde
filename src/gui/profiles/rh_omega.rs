@@ -7,15 +7,15 @@ use gtk::DrawingArea;
 
 use sounding_base::DataRow;
 
-use app::{config, config::Rgba, AppContext, AppContextPointer};
-use coords::{
+use crate::app::{config, config::Rgba, AppContext, AppContextPointer};
+use crate::coords::{
     convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
     WPCoords, XYCoords,
 };
-use errors::SondeError;
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points};
-use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
+use crate::errors::SondeError;
+use crate::gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
+use crate::gui::utility::{check_overlap_then_add, plot_curve_from_points};
+use crate::gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
 
 #[derive(Debug)]
 pub struct RHOmegaContext {

@@ -2,8 +2,8 @@ use gtk::prelude::*;
 use gtk::{TextTag, TextView};
 use sounding_analysis::{partition_cape, Analysis};
 
-use app::{AppContext, AppContextPointer};
-use errors::SondeError;
+use crate::app::{AppContext, AppContextPointer};
+use crate::errors::SondeError;
 
 macro_rules! make_default_tag {
     ($tb:ident) => {

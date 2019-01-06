@@ -1,8 +1,8 @@
 //! Keep configuration data in this module.
 
-use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use gui::{HodoContext, SkewTContext};
+use crate::coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+use crate::gui::{HodoContext, SkewTContext};
 
 /// Types of parcels you can use when doing parcel analysis.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -704,7 +704,7 @@ lazy_static! {
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
-    use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
+    use crate::app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
     use metfor::temperature_c_from_theta;
     use std::f64;
 

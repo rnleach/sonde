@@ -1,7 +1,7 @@
 //! Coordinate systems and geometry definitions. Some conversions are dependent on the application
 //! state, and so those functions are a part of the `AppContext`.
 
-use app::config;
+use crate::app::config;
 
 /// Common operations on rectangles
 pub trait Rect {

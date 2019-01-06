@@ -8,21 +8,21 @@ use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMe
 use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelIndex, ParcelProfile};
 use sounding_base::DataRow;
 
-use app::{
+use crate::app::{
     config::{self, ParcelType, Rgba},
     AppContext, AppContextPointer,
 };
-use coords::{
+use crate::coords::{
     convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
     TPCoords, XYCoords,
 };
-use errors::SondeError;
-use gui::plot_context::{GenericContext, HasGenericContext};
-use gui::utility::{
+use crate::errors::SondeError;
+use crate::gui::plot_context::{GenericContext, HasGenericContext};
+use crate::gui::utility::{
     check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
     plot_dashed_curve_from_points,
 };
-use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
+use crate::gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -816,7 +816,7 @@ fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPoi
 }
 
 fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
-    use app::config::ParcelType::*;
+    use crate::app::config::ParcelType::*;
 
     make_heading!(menu, "Parcel Type");
 
@@ -993,7 +993,7 @@ fn draw_wind_profile(args: DrawingArgs) {
 }
 
 fn draw_data_overlays(args: DrawingArgs) {
-    use app::config::ParcelType::*;
+    use crate::app::config::ParcelType::*;
 
     let ac = args.ac;
     let config = ac.config.borrow();
