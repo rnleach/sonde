@@ -334,7 +334,7 @@ impl Default for Config {
             freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
             show_freezing_line: true,
             wet_bulb_zero_line_width: 3.0,
-            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_98, 0.4, 1.0),
+            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_97, 0.4, 1.0),
             show_wet_bulb_zero_line: true,
 
             //

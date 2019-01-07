@@ -1123,8 +1123,8 @@ fn draw_data_overlays(args: DrawingArgs) {
                     draw_parcel_profile(args, &parcel_profile, color);
 
                     if let (Some(&pressure), Some(&temperature)) = (
-                        parcel_profile.pressure.iter().nth(0),
-                        parcel_profile.parcel_t.iter().nth(0),
+                        parcel_profile.pressure.get(0),
+                        parcel_profile.parcel_t.get(0),
                     ) {
                         let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
                             temperature,
@@ -1232,7 +1232,7 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     }
 
     let up_side = izip!(pres_data, parcel_t, env_t)
-        .skip_while(|&(p, _, _)| *p > lfc || *p > lfc)
+        .skip_while(|&(p, _, _)| *p > lfc)
         .take_while(|&(p, _, _)| *p >= el)
         .map(|(p, _, e_t)| (*p, *e_t));
 
@@ -1646,10 +1646,9 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
 
         draw_parcel_profile(args, &profile, color);
 
-        if let (Some(&pressure), Some(&temperature)) = (
-            profile.pressure.iter().nth(0),
-            profile.parcel_t.iter().nth(0),
-        ) {
+        if let (Some(&pressure), Some(&temperature)) =
+            (profile.pressure.get(0), profile.parcel_t.get(0))
+        {
             let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
                 temperature,
                 pressure,

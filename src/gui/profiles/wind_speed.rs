@@ -355,7 +355,7 @@ fn draw_wind_speed_profile(args: DrawingArgs) {
 
         let pres_data = sndg.sounding().get_profile(Pressure);
         let spd_data = sndg.sounding().get_profile(WindSpeed);
-        let mut profile = izip!(pres_data, spd_data)
+        let profile = izip!(pres_data, spd_data)
             .filter_map(|(p, spd)| {
                 if let (Some(p), Some(s)) = (p.into(), spd.into()) {
                     Some((p, s))

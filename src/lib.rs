@@ -45,7 +45,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     gtk::init()?;
 
     // Set up data context
-    let app = AppContext::new();
+    let app = AppContext::initialize();
 
     // Load the data configuration from last time, if it exists.
     File::open("config.yml")

@@ -64,7 +64,7 @@ impl AppContext {
     ///
     /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
     /// drawn on the GUI.
-    pub fn new() -> AppContextPointer {
+    pub fn initialize() -> AppContextPointer {
         let glade_src = include_str!("../sonde.glade");
 
         Rc::new(AppContext {
@@ -97,7 +97,6 @@ impl AppContext {
         use sounding_base::Profile::*;
 
         *self.list.borrow_mut() = src
-            .into_iter()
             .map(|anal| Rc::new(anal.fill_in_missing_analysis()))
             .collect();
         *self.extra_profiles.borrow_mut() = self
