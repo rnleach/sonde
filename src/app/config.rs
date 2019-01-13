@@ -907,7 +907,7 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
 
 /// Bisection algorithm for finding the root of an equation given values bracketing a root. Used
 /// when drawing moist adiabats.
-fn find_root<Q1, Q2>(f: &Fn(Q1) -> Option<Q2>, mut low_val: Q1, mut high_val: Q1) -> Option<Q1>
+fn find_root<Q1, Q2>(f: &dyn Fn(Q1) -> Option<Q2>, mut low_val: Q1, mut high_val: Q1) -> Option<Q1>
 where
     Q1: Quantity + PartialOrd + std::ops::Sub,
     Q2: Quantity,

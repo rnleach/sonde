@@ -11,7 +11,7 @@ pub enum SondeError {
 }
 
 impl Display for SondeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use crate::SondeError::*;
         match self {
             WidgetLoadError(id) => write!(f, "Could not load widget with id = {}.", id),

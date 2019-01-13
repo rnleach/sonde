@@ -87,7 +87,7 @@ impl Drawable for HodoContext {
     /***********************************************************************************************
      * Background Drawing.
      **********************************************************************************************/
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let mut do_draw = true;
@@ -119,7 +119,7 @@ impl Drawable for HodoContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_iso_speed {
@@ -164,7 +164,7 @@ impl Drawable for HodoContext {
         }
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let mut labels = vec![];
@@ -222,14 +222,14 @@ impl Drawable for HodoContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         draw_data(args);
     }
 
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn draw_active_sample(&self, args: DrawingArgs) {
+    fn draw_active_sample(&self, args: DrawingArgs<'_, '_>) {
         if !self.has_data() {
             return;
         }
@@ -274,7 +274,7 @@ impl Drawable for HodoContext {
 
 impl MasterDrawable for HodoContext {}
 
-fn draw_data(args: DrawingArgs) {
+fn draw_data(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

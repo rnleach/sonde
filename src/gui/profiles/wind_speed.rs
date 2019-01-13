@@ -161,7 +161,7 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Background Drawing.
      **********************************************************************************************/
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_background_bands {
@@ -191,7 +191,7 @@ impl Drawable for WindSpeedContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draw isobars
@@ -220,7 +220,7 @@ impl Drawable for WindSpeedContext {
         )]
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr) = (args.ac, args.cr);
 
         let mut labels = vec![];
@@ -280,7 +280,7 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         self.draw_hail_growth_zone(args);
         self.draw_dendritic_snow_growth_zone(args);
         self.draw_warm_layer_aloft(args);
@@ -346,7 +346,7 @@ impl SlaveProfileDrawable for WindSpeedContext {
     }
 }
 
-fn draw_wind_speed_profile(args: DrawingArgs) {
+fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

@@ -83,7 +83,7 @@ impl SkewTContext {
     /***********************************************************************************************
      * Support methods for drawing the background..
      **********************************************************************************************/
-    fn draw_clear_background(&self, args: DrawingArgs) {
+    fn draw_clear_background(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.background_rgba;
@@ -94,7 +94,7 @@ impl SkewTContext {
         self.draw_temperature_band(MINT, MAXT, args);
     }
 
-    fn draw_temperature_banding(&self, args: DrawingArgs) {
+    fn draw_temperature_banding(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.background_band_rgba;
@@ -110,7 +110,7 @@ impl SkewTContext {
         }
     }
 
-    fn draw_hail_growth_zone(&self, args: DrawingArgs) {
+    fn draw_hail_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.hail_zone_rgba;
@@ -118,7 +118,7 @@ impl SkewTContext {
         self.draw_temperature_band(Celsius(-30.0), Celsius(-10.0), args);
     }
 
-    fn draw_dendtritic_growth_zone(&self, args: DrawingArgs) {
+    fn draw_dendtritic_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.dendritic_zone_rgba;
@@ -127,7 +127,7 @@ impl SkewTContext {
         self.draw_temperature_band(Celsius(-18.0), Celsius(-12.0), args);
     }
 
-    fn draw_temperature_band(&self, cold_t: Celsius, warm_t: Celsius, args: DrawingArgs) {
+    fn draw_temperature_band(&self, cold_t: Celsius, warm_t: Celsius, args: DrawingArgs<'_, '_>) {
         let cr = args.cr;
 
         // Assume color has already been set up for us.
@@ -215,7 +215,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Background Drawing.
      **********************************************************************************************/
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let config = args.ac.config.borrow();
 
         self.draw_clear_background(args);
@@ -233,7 +233,7 @@ impl Drawable for SkewTContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draws background lines from the bottom up.
@@ -333,7 +333,7 @@ impl Drawable for SkewTContext {
         }
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let mut labels = vec![];
@@ -482,7 +482,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         draw_temperature_profiles(args);
         draw_wind_profile(args);
         draw_data_overlays(args);
@@ -650,7 +650,7 @@ impl Drawable for SkewTContext {
         results
     }
 
-    fn draw_active_readout(&self, args: DrawingArgs) {
+    fn draw_active_readout(&self, args: DrawingArgs<'_, '_>) {
         let config = args.ac.config.borrow();
 
         if config.show_active_readout {
@@ -905,7 +905,7 @@ fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
 /**************************************************************************************************
  *                                   Data Layer Drawing
  **************************************************************************************************/
-fn draw_temperature_profiles(args: DrawingArgs) {
+fn draw_temperature_profiles(args: DrawingArgs<'_, '_>) {
     let config = args.ac.config.borrow();
 
     use self::TemperatureType::{DewPoint, DryBulb, WetBulb};
@@ -930,7 +930,7 @@ enum TemperatureType {
     DewPoint,
 }
 
-fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
+fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -975,7 +975,7 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     }
 }
 
-fn draw_wind_profile(args: DrawingArgs) {
+fn draw_wind_profile(args: DrawingArgs<'_, '_>) {
     if args.ac.config.borrow().show_wind_profile {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
@@ -1004,7 +1004,7 @@ fn draw_wind_profile(args: DrawingArgs) {
     }
 }
 
-fn draw_data_overlays(args: DrawingArgs) {
+fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
     use crate::app::config::ParcelType::*;
 
     let ac = args.ac;
@@ -1155,7 +1155,7 @@ fn draw_data_overlays(args: DrawingArgs) {
     }
 }
 
-fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
+fn draw_cape_cin_fill(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAnalysis) {
     let cape = match parcel_analysis.cape().into_option() {
         Some(cape) => cape,
         None => return,
@@ -1265,7 +1265,7 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     draw_filled_polygon(cr, polygon_rgba, polygon);
 }
 
-fn draw_downburst(args: DrawingArgs, sounding_analysis: &Analysis) {
+fn draw_downburst(args: DrawingArgs<'_, '_>, sounding_analysis: &Analysis) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -1305,7 +1305,7 @@ fn draw_downburst(args: DrawingArgs, sounding_analysis: &Analysis) {
 fn gather_wind_data(
     snd: &::sounding_base::Sounding,
     barb_config: &WindBarbConfig,
-    args: DrawingArgs,
+    args: DrawingArgs<'_, '_>,
 ) -> Vec<WindBarbData> {
     let wind = snd.wind_profile();
     let pres = snd.pressure_profile();
@@ -1330,7 +1330,7 @@ fn gather_wind_data(
         .collect()
 }
 
-fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
+fn filter_wind_data(args: DrawingArgs<'_, '_>, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
     let ac = args.ac;
 
     // Remove overlapping barbs, or barbs not on the screen
@@ -1367,7 +1367,7 @@ struct WindBarbConfig {
 }
 
 impl WindBarbConfig {
-    fn init(args: DrawingArgs) -> Self {
+    fn init(args: DrawingArgs<'_, '_>) -> Self {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -1416,7 +1416,7 @@ impl WindBarbData {
         pressure: HectoPascal,
         wind: WindSpdDir<Knots>,
         barb_config: &WindBarbConfig,
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
     ) -> Self {
         let center = get_wind_barb_center(pressure, barb_config.xcoord, args);
 
@@ -1599,7 +1599,11 @@ impl WindBarbData {
     }
 }
 
-fn get_wind_barb_center(pressure: HectoPascal, xcenter: f64, args: DrawingArgs) -> ScreenCoords {
+fn get_wind_barb_center(
+    pressure: HectoPascal,
+    xcenter: f64,
+    args: DrawingArgs<'_, '_>,
+) -> ScreenCoords {
     let ac = args.ac;
 
     let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
@@ -1613,7 +1617,7 @@ fn get_wind_barb_center(pressure: HectoPascal, xcenter: f64, args: DrawingArgs) 
 /**************************************************************************************************
  *                              Active Readout Layer Drawing
  **************************************************************************************************/
-fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
+fn draw_sample_parcel_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
@@ -1634,7 +1638,7 @@ fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
     }
 }
 
-fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
+fn draw_sample_mix_down_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
@@ -1673,7 +1677,7 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
     }
 }
 
-fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rgba) {
+fn draw_parcel_profile(args: DrawingArgs<'_, '_>, profile: &ParcelProfile, line_rgba: Rgba) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -1697,6 +1701,6 @@ fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rg
     plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
 }
 
-fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
+fn get_sample_parcel(args: DrawingArgs<'_, '_>) -> Option<Parcel> {
     args.ac.get_sample().and_then(Parcel::from_datarow)
 }

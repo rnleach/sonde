@@ -89,7 +89,7 @@ impl AppContext {
             .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
     }
 
-    pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {
+    pub fn load_data(&self, src: &mut dyn Iterator<Item = Analysis>) {
         use crate::app::config;
 
         *self.list.borrow_mut() = src

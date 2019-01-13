@@ -77,7 +77,7 @@ trait Drawable: PlotContext + PlotContextExt {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError>;
 
     /// Not recommended to override.
-    fn init_matrix(&self, args: DrawingArgs) {
+    fn init_matrix(&self, args: DrawingArgs<'_, '_>) {
         let cr = args.cr;
 
         cr.save();
@@ -113,7 +113,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn prepare_to_make_text(&self, args: DrawingArgs) {
+    fn prepare_to_make_text(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let font_face =
@@ -127,18 +127,18 @@ trait Drawable: PlotContext + PlotContextExt {
      * Background Drawing.
      **********************************************************************************************/
     /// Override for background fill.
-    fn draw_background_fill(&self, _args: DrawingArgs) {}
+    fn draw_background_fill(&self, _args: DrawingArgs<'_, '_>) {}
 
     /// Override for background lines.
-    fn draw_background_lines(&self, _args: DrawingArgs) {}
+    fn draw_background_lines(&self, _args: DrawingArgs<'_, '_>) {}
 
     /// Override for background labels.
-    fn collect_labels(&self, _args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, _args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         vec![]
     }
 
     /// Not recommended to override.
-    fn draw_background_labels(&self, args: DrawingArgs) {
+    fn draw_background_labels(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_labels {
@@ -168,7 +168,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_background(&self, args: DrawingArgs) {
+    fn draw_background(&self, args: DrawingArgs<'_, '_>) {
         let config = args.ac.config.borrow();
 
         self.draw_background_fill(args);
@@ -184,9 +184,9 @@ trait Drawable: PlotContext + PlotContextExt {
      * Data Drawing.
      **********************************************************************************************/
     /// Override to draw data
-    fn draw_data(&self, args: DrawingArgs);
+    fn draw_data(&self, args: DrawingArgs<'_, '_>);
 
-    fn draw_data_and_legend(&self, args: DrawingArgs) {
+    fn draw_data_and_legend(&self, args: DrawingArgs<'_, '_>) {
         self.draw_data(args);
 
         if args.ac.config.borrow().show_legend {
@@ -201,7 +201,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_legend(&self, args: DrawingArgs) {
+    fn draw_legend(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if !ac.plottable() {
@@ -251,7 +251,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     /// Not recommended to override.
     fn calculate_legend_box_size(
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
         font_extents: &FontExtents,
         legend_text: &[(String, Rgba)],
     ) -> (f64, f64) {
@@ -282,7 +282,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_legend_rectangle(args: DrawingArgs, screen_rect: &ScreenRect) {
+    fn draw_legend_rectangle(args: DrawingArgs<'_, '_>, screen_rect: &ScreenRect) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -306,7 +306,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     /// Not recommended to override.
     fn draw_legend_text(
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
         upper_left: &ScreenCoords,
         font_extents: &FontExtents,
         legend_text: &[(String, Rgba)],
@@ -337,7 +337,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_no_data(&self, args: DrawingArgs) {
+    fn draw_no_data(&self, args: DrawingArgs<'_, '_>) {
         const MESSAGE: &str = "No Data";
 
         let (cr, config) = (args.cr, args.ac.config.borrow());
@@ -395,7 +395,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     /// Override to add overlays other than the active readout, or to create one without text
     /// or that doesn't use pressure as a coordinate, such as the hodograph.
-    fn draw_active_readout(&self, args: DrawingArgs) {
+    fn draw_active_readout(&self, args: DrawingArgs<'_, '_>) {
         if args.ac.config.borrow().show_active_readout {
             self.draw_active_sample(args);
         }
@@ -403,7 +403,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     /// Not recommended to override, unless you want to create an active readout that doesn't use
     /// pressure as a vertical coord or doesn't use text. Like the Hodograph.
-    fn draw_active_sample(&self, args: DrawingArgs) {
+    fn draw_active_sample(&self, args: DrawingArgs<'_, '_>) {
         if !self.has_data() {
             return;
         }
@@ -438,7 +438,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     /// Not recommended to override.
-    fn draw_sample_line(&self, args: DrawingArgs, sample_p: HectoPascal) {
+    fn draw_sample_line(&self, args: DrawingArgs<'_, '_>, sample_p: HectoPascal) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -462,7 +462,7 @@ trait Drawable: PlotContext + PlotContextExt {
     /// Not recommended to override.
     fn calculate_active_readout_box(
         &self,
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
         strings: &[(String, Rgba)],
         sample_p: HectoPascal,
     ) -> ScreenRect {
@@ -627,7 +627,7 @@ trait Drawable: PlotContext + PlotContextExt {
         });
     }
 
-    fn draw_tag(&self, text: &str, location: ScreenCoords, color: Rgba, args: DrawingArgs) {
+    fn draw_tag(&self, text: &str, location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
         self.prepare_to_make_text(args);
 
         let cr = args.cr;
@@ -800,7 +800,7 @@ trait Drawable: PlotContext + PlotContextExt {
     /***********************************************************************************************
      * Used a layered cached system for drawing on screen
      **********************************************************************************************/
-    fn draw_background_cached(&self, args: DrawingArgs) {
+    fn draw_background_cached(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if self.is_background_dirty() {
@@ -827,7 +827,7 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.paint();
     }
 
-    fn draw_data_cached(&self, args: DrawingArgs) {
+    fn draw_data_cached(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr) = (args.ac, args.cr);
 
         if self.is_data_dirty() {
@@ -851,7 +851,7 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.paint();
     }
 
-    fn draw_active_readout_cached(&self, args: DrawingArgs) {
+    fn draw_active_readout_cached(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr) = (args.ac, args.cr);
 
         if self.is_overlay_dirty() {
@@ -912,7 +912,7 @@ trait SlaveProfileDrawable: Drawable {
         Inhibit(false)
     }
 
-    fn draw_dendritic_snow_growth_zone(&self, args: DrawingArgs) {
+    fn draw_dendritic_snow_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_dendritic_zone {
@@ -931,7 +931,7 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_hail_growth_zone(&self, args: DrawingArgs) {
+    fn draw_hail_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_hail_zone {
@@ -950,7 +950,7 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_warm_layer_aloft(&self, args: DrawingArgs) {
+    fn draw_warm_layer_aloft(&self, args: DrawingArgs<'_, '_>) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_warm_layer_aloft {
@@ -978,7 +978,7 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_freezing_levels(&self, args: DrawingArgs) {
+    fn draw_freezing_levels(&self, args: DrawingArgs<'_, '_>) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_freezing_line {
@@ -999,7 +999,7 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_wet_bulb_zero_levels(&self, args: DrawingArgs) {
+    fn draw_wet_bulb_zero_levels(&self, args: DrawingArgs<'_, '_>) {
         let ac = args.ac;
 
         if !ac.config.borrow().show_wet_bulb_zero_line {
@@ -1020,7 +1020,7 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 
-    fn draw_layers(&self, args: DrawingArgs, layers: &[Layer], color_rgba: Rgba) {
+    fn draw_layers(&self, args: DrawingArgs<'_, '_>, layers: &[Layer], color_rgba: Rgba) {
         let cr = args.cr;
 
         let bb = self.bounding_box_in_screen_coords();
@@ -1076,7 +1076,7 @@ trait SlaveProfileDrawable: Drawable {
 
     fn draw_levels(
         &self,
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
         levels: &[DataRow],
         color_rgba: Rgba,
         line_width: f64,

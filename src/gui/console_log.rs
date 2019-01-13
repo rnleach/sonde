@@ -72,11 +72,11 @@ impl AppLogger {
 }
 
 impl Log for AppLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
+    fn enabled(&self, metadata: &Metadata<'_>) -> bool {
         metadata.level() <= LOG_LEVEL
     }
 
-    fn log(&self, record: &Record) {
+    fn log(&self, record: &Record<'_>) {
         if self.enabled(record.metadata()) {
             // put it on the overflow, and then try to empty
             let overflow = self.overflow.lock().unwrap();
