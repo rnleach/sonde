@@ -1,25 +1,22 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
-
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
-
-use sounding_analysis;
-use sounding_analysis::Analysis;
-use sounding_base::{DataRow, Sounding};
-
-use coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
-
+use crate::coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
+use crate::errors::SondeError;
+use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+use crate::gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 use glib;
 use gtk::Builder;
+use itertools::izip;
+use log::{error, log_enabled, trace};
+use metfor::Quantity;
+use sounding_analysis::{self, Analysis};
+use sounding_base::{DataRow, Sounding};
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 // Module for configuring application
 pub mod config;
 use self::config::Config;
-
-use errors::SondeError;
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
@@ -64,7 +61,7 @@ impl AppContext {
     ///
     /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
     /// drawn on the GUI.
-    pub fn new() -> AppContextPointer {
+    pub fn initialize() -> AppContextPointer {
         let glade_src = include_str!("../sonde.glade");
 
         Rc::new(AppContext {
@@ -92,12 +89,10 @@ impl AppContext {
             .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
     }
 
-    pub fn load_data(&self, src: &mut Iterator<Item = Analysis>) {
-        use app::config;
-        use sounding_base::Profile::*;
+    pub fn load_data(&self, src: &mut dyn Iterator<Item = Analysis>) {
+        use crate::app::config;
 
         *self.list.borrow_mut() = src
-            .into_iter()
             .map(|anal| Rc::new(anal.fill_in_missing_analysis()))
             .collect();
         *self.extra_profiles.borrow_mut() = self
@@ -130,9 +125,9 @@ impl AppContext {
 
         for snd in snd_list {
             for pair in snd
-                .get_profile(Pressure)
+                .pressure_profile()
                 .iter()
-                .zip(snd.get_profile(Temperature))
+                .zip(snd.temperature_profile())
                 .filter_map(|(p, t)| {
                     if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
@@ -146,7 +141,8 @@ impl AppContext {
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -165,9 +161,9 @@ impl AppContext {
             }
 
             for pair in snd
-                .get_profile(Pressure)
+                .pressure_profile()
                 .iter()
-                .zip(snd.get_profile(DewPoint))
+                .zip(snd.dew_point_profile())
                 .filter_map(|(p, t)| {
                     if let (Some(p), Some(t)) = (p.into(), t.into()) {
                         if p < config::MINP {
@@ -181,7 +177,8 @@ impl AppContext {
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
                 if x < skew_t_xy_envelope.lower_left.x {
                     skew_t_xy_envelope.lower_left.x = x;
@@ -200,23 +197,24 @@ impl AppContext {
             }
 
             for pair in snd
-                .get_profile(Pressure)
+                .pressure_profile()
                 .iter()
-                .zip(snd.get_profile(PressureVerticalVelocity))
+                .zip(snd.pvv_profile())
                 .filter_map(|(p, omega)| {
-                    if let (Some(p), Some(o)) = (p.into(), omega.into()) {
+                    if let (Some(p), Some(o)) = (p.into_option(), omega.into_option()) {
                         if p < config::MINP {
                             None
                         } else {
                             Some(WPCoords {
-                                w: { f64::max(f64::abs(o), config::MIN_ABS_W) },
+                                w: o.abs().max(config::MIN_ABS_W),
                                 p,
                             })
                         }
                     } else {
                         None
                     }
-                }) {
+                })
+            {
                 let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
                 if x > rh_omega_xy_envelope.upper_right.x {
                     rh_omega_xy_envelope.upper_right.x = x;
@@ -231,18 +229,12 @@ impl AppContext {
                 }
             }
 
-            for pair in izip!(
-                snd.get_profile(Pressure),
-                snd.get_profile(WindSpeed),
-                snd.get_profile(WindDirection)
-            ).filter_map(|(p, ws, wd)| {
-                if let (Some(p), Some(s), Some(d)) =
-                    (Into::<Option<f64>>::into(p), ws.into(), wd.into())
-                {
+            for pair in izip!(snd.pressure_profile(), snd.wind_profile()).filter_map(|(p, wind)| {
+                if let (Some(p), Some(w)) = (p.into_option(), wind.into_option()) {
                     if p < self.config.borrow().min_hodo_pressure {
                         None
                     } else {
-                        Some(SDCoords { speed: s, dir: d })
+                        Some(SDCoords { spd_dir: w })
                     }
                 } else {
                     None
@@ -329,7 +321,8 @@ impl AppContext {
                     ::sounding_analysis::linear_interpolate_sounding(
                         self.list.borrow()[self.currently_displayed_index.get()].sounding(),
                         p,
-                    ).ok(),
+                    )
+                    .ok(),
                 );
             } else {
                 self.last_sample.set(None);
@@ -426,9 +419,6 @@ impl AppContext {
     }
 
     fn log_anal_summary(&self) {
-        use sounding_analysis::ParcelIndex::*;
-
-        const IDX_ENUM: sounding_analysis::ParcelIndex = CAPE;
         const IDX_KEY: &str = "CAPE";
 
         let anal = if let Some(anal) = self.get_sounding_for_display() {
@@ -439,49 +429,27 @@ impl AppContext {
         };
 
         if let Some(val) = anal.provider_analysis().get(IDX_KEY) {
-            anal.get_surface_parcel_analysis().and_then(|sfc_pa| {
-                anal.get_mixed_layer_parcel_analysis().and_then(|ml_pa| {
-                    anal.get_most_unstable_parcel_analysis().and_then(|mu_pa| {
+            anal.surface_parcel_analysis().and_then(|sfc_pa| {
+                anal.mixed_layer_parcel_analysis().and_then(|ml_pa| {
+                    anal.most_unstable_parcel_analysis().and_then(|mu_pa| {
                         trace!(
                             "{} {} SFC: {:?} ML: {:?} MU: {:?}",
                             IDX_KEY,
                             val,
-                            sfc_pa.get_index(IDX_ENUM),
-                            ml_pa.get_index(IDX_ENUM),
-                            mu_pa.get_index(IDX_ENUM),
+                            sfc_pa.cape(),
+                            ml_pa.cape(),
+                            mu_pa.cape(),
                         );
                         Some(())
                     })
                 })
             });
-
-        // if let Some(my_val) = anal.get_profile_index(IDX_ENUM) {
-        //     trace!(
-        //         "(Bufkit,Sonde,Diff,%) => ({:5.2}, {:5.2}, {:5.2}, {:6.2}%)",
-        //         val,
-        //         my_val,
-        //         val - my_val,
-        //         (val - my_val) / val * 100.0
-        //     );
-        // } else {
-        //  trace!("Analysis value was None for {:?}, but the provider had {}", IDX_ENUM, val);
-        // }
         } else {
             trace!("Error loading {} from provider analysis.\n\n", IDX_KEY);
             for (key, val) in anal.provider_analysis().iter() {
                 trace!("{} => {}", key, val);
             }
         }
-
-        // trace!(
-        //     "Provider analysis for {:?} at index {}.",
-        //     self.get_source_description(),
-        //     self.currently_displayed_index.get()
-        // );
-
-        // for (key, val) in anal.provider_analysis().iter() {
-        //     trace!("{} => {}", key, val);
-        // }
     }
 }
 

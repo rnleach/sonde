@@ -1,4 +1,4 @@
-extern crate sonde;
+use sonde;
 
 fn main() {
     if let Err(e) = sonde::run() {

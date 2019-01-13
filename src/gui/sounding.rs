@@ -1,28 +1,35 @@
-use std::rc::Rc;
-
+use crate::{
+    app::{
+        config::{self, ParcelType, Rgba},
+        AppContext, AppContextPointer,
+    },
+    coords::{
+        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
+        TPCoords, XYCoords,
+    },
+    errors::SondeError,
+    gui::{
+        plot_context::{GenericContext, HasGenericContext},
+        utility::{
+            check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
+            plot_dashed_curve_from_points,
+        },
+        Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt,
+    },
+};
 use cairo::Context;
 use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
-use gtk::prelude::*;
-use gtk::{CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
-
-use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelIndex, ParcelProfile};
+use gtk::{
+    prelude::*, CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem,
+};
+use itertools::izip;
+use log::warn;
+use metfor::{
+    Celsius, CelsiusDiff, Fahrenheit, Feet, HectoPascal, JpKg, Knots, Quantity, WindSpdDir,
+};
+use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelProfile};
 use sounding_base::DataRow;
-
-use app::{
-    config::{self, ParcelType, Rgba},
-    AppContext, AppContextPointer,
-};
-use coords::{
-    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
-    TPCoords, XYCoords,
-};
-use errors::SondeError;
-use gui::plot_context::{GenericContext, HasGenericContext};
-use gui::utility::{
-    check_overlap_then_add, draw_filled_polygon, plot_curve_from_points,
-    plot_dashed_curve_from_points,
-};
-use gui::{Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt};
+use std::rc::Rc;
 
 pub struct SkewTContext {
     generic: GenericContext,
@@ -49,7 +56,7 @@ impl SkewTContext {
         let x = coords.x - coords.y;
         let y = coords.y;
 
-        let t = x * (config::MAXT - config::MINT) + config::MINT;
+        let t = config::MINT + (config::MAXT - config::MINT) * x;
         let p = convert_y_to_pressure(y);
 
         TPCoords {
@@ -76,26 +83,26 @@ impl SkewTContext {
     /***********************************************************************************************
      * Support methods for drawing the background..
      **********************************************************************************************/
-    fn draw_clear_background(&self, args: DrawingArgs) {
+    fn draw_clear_background(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.background_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-        const MINT: f64 = -160.0;
-        const MAXT: f64 = 100.0;
+        const MINT: Celsius = Celsius(-160.0);
+        const MAXT: Celsius = Celsius(100.0);
         self.draw_temperature_band(MINT, MAXT, args);
     }
 
-    fn draw_temperature_banding(&self, args: DrawingArgs) {
+    fn draw_temperature_banding(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.background_band_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         let mut start_line = -160i32;
         while start_line < 100 {
-            let t1 = f64::from(start_line);
-            let t2 = t1 + 10.0;
+            let t1 = Celsius(f64::from(start_line));
+            let t2 = t1 + CelsiusDiff(10.0);
 
             self.draw_temperature_band(t1, t2, args);
 
@@ -103,43 +110,43 @@ impl SkewTContext {
         }
     }
 
-    fn draw_hail_growth_zone(&self, args: DrawingArgs) {
+    fn draw_hail_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.hail_zone_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        self.draw_temperature_band(-30.0, -10.0, args);
+        self.draw_temperature_band(Celsius(-30.0), Celsius(-10.0), args);
     }
 
-    fn draw_dendtritic_growth_zone(&self, args: DrawingArgs) {
+    fn draw_dendtritic_growth_zone(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let rgba = config.dendritic_zone_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-        self.draw_temperature_band(-18.0, -12.0, args);
+        self.draw_temperature_band(Celsius(-18.0), Celsius(-12.0), args);
     }
 
-    fn draw_temperature_band(&self, cold_t: f64, warm_t: f64, args: DrawingArgs) {
+    fn draw_temperature_band(&self, cold_t: Celsius, warm_t: Celsius, args: DrawingArgs<'_, '_>) {
         let cr = args.cr;
 
         // Assume color has already been set up for us.
 
-        const MAXP: f64 = config::MAXP;
-        const MINP: f64 = config::MINP;
+        const MAXP: HectoPascal = config::MAXP;
+        const MINP: HectoPascal = config::MINP;
 
         let mut coords = [
-            (warm_t, MAXP),
-            (warm_t, MINP),
-            (cold_t, MINP),
-            (cold_t, MAXP),
+            (warm_t.unpack(), MAXP.unpack()),
+            (warm_t.unpack(), MINP.unpack()),
+            (cold_t.unpack(), MINP.unpack()),
+            (cold_t.unpack(), MAXP.unpack()),
         ];
 
         // Convert points to screen coords
         for coord in &mut coords {
             let screen_coords = self.convert_tp_to_screen(TPCoords {
-                temperature: coord.0,
-                pressure: coord.1,
+                temperature: Celsius(coord.0),
+                pressure: HectoPascal(coord.1),
             });
             coord.0 = screen_coords.x;
             coord.1 = screen_coords.y;
@@ -208,7 +215,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Background Drawing.
      **********************************************************************************************/
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let config = args.ac.config.borrow();
 
         self.draw_clear_background(args);
@@ -226,7 +233,7 @@ impl Drawable for SkewTContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draws background lines from the bottom up.
@@ -306,11 +313,11 @@ impl Drawable for SkewTContext {
         if config.show_freezing_line {
             let pnts = &[
                 TPCoords {
-                    temperature: 0.0,
+                    temperature: Celsius(0.0),
                     pressure: config::MAXP,
                 },
                 TPCoords {
-                    temperature: 0.0,
+                    temperature: Celsius(0.0),
                     pressure: config::MINP,
                 },
             ];
@@ -326,7 +333,7 @@ impl Drawable for SkewTContext {
         }
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let mut labels = vec![];
@@ -336,12 +343,12 @@ impl Drawable for SkewTContext {
 
         if config.show_isobars {
             for &p in &config::ISOBARS {
-                let label = format!("{}", p);
+                let label = format!("{:.0}", p.unpack());
 
                 let extents = cr.text_extents(&label);
 
                 let ScreenCoords { y: screen_y, .. } = self.convert_tp_to_screen(TPCoords {
-                    temperature: 0.0,
+                    temperature: Celsius(0.0),
                     pressure: p,
                 });
                 let screen_y = screen_y - extents.height / 2.0;
@@ -373,7 +380,7 @@ impl Drawable for SkewTContext {
                 ..
             } = self.convert_screen_to_tp(lower_left);
             for &t in &config::ISOTHERMS {
-                let label = format!("{}", t);
+                let label = format!("{:.0}", t.unpack());
 
                 let extents = cr.text_extents(&label);
 
@@ -423,7 +430,7 @@ impl Drawable for SkewTContext {
         if let Some(snd) = ac.get_sounding_for_display() {
             let snd = snd.sounding();
             // Build the valid time part
-            if let Some(vt) = snd.get_valid_time() {
+            if let Some(vt) = snd.valid_time() {
                 use chrono::{Datelike, Timelike};
                 let mut temp_string = format!(
                     "Valid: {} {:02}/{:02}/{:04} {:02}Z",
@@ -442,7 +449,7 @@ impl Drawable for SkewTContext {
                     vt.hour()
                 );
 
-                if let Some(lt) = Into::<Option<i32>>::into(snd.get_lead_time()) {
+                if let Some(lt) = snd.lead_time().into_option() {
                     temp_string.push_str(&format!(" F{:03}", lt));
                 }
 
@@ -450,8 +457,8 @@ impl Drawable for SkewTContext {
             }
 
             // Build location part.
-            let coords = snd.get_station_info().location();
-            let elevation = snd.get_station_info().elevation();
+            let coords = snd.station_info().location();
+            let elevation = snd.station_info().elevation();
             if coords.is_some() || elevation.is_some() {
                 let mut location = "".to_owned();
 
@@ -461,8 +468,12 @@ impl Drawable for SkewTContext {
                         location.push_str(", ");
                     }
                 }
-                if let Some(el) = Into::<Option<f64>>::into(elevation) {
-                    location.push_str(&format!("{:.0}m ({:.0}ft)", el, el * 3.28084));
+                if let Some(el) = elevation.into_option() {
+                    location.push_str(&format!(
+                        "{:.0}m ({:.0}ft)",
+                        el.unpack(),
+                        Feet::from(el).unpack()
+                    ));
                 }
 
                 result.push((location, color));
@@ -475,7 +486,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         draw_temperature_profiles(args);
         draw_wind_profile(args);
         draw_data_overlays(args);
@@ -502,16 +513,15 @@ impl Drawable for SkewTContext {
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
         let pres = vals.pressure;
-        let dir = vals.direction;
-        let spd = vals.speed;
+        let wind = vals.wind;
         let hgt_asl = vals.height;
-        let omega = vals.omega;
-        let elevation = anal.sounding().get_station_info().elevation();
+        let omega = vals.pvv;
+        let elevation = anal.sounding().station_info().elevation();
 
         if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            if let Some(t_c) = Into::<Option<f64>>::into(t_c) {
+            if let Some(t_c) = t_c.into_option() {
                 let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}C", t_c));
+                line.push_str(&format!("{:.0}\u{00B0}C", t_c.unpack().round()));
                 if dp_c.is_none() && omega.is_none() {
                     line.push('\n');
                 } else if dp_c.is_none() {
@@ -519,12 +529,12 @@ impl Drawable for SkewTContext {
                 }
                 results.push((line, config.temperature_rgba));
             }
-            if let Some(dp_c) = Into::<Option<f64>>::into(dp_c) {
+            if let Some(dp_c) = dp_c.into_option() {
                 if t_c.is_some() {
                     results.push(("/".to_owned(), default_color));
                 }
                 let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}C", dp_c));
+                line.push_str(&format!("{:.0}\u{00B0}C", dp_c.unpack().round()));
                 if t_c.is_none() && omega.is_none() {
                     line.push('\n');
                 } else {
@@ -533,8 +543,8 @@ impl Drawable for SkewTContext {
                 results.push((line, config.dew_point_rgba));
             }
 
-            if let (Some(t_c), Some(dp_c)) = (t_c.into(), dp_c.into()) {
-                if let Ok(rh) = rh(t_c, dp_c) {
+            if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
+                if let Some(rh) = rh(t_c, dp_c) {
                     let mut line = String::with_capacity(5);
                     line.push_str(&format!(" {:.0}%", 100.0 * rh));
                     if omega.is_none() {
@@ -546,50 +556,58 @@ impl Drawable for SkewTContext {
                 }
             }
 
-            if let Some(omega) = Into::<Option<f64>>::into(omega) {
-                results.push((format!(" {:.1} Pa/s\n", omega), config.omega_rgba));
+            if let Some(omega) = omega.into_option() {
+                results.push((
+                    format!(" {:.1} Pa/s\n", (omega.unpack() * 10.0).round() / 10.0),
+                    config.omega_rgba,
+                ));
             }
         }
 
-        if pres.is_some() || dir.is_some() || spd.is_some() {
-            if let Some(pres) = Into::<Option<f64>>::into(pres) {
+        if pres.is_some() || wind.is_some() {
+            if let Some(pres) = pres.into_option() {
                 let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}hPa", pres));
-                if dir.is_none() && spd.is_none() {
+                line.push_str(&format!("{:.0}hPa", pres.unpack()));
+                if wind.is_none() {
                     line.push('\n');
                 } else {
                     line.push(' ');
                 }
                 results.push((line, config.isobar_rgba));
             }
-            if let (Some(dir), Some(spd)) = (
-                Into::<Option<f64>>::into(dir),
-                Into::<Option<f64>>::into(spd),
-            ) {
-                results.push((format!("{:03.0} {:.0}KT\n", dir, spd), config.wind_rgba));
+            if let Some(wind) = wind.into_option() {
+                results.push((
+                    format!(
+                        "{:03.0} {:02.0}KT\n",
+                        wind.direction,
+                        wind.speed.unpack().round()
+                    ),
+                    config.wind_rgba,
+                ));
             }
         }
 
-        if let Some(hgt) = Into::<Option<f64>>::into(hgt_asl) {
+        if let Some(hgt) = hgt_asl.into_option() {
             let color = config.active_readout_line_rgba;
 
             results.push((
-                format!("ASL: {:5.0}m ({:5.0}ft)\n", hgt, 3.28084 * hgt),
+                format!(
+                    "ASL: {:5.0}m ({:5.0}ft)\n",
+                    hgt.unpack().round(),
+                    Feet::from(hgt).unpack().round()
+                ),
                 color,
             ));
         }
 
         if elevation.is_some() && hgt_asl.is_some() {
-            if let (Some(elev), Some(hgt)) = (
-                Into::<Option<f64>>::into(elevation),
-                Into::<Option<f64>>::into(hgt_asl),
-            ) {
+            if let (Some(elev), Some(hgt)) = (elevation.into_option(), hgt_asl.into_option()) {
                 let color = config.active_readout_line_rgba;
                 let mut line = String::with_capacity(128);
                 line.push_str(&format!(
                     "AGL: {:5.0}m ({:5.0}ft)\n",
-                    hgt - elev,
-                    3.28084 * (hgt - elev)
+                    (hgt - elev).unpack().round(),
+                    Feet::from(hgt - elev).unpack().round(),
                 ));
                 results.push((line, color));
             }
@@ -636,7 +654,7 @@ impl Drawable for SkewTContext {
         results
     }
 
-    fn draw_active_readout(&self, args: DrawingArgs) {
+    fn draw_active_readout(&self, args: DrawingArgs<'_, '_>) {
         let config = args.ac.config.borrow();
 
         if config.show_active_readout {
@@ -816,7 +834,7 @@ fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPoi
 }
 
 fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
-    use app::config::ParcelType::*;
+    use crate::app::config::ParcelType::*;
 
     make_heading!(menu, "Parcel Type");
 
@@ -891,7 +909,7 @@ fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
 /**************************************************************************************************
  *                                   Data Layer Drawing
  **************************************************************************************************/
-fn draw_temperature_profiles(args: DrawingArgs) {
+fn draw_temperature_profiles(args: DrawingArgs<'_, '_>) {
     let config = args.ac.config.borrow();
 
     use self::TemperatureType::{DewPoint, DryBulb, WetBulb};
@@ -916,19 +934,17 @@ enum TemperatureType {
     DewPoint,
 }
 
-fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
+fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    use sounding_base::Profile::{DewPoint, Pressure, Temperature, WetBulb};
-
     if let Some(sndg) = ac.get_sounding_for_display() {
         let sndg = sndg.sounding();
-        let pres_data = sndg.get_profile(Pressure);
+        let pres_data = sndg.pressure_profile();
         let temp_data = match t_type {
-            TemperatureType::DryBulb => sndg.get_profile(Temperature),
-            TemperatureType::WetBulb => sndg.get_profile(WetBulb),
-            TemperatureType::DewPoint => sndg.get_profile(DewPoint),
+            TemperatureType::DryBulb => sndg.temperature_profile(),
+            TemperatureType::WetBulb => sndg.wet_bulb_profile(),
+            TemperatureType::DewPoint => sndg.dew_point_profile(),
         };
 
         let line_width = match t_type {
@@ -963,7 +979,7 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs) {
     }
 }
 
-fn draw_wind_profile(args: DrawingArgs) {
+fn draw_wind_profile(args: DrawingArgs<'_, '_>) {
     if args.ac.config.borrow().show_wind_profile {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
@@ -992,8 +1008,8 @@ fn draw_wind_profile(args: DrawingArgs) {
     }
 }
 
-fn draw_data_overlays(args: DrawingArgs) {
-    use app::config::ParcelType::*;
+fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
+    use crate::app::config::ParcelType::*;
 
     let ac = args.ac;
     let config = ac.config.borrow();
@@ -1003,13 +1019,14 @@ fn draw_data_overlays(args: DrawingArgs) {
 
         if config.show_parcel_profile {
             match config.parcel_type {
-                Surface => sndg_anal.get_surface_parcel_analysis(),
-                MixedLayer => sndg_anal.get_mixed_layer_parcel_analysis(),
-                MostUnstable => sndg_anal.get_most_unstable_parcel_analysis(),
-                Convective => sndg_anal.get_convective_parcel_analysis(),
-            }.and_then(|p_analysis| {
+                Surface => sndg_anal.surface_parcel_analysis(),
+                MixedLayer => sndg_anal.mixed_layer_parcel_analysis(),
+                MostUnstable => sndg_anal.most_unstable_parcel_analysis(),
+                Convective => sndg_anal.convective_parcel_analysis(),
+            }
+            .and_then(|p_analysis| {
                 let color = config.parcel_rgba;
-                let p_profile = p_analysis.get_profile();
+                let p_profile = p_analysis.profile();
 
                 draw_parcel_profile(args, &p_profile, color);
 
@@ -1019,76 +1036,83 @@ fn draw_data_overlays(args: DrawingArgs) {
 
                 // Draw overlay tags
                 if p_analysis
-                    .get_index(ParcelIndex::CAPE)
-                    .map(|cape| cape > 0.0)
+                    .cape()
+                    .map(|cape| cape > JpKg(0.0))
                     .unwrap_or(false)
                 {
                     // LCL
                     p_analysis
-                        .get_index(ParcelIndex::LCLPressure)
-                        .and_then(|p| {
-                            p_analysis
-                                .get_index(ParcelIndex::LCLTemperature)
-                                .map(|t| (p, t))
-                        }).map(|(p, t)| {
-                            let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
+                        .lcl_pressure()
+                        .into_option()
+                        .and_then(|p| p_analysis.lcl_temperature().map(|t| (p, t)))
+                        .map(|(p, t)| {
+                            let vt = metfor::virtual_temperature(t, t, p)
+                                .map(Celsius::from)
+                                .unwrap_or(t);
                             (p, vt)
-                        }).map(|(p, t)| TPCoords {
+                        })
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
                             Some(())
                         });
 
                     // LFC
                     p_analysis
-                        .get_index(ParcelIndex::LFC)
-                        .and_then(|p| {
-                            p_analysis
-                                .get_index(ParcelIndex::LFCVirtualTemperature)
-                                .map(|t| (p, t))
-                        }).map(|(p, t)| TPCoords {
+                        .lfc_pressure()
+                        .into_option()
+                        .and_then(|p| p_analysis.lfc_virt_temperature().map(|t| (p, t)))
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
                             Some(())
                         });
 
                     // EL
                     p_analysis
-                        .get_index(ParcelIndex::ELPressure)
-                        .and_then(|p| {
-                            p_analysis
-                                .get_index(ParcelIndex::ELTemperature)
-                                .map(|t| (p, t))
-                        }).map(|(p, t)| {
-                            let vt = metfor::virtual_temperature_c(t, t, p).unwrap_or(t);
+                        .el_pressure()
+                        .into_option()
+                        .and_then(|p| p_analysis.el_temperature().map(|t| (p, t)))
+                        .map(|(p, t)| {
+                            let vt = metfor::virtual_temperature(t, t, p)
+                                .map(Celsius::from)
+                                .unwrap_or(t);
                             (p, vt)
-                        }).map(|(p, t)| TPCoords {
+                        })
+                        .map(|(p, t)| TPCoords {
                             temperature: t,
                             pressure: p,
-                        }).map(|coords| {
+                        })
+                        .map(|coords| {
                             let mut coords = ac.skew_t.convert_tp_to_screen(coords);
                             coords.x += 0.025;
                             coords
-                        }).and_then(|pos| {
+                        })
+                        .and_then(|pos| {
                             ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
                             Some(())
                         });
                 }
 
                 Some(())
-            }).or_else(|| {
+            })
+            .or_else(|| {
                 warn!("Parcel analysis returned None.");
                 Some(())
             });
@@ -1110,18 +1134,19 @@ fn draw_data_overlays(args: DrawingArgs) {
                     draw_parcel_profile(args, &parcel_profile, color);
 
                     if let (Some(&pressure), Some(&temperature)) = (
-                        parcel_profile.pressure.iter().nth(0),
-                        parcel_profile.parcel_t.iter().nth(0),
+                        parcel_profile.pressure.get(0),
+                        parcel_profile.parcel_t.get(0),
                     ) {
                         let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
                             temperature,
                             pressure,
                         });
-                        let deg_f = ::metfor::celsius_to_f(temperature)
-                            .map(|t| format!("{:.0}\u{00b0}F/", t))
-                            .unwrap_or_else(|_| "".to_owned());
+                        let deg_f = format!(
+                            "{:.0}\u{00B0}F",
+                            Fahrenheit::from(temperature).unpack().round()
+                        );
                         ac.skew_t.draw_tag(
-                            &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                            &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
                             pos,
                             color,
                             args,
@@ -1134,35 +1159,32 @@ fn draw_data_overlays(args: DrawingArgs) {
     }
 }
 
-fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
-    let cape = match parcel_analysis.get_index(ParcelIndex::CAPE) {
+fn draw_cape_cin_fill(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAnalysis) {
+    let cape = match parcel_analysis.cape().into_option() {
         Some(cape) => cape,
         None => return,
     };
 
-    let cin = match parcel_analysis.get_index(ParcelIndex::CIN) {
+    let cin = match parcel_analysis.cin().into_option() {
         Some(cin) => cin,
         None => return,
     };
 
-    if cape <= 0.0 {
+    if cape <= JpKg(0.0) {
         return;
     }
 
-    if parcel_analysis
-        .get_index(ParcelIndex::LCLPressure)
-        .is_none()
-    {
+    if parcel_analysis.lcl_pressure().is_none() {
         // No moist convection.
         return;
     };
 
-    let lfc = match parcel_analysis.get_index(ParcelIndex::LFC) {
+    let lfc = match parcel_analysis.lfc_pressure().into_option() {
         Some(lfc) => lfc,
         None => return,
     };
 
-    let el = match parcel_analysis.get_index(ParcelIndex::ELPressure) {
+    let el = match parcel_analysis.el_pressure().into_option() {
         Some(el) => el,
         None => return,
     };
@@ -1170,13 +1192,13 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    let parcel_profile = parcel_analysis.get_profile();
+    let parcel_profile = parcel_analysis.profile();
 
     let pres_data = &parcel_profile.pressure;
     let parcel_t = &parcel_profile.parcel_t;
     let env_t = &parcel_profile.environment_t;
 
-    if cin < 0.0 {
+    if cin < JpKg(0.0) {
         let bottom = izip!(pres_data, parcel_t, env_t)
             // Top down
             .rev()
@@ -1219,7 +1241,7 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     }
 
     let up_side = izip!(pres_data, parcel_t, env_t)
-        .skip_while(|&(p, _, _)| *p > lfc || *p > lfc)
+        .skip_while(|&(p, _, _)| *p > lfc)
         .take_while(|&(p, _, _)| *p >= el)
         .map(|(p, _, e_t)| (*p, *e_t));
 
@@ -1247,11 +1269,11 @@ fn draw_cape_cin_fill(args: DrawingArgs, parcel_analysis: &ParcelAnalysis) {
     draw_filled_polygon(cr, polygon_rgba, polygon);
 }
 
-fn draw_downburst(args: DrawingArgs, sounding_analysis: &Analysis) {
+fn draw_downburst(args: DrawingArgs<'_, '_>, sounding_analysis: &Analysis) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    let parcel_profile = if let Some(pp) = sounding_analysis.get_downburst_profile() {
+    let parcel_profile = if let Some(pp) = sounding_analysis.downburst_profile() {
         pp
     } else {
         return;
@@ -1287,33 +1309,32 @@ fn draw_downburst(args: DrawingArgs, sounding_analysis: &Analysis) {
 fn gather_wind_data(
     snd: &::sounding_base::Sounding,
     barb_config: &WindBarbConfig,
-    args: DrawingArgs,
+    args: DrawingArgs<'_, '_>,
 ) -> Vec<WindBarbData> {
-    use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
+    let wind = snd.wind_profile();
+    let pres = snd.pressure_profile();
 
-    let dir = snd.get_profile(WindDirection);
-    let spd = snd.get_profile(WindSpeed);
-    let pres = snd.get_profile(Pressure);
-
-    izip!(pres, dir, spd)
+    izip!(pres, wind)
         .filter_map(|tuple| {
-            let (p, d, s) = (*tuple.0, *tuple.1, *tuple.2);
-            if let (Some(p), Some(d), Some(s)) = (p.into(), d.into(), s.into()) {
+            let (p, w) = (*tuple.0, *tuple.1);
+            if let (Some(p), Some(w)) = (p.into(), w.into()) {
                 if p > config::MINP {
-                    Some((p, d, s))
+                    Some((p, w))
                 } else {
                     None
                 }
             } else {
                 None
             }
-        }).map(|tuple| {
-            let (p, d, s) = tuple;
-            WindBarbData::create(p, d, s, barb_config, args)
-        }).collect()
+        })
+        .map(|tuple| {
+            let (p, w) = tuple;
+            WindBarbData::create(p, w, barb_config, args)
+        })
+        .collect()
 }
 
-fn filter_wind_data(args: DrawingArgs, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
+fn filter_wind_data(args: DrawingArgs<'_, '_>, barb_data: Vec<WindBarbData>) -> Vec<WindBarbData> {
     let ac = args.ac;
 
     // Remove overlapping barbs, or barbs not on the screen
@@ -1350,7 +1371,7 @@ struct WindBarbConfig {
 }
 
 impl WindBarbConfig {
-    fn init(args: DrawingArgs) -> Self {
+    fn init(args: DrawingArgs<'_, '_>) -> Self {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -1396,13 +1417,17 @@ struct WindBarbData {
 
 impl WindBarbData {
     fn create(
-        pressure: f64,
-        direction: f64,
-        speed: f64,
+        pressure: HectoPascal,
+        wind: WindSpdDir<Knots>,
         barb_config: &WindBarbConfig,
-        args: DrawingArgs,
+        args: DrawingArgs<'_, '_>,
     ) -> Self {
         let center = get_wind_barb_center(pressure, barb_config.xcoord, args);
+
+        let WindSpdDir {
+            speed: Knots(speed),
+            direction,
+        } = wind;
 
         // Convert angle to traditional XY coordinate plane
         let direction_radians = ::std::f64::consts::FRAC_PI_2 - direction.to_radians();
@@ -1578,11 +1603,15 @@ impl WindBarbData {
     }
 }
 
-fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> ScreenCoords {
+fn get_wind_barb_center(
+    pressure: HectoPascal,
+    xcenter: f64,
+    args: DrawingArgs<'_, '_>,
+) -> ScreenCoords {
     let ac = args.ac;
 
     let ScreenCoords { y: yc, .. } = ac.skew_t.convert_tp_to_screen(TPCoords {
-        temperature: 0.0,
+        temperature: Celsius(0.0),
         pressure,
     });
 
@@ -1592,7 +1621,7 @@ fn get_wind_barb_center(pressure: f64, xcenter: f64, args: DrawingArgs) -> Scree
 /**************************************************************************************************
  *                              Active Readout Layer Drawing
  **************************************************************************************************/
-fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
+fn draw_sample_parcel_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
@@ -1602,7 +1631,7 @@ fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
         // build the parcel profile
         let parcel_analysis = sounding_analysis::lift_parcel(sample_parcel, sndg);
         let profile = if let Ok(ref parcel_analysis) = parcel_analysis {
-            parcel_analysis.get_profile()
+            parcel_analysis.profile()
         } else {
             return;
         };
@@ -1613,7 +1642,7 @@ fn draw_sample_parcel_profile(args: DrawingArgs, sample_parcel: Parcel) {
     }
 }
 
-fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
+fn draw_sample_mix_down_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
@@ -1631,19 +1660,19 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
 
         draw_parcel_profile(args, &profile, color);
 
-        if let (Some(&pressure), Some(&temperature)) = (
-            profile.pressure.iter().nth(0),
-            profile.parcel_t.iter().nth(0),
-        ) {
+        if let (Some(&pressure), Some(&temperature)) =
+            (profile.pressure.get(0), profile.parcel_t.get(0))
+        {
             let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
                 temperature,
                 pressure,
             });
-            let deg_f = ::metfor::celsius_to_f(temperature)
-                .map(|t| format!("{:.0}\u{00b0}F/", t))
-                .unwrap_or_else(|_| "".to_owned());
+            let deg_f = format!(
+                "{:.0}\u{00B0}F",
+                Fahrenheit::from(temperature).unpack().round()
+            );
             ac.skew_t.draw_tag(
-                &format!("{}{:.0}\u{00b0}C", deg_f, temperature),
+                &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
                 pos,
                 color,
                 args,
@@ -1652,7 +1681,7 @@ fn draw_sample_mix_down_profile(args: DrawingArgs, sample_parcel: Parcel) {
     }
 }
 
-fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rgba) {
+fn draw_parcel_profile(args: DrawingArgs<'_, '_>, profile: &ParcelProfile, line_rgba: Rgba) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -1676,6 +1705,6 @@ fn draw_parcel_profile(args: DrawingArgs, profile: &ParcelProfile, line_rgba: Rg
     plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
 }
 
-fn get_sample_parcel(args: DrawingArgs) -> Option<Parcel> {
+fn get_sample_parcel(args: DrawingArgs<'_, '_>) -> Option<Parcel> {
     args.ac.get_sample().and_then(Parcel::from_datarow)
 }

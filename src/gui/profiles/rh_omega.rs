@@ -1,21 +1,22 @@
-use std::cell::Cell;
-use std::rc::Rc;
-
-use gdk::EventMotion;
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use sounding_base::DataRow;
-
-use app::{config, config::Rgba, AppContext, AppContextPointer};
-use coords::{
-    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
-    WPCoords, XYCoords,
+use crate::{
+    app::{config, config::Rgba, AppContext, AppContextPointer},
+    coords::{
+        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
+        WPCoords, XYCoords,
+    },
+    errors::SondeError,
+    gui::{
+        plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
+        utility::{check_overlap_then_add, plot_curve_from_points},
+        Drawable, DrawingArgs, SlaveProfileDrawable,
+    },
 };
-use errors::SondeError;
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points};
-use gui::{Drawable, DrawingArgs, SlaveProfileDrawable};
+use gdk::EventMotion;
+use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
+use metfor::{PaPS, Quantity};
+use sounding_base::DataRow;
+use std::{cell::Cell, rc::Rc};
 
 #[derive(Debug)]
 pub struct RHOmegaContext {
@@ -35,14 +36,14 @@ impl RHOmegaContext {
         let y = convert_pressure_to_y(coords.p);
 
         // The + sign below looks weird, but is correct.
-        let x = (coords.w + config::MAX_ABS_W) / (2.0 * config::MAX_ABS_W);
+        let x = (coords.w + config::MAX_ABS_W) / (config::MAX_ABS_W * 2.0);
 
         XYCoords { x, y }
     }
 
     pub fn convert_xy_to_wp(coords: XYCoords) -> WPCoords {
         let p = convert_y_to_pressure(coords.y);
-        let w = coords.x * (2.0 * config::MAX_ABS_W) - config::MAX_ABS_W;
+        let w = (config::MAX_ABS_W * 2.0) * coords.x - config::MAX_ABS_W;
 
         WPCoords { w, p }
     }
@@ -164,7 +165,7 @@ impl Drawable for RHOmegaContext {
      * Background Drawing.
      **********************************************************************************************/
 
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_background_bands {
@@ -202,7 +203,7 @@ impl Drawable for RHOmegaContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draw isobars
@@ -234,20 +235,20 @@ impl Drawable for RHOmegaContext {
             config.isobar_rgba,
             ([
                 WPCoords {
-                    w: 0.0,
+                    w: PaPS(0.0),
                     p: config::MAXP,
                 },
                 WPCoords {
-                    w: 0.0,
+                    w: PaPS(0.0),
                     p: config::MINP,
                 },
             ])
-                .iter()
-                .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
+            .iter()
+            .map(|wp_coords| self.convert_wp_to_screen(*wp_coords)),
         );
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr) = (args.ac, args.cr);
 
         let mut labels = vec![];
@@ -259,8 +260,8 @@ impl Drawable for RHOmegaContext {
             p: screen_max_p, ..
         } = ac.rh_omega.convert_screen_to_wp(lower_left);
 
-        for &w in [0.0].iter().chain(config::ISO_OMEGA.iter()) {
-            let label = format!("{:.0}", w);
+        for &w in [PaPS(0.0)].iter().chain(config::ISO_OMEGA.iter()) {
+            let label = format!("{:.0}", w.unpack());
 
             let extents = cr.text_extents(&label);
 
@@ -321,7 +322,7 @@ impl Drawable for RHOmegaContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         self.draw_hail_growth_zone(args);
         self.draw_dendritic_snow_growth_zone(args);
         self.draw_warm_layer_aloft(args);
@@ -350,19 +351,19 @@ impl Drawable for RHOmegaContext {
 
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
-        let omega = vals.omega;
+        let omega = vals.pvv;
 
         if (t_c.is_some() && dp_c.is_some()) || omega.is_some() {
             if config.show_rh {
-                if let (Some(t_c), Some(dp_c)) = (t_c.into(), dp_c.into()) {
-                    if let Ok(rh) = rh(t_c, dp_c) {
+                if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
+                    if let Some(rh) = rh(t_c, dp_c) {
                         results.push((format!("{:.0}%\n", 100.0 * rh), config.rh_rgba));
                     }
                 }
             }
             if config.show_omega {
-                if let Some(omega) = Into::<Option<f64>>::into(omega) {
-                    results.push((format!("{:.1} Pa/s\n", omega), config.omega_rgba));
+                if let Some(omega) = omega.into_option() {
+                    results.push((format!("{:.1} Pa/s\n", omega.unpack()), config.omega_rgba));
                 }
             }
         }
@@ -411,7 +412,7 @@ impl SlaveProfileDrawable for RHOmegaContext {
     }
 }
 
-fn draw_rh_profile(args: DrawingArgs) -> bool {
+fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
     use metfor::rh;
 
     let (ac, cr) = (args.ac, args.cr);
@@ -422,26 +423,25 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        use sounding_base::Profile::{DewPoint, Pressure, Temperature};
-
-        let pres_data = sndg.sounding().get_profile(Pressure);
-        let t_data = sndg.sounding().get_profile(Temperature);
-        let td_data = sndg.sounding().get_profile(DewPoint);
+        let pres_data = sndg.sounding().pressure_profile();
+        let t_data = sndg.sounding().temperature_profile();
+        let td_data = sndg.sounding().dew_point_profile();
         let mut profile = izip!(pres_data, t_data, td_data)
             .filter_map(|(p, t, td)| {
-                if let (Some(p), Some(t), Some(td)) = (p.into(), t.into(), td.into()) {
-                    match rh(t, td) {
-                        Ok(rh) => Some((p, rh)),
-                        Err(_) => None,
-                    }
+                if let (Some(p), Some(t), Some(td)) =
+                    (p.into_option(), t.into_option(), td.into_option())
+                {
+                    rh(t, td).map(|hum| (p, hum))
                 } else {
                     None
                 }
-            }).filter_map(|pair| {
+            })
+            .filter_map(|pair| {
                 let (p, rh) = pair;
                 if p > config::MINP {
-                    let ScreenCoords { y, .. } =
-                        ac.rh_omega.convert_wp_to_screen(WPCoords { w: 0.0, p });
+                    let ScreenCoords { y, .. } = ac
+                        .rh_omega
+                        .convert_wp_to_screen(WPCoords { w: PaPS(0.0), p });
                     let bb = ac.rh_omega.bounding_box_in_screen_coords();
                     let x = bb.lower_left.x + bb.width() * rh;
 
@@ -513,7 +513,7 @@ fn draw_rh_profile(args: DrawingArgs) -> bool {
     true
 }
 
-fn draw_omega_profile(args: DrawingArgs) -> bool {
+fn draw_omega_profile(args: DrawingArgs<'_, '_>) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -522,10 +522,8 @@ fn draw_omega_profile(args: DrawingArgs) -> bool {
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        use sounding_base::Profile::{Pressure, PressureVerticalVelocity};
-
-        let pres_data = sndg.sounding().get_profile(Pressure);
-        let omega_data = sndg.sounding().get_profile(PressureVerticalVelocity);
+        let pres_data = sndg.sounding().pressure_profile();
+        let omega_data = sndg.sounding().pvv_profile();
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 

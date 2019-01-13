@@ -1,10 +1,7 @@
 #![macro_use]
 
-use gtk::prelude::*;
-use gtk::Notebook;
-
-use app::AppContextPointer;
-use errors::SondeError;
+use crate::{app::AppContextPointer, errors::SondeError};
+use gtk::{prelude::*, Notebook};
 
 macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {

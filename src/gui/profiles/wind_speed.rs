@@ -1,20 +1,22 @@
-use std::rc::Rc;
-
-use gdk::{EventMotion, EventScroll};
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use sounding_base::DataRow;
-
-use app::{config, config::Rgba, AppContext, AppContextPointer};
-use coords::{
-    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords, ScreenRect,
-    XYCoords,
+use crate::{
+    app::{config, config::Rgba, AppContext, AppContextPointer},
+    coords::{
+        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
+        ScreenRect, XYCoords,
+    },
+    errors::SondeError,
+    gui::{
+        plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
+        utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs},
+        Drawable, SlaveProfileDrawable,
+    },
 };
-use errors::SondeError;
-use gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
-use gui::{Drawable, SlaveProfileDrawable};
+use gdk::{EventMotion, EventScroll};
+use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
+use metfor::{Knots, Quantity, WindSpdDir};
+use sounding_base::DataRow;
+use std::rc::Rc;
 
 pub struct WindSpeedContext {
     generic: GenericContext,
@@ -30,13 +32,13 @@ impl WindSpeedContext {
     pub fn convert_sp_to_xy(coords: SPCoords) -> XYCoords {
         let y = convert_pressure_to_y(coords.press);
 
-        let mut x = coords.spd;
+        let mut x = coords.spd.unpack();
         // Avoid infinity
         if x <= 0.0 {
             x = 0.00001;
         }
         x = (f64::log10(x) - f64::log10(1.0))
-            / (f64::log10(config::MAX_PROFILE_SPEED) - f64::log10(1.0));
+            / (f64::log10(config::MAX_PROFILE_SPEED.unpack()) - f64::log10(1.0));
 
         XYCoords { x, y }
     }
@@ -44,9 +46,10 @@ impl WindSpeedContext {
     pub fn convert_xy_to_sp(coords: XYCoords) -> SPCoords {
         let press = convert_y_to_pressure(coords.y);
 
-        let spd = 10.0f64.powf(
-            coords.x * (f64::log10(config::MAX_PROFILE_SPEED) - f64::log10(1.0)) + f64::log10(1.0),
-        );
+        let spd = Knots(10.0f64.powf(
+            coords.x * (f64::log10(config::MAX_PROFILE_SPEED.unpack()) - f64::log10(1.0))
+                + f64::log10(1.0),
+        ));
 
         SPCoords { spd, press }
     }
@@ -158,7 +161,7 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Background Drawing.
      **********************************************************************************************/
-    fn draw_background_fill(&self, args: DrawingArgs) {
+    fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         if config.show_background_bands {
@@ -188,7 +191,7 @@ impl Drawable for WindSpeedContext {
         }
     }
 
-    fn draw_background_lines(&self, args: DrawingArgs) {
+    fn draw_background_lines(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draw isobars
@@ -217,7 +220,7 @@ impl Drawable for WindSpeedContext {
         )]
     }
 
-    fn collect_labels(&self, args: DrawingArgs) -> Vec<(String, ScreenRect)> {
+    fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
         let (ac, cr) = (args.ac, args.cr);
 
         let mut labels = vec![];
@@ -231,7 +234,7 @@ impl Drawable for WindSpeedContext {
         } = self.convert_screen_to_sp(lower_left);
 
         for spd in &config::PROFILE_SPEEDS {
-            let label = format!("{:.0}", *spd);
+            let label = format!("{:.0}", spd.unpack());
 
             let extents = cr.text_extents(&label);
 
@@ -277,7 +280,7 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Data Drawing.
      **********************************************************************************************/
-    fn draw_data(&self, args: DrawingArgs) {
+    fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         self.draw_hail_growth_zone(args);
         self.draw_dendritic_snow_growth_zone(args);
         self.draw_warm_layer_aloft(args);
@@ -291,9 +294,8 @@ impl Drawable for WindSpeedContext {
     fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(speed) = Into::<Option<f64>>::into(vals.speed) {
-            let spd = speed.round();
-            let line = format!("{:.0}kt\n", spd);
+        if let Some(WindSpdDir { speed, .. }) = vals.wind.into_option() {
+            let line = format!("{:.0}KT\n", speed.unpack());
             results.push((line, ac.config.borrow().wind_speed_profile_rgba));
         }
 
@@ -344,25 +346,26 @@ impl SlaveProfileDrawable for WindSpeedContext {
     }
 }
 
-fn draw_wind_speed_profile(args: DrawingArgs) {
+fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        use sounding_base::Profile::{Pressure, WindSpeed};
-
         ac.wind_speed.set_has_data(true);
 
-        let pres_data = sndg.sounding().get_profile(Pressure);
-        let spd_data = sndg.sounding().get_profile(WindSpeed);
-        let mut profile = izip!(pres_data, spd_data)
+        let pres_data = sndg.sounding().pressure_profile();
+        let spd_data = sndg.sounding().wind_profile();
+        let profile = izip!(pres_data, spd_data)
             .filter_map(|(p, spd)| {
-                if let (Some(p), Some(s)) = (p.into(), spd.into()) {
+                if let (Some(p), Some(WindSpdDir { speed: s, .. })) =
+                    (p.into_option(), spd.into_option())
+                {
                     Some((p, s))
                 } else {
                     None
                 }
-            }).filter_map(|pair| {
+            })
+            .filter_map(|pair| {
                 let (press, spd) = pair;
                 if press > config::MINP {
                     Some(ac.wind_speed.convert_sp_to_screen(SPCoords { spd, press }))

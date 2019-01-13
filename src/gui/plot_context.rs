@@ -1,11 +1,10 @@
-use std::cell::{Cell, RefCell};
-
+use crate::{
+    coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect},
+    gui::AppContext,
+};
 use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
-use gui::AppContext;
+use gtk::{prelude::*, DrawingArea};
+use std::cell::{Cell, RefCell};
 
 pub trait PlotContext: Sized {
     /// Set the width and height of the plot in device
@@ -18,7 +17,7 @@ pub trait PlotContext: Sized {
     fn get_xy_envelope(&self) -> XYRect;
 
     /// Set the bounding box in XYCoords around all the data in this plot.
-    fn set_xy_envelope(&self, XYRect);
+    fn set_xy_envelope(&self, _: XYRect);
 
     /// Get zoom factor
     fn get_zoom_factor(&self) -> f64;

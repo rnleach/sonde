@@ -1,8 +1,11 @@
 //! Keep configuration data in this module.
 
-use coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
-use gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use gui::{HodoContext, SkewTContext};
+use crate::coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+use crate::gui::{HodoContext, SkewTContext};
+use lazy_static::lazy_static;
+use metfor::{Celsius, HectoPascal, Kelvin, Knots, PaPS, Quantity, WindSpdDir};
+use serde_derive::{Deserialize, Serialize};
 
 /// Types of parcels you can use when doing parcel analysis.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -252,7 +255,7 @@ pub struct Config {
     /// Show or hide the velocity plot.
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
-    pub min_hodo_pressure: f64,
+    pub min_hodo_pressure: HectoPascal,
 
     //
     // Misc configuration.
@@ -334,7 +337,7 @@ impl Default for Config {
             freezing_line_color: (0.0, 0.466_666_667, 0.780_392_157, 1.0),
             show_freezing_line: true,
             wet_bulb_zero_line_width: 3.0,
-            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_98, 0.4, 1.0),
+            wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_97, 0.4, 1.0),
             show_wet_bulb_zero_line: true,
 
             //
@@ -410,7 +413,7 @@ impl Default for Config {
             velocity_line_width: 2.0,
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
-            min_hodo_pressure: 300.0,
+            min_hodo_pressure: HectoPascal(300.0),
 
             //
             // Misc configuration.
@@ -428,64 +431,144 @@ impl Default for Config {
 //
 
 /// Maximum pressure plotted on skew-t (bottom edge)
-pub const MAXP: f64 = 1050.0; // mb
+pub const MAXP: HectoPascal = HectoPascal(1050.0); // hPa
 /// Minimum pressure plotted on skew-t (top edge)
-pub const MINP: f64 = 99.0; // mb
+pub const MINP: HectoPascal = HectoPascal(99.0); // hPa
 /// Coldest temperature plotted at max pressure, on the bottom edge.
-pub const MINT: f64 = -46.5; // C - at MAXP
+pub const MINT: Celsius = Celsius(-46.5); // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
-pub const MAXT: f64 = 50.5; // C - at MAXP
+pub const MAXT: Celsius = Celsius(50.5); // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
-pub const MAX_ABS_W: f64 = 15.0;
+pub const MAX_ABS_W: PaPS = PaPS(15.0);
 /// Minimum allowable vertical velocity in Pa/s, used only for setting scale.
-pub const MIN_ABS_W: f64 = 3.0;
+pub const MIN_ABS_W: PaPS = PaPS(3.0);
 
 /// Maximum wind speed on hodograph in Knots
-pub const MAX_SPEED: f64 = 250.0;
+pub const MAX_SPEED: Knots = Knots(250.0);
 
 /// Maximum wind speed on the wind speed profile in Knots
-pub const MAX_PROFILE_SPEED: f64 = MAX_SPEED;
+pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
 
 //
 // Limits on the top pressure level for some background lines.
 //
 
 /// Highest elevation pressure level to draw isentrops up to
-pub const ISENTROPS_TOP_P: f64 = MINP;
+pub const ISENTROPS_TOP_P: HectoPascal = MINP;
 /// Moist adiabat highest elevation pressure to draw up to
-pub const THETA_E_TOP_P: f64 = 200.0;
+pub const THETA_E_TOP_P: HectoPascal = HectoPascal(200.0);
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 40;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
-pub const ISO_MIXING_RATIO_TOP_P: f64 = 300.0;
+pub const ISO_MIXING_RATIO_TOP_P: HectoPascal = HectoPascal(300.0);
 
 //
 // Constant values to plot on background.
 //
 
 /// Isotherms to label on the chart.
-pub const ISOTHERMS: [f64; 31] = [
-    -150.0, -140.0, -130.0, -120.0, -110.0, -100.0, -90.0, -80.0, -70.0, -60.0, -50.0, -40.0,
-    -30.0, -25.0, -20.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0,
-    45.0, 50.0, 55.0, 60.0,
+pub const ISOTHERMS: [Celsius; 31] = [
+    Celsius(-150.0),
+    Celsius(-140.0),
+    Celsius(-130.0),
+    Celsius(-120.0),
+    Celsius(-110.0),
+    Celsius(-100.0),
+    Celsius(-90.0),
+    Celsius(-80.0),
+    Celsius(-70.0),
+    Celsius(-60.0),
+    Celsius(-50.0),
+    Celsius(-40.0),
+    Celsius(-30.0),
+    Celsius(-25.0),
+    Celsius(-20.0),
+    Celsius(-15.0),
+    Celsius(-10.0),
+    Celsius(-5.0),
+    Celsius(0.0),
+    Celsius(5.0),
+    Celsius(10.0),
+    Celsius(15.0),
+    Celsius(20.0),
+    Celsius(25.0),
+    Celsius(30.0),
+    Celsius(35.0),
+    Celsius(40.0),
+    Celsius(45.0),
+    Celsius(50.0),
+    Celsius(55.0),
+    Celsius(60.0),
 ];
 
 /// Isobars to plot on the chart background.
-pub const ISOBARS: [f64; 9] = [
-    1050.0, 1000.0, 925.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0,
+pub const ISOBARS: [HectoPascal; 9] = [
+    HectoPascal(1050.0),
+    HectoPascal(1000.0),
+    HectoPascal(925.0),
+    HectoPascal(850.0),
+    HectoPascal(700.0),
+    HectoPascal(500.0),
+    HectoPascal(300.0),
+    HectoPascal(200.0),
+    HectoPascal(100.0),
 ];
 
 /// Isentrops to plot on the chart background.
-pub const ISENTROPS: [f64; 17] = [
-    230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0,
-    360.0, 370.0, 380.0, 390.0,
+pub const ISENTROPS: [Kelvin; 17] = [
+    Kelvin(230.0),
+    Kelvin(240.0),
+    Kelvin(250.0),
+    Kelvin(260.0),
+    Kelvin(270.0),
+    Kelvin(280.0),
+    Kelvin(290.0),
+    Kelvin(300.0),
+    Kelvin(310.0),
+    Kelvin(320.0),
+    Kelvin(330.0),
+    Kelvin(340.0),
+    Kelvin(350.0),
+    Kelvin(360.0),
+    Kelvin(370.0),
+    Kelvin(380.0),
+    Kelvin(390.0),
 ];
 
 /// Constant theta-e in Celsius.
-pub const ISO_THETA_E_C: [f64; 31] = [
-    -20.0, -18.0, -16.0, -14.0, -12.0, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0,
-    10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0,
+pub const ISO_THETA_E_C: [Celsius; 31] = [
+    Celsius(-20.0),
+    Celsius(-18.0),
+    Celsius(-16.0),
+    Celsius(-14.0),
+    Celsius(-12.0),
+    Celsius(-10.0),
+    Celsius(-8.0),
+    Celsius(-6.0),
+    Celsius(-4.0),
+    Celsius(-2.0),
+    Celsius(0.0),
+    Celsius(2.0),
+    Celsius(4.0),
+    Celsius(6.0),
+    Celsius(8.0),
+    Celsius(10.0),
+    Celsius(12.0),
+    Celsius(14.0),
+    Celsius(16.0),
+    Celsius(18.0),
+    Celsius(20.0),
+    Celsius(22.0),
+    Celsius(24.0),
+    Celsius(26.0),
+    Celsius(28.0),
+    Celsius(30.0),
+    Celsius(32.0),
+    Celsius(34.0),
+    Celsius(36.0),
+    Celsius(38.0),
+    Celsius(40.0),
 ];
 
 /// Isopleths of mixing ratio
@@ -496,23 +579,83 @@ pub const ISO_MIXING_RATIO: [f64; 32] = [
     //    76.0, // Uncomment this when we can have arrays larger than 32.
 ];
 
-pub const ISO_OMEGA: [f64; 21] = [
-    -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
-    7.0, 8.0, 9.0, 10.0,
+pub const ISO_OMEGA: [PaPS; 21] = [
+    PaPS(-10.0),
+    PaPS(-9.0),
+    PaPS(-8.0),
+    PaPS(-7.0),
+    PaPS(-6.0),
+    PaPS(-5.0),
+    PaPS(-4.0),
+    PaPS(-3.0),
+    PaPS(-2.0),
+    PaPS(-1.0),
+    PaPS(0.0),
+    PaPS(1.0),
+    PaPS(2.0),
+    PaPS(3.0),
+    PaPS(4.0),
+    PaPS(5.0),
+    PaPS(6.0),
+    PaPS(7.0),
+    PaPS(8.0),
+    PaPS(9.0),
+    PaPS(10.0),
 ];
 
-pub const ISO_SPEED: [f64; 25] = [
-    10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0,
-    160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0,
+pub const ISO_SPEED: [Knots; 25] = [
+    Knots(10.0),
+    Knots(20.0),
+    Knots(30.0),
+    Knots(40.0),
+    Knots(50.0),
+    Knots(60.0),
+    Knots(70.0),
+    Knots(80.0),
+    Knots(90.0),
+    Knots(100.0),
+    Knots(110.0),
+    Knots(120.0),
+    Knots(130.0),
+    Knots(140.0),
+    Knots(150.0),
+    Knots(160.0),
+    Knots(170.0),
+    Knots(180.0),
+    Knots(190.0),
+    Knots(200.0),
+    Knots(210.0),
+    Knots(220.0),
+    Knots(230.0),
+    Knots(240.0),
+    Knots(250.0),
 ];
 
 pub const PERCENTS: [f64; 11] = [
     0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0,
 ];
 
-pub const PROFILE_SPEEDS: [f64; 20] = [
-    1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0,
-    90.0, 100.0, 200.0,
+pub const PROFILE_SPEEDS: [Knots; 20] = [
+    Knots(1.0),
+    Knots(2.0),
+    Knots(3.0),
+    Knots(4.0),
+    Knots(5.0),
+    Knots(6.0),
+    Knots(7.0),
+    Knots(8.0),
+    Knots(9.0),
+    Knots(10.0),
+    Knots(20.0),
+    Knots(30.0),
+    Knots(40.0),
+    Knots(50.0),
+    Knots(60.0),
+    Knots(70.0),
+    Knots(80.0),
+    Knots(90.0),
+    Knots(100.0),
+    Knots(200.0),
 ];
 
 /* ------------------------------------------------------------------------------------------------
@@ -548,8 +691,8 @@ lazy_static! {
         .into_iter()
         .map(|p| {
             [
-                TPCoords{temperature:-150.0, pressure:*p},
-                TPCoords{temperature:60.0, pressure:*p}
+                TPCoords{temperature:Celsius(-150.0), pressure:*p},
+                TPCoords{temperature:Celsius(60.0), pressure:*p}
             ]
         })
         .map(|tp| {
@@ -600,11 +743,11 @@ lazy_static! {
 
     /// Compute points for background theta-e
     pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
-        use metfor::theta_e_kelvin;
+        use metfor::theta_e;
 
         ISO_THETA_E_C
         .iter()
-        .map(|theta_c| theta_e_kelvin(*theta_c, *theta_c, 1000.0).expect("theta_e isopleth failed"))
+        .map(|theta_c| theta_e(*theta_c, *theta_c, HectoPascal(1000.0)).expect("theta_e isopleth failed"))
         .map(generate_theta_e_isopleth)
         .collect()
     };
@@ -643,7 +786,7 @@ lazy_static! {
             let mut v = vec![];
             let mut dir = 0.0;
             while dir <= 361.0 {
-                v.push(HodoContext::convert_sd_to_xy(SDCoords{speed, dir}));
+                v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
                 dir += 1.0;
             }
             v
@@ -703,23 +846,23 @@ lazy_static! {
 }
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
-fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
-    use app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
-    use metfor::temperature_c_from_theta;
+fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
+    use crate::app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
+    use metfor::temperature_from_theta;
     use std::f64;
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t = temperature_c_from_theta(theta, p).expect("constants should not fail!");
+        let t: Celsius = temperature_from_theta(theta, p).into();
         result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
         }));
-        p += (ISENTROPS_TOP_P - MAXP) / f64::from(POINTS_PER_ISENTROP);
+        p += HectoPascal((ISENTROPS_TOP_P - MAXP).unpack() / f64::from(POINTS_PER_ISENTROP));
     }
-    let t = temperature_c_from_theta(theta, ISENTROPS_TOP_P).expect("constants should not fail!");
+    let t: Celsius = temperature_from_theta(theta, ISENTROPS_TOP_P).into();
 
     result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,
@@ -730,27 +873,32 @@ fn generate_isentrop(theta: f64) -> Vec<XYCoords> {
 }
 
 /// Generate an isopleth for equivalent potential temperatures.
-fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords> {
-    use metfor::theta_e_kelvin;
+fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
     let mut v = vec![];
     let mut p = THETA_E_TOP_P;
-    let dp = (MAXP - MINP) / f64::from(POINTS_PER_ISENTROP);
+    let dp = HectoPascal((MAXP - MINP).unpack() / f64::from(POINTS_PER_ISENTROP));
 
-    while p < MAXP + 1.0001 * dp {
-        match find_root(&|t| Ok(theta_e_kelvin(t, t, p)? - theta_e_k), -80.0, 50.0).and_then(|t| {
+    while p < MAXP + dp * 1.0001 {
+        match find_root(
+            &|t| Some(metfor::theta_e(t, t, p)? - theta_e_k),
+            Celsius(-80.0),
+            Celsius(50.0),
+        )
+        .and_then(|t| {
             v.push(SkewTContext::convert_tp_to_xy(TPCoords {
                 temperature: t,
                 pressure: p,
             }));
-            Ok(())
+            Some(())
         }) {
-            Ok(_) => p += dp,
-            Err(_) => {
+            Some(_) => p += dp,
+            None => {
                 p = find_root(
-                    &|p| Ok(theta_e_kelvin(-79.999, -79.999, p)? - theta_e_k),
+                    &|p| Some(metfor::theta_e(Celsius(-79.999), Celsius(-79.999), p)? - theta_e_k),
                     THETA_E_TOP_P,
                     MAXP,
-                ).unwrap_or_else(|_| p + 1.0)
+                )
+                .unwrap_or_else(|| p + HectoPascal(1.0))
             }
         }
     }
@@ -759,8 +907,12 @@ fn generate_theta_e_isopleth(theta_e_k: f64) -> Vec<XYCoords> {
 
 /// Bisection algorithm for finding the root of an equation given values bracketing a root. Used
 /// when drawing moist adiabats.
-use metfor::Result;
-fn find_root(f: &Fn(f64) -> Result<f64>, mut low_val: f64, mut high_val: f64) -> Result<f64> {
+fn find_root<Q1, Q2>(f: &dyn Fn(Q1) -> Option<Q2>, mut low_val: Q1, mut high_val: Q1) -> Option<Q1>
+where
+    Q1: Quantity + PartialOrd + std::ops::Sub,
+    Q2: Quantity,
+    <Q1 as std::ops::Sub>::Output: Quantity,
+{
     use metfor;
 
     use std::f64;
@@ -768,19 +920,19 @@ fn find_root(f: &Fn(f64) -> Result<f64>, mut low_val: f64, mut high_val: f64) ->
     const EPS: f64 = 1.0e-10;
 
     if low_val > high_val {
-        ::std::mem::swap(&mut low_val, &mut high_val);
+        std::mem::swap(&mut low_val, &mut high_val);
     }
 
     let mut f_low = f(low_val)?;
     let f_high = f(high_val)?;
-    if f_high * f_low > 0.0 {
-        return Err(metfor::MetForErr::InputOutOfRange);
+    if f_high.unpack() * f_low.unpack() > 0.0 {
+        return None;
     }
 
-    let mut mid_val = (high_val - low_val) / 2.0 + low_val;
+    let mut mid_val = Q1::pack((high_val - low_val).unpack() / 2.0 + low_val.unpack());
     let mut f_mid = f(mid_val)?;
     for _ in 0..MAX_IT {
-        if f_mid * f_low > 0.0 {
+        if f_mid.unpack() * f_low.unpack() > 0.0 {
             low_val = mid_val;
             f_low = f_mid;
         } else {
@@ -788,13 +940,13 @@ fn find_root(f: &Fn(f64) -> Result<f64>, mut low_val: f64, mut high_val: f64) ->
             // f_high = f_mid;
         }
 
-        if (high_val - low_val).abs() < EPS {
+        if (high_val - low_val).unpack().abs() < EPS {
             break;
         }
 
-        mid_val = (high_val - low_val) / 2.0 + low_val;
+        mid_val = Q1::pack((high_val - low_val).unpack() / 2.0 + low_val.unpack());
         f_mid = f(mid_val)?;
     }
 
-    Ok(mid_val)
+    Some(mid_val)
 }

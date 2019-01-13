@@ -1,17 +1,16 @@
-use std::path::PathBuf;
-
+use crate::{
+    app::AppContextPointer,
+    coords::DeviceRect,
+    errors::*,
+    gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable},
+};
 use cairo;
 use gtk::{
     DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt, FileFilter,
     FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
 };
-
 use sounding_bufkit::BufkitFile;
-
-use app::AppContextPointer;
-use coords::DeviceRect;
-use errors::*;
-use gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable};
+use std::path::PathBuf;
 
 pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
@@ -74,7 +73,7 @@ pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window)
         let mut src_desc = src_desc.trim_end_matches(".buf").to_string();
         src_desc.push_str("_skewt");
         if let Some(anal) = ac.get_sounding_for_display() {
-            if let Some(lt) = anal.sounding().get_lead_time().into_option() {
+            if let Some(lt) = anal.sounding().lead_time().into_option() {
                 src_desc.push_str(&format!("_f{:03}", lt));
             }
         }
