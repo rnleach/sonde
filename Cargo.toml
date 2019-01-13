@@ -22,12 +22,6 @@ sounding-base = "^0.10.0"
 sounding-bufkit = "^0.10.0"
 sounding-analysis = "^0.10.0"
 
-[patch.crates-io]
-"metfor" = { path = '../metfor' }
-"sounding-base" = { path = '../sounding-base'}
-"sounding-analysis" = { path = '../sounding-analysis'}
-"sounding-bufkit" = { path = '../sounding-bufkit'}
-
 [profile.release]
 lto = true
 panic = 'abort'

@@ -469,7 +469,11 @@ impl Drawable for SkewTContext {
                     }
                 }
                 if let Some(el) = elevation.into_option() {
-                    location.push_str(&format!("{:.0} ({:.0})", el, Feet::from(el)));
+                    location.push_str(&format!(
+                        "{:.0}m ({:.0}ft)",
+                        el.unpack(),
+                        Feet::from(el).unpack()
+                    ));
                 }
 
                 result.push((location, color));

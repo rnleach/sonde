@@ -10,7 +10,7 @@ use crate::{
 };
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use metfor::{Knots, WindSpdDir, WindUV};
+use metfor::{Knots, Quantity, WindSpdDir, WindUV};
 use std::rc::Rc;
 
 pub struct HodoContext {
@@ -174,7 +174,7 @@ impl Drawable for HodoContext {
         if config.show_iso_speed {
             for &s in &config::ISO_SPEED {
                 for direction in &[240.0] {
-                    let label = format!("{:.0}", s);
+                    let label = format!("{:.0}", s.unpack());
 
                     let extents = cr.text_extents(&label);
 

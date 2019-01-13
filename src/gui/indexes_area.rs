@@ -104,9 +104,9 @@ fn push_header(buffer: &mut String, source_desc: Option<String>, anal: &Analysis
     }
     if let Some(elev_m) = station_info.elevation().into_option() {
         buffer.push_str(&format!(
-            " Elevation: {:.0} ({:.0})\n",
-            elev_m,
-            Feet::from(elev_m),
+            " Elevation: {:.0}m ({:.0}ft)\n",
+            elev_m.unpack(),
+            Feet::from(elev_m).unpack(),
         ));
     }
 }
