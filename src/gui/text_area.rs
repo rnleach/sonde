@@ -1,8 +1,9 @@
-use gtk::prelude::*;
-use gtk::{TextTag, TextView};
-
-use crate::app::{AppContext, AppContextPointer};
-use crate::errors::SondeError;
+use crate::{
+    app::{AppContext, AppContextPointer},
+    errors::SondeError,
+};
+use gtk::{prelude::*, TextTag, TextView};
+use metfor::{HectoPascal, Quantity};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -59,8 +60,8 @@ pub fn update_text_area(ac: &AppContext) {
 
     macro_rules! unwrap_to_str {
         ($opt_val:expr, $fmt:expr) => {
-            if let Some(val) = Into::<Option<f64>>::into($opt_val) {
-                format!($fmt, val)
+            if let Some(val) = $opt_val.into_option() {
+                format!($fmt, val.unpack())
             } else {
                 "".to_owned()
             }
@@ -89,7 +90,7 @@ pub fn update_text_area(ac: &AppContext) {
             let mut text = String::with_capacity(4096);
 
             for row in snd.sounding().top_down() {
-                if let Some(p) = Into::<Option<f64>>::into(row.pressure) {
+                if let Some(p) = row.pressure.into_option() {
                     if p < config::MINP {
                         continue;
                     }
@@ -97,27 +98,22 @@ pub fn update_text_area(ac: &AppContext) {
                     continue;
                 }
                 text.push_str(&format!(
-                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:0>3} {:>4} {:>5}  {:>3}\n",
+                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
                     unwrap_to_str!(row.pressure, "{:.0}"),
                     unwrap_to_str!(row.height, "{:.0}"),
                     unwrap_to_str!(row.temperature, "{:.1}"),
                     unwrap_to_str!(row.wet_bulb, "{:.1}"),
                     unwrap_to_str!(row.dew_point, "{:.1}"),
                     unwrap_to_str!(row.theta_e, "{:.0}"),
-                    unwrap_to_str!(row.direction, "{:.0}"),
-                    unwrap_to_str!(row.speed, "{:.0}"),
-                    unwrap_to_str!(row.omega, "{:.1}"),
+                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
+                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
+                    unwrap_to_str!(row.pvv, "{:.1}"),
                     unwrap_to_str!(row.cloud_fraction, "{:.0}"),
                 ));
             }
 
             // Get the scroll position before setting the text
-            let old_adj;
-            if let Some(adj) = text_area.get_vadjustment() {
-                old_adj = Some(adj.get_value());
-            } else {
-                old_adj = None;
-            }
+            let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
 
             set_text!(tb, &text);
 
@@ -193,7 +189,7 @@ pub fn update_text_highlight(ac: &AppContext) {
     }
 
     let tp = if let Some(sample) = ac.get_sample() {
-        if let Some(tp) = Into::<Option<f64>>::into(sample.pressure) {
+        if let Some(tp) = sample.pressure.into_option() {
             tp
         } else {
             return;
@@ -213,22 +209,24 @@ pub fn update_text_highlight(ac: &AppContext) {
             let start_above = tb.get_iter_at_line(i);
             let mut end_above = start_above.clone();
             end_above.forward_chars(5);
-            let above_val: f64 = f64::from_str(
+            let above_val: HectoPascal = f64::from_str(
                 tb.get_text(&start_above, &end_above, false)
                     .unwrap_or_else(|| "0.0".to_owned())
                     .trim(),
             )
-            .unwrap_or(0.0);
+            .map(HectoPascal)
+            .unwrap_or(HectoPascal(0.0));
 
             let start_below = tb.get_iter_at_line(i + 1);
             let mut end_below = start_below.clone();
             end_below.forward_chars(5);
-            let below_val: f64 = f64::from_str(
+            let below_val: HectoPascal = f64::from_str(
                 tb.get_text(&start_below, &end_below, false)
                     .unwrap_or_else(|| "0.0".to_owned())
                     .trim(),
             )
-            .unwrap_or(0.0);
+            .map(HectoPascal)
+            .unwrap_or(HectoPascal(0.0));
 
             if tp > above_val && tp <= below_val {
                 if let Some(tt) = tb.get_tag_table() {

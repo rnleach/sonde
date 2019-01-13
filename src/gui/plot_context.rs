@@ -1,11 +1,10 @@
-use std::cell::{Cell, RefCell};
-
+use crate::{
+    coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect},
+    gui::AppContext,
+};
 use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use crate::coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect};
-use crate::gui::AppContext;
+use gtk::{prelude::*, DrawingArea};
+use std::cell::{Cell, RefCell};
 
 pub trait PlotContext: Sized {
     /// Set the width and height of the plot in device

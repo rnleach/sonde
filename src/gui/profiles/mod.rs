@@ -1,9 +1,10 @@
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use crate::app::{AppContext, AppContextPointer};
-use crate::errors::SondeError;
-use crate::gui::Drawable;
+use crate::{
+    app::{AppContext, AppContextPointer},
+    errors::SondeError,
+    gui::Drawable,
+};
+use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
 
 pub mod cloud;
 pub mod rh_omega;

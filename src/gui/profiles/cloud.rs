@@ -1,20 +1,22 @@
-use std::rc::Rc;
-
-use gdk::{EventMotion, EventScroll};
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use sounding_base::DataRow;
-
-use crate::app::{config, config::Rgba, AppContext, AppContextPointer};
-use crate::coords::{
-    convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords, ScreenRect,
-    XYCoords,
+use crate::{
+    app::{config, config::Rgba, AppContext, AppContextPointer},
+    coords::{
+        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
+        ScreenRect, XYCoords,
+    },
+    errors::SondeError,
+    gui::{
+        plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
+        utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs},
+        Drawable, SlaveProfileDrawable,
+    },
 };
-use crate::errors::SondeError;
-use crate::gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use crate::gui::utility::{check_overlap_then_add, plot_curve_from_points, DrawingArgs};
-use crate::gui::{Drawable, SlaveProfileDrawable};
+use gdk::{EventMotion, EventScroll};
+use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
+use metfor::HectoPascal;
+use sounding_base::DataRow;
+use std::rc::Rc;
 
 pub struct CloudContext {
     generic: GenericContext,
@@ -340,21 +342,20 @@ fn draw_cloud_profile(args: DrawingArgs) {
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         let sndg = sndg.sounding();
-        use sounding_base::Profile::{CloudFraction, Pressure};
 
         ac.cloud.set_has_data(true);
 
-        let pres_data = sndg.get_profile(Pressure);
-        let c_data = sndg.get_profile(CloudFraction);
+        let pres_data = sndg.pressure_profile();
+        let c_data = sndg.cloud_fraction_profile();
         let mut profile = izip!(pres_data, c_data)
             .filter_map(|(p, cld)| {
-                if let (Some(p), Some(c)) = (p.into(), cld.into()) {
+                if let (Some(p), Some(c)) = (p.into_option(), cld.into_option()) {
                     Some((p, c))
                 } else {
                     None
                 }
             })
-            .filter_map(|(press, pcnt): (f64, f64)| {
+            .filter_map(|(press, pcnt): (HectoPascal, f64)| {
                 if press > config::MINP {
                     Some(ac.cloud.convert_pp_to_screen(PPCoords {
                         pcnt: pcnt / 100.0,

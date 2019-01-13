@@ -1,12 +1,10 @@
-use std::rc::Rc;
-
+use crate::{
+    app::AppContextPointer,
+    gui::control_area::{BOX_SPACING, PADDING},
+};
 use gdk::RGBA;
-use gtk;
-use gtk::prelude::*;
-use gtk::{ColorButton, Frame, ScrolledWindow};
-
-use crate::app::AppContextPointer;
-use crate::gui::control_area::{BOX_SPACING, PADDING};
+use gtk::{self, prelude::*, ColorButton, Frame, ScrolledWindow};
+use std::rc::Rc;
 
 pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);

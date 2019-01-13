@@ -2,6 +2,7 @@
 //! state, and so those functions are a part of the `AppContext`.
 
 use crate::app::config;
+use metfor::{Celsius, HectoPascal, Knots, PaPS, WindSpdDir};
 
 /// Common operations on rectangles
 pub trait Rect {
@@ -69,9 +70,9 @@ pub trait Rect {
 #[derive(Clone, Copy, Debug)]
 pub struct TPCoords {
     /// Temperature in Celsius
-    pub temperature: f64,
+    pub temperature: Celsius,
     /// Pressure in hPa
-    pub pressure: f64,
+    pub pressure: HectoPascal,
 }
 
 /***************************************************************************************************
@@ -81,10 +82,8 @@ pub struct TPCoords {
 /// Origin center. (Speed, Direction wind is from)
 #[derive(Clone, Copy, Debug)]
 pub struct SDCoords {
-    /// Speed in knots
-    pub speed: f64,
-    /// direction in degrees
-    pub dir: f64,
+    /// Wind speed and direction.
+    pub spd_dir: WindSpdDir<Knots>,
 }
 
 /***************************************************************************************************
@@ -95,9 +94,9 @@ pub struct SDCoords {
 #[derive(Clone, Copy, Debug)]
 pub struct WPCoords {
     /// Omega in Pa/s
-    pub w: f64,
+    pub w: PaPS,
     /// Pressure in hPa
-    pub p: f64,
+    pub p: HectoPascal,
 }
 
 /***************************************************************************************************
@@ -109,7 +108,7 @@ pub struct PPCoords {
     /// Percent 0.0 - 1.0
     pub pcnt: f64,
     /// Pressure in hPa
-    pub press: f64,
+    pub press: HectoPascal,
 }
 
 /***************************************************************************************************
@@ -119,16 +118,16 @@ pub struct PPCoords {
 #[derive(Clone, Copy, Debug)]
 pub struct SPCoords {
     /// Speed in knots
-    pub spd: f64,
+    pub spd: Knots,
     /// Pressure in hPa
-    pub press: f64,
+    pub press: HectoPascal,
 }
 
 /***************************************************************************************************
  *                 X - Y Coords for a default plot area that can be zoomed and panned
  * ************************************************************************************************/
 
-/// XY coordinates of the skew-t graph, range 0.0 to 1.0. This coordinate system is dependend on
+/// XY coordinates of the skew-t graph, range 0.0 to 1.0. This coordinate system is dependent on
 /// settings for the maximum/minimum plottable pressure and temperatures in the config module.
 /// Origin lower left, (x,y)
 #[derive(Clone, Copy, Debug)]
@@ -245,7 +244,7 @@ impl Rect for ScreenRect {
 }
 
 /***************************************************************************************************
- *                   Device Coords - the coordinate system of the device before
+ *                   Device Coords - the coordinate system of the device
  * ************************************************************************************************/
 /// Device coordinates (pixels positions).
 ///  Origin upper left, (Column, Row)
@@ -296,13 +295,24 @@ impl Rect for DeviceRect {
 ///
 /// Overwhelmingly the veritical coordinate system is based on pressure, so this is a very common
 /// operation to do, and you want it to always be done them same.
-pub fn convert_pressure_to_y(pressure_hpa: f64) -> f64 {
-    (f64::log10(config::MAXP) - f64::log10(pressure_hpa))
-        / (f64::log10(config::MAXP) - f64::log10(config::MINP))
+pub fn convert_pressure_to_y(pressure: HectoPascal) -> f64 {
+    (config::MAXP / pressure).log10() / (config::MAXP / config::MINP).log10()
 }
 
 /// Provide an inverse function as well.
-pub fn convert_y_to_pressure(y: f64) -> f64 {
-    10.0f64
-        .powf(-y * (f64::log10(config::MAXP) - f64::log10(config::MINP)) + f64::log10(config::MAXP))
+pub fn convert_y_to_pressure(y: f64) -> HectoPascal {
+    config::MAXP * (config::MINP / config::MAXP).powf(y)
+}
+
+#[test]
+fn test_pressure_to_y_and_back() {
+    use metfor::Quantity;
+
+    for i in 100..=1000 {
+        let p = HectoPascal(i as f64);
+        let y = convert_pressure_to_y(p);
+        let pback = convert_y_to_pressure(y);
+        println!("p = {:?} y = {:?}  pback = {:?}", p, y, pback);
+        assert!((p - pback).abs() < HectoPascal(1.0e-6));
+    }
 }

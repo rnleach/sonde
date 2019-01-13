@@ -1,16 +1,18 @@
+use crate::{app::AppContextPointer, errors::SondeError};
 use gtk::{
     idle_add, timeout_add_seconds, TextBufferExt, TextTag, TextTagExt, TextTagTableExt, TextView,
     TextViewExt,
 };
 use log::{self, Level, LevelFilter, Log, Metadata, Record};
-use std::cell::RefCell;
-use std::collections::VecDeque;
-use std::rc::Rc;
-use std::sync::mpsc::{sync_channel, TryRecvError, TrySendError};
-use std::sync::Mutex;
-
-use crate::app::AppContextPointer;
-use crate::errors::SondeError;
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    rc::Rc,
+    sync::{
+        mpsc::{sync_channel, TryRecvError, TrySendError},
+        Mutex,
+    },
+};
 
 const LOG_LEVEL: Level = Level::Trace;
 

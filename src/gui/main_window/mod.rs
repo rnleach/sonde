@@ -1,10 +1,10 @@
-use std::rc::Rc;
-
+use crate::{
+    app::{AppContext, AppContextPointer},
+    errors::SondeError,
+};
 use gdk::Event;
 use gtk::{self, prelude::*, Menu, MenuItem, Notebook, Paned, Widget, Window};
-
-use crate::app::{AppContext, AppContextPointer};
-use crate::errors::SondeError;
+use std::rc::Rc;
 
 mod menu_callbacks;
 

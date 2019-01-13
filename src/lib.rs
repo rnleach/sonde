@@ -1,28 +1,3 @@
-extern crate chrono;
-#[macro_use]
-extern crate itertools;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate log;
-extern crate optional;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_yaml;
-
-// GUI crates
-extern crate cairo;
-extern crate gdk;
-extern crate glib;
-extern crate gtk;
-
-// Library with non-gui related code
-extern crate metfor;
-extern crate sounding_analysis;
-extern crate sounding_base;
-extern crate sounding_bufkit;
-
 use std::fs::File;
 use std::io::{Read, Write};
 

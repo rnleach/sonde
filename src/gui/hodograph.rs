@@ -1,14 +1,17 @@
+use crate::{
+    app::{config, config::Rgba, AppContext, AppContextPointer},
+    coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords},
+    errors::SondeError,
+    gui::{
+        plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
+        utility::{check_overlap_then_add, plot_curve_from_points},
+        Drawable, DrawingArgs, MasterDrawable,
+    },
+};
+use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
+use metfor::{Knots, WindSpdDir, WindUV};
 use std::rc::Rc;
-
-use gtk::prelude::*;
-use gtk::DrawingArea;
-
-use crate::app::{config, config::Rgba, AppContext, AppContextPointer};
-use crate::coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords};
-use crate::errors::SondeError;
-use crate::gui::plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt};
-use crate::gui::utility::{check_overlap_then_add, plot_curve_from_points};
-use crate::gui::{Drawable, DrawingArgs, MasterDrawable};
 
 pub struct HodoContext {
     generic: GenericContext,
@@ -22,11 +25,11 @@ impl HodoContext {
     }
 
     pub fn convert_sd_to_xy(coords: SDCoords) -> XYCoords {
-        let radius = coords.speed / 2.0 / config::MAX_SPEED;
-        let angle = (270.0 - coords.dir).to_radians();
+        let WindUV { u, v } = WindUV::<Knots>::from(coords.spd_dir);
 
-        let x = radius * angle.cos() + 0.5;
-        let y = radius * angle.sin() + 0.5;
+        let x = u / (config::MAX_SPEED * 2.0) + 0.5;
+        let y = v / (config::MAX_SPEED * 2.0) + 0.5;
+
         XYCoords { x, y }
     }
 
@@ -133,8 +136,10 @@ impl Drawable for HodoContext {
             }
 
             let origin = self.convert_sd_to_screen(SDCoords {
-                speed: 0.0,
-                dir: 360.0,
+                spd_dir: WindSpdDir {
+                    speed: Knots(0.0),
+                    direction: 360.0,
+                },
             });
             for pnts in [
                 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0,
@@ -142,8 +147,10 @@ impl Drawable for HodoContext {
             .iter()
             .map(|d| {
                 let end_point = self.convert_sd_to_screen(SDCoords {
-                    speed: config::MAX_SPEED,
-                    dir: *d,
+                    spd_dir: WindSpdDir {
+                        speed: config::MAX_SPEED,
+                        direction: *d,
+                    },
                 });
                 [origin, end_point]
             }) {
@@ -175,8 +182,10 @@ impl Drawable for HodoContext {
                         x: mut screen_x,
                         y: mut screen_y,
                     } = self.convert_sd_to_screen(SDCoords {
-                        speed: s,
-                        dir: *direction,
+                        spd_dir: WindSpdDir {
+                            speed: s,
+                            direction: *direction,
+                        },
                     });
                     screen_y -= extents.height / 2.0;
                     screen_x -= extents.width / 2.0;
@@ -227,14 +236,12 @@ impl Drawable for HodoContext {
 
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        let (speed, dir) = if let Some(sample) = ac.get_sample() {
-            if let (Some(pressure), Some(speed), Some(dir)) = (
-                Into::<Option<f64>>::into(sample.pressure),
-                sample.speed.into(),
-                sample.direction.into(),
-            ) {
+        let spd_dir = if let Some(sample) = ac.get_sample() {
+            if let (Some(pressure), Some(wind)) =
+                (sample.pressure.into_option(), sample.wind.into_option())
+            {
                 if pressure >= config.min_hodo_pressure {
-                    (speed, dir)
+                    wind
                 } else {
                     return;
                 }
@@ -246,7 +253,7 @@ impl Drawable for HodoContext {
         };
 
         let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
-        let coords = ac.hodo.convert_sd_to_screen(SDCoords { speed, dir });
+        let coords = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir });
 
         let rgba = config.active_readout_line_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
@@ -268,23 +275,18 @@ impl Drawable for HodoContext {
 impl MasterDrawable for HodoContext {}
 
 fn draw_data(args: DrawingArgs) {
-    use sounding_base::Profile::{Pressure, WindDirection, WindSpeed};
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg) = ac.get_sounding_for_display() {
         let sndg = sndg.sounding();
-        let pres_data = sndg.get_profile(Pressure);
-        let speed_data = sndg.get_profile(WindSpeed);
-        let dir_data = sndg.get_profile(WindDirection);
+        let pres_data = sndg.pressure_profile();
+        let wind_data = sndg.wind_profile();
 
-        let profile_data = izip!(pres_data, speed_data, dir_data).filter_map(|(p, spd, dir)| {
-            if let (Some(p), Some(speed), Some(dir)) =
-                (Into::<Option<f64>>::into(p), spd.into(), dir.into())
-            {
+        let profile_data = izip!(pres_data, wind_data).filter_map(|(p, wind)| {
+            if let (Some(p), Some(spd_dir)) = (p.into_option(), wind.into_option()) {
                 if p >= config.min_hodo_pressure {
-                    let sd_coords = SDCoords { speed, dir };
+                    let sd_coords = SDCoords { spd_dir };
                     Some(ac.hodo.convert_sd_to_screen(sd_coords))
                 } else {
                     None
