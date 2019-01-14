@@ -62,7 +62,7 @@ impl AppContext {
     /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
     /// drawn on the GUI.
     pub fn initialize() -> AppContextPointer {
-        let glade_src = include_str!("../sonde.glade");
+        let glade_src = include_str!("./sonde.glade");
 
         Rc::new(AppContext {
             config: RefCell::new(Config::default()),

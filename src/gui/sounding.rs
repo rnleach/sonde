@@ -912,18 +912,16 @@ fn build_profiles_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
 fn draw_temperature_profiles(args: DrawingArgs<'_, '_>) {
     let config = args.ac.config.borrow();
 
-    use self::TemperatureType::{DewPoint, DryBulb, WetBulb};
-
     if config.show_wet_bulb {
-        draw_temperature_profile(WetBulb, args);
+        draw_temperature_profile(TemperatureType::WetBulb, args);
     }
 
     if config.show_dew_point {
-        draw_temperature_profile(DewPoint, args);
+        draw_temperature_profile(TemperatureType::DewPoint, args);
     }
 
     if config.show_temperature {
-        draw_temperature_profile(DryBulb, args);
+        draw_temperature_profile(TemperatureType::DryBulb, args);
     }
 }
 
