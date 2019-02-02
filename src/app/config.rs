@@ -143,6 +143,10 @@ pub struct Config {
     pub wet_bulb_zero_line_color: Rgba,
     /// Show or hide wet bulb zero line
     pub show_wet_bulb_zero_line: bool,
+    /// Show or hide the effective inflow layer.
+    pub show_inflow_layer: bool,
+    /// Color for the effective inflow layer overlay
+    pub inflow_layer_rgba: Rgba,
 
     //
     // General profile configuration items
@@ -342,6 +346,8 @@ impl Default for Config {
             wet_bulb_zero_line_width: 3.0,
             wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_97, 0.4, 1.0),
             show_wet_bulb_zero_line: true,
+            show_inflow_layer: true,
+            inflow_layer_rgba: (1.0, 0.4, 0.1, 1.0),
 
             //
             // General profile configuration items

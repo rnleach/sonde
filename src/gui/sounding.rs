@@ -891,6 +891,7 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     make_check_item!(menu, "Fill CAPE/CIN", acp, fill_parcel_areas);
     make_check_item!(menu, "Show downburst", acp, show_downburst);
     make_check_item!(menu, "Fill downburst", acp, fill_dcape_area);
+    make_check_item!(menu, "Show inflow layer", acp, show_inflow_layer);
 
     menu.append(&SeparatorMenuItem::new());
 
@@ -1009,7 +1010,7 @@ fn draw_wind_profile(args: DrawingArgs<'_, '_>) {
 fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
     use crate::app::config::ParcelType::*;
 
-    let ac = args.ac;
+    let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
     if let Some(sndg_anal) = ac.get_sounding_for_display() {
@@ -1153,6 +1154,48 @@ fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
 
                     Some(())
                 });
+        }
+
+        if config.show_inflow_layer {
+            if let Some(lyr) = sndg_anal.effective_inflow_layer() {
+                if let (Some(bottom_p), Some(top_p)) = (
+                    lyr.bottom.pressure.into_option(),
+                    lyr.top.pressure.into_option(),
+                ) {
+                    // Values from wind barbs, make this to the left of the wind barbs
+                    let (shaft_length, _) = cr.device_to_user_distance(
+                        config.wind_barb_shaft_length,
+                        -config.wind_barb_barb_length,
+                    );
+                    let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+
+                    let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
+                    let XYCoords { x: mut xmax, .. } =
+                        ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
+
+                    xmax = xmax.min(1.0);
+
+                    let ScreenCoords { x: xmax, .. } =
+                        ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
+
+                    let xcoord = xmax - 2.0 * padding - 2.0 * shaft_length;
+                    let yb = get_wind_barb_center(bottom_p, xcoord, args);
+                    let yt = get_wind_barb_center(top_p, xcoord, args);
+
+                    const WIDTH: f64 = 0.02;
+
+                    let rgba = config.inflow_layer_rgba;
+                    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                    cr.set_line_width(cr.device_to_user_distance(4.0, 0.0).0);
+                    cr.move_to(yt.x + WIDTH, yt.y);
+                    cr.line_to(yt.x - WIDTH, yt.y);
+                    cr.move_to(yt.x, yt.y);
+                    cr.line_to(yb.x, yb.y);
+                    cr.move_to(yb.x + WIDTH, yb.y);
+                    cr.line_to(yb.x - WIDTH, yb.y);
+                    cr.stroke();
+                }
+            }
         }
     }
 }

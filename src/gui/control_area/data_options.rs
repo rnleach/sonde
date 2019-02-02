@@ -63,8 +63,14 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     );
     build_config_color!(overlays_box, "CAPE", ac, parcel_positive_rgba);
     build_config_color!(overlays_box, "CIN", ac, parcel_negative_rgba);
-    build_config_color!(overlays_box, "Downburst profile", ac, downburst_rgba);
+    build_config_color!(overlays_box, "Downburst Profile", ac, downburst_rgba);
     build_config_color!(overlays_box, "DCAPE", ac, dcape_area_color);
+    build_config_color!(
+        overlays_box,
+        "Effective Inflow Layer",
+        ac,
+        inflow_layer_rgba
+    );
     build_config_color!(overlays_box, "Storm Motion (hodo)", ac, storm_motion_rgba);
 
     //
