@@ -1,17 +1,21 @@
 use crate::{
-    app::{config, config::Rgba, AppContext, AppContextPointer},
+    app::{
+        config::{self, HelicityType, Rgba, StormMotionType},
+        AppContext, AppContextPointer,
+    },
     coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
-        utility::{check_overlap_then_add, plot_curve_from_points},
+        utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points},
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use gtk::{prelude::*, DrawingArea};
+use gdk::EventButton;
+use gtk::{prelude::*, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 use itertools::izip;
-use metfor::{Knots, Quantity, WindSpdDir, WindUV};
-use std::rc::Rc;
+use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
+use std::{iter::once, rc::Rc};
 
 pub struct HodoContext {
     generic: GenericContext,
@@ -80,6 +84,8 @@ impl Drawable for HodoContext {
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.hodo.size_allocate_event(da));
+
+        build_hodograph_area_context_menu(acp)?;
 
         Ok(())
     }
@@ -271,10 +277,117 @@ impl Drawable for HodoContext {
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
+    fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
+        // Left mouse button
+        if event.get_button() == 3 {
+            if let Ok(menu) = ac.fetch_widget::<Menu>("hodograph_context_menu") {
+                // waiting for version 3.22...
+                // let ev: &::gdk::Event = evt;
+                // menu.popup_at_pointer(ev);
+                menu.popup_easy(3, 0)
+            }
+            Inhibit(false)
+        } else {
+            Inhibit(false)
+        }
+    }
 }
 
 impl MasterDrawable for HodoContext {}
 
+/**************************************************************************************************
+ *                                   DrawingArea set up
+ **************************************************************************************************/
+macro_rules! make_heading {
+    ($menu:ident, $label:expr) => {
+        let heading = MenuItem::new_with_label($label);
+        heading.set_sensitive(false);
+        $menu.append(&heading);
+    };
+}
+
+fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), SondeError> {
+    let menu: Menu = acp.fetch_widget("hodograph_context_menu")?;
+    let config = acp.config.borrow();
+
+    make_heading!(menu, "Helicity");
+    let sfc_to_3km = RadioMenuItem::new_with_label("Surface to 3km");
+    let effective = RadioMenuItem::new_with_label_from_widget(&sfc_to_3km, "Effective Inflow");
+
+    match config.helicity_layer {
+        HelicityType::SurfaceTo3km => sfc_to_3km.set_active(true),
+        HelicityType::Effective => effective.set_active(true),
+    }
+
+    fn handle_helicity_type_toggle(
+        button: &RadioMenuItem,
+        htype: HelicityType,
+        ac: &AppContextPointer,
+    ) {
+        if button.get_active() {
+            ac.config.borrow_mut().helicity_layer = htype;
+            ac.mark_data_dirty();
+            ac.update_all_gui();
+        }
+    }
+
+    let ac = Rc::clone(acp);
+    sfc_to_3km.connect_toggled(move |button| {
+        handle_helicity_type_toggle(button, HelicityType::SurfaceTo3km, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    effective.connect_toggled(move |button| {
+        handle_helicity_type_toggle(button, HelicityType::Effective, &ac);
+    });
+
+    menu.append(&sfc_to_3km);
+    menu.append(&effective);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    make_heading!(menu, "Helicity Storm");
+    let right_mover = RadioMenuItem::new_with_label("Right Mover");
+    let left_mover = RadioMenuItem::new_with_label_from_widget(&right_mover, "Left Mover");
+
+    match config.helicity_storm_motion {
+        StormMotionType::RightMover => right_mover.set_active(true),
+        StormMotionType::LeftMover => left_mover.set_active(true),
+    }
+
+    fn handle_storm_motion_toggle(
+        button: &RadioMenuItem,
+        stype: StormMotionType,
+        ac: &AppContextPointer,
+    ) {
+        if button.get_active() {
+            ac.config.borrow_mut().helicity_storm_motion = stype;
+            ac.mark_data_dirty();
+            ac.update_all_gui();
+        }
+    }
+
+    let ac = Rc::clone(acp);
+    right_mover.connect_toggled(move |button| {
+        handle_storm_motion_toggle(button, StormMotionType::RightMover, &ac);
+    });
+
+    let ac = Rc::clone(acp);
+    left_mover.connect_toggled(move |button| {
+        handle_storm_motion_toggle(button, StormMotionType::LeftMover, &ac);
+    });
+
+    menu.append(&right_mover);
+    menu.append(&left_mover);
+
+    menu.show_all();
+
+    Ok(())
+}
+
+/**************************************************************************************************
+ *                                   Data Layer Drawing
+ **************************************************************************************************/
 fn draw_data(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -307,6 +420,70 @@ fn draw_data(args: DrawingArgs<'_, '_>) {
 }
 
 fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
+    draw_helicity_fill(args);
+    draw_storm_motion_and_mean_wind(args);
+}
+
+fn draw_helicity_fill(args: DrawingArgs<'_, '_>) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if let Some(anal) = ac.get_sounding_for_display() {
+        // Get the storm motion
+        let motion = {
+            let motion = match config.helicity_storm_motion {
+                StormMotionType::RightMover => anal.right_mover(),
+                StormMotionType::LeftMover => anal.left_mover(),
+            }
+            .map(WindSpdDir::<Knots>::from);
+
+            if let Some(motion) = motion {
+                motion
+            } else {
+                return;
+            }
+        };
+
+        let pnts = {
+            let layer = match config.helicity_layer {
+                HelicityType::SurfaceTo3km => {
+                    sounding_analysis::layer_agl(anal.sounding(), Meters(3000.0)).ok()
+                }
+                HelicityType::Effective => anal.effective_inflow_layer(),
+            };
+
+            if let Some((bottom_p, top_p)) = layer.and_then(|lyr| {
+                lyr.bottom
+                    .pressure
+                    .into_option()
+                    .and_then(|bp| lyr.top.pressure.into_option().map(|tp| (bp, tp)))
+            }) {
+                let pnts = izip!(
+                    anal.sounding().pressure_profile(),
+                    anal.sounding().wind_profile()
+                )
+                .filter_map(|(p_opt, w_opt)| {
+                    p_opt.into_option().and_then(|p| w_opt.map(|w| (p, w)))
+                })
+                .skip_while(move |(p, _)| *p > bottom_p)
+                .take_while(move |(p, _)| *p >= top_p)
+                .map(|(_, w)| w);
+
+                once(motion)
+                    .chain(pnts)
+                    .map(|spd_dir| SDCoords { spd_dir })
+                    .map(|coord| ac.hodo.convert_sd_to_screen(coord))
+            } else {
+                return;
+            }
+        };
+
+        let rgba = config.helicity_rgba;
+        draw_filled_polygon(&cr, rgba, pnts);
+    }
+}
+
+fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 

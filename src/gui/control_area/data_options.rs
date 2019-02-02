@@ -72,6 +72,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         inflow_layer_rgba
     );
     build_config_color!(overlays_box, "Storm Motion (hodo)", ac, storm_motion_rgba);
+    build_config_color!(
+        overlays_box,
+        "Helicity area color (hodo)",
+        ac,
+        helicity_rgba
+    );
 
     //
     // Layout boxes in the frame

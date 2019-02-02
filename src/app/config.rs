@@ -7,13 +7,27 @@ use lazy_static::lazy_static;
 use metfor::{Celsius, HectoPascal, Kelvin, Knots, PaPS, Quantity, WindSpdDir};
 use serde_derive::{Deserialize, Serialize};
 
-/// Types of parcels you can use when doing parcel analysis.
+/// Types of parcels you can use when drawing parcel analysis overlays.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum ParcelType {
     Surface,
     MixedLayer,
     MostUnstable,
     Convective,
+}
+
+/// Types of helicity to use when drawing hodograph overlays.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum HelicityType {
+    SurfaceTo3km,
+    Effective,
+}
+
+/// Which storm motion to plot the Helicity overlay for.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum StormMotionType {
+    RightMover,
+    LeftMover,
 }
 
 /// Type used for colors in Gtk
@@ -262,6 +276,14 @@ pub struct Config {
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: HectoPascal,
+    /// Plot the helicity overlays.
+    pub show_helicity_overlay: bool,
+    /// Helicity overlay color
+    pub helicity_rgba: Rgba,
+    /// Which layer to plot the helicity for
+    pub helicity_layer: HelicityType,
+    /// Which storm motion to plot the helicity for.
+    pub helicity_storm_motion: StormMotionType,
 
     //
     // Misc configuration.
@@ -423,6 +445,10 @@ impl Default for Config {
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
             min_hodo_pressure: HectoPascal(300.0),
+            show_helicity_overlay: true,
+            helicity_rgba: (1.0, 0.4, 0.1, 0.6),
+            helicity_layer: HelicityType::Effective,
+            helicity_storm_motion: StormMotionType::RightMover,
 
             //
             // Misc configuration.
