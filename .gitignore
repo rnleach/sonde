@@ -11,6 +11,7 @@ Cargo.lock
 *.sublime*
 .vscode
 \#*.glade\#
+.buildconfig
 
 //
 // OS specific
@@ -26,3 +27,4 @@ config.yml
 // misc
 //
 *~
+
