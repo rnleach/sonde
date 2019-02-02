@@ -650,11 +650,11 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.rel_line_to(0.0, -height);
         cr.rel_line_to(-width, 0.0);
         cr.rel_line_to(-leader, height / 2.0);
-        let rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        let fg_rgba = color;
+        let bg_rgba = config.background_rgba;
+        cr.set_source_rgba(bg_rgba.0, bg_rgba.1, bg_rgba.2, fg_rgba.3);
         cr.fill_preserve();
-        let rgba = color;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_source_rgba(fg_rgba.0, fg_rgba.1, fg_rgba.2, fg_rgba.3);
         cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
         cr.stroke();
 

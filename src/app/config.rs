@@ -57,6 +57,8 @@ pub struct Config {
     pub wind_barb_line_width: f64,
     /// Show the wind profile
     pub show_wind_profile: bool,
+    /// Storm motion points color for the hodograph
+    pub storm_motion_rgba: Rgba,
 
     //
     // Temperature profile
@@ -289,6 +291,7 @@ impl Default for Config {
             wind_rgba: (0.0, 0.0, 0.0, 1.0),
             wind_barb_line_width: 1.0,
             show_wind_profile: true,
+            storm_motion_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Temperature profile
@@ -913,8 +916,6 @@ where
     Q2: Quantity,
     <Q1 as std::ops::Sub>::Output: Quantity,
 {
-    use metfor;
-
     use std::f64;
     const MAX_IT: usize = 50;
     const EPS: f64 = 1.0e-10;

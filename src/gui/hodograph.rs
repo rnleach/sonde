@@ -224,6 +224,7 @@ impl Drawable for HodoContext {
      **********************************************************************************************/
     fn draw_data(&self, args: DrawingArgs<'_, '_>) {
         draw_data(args);
+        draw_data_overlays(args);
     }
 
     /***********************************************************************************************
@@ -302,5 +303,68 @@ fn draw_data(args: DrawingArgs<'_, '_>) {
             config.veclocity_rgba,
             profile_data,
         );
+    }
+}
+
+fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if let Some(anal) = ac.get_sounding_for_display() {
+        if let (Some(rm), Some(lm), Some(mw)) = (
+            anal.right_mover().into_option(),
+            anal.left_mover().into_option(),
+            anal.mean_wind().into_option(),
+        ) {
+            let rm = WindSpdDir::<Knots>::from(rm);
+            let lm = WindSpdDir::<Knots>::from(lm);
+            let mw = WindSpdDir::<Knots>::from(mw);
+
+            let pnt_size = cr.device_to_user_distance(6.0, 0.0).0;
+
+            let mut coords_rm = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir: rm });
+            let mut coords_lm = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir: lm });
+            let mut coords_mw = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir: mw });
+
+            let sm_rgba = config.storm_motion_rgba;
+            let mw_rgba = config.storm_motion_rgba;
+            cr.set_source_rgba(sm_rgba.0, sm_rgba.1, sm_rgba.2, sm_rgba.3);
+            cr.arc(
+                coords_rm.x,
+                coords_rm.y,
+                pnt_size,
+                0.0,
+                2.0 * ::std::f64::consts::PI,
+            );
+            cr.fill();
+
+            cr.arc(
+                coords_lm.x,
+                coords_lm.y,
+                pnt_size,
+                0.0,
+                2.0 * ::std::f64::consts::PI,
+            );
+            cr.fill();
+
+            coords_rm.x += 0.025;
+            coords_lm.x += 0.025;
+
+            ac.hodo.draw_tag("RM", coords_rm, sm_rgba, args);
+            ac.hodo.draw_tag("LM", coords_lm, sm_rgba, args);
+
+            cr.set_source_rgba(mw_rgba.0, mw_rgba.1, mw_rgba.2, mw_rgba.3);
+            cr.arc(
+                coords_mw.x,
+                coords_mw.y,
+                pnt_size,
+                0.0,
+                2.0 * ::std::f64::consts::PI,
+            );
+            cr.fill();
+
+            coords_mw.x += 0.025;
+            ac.hodo.draw_tag("MW", coords_mw, mw_rgba, args);
+        }
     }
 }

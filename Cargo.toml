@@ -10,17 +10,17 @@ chrono = "^0.4"
 gdk = "^0.9"
 glib = "^0.6"
 gtk = { version = "^0.5", features = ["v3_18"] }
-itertools = "^0.7"
+itertools = "^0.8"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
-metfor = { version = "^0.7.0", features = ["use_optional", "use_serde"]}
+metfor = { version = "^0.7.1", features = ["use_optional", "use_serde"]}
 optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-base = "^0.10.0"
 sounding-bufkit = "^0.10.0"
-sounding-analysis = "^0.10.0"
+sounding-analysis = "^0.10.2"
 
 [profile.release]
 lto = true
