@@ -15,6 +15,7 @@ lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
 metfor = { version = "^0.7.1", features = ["use_optional", "use_serde"]}
 optional = "^0.5.0"
+rayon = "^1.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"

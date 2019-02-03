@@ -9,6 +9,10 @@ use gtk::Builder;
 use itertools::izip;
 use log::{error, log_enabled, trace};
 use metfor::Quantity;
+use rayon::{
+    iter::{IterBridge, ParallelBridge},
+    prelude::*,
+};
 use sounding_analysis::{self, Analysis};
 use sounding_base::{DataRow, Sounding};
 use std::cell::{Cell, RefCell};
@@ -89,12 +93,32 @@ impl AppContext {
             .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
     }
 
-    pub fn load_data(&self, src: &mut dyn Iterator<Item = Analysis>) {
+    pub fn load_data<I>(&self, src: I)
+    where
+        I: Iterator<Item = Analysis> + ParallelBridge,
+        IterBridge<I>: ParallelIterator<Item = Analysis>,
+    {
         use crate::app::config;
 
-        *self.list.borrow_mut() = src
-            .map(|anal| Rc::new(anal.fill_in_missing_analysis()))
+        // Fill in all analysis in parallel
+        let mut list: Vec<Box<Analysis>> = src
+            .par_bridge()
+            // Need to use Box since it is Send and Rc is !Send.
+            .map(|anal: Analysis| Box::new(anal.fill_in_missing_analysis()))
             .collect();
+
+        // Parallel computation and collect most likely mixed up the order, so sort on valid time
+        list.sort_unstable_by_key(|anal| {
+            anal.sounding()
+                .valid_time()
+                // In the odd case where there is no valid time, assume the maximum possible
+                // valid time to just push this one to the end.
+                .unwrap_or_else(|| chrono::naive::MAX_DATE.and_hms(23, 59, 59))
+        });
+
+        // Map from Box to Rc and assign to the list
+        *self.list.borrow_mut() = list.into_iter().map(Rc::from).collect();
+
         *self.extra_profiles.borrow_mut() = self
             .list
             .borrow()
@@ -102,6 +126,7 @@ impl AppContext {
             .map(|anal| ExtraProfiles::new(anal.sounding()))
             .map(Rc::new)
             .collect();
+
         self.currently_displayed_index.set(0);
         *self.source_description.borrow_mut() = None;
 
