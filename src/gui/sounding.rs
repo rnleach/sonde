@@ -613,6 +613,30 @@ impl Drawable for SkewTContext {
             }
         }
 
+        if config.show_sample_parcel_profile {
+            if let Some(pcl) = Parcel::from_datarow(*vals) {
+                if let Ok(pcl_anal) = sounding_analysis::lift_parcel(pcl, anal.sounding()) {
+                    let mut line = String::with_capacity(32);
+                    let color = config.parcel_positive_rgba;
+                    if let Some(cape) = pcl_anal.cape().into_option() {
+                        line.push_str(&format!("CAPE: {:.0} J/Kg ", cape.unpack()));
+                    } else {
+                        line.push_str("CAPE: 0 J/Kg ");
+                    }
+                    results.push((line, color));
+
+                    let mut line = String::with_capacity(32);
+                    let color = config.parcel_negative_rgba;
+                    if let Some(cin) = pcl_anal.cin().into_option() {
+                        line.push_str(&format!("CIN: {:.0} J/Kg\n", cin.unpack()));
+                    } else {
+                        line.push_str("CIN: 0 J/Kg\n");
+                    }
+                    results.push((line, color));
+                }
+            };
+        }
+
         // Sample the screen coords. Leave these commented out for debugging later possibly.
         // {
         //     use app::PlotContext;
