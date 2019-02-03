@@ -627,7 +627,7 @@ trait Drawable: PlotContext + PlotContextExt {
         });
     }
 
-    fn draw_tag(&self, text: &str, location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
+    fn draw_tag(&self, text: &str, mut location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
         self.prepare_to_make_text(args);
 
         let cr = args.cr;
@@ -640,8 +640,21 @@ trait Drawable: PlotContext + PlotContextExt {
         let width: f64 = text_extents.width + 2.0 * padding;
         let height: f64 = text_extents.height + 2.0 * padding;
         let leader = height * 2.0 / 3.0;
-        let home_x = location.x + leader + padding;
-        let home_y = location.y - text_extents.height / 2.0;
+        let mut home_x = location.x + leader + padding;
+        let mut home_y = location.y - text_extents.height / 2.0;
+
+        // Make adjustments to keep it on screen
+        let overflow = location.x + width + leader - 1.0;
+        if overflow > 0.0 {
+            location.x -= overflow;
+            home_x -= overflow;
+        }
+
+        let overflow = location.y - height / 2.0;
+        if overflow < 0.0 {
+            location.y -= overflow;
+            home_y -= overflow;
+        }
 
         // Draw the box
         cr.move_to(location.x, location.y);
@@ -650,11 +663,11 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.rel_line_to(0.0, -height);
         cr.rel_line_to(-width, 0.0);
         cr.rel_line_to(-leader, height / 2.0);
-        let rgba = config.background_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        let fg_rgba = color;
+        let bg_rgba = config.background_rgba;
+        cr.set_source_rgba(bg_rgba.0, bg_rgba.1, bg_rgba.2, fg_rgba.3);
         cr.fill_preserve();
-        let rgba = color;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        cr.set_source_rgba(fg_rgba.0, fg_rgba.1, fg_rgba.2, fg_rgba.3);
         cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
         cr.stroke();
 

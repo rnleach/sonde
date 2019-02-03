@@ -3,7 +3,7 @@ use crate::{
     errors::SondeError,
 };
 use gtk::{prelude::*, TextTag, TextView};
-use metfor::{Feet, Quantity};
+use metfor::{Fahrenheit, Feet, Inches, Quantity};
 use sounding_analysis::{partition_cape, Analysis};
 
 macro_rules! make_default_tag {
@@ -111,7 +111,7 @@ fn push_header(buffer: &mut String, source_desc: Option<String>, anal: &Analysis
     }
 }
 
-macro_rules! push_profile_index {
+macro_rules! push_prof {
     ($anal: expr, $buf:ident, $name:expr, $selector:tt, $format:expr, $empty_val:expr) => {
         $buf.push_str($name);
         $anal
@@ -119,6 +119,41 @@ macro_rules! push_profile_index {
             .into_option()
             .and_then(|val| {
                 $buf.push_str(&format!($format, val.unpack()));
+                Some(())
+            })
+            .or_else(|| {
+                $buf.push_str($empty_val);
+                Some(())
+            });
+        $buf.push('\n');
+    };
+    ($anal: expr, $buf:ident, $name:expr, $selector:tt, $format:expr, temp, $format2:expr, $empty_val:expr) => {
+        $buf.push_str($name);
+        $anal
+            .$selector()
+            .into_option()
+            .and_then(|val| {
+                $buf.push_str(&format!($format, val.unpack()));
+                $buf.push_str(&format!($format2, Fahrenheit::from(val).unpack().round()));
+                Some(())
+            })
+            .or_else(|| {
+                $buf.push_str($empty_val);
+                Some(())
+            });
+        $buf.push('\n');
+    };
+    ($anal: expr, $buf:ident, $name:expr, $selector:tt, $format:expr, mm, $format2:expr, $empty_val:expr) => {
+        $buf.push_str($name);
+        $anal
+            .$selector()
+            .into_option()
+            .and_then(|val| {
+                $buf.push_str(&format!($format, val.unpack()));
+                $buf.push_str(&format!(
+                    $format2,
+                    (Inches::from(val).unpack() * 100.0).round() / 100.0
+                ));
                 Some(())
             })
             .or_else(|| {
@@ -135,24 +170,26 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
     let empty_val = "    -    ";
 
     buffer.push('\n');
-    buffer.push('\n');
 
     buffer.push_str("Index        Value\n");
-    buffer.push_str("-----------------------\n");
-    push_profile_index!(anal, buffer, "SWeT         ", swet,        "{:>10.0}",          empty_val);
-    push_profile_index!(anal, buffer, "K            ", k_index,     "{:>7.0} \u{00b0}C", empty_val);
-    push_profile_index!(anal, buffer, "Total Totals ", total_totals,"{:>10.0}",          empty_val);
-    push_profile_index!(anal, buffer, "DCAPE        ", dcape,       "{:>5.0} J/kg",      empty_val);
-    push_profile_index!(anal, buffer, "PWAT         ", pwat,        "{:>7.0} mm",        empty_val);
-    push_profile_index!(anal, buffer, "Downrush T   ", downrush_t,  "{:>7.0} \u{00b0}C", empty_val);
-    push_profile_index!(anal, buffer, "Convective T ", convective_t,"{:>7.0} \u{00b0}C", empty_val);
+    buffer.push_str("----------------------------------------------------\n");
+    push_prof!(anal, buffer, "SWeT                ", swet,               "{:>10.0}",                                                 empty_val);
+    push_prof!(anal, buffer, "K                   ", k_index,            "{:>8.0}\u{00b0}C",                                         empty_val);
+    push_prof!(anal, buffer, "Total Totals        ", total_totals,       "{:>10.0}",                                                 empty_val);
+    push_prof!(anal, buffer, "DCAPE               ", dcape,              "{:>5.0} J/kg",                                             empty_val);
+    push_prof!(anal, buffer, "PWAT                ", pwat,               "{:>7.0} mm",                  mm,   " ({:>4.2} in)",       empty_val);
+    push_prof!(anal, buffer, "Downrush T          ", downrush_t,         "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)", empty_val);
+    push_prof!(anal, buffer, "Convective T        ", convective_t,       "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)", empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (RM)", sr_helicity_3k_rm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (LM)", sr_helicity_3k_lm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (RM)", sr_helicity_eff_rm, "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (LM)", sr_helicity_eff_lm, "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
 }
 
 #[inline]
 #[rustfmt::skip]
 fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
 
-    buffer.push('\n');
     buffer.push('\n');
 
     macro_rules! push_var {
@@ -207,7 +244,7 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     let empty = "     -";
     buffer.push_str("Parcel          CAPE   CIN NCAPE  Hail    LI\n");
     buffer.push_str("                J/Kg  J/Kg        CAPE     C\n");
-    buffer.push_str("--------------------------------------------\n");
+    buffer.push_str("----------------------------------------------------\n");
     parcel_index_row!(buffer, "Surface       ", sfc, empty);
     parcel_index_row!(buffer, "Mixed Layer   ", ml,  empty);
     parcel_index_row!(buffer, "Most Unstable ", mu,  empty);
@@ -238,15 +275,14 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     }
 
     buffer.push('\n');
-    buffer.push('\n');
     buffer.push_str("Fire Weather\n");
-    buffer.push_str("------------------------\n\n");
+    buffer.push_str("----------------------------------------------------\n");
 
     buffer.push_str("Haines   Low   Mid  High\n");
     buffer.push_str("       ");
 
     let empty = "  -   ";
-    for &hns in [anal.haines_low(), anal.haines_mid(), anal.haines_high()].into_iter() {
+    for &hns in [anal.haines_low(), anal.haines_mid(), anal.haines_high()].iter() {
         if let Some(val) = hns.into_option() {
             buffer.push_str(&format!("{:>5.0} ", val));
         } else {
@@ -254,12 +290,12 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
         }
     }
     buffer.push('\n');
-    push_fire_index!(buffer, "HDW         ", anal, hdw, "{:>12.0}\n\n", empty);
+    push_fire_index!(buffer, "HDW         ", anal, hdw, "{:>12.0}\n", empty);
 
     let empty = " - \n";
 
     buffer.push_str("Experimental\n");
-    buffer.push_str("------------------------\n\n");
+    buffer.push_str("----------------------------------------------------\n");
     push_fire_index!(buffer, "Conv. T def.", anal, convective_deficit,"{:>9.1} \u{00b0}C\n", empty);
     push_fire_index!(buffer, "CAPE ratio  ", anal, cape_ratio,        "{:>12.2}\n", empty);
 

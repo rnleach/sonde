@@ -7,13 +7,27 @@ use lazy_static::lazy_static;
 use metfor::{Celsius, HectoPascal, Kelvin, Knots, PaPS, Quantity, WindSpdDir};
 use serde_derive::{Deserialize, Serialize};
 
-/// Types of parcels you can use when doing parcel analysis.
+/// Types of parcels you can use when drawing parcel analysis overlays.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum ParcelType {
     Surface,
     MixedLayer,
     MostUnstable,
     Convective,
+}
+
+/// Types of helicity to use when drawing hodograph overlays.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum HelicityType {
+    SurfaceTo3km,
+    Effective,
+}
+
+/// Which storm motion to plot the Helicity overlay for.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum StormMotionType {
+    RightMover,
+    LeftMover,
 }
 
 /// Type used for colors in Gtk
@@ -57,6 +71,8 @@ pub struct Config {
     pub wind_barb_line_width: f64,
     /// Show the wind profile
     pub show_wind_profile: bool,
+    /// Storm motion points color for the hodograph
+    pub storm_motion_rgba: Rgba,
 
     //
     // Temperature profile
@@ -141,6 +157,10 @@ pub struct Config {
     pub wet_bulb_zero_line_color: Rgba,
     /// Show or hide wet bulb zero line
     pub show_wet_bulb_zero_line: bool,
+    /// Show or hide the effective inflow layer.
+    pub show_inflow_layer: bool,
+    /// Color for the effective inflow layer overlay
+    pub inflow_layer_rgba: Rgba,
 
     //
     // General profile configuration items
@@ -256,6 +276,14 @@ pub struct Config {
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: HectoPascal,
+    /// Plot the helicity overlays.
+    pub show_helicity_overlay: bool,
+    /// Helicity overlay color
+    pub helicity_rgba: Rgba,
+    /// Which layer to plot the helicity for
+    pub helicity_layer: HelicityType,
+    /// Which storm motion to plot the helicity for.
+    pub helicity_storm_motion: StormMotionType,
 
     //
     // Misc configuration.
@@ -289,6 +317,7 @@ impl Default for Config {
             wind_rgba: (0.0, 0.0, 0.0, 1.0),
             wind_barb_line_width: 1.0,
             show_wind_profile: true,
+            storm_motion_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Temperature profile
@@ -339,6 +368,8 @@ impl Default for Config {
             wet_bulb_zero_line_width: 3.0,
             wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_97, 0.4, 1.0),
             show_wet_bulb_zero_line: true,
+            show_inflow_layer: true,
+            inflow_layer_rgba: (1.0, 0.4, 0.1, 1.0),
 
             //
             // General profile configuration items
@@ -414,6 +445,10 @@ impl Default for Config {
             veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
             min_hodo_pressure: HectoPascal(300.0),
+            show_helicity_overlay: true,
+            helicity_rgba: (1.0, 0.4, 0.1, 0.6),
+            helicity_layer: HelicityType::Effective,
+            helicity_storm_motion: StormMotionType::RightMover,
 
             //
             // Misc configuration.
@@ -669,7 +704,7 @@ lazy_static! {
     pub static ref ISOTHERM_PNTS: Vec<[XYCoords; 2]> = {
 
         ISOTHERMS
-        .into_iter()
+        .iter()
         .map(|t| {
             [
                 TPCoords{temperature:*t, pressure:MAXP},
@@ -688,7 +723,7 @@ lazy_static! {
     /// Compute points for background isobars only once
     pub static ref ISOBAR_PNTS: Vec<[XYCoords; 2]> = {
         ISOBARS
-        .into_iter()
+        .iter()
         .map(|p| {
             [
                 TPCoords{temperature:Celsius(-150.0), pressure:*p},
@@ -707,7 +742,7 @@ lazy_static! {
     /// Compute points for background isentrops only once
     pub static ref ISENTROP_PNTS: Vec<Vec<XYCoords>> = {
         ISENTROPS
-        .into_iter()
+        .iter()
         .map(|theta| generate_isentrop(*theta))
         .collect()
     };
@@ -717,7 +752,7 @@ lazy_static! {
         use metfor::*;
 
         ISO_MIXING_RATIO
-        .into_iter()
+        .iter()
         .map(|mw| {
             [
                 TPCoords{
@@ -755,7 +790,7 @@ lazy_static! {
     /// Compute points for background omega
     pub static ref ISO_OMEGA_PNTS: Vec<[XYCoords; 2]> = {
         ISO_OMEGA
-            .into_iter()
+            .iter()
             .map(|w| {
                 [
                 WPCoords {
@@ -797,7 +832,7 @@ lazy_static! {
     /// Compute points for background cloud coverage
     pub static ref CLOUD_PERCENT_PNTS: Vec<[XYCoords; 2]> = {
         PERCENTS
-            .into_iter()
+            .iter()
             .map(|p| {
                 [
                 PPCoords {
@@ -822,7 +857,7 @@ lazy_static! {
     /// Compute points for background cloud coverage
     pub static ref PROFILE_SPEED_PNTS: Vec<[XYCoords; 2]> = {
         PROFILE_SPEEDS
-            .into_iter()
+            .iter()
             .map(|speed| {
                 [
                 SPCoords {
@@ -913,8 +948,6 @@ where
     Q2: Quantity,
     <Q1 as std::ops::Sub>::Output: Quantity,
 {
-    use metfor;
-
     use std::f64;
     const MAX_IT: usize = 50;
     const EPS: f64 = 1.0e-10;
