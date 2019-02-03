@@ -627,7 +627,7 @@ trait Drawable: PlotContext + PlotContextExt {
         });
     }
 
-    fn draw_tag(&self, text: &str, location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
+    fn draw_tag(&self, text: &str, mut location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
         self.prepare_to_make_text(args);
 
         let cr = args.cr;
@@ -640,8 +640,21 @@ trait Drawable: PlotContext + PlotContextExt {
         let width: f64 = text_extents.width + 2.0 * padding;
         let height: f64 = text_extents.height + 2.0 * padding;
         let leader = height * 2.0 / 3.0;
-        let home_x = location.x + leader + padding;
-        let home_y = location.y - text_extents.height / 2.0;
+        let mut home_x = location.x + leader + padding;
+        let mut home_y = location.y - text_extents.height / 2.0;
+
+        // Make adjustments to keep it on screen
+        let overflow = location.x + width + leader - 1.0;
+        if overflow > 0.0 {
+            location.x -= overflow;
+            home_x -= overflow;
+        }
+
+        let overflow = location.y - height / 2.0;
+        if overflow < 0.0 {
+            location.y -= overflow;
+            home_y -= overflow;
+        }
 
         // Draw the box
         cr.move_to(location.x, location.y);
