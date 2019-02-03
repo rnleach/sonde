@@ -282,7 +282,7 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     buffer.push_str("       ");
 
     let empty = "  -   ";
-    for &hns in [anal.haines_low(), anal.haines_mid(), anal.haines_high()].into_iter() {
+    for &hns in [anal.haines_low(), anal.haines_mid(), anal.haines_high()].iter() {
         if let Some(val) = hns.into_option() {
             buffer.push_str(&format!("{:>5.0} ", val));
         } else {

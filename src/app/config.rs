@@ -704,7 +704,7 @@ lazy_static! {
     pub static ref ISOTHERM_PNTS: Vec<[XYCoords; 2]> = {
 
         ISOTHERMS
-        .into_iter()
+        .iter()
         .map(|t| {
             [
                 TPCoords{temperature:*t, pressure:MAXP},
@@ -723,7 +723,7 @@ lazy_static! {
     /// Compute points for background isobars only once
     pub static ref ISOBAR_PNTS: Vec<[XYCoords; 2]> = {
         ISOBARS
-        .into_iter()
+        .iter()
         .map(|p| {
             [
                 TPCoords{temperature:Celsius(-150.0), pressure:*p},
@@ -742,7 +742,7 @@ lazy_static! {
     /// Compute points for background isentrops only once
     pub static ref ISENTROP_PNTS: Vec<Vec<XYCoords>> = {
         ISENTROPS
-        .into_iter()
+        .iter()
         .map(|theta| generate_isentrop(*theta))
         .collect()
     };
@@ -752,7 +752,7 @@ lazy_static! {
         use metfor::*;
 
         ISO_MIXING_RATIO
-        .into_iter()
+        .iter()
         .map(|mw| {
             [
                 TPCoords{
@@ -790,7 +790,7 @@ lazy_static! {
     /// Compute points for background omega
     pub static ref ISO_OMEGA_PNTS: Vec<[XYCoords; 2]> = {
         ISO_OMEGA
-            .into_iter()
+            .iter()
             .map(|w| {
                 [
                 WPCoords {
@@ -832,7 +832,7 @@ lazy_static! {
     /// Compute points for background cloud coverage
     pub static ref CLOUD_PERCENT_PNTS: Vec<[XYCoords; 2]> = {
         PERCENTS
-            .into_iter()
+            .iter()
             .map(|p| {
                 [
                 PPCoords {
@@ -857,7 +857,7 @@ lazy_static! {
     /// Compute points for background cloud coverage
     pub static ref PROFILE_SPEED_PNTS: Vec<[XYCoords; 2]> = {
         PROFILE_SPEEDS
-            .into_iter()
+            .iter()
             .map(|speed| {
                 [
                 SPCoords {
