@@ -50,9 +50,19 @@ my top priority.
      CAPE/CIN calculations.
    - DCAPE/Down rush profiles are drawn and the area is shaded, using virtual temperature.
    - Inversion mix downs can be drawn.
-   - Sample readout shows the currently sampled parcel profile and dry adiabatic mix down.
-   - Convective parcel analysis has three parcels to choose from.
-   - Most analysis options are configurable via a right click menu in the sounding area.
+   - Sample readout shows the currently sampled parcel profile and dry adiabatic mix down, including
+     the CAPE and CIN values for the sampled parcel.
+   - Convective parcel analysis has four parcels to choose from: surface, mixed layer, most unstable
+     and convective.
+   - The effective inflow layer is plotted next to the wind barbs on the skew-t.
+   - In the hodograph display the 0-6 km mean wind, right moving, and left moving super cell motions
+     are also plotted.
+   - In the hodograph the 0-3 km Helicity or effective inflow layer helicity can be plotted with 
+     respect to the right mover OR left mover storm motion.
+   - Most analysis options are configurable via a right click menu in the sounding and hodograph 
+     areas.
+   - The indexes tab lists several common and some uncommon indexes and parcel analysis values for
+     thunderstorms and fire weather.
  - Data sources
    - Currently only supports Bufkit files, but I have plans to expand it to include bufr data.
    - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
@@ -61,8 +71,8 @@ my top priority.
      displayed. Almost all the colors used are configurable too. It is very much a work in progress.
    - Persistence from run to run has been implemented via a config.yml file that is saved every time
      the program shuts down.
-   - Right click menu on the sounding to choose parcel type (surface, mixed layer, most unstable)
-     for parcel analysis.
+   - Right click menu on the sounding to choose parcel type (surface, mixed layer, most unstable, 
+     convective) for parcel analysis.
    - Does not yet support saving and loading configurations, but that is planned.
 
 ## Screenshots
@@ -77,15 +87,19 @@ interpolation and shades according to the weight each had in the interpolated va
 ![screenshot with the text view](./screenshots/Text.png)
 
 A hodograph is also included. When sampling the skew-t, a dot appears at the corresponding location
-on the hodograph. Future development will add storm motion and helicity analysis for this view.
+on the hodograph. Mean wind, storm motion, and storm relative helicity are also plotted.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
 The profiles highlight important levels, such as the hail growth and dendritic snow growth zones 
 shown in these profiles. Also, the sample readouts track directly with the one on the skew-t.
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
+The indexes contain several common and some uncommon values from parcel theory and fire weather. I
+decided to include the helicity calculations for both the right and left moving supercell motions as
+well as some experimental fire weather indexes.
+![screenshot with indexes view](./screenshots/Indexes.png)
+
 ## Future Development
- - Display indexes such as CAPE, CIN, Haines, etc.
  - A data downloader and manager.
  - Support for loading [bufr][bufr] files so that measured data can be inspected too.
  - Saving and loading of the configuration and colors.
