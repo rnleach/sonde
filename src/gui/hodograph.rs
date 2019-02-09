@@ -279,7 +279,11 @@ impl Drawable for HodoContext {
      **********************************************************************************************/
     fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
-        if event.get_button() == 3 {
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(Some(event.get_position().into()));
+            self.set_left_button_pressed(true);
+            Inhibit(true)
+        } else if event.get_button() == 3 {
             if let Ok(menu) = ac.fetch_widget::<Menu>("hodograph_context_menu") {
                 // waiting for version 3.22...
                 // let ev: &::gdk::Event = evt;
