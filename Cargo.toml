@@ -3,6 +3,7 @@ name = "sonde"
 version = "0.2.0"
 authors = ["ClumsyCodeMonkey <clumsycodemonkey@gmail.com>"]
 edition = "2018"
+publish = false
 
 [dependencies]
 cairo-rs = { version = "^0.5", features = ["png"] }
