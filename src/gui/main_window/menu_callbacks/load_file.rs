@@ -40,17 +40,18 @@ fn load_bufkit(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Err
 }
 
 fn load_bufr(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let mut file = BufrFile::new(&path.to_string_lossy())?;
+    let file = BufrFile::new(&path.to_string_lossy())?;
 
-    if let Some(Ok(msg)) = file.nth(0){
-        let data = bufr_to_sounding(msg)?;
-        ac.load_data(data);
-    }
+    let data: Vec<Analysis> = file
+        .filter_map(|result| result.ok())
+        .filter_map(|msg| bufr_to_sounding(msg).ok())
+        .collect();
+    ac.load_data(data.into_iter());
 
     Ok(())
 }
 
-fn bufr_to_sounding(msg: Message) -> Result<impl Iterator<Item = Analysis>, Box<dyn Error>> {
+fn bufr_to_sounding(msg: Message) -> Result<Analysis, Box<dyn Error>> {
     let pressure_vals = msg.double_array("pressure")?;
     let pressure_vals = pressure_vals
         .iter()
@@ -91,7 +92,7 @@ fn bufr_to_sounding(msg: Message) -> Result<impl Iterator<Item = Analysis>, Box<
 
     for (p1, h1, t1, dp1, w1) in izip!(pressure_vals, height, temperature, dpt, wind) {
         if let (Some(p_val), Some(z_val)) = (p1.into(), h1.into()) {
-            if p_val < p0 && z_val > z0 {
+            if p_val <= p0 - HectoPascal(1.0) && z_val > z0 {
                 p.push(p1);
                 h.push(h1);
                 t.push(t1);
@@ -141,7 +142,5 @@ fn bufr_to_sounding(msg: Message) -> Result<impl Iterator<Item = Analysis>, Box<
         .with_dew_point_profile(dp)
         .with_wind_profile(w);
 
-    let anal = Analysis::new(snd);
-
-    Ok(once(anal))
+    Ok(Analysis::new(snd))
 }
