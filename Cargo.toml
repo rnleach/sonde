@@ -6,6 +6,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
+bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.1.0"}
 cairo-rs = { version = "^0.5", features = ["png"] }
 chrono = "^0.4"
 gdk = "^0.9"

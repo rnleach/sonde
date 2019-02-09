@@ -627,7 +627,13 @@ trait Drawable: PlotContext + PlotContextExt {
         });
     }
 
-    fn draw_tag(&self, text: &str, mut location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
+    fn draw_tag(
+        &self,
+        text: &str,
+        mut location: ScreenCoords,
+        color: Rgba,
+        args: DrawingArgs<'_, '_>,
+    ) {
         self.prepare_to_make_text(args);
 
         let cr = args.cr;
