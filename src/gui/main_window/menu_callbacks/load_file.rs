@@ -7,7 +7,7 @@ use optional::Optioned;
 use sounding_analysis::Analysis;
 use sounding_base::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
-use std::{error::Error, iter::once, path::PathBuf};
+use std::{error::Error, path::PathBuf};
 
 pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let extension: Option<String> = path
@@ -92,7 +92,7 @@ fn bufr_to_sounding(msg: Message) -> Result<Analysis, Box<dyn Error>> {
 
     for (p1, h1, t1, dp1, w1) in izip!(pressure_vals, height, temperature, dpt, wind) {
         if let (Some(p_val), Some(z_val)) = (p1.into(), h1.into()) {
-            if p_val <= p0 - HectoPascal(1.0) && z_val > z0 {
+            if p_val <= p0 - HectoPascal(2.0) && z_val > z0 {
                 p.push(p1);
                 h.push(h1);
                 t.push(t1);
