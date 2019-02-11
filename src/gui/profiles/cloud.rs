@@ -1,7 +1,7 @@
 use crate::{
     app::{config, config::Rgba, AppContext, AppContextPointer},
     coords::{
-        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, Rect, ScreenCoords,
+        convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
         ScreenRect, XYCoords,
     },
     errors::SondeError,
@@ -14,7 +14,6 @@ use crate::{
 use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use metfor::HectoPascal;
 use sounding_base::DataRow;
 use std::rc::Rc;
 

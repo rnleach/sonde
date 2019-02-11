@@ -81,36 +81,28 @@ pub fn update_text_area(ac: &AppContext) {
         return;
     };
 
-    if !text_area.is_visible() {
-        return;
-    }
-
     if let Some(tb) = text_area.get_buffer() {
         if let Some(snd) = ac.get_sounding_for_display() {
             let mut text = String::with_capacity(4096);
 
-            for row in snd.sounding().top_down() {
-                if let Some(p) = row.pressure.into_option() {
-                    if p < config::MINP {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-                text.push_str(&format!(
-                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
-                    unwrap_to_str!(row.pressure, "{:.0}"),
-                    unwrap_to_str!(row.height, "{:.0}"),
-                    unwrap_to_str!(row.temperature, "{:.1}"),
-                    unwrap_to_str!(row.wet_bulb, "{:.1}"),
-                    unwrap_to_str!(row.dew_point, "{:.1}"),
-                    unwrap_to_str!(row.theta_e, "{:.0}"),
-                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
-                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
-                    unwrap_to_str!(row.pvv, "{:.1}"),
-                    unwrap_to_str!(row.cloud_fraction, "{:.0}"),
-                ));
-            }
+            snd.sounding()
+                .top_down()
+                .filter(|row| row.pressure.map(|p| p > config::MINP).unwrap_or(false))
+                .for_each(|row| {
+                    text.push_str(&format!(
+                        " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
+                        unwrap_to_str!(row.pressure, "{:.0}"),
+                        unwrap_to_str!(row.height, "{:.0}"),
+                        unwrap_to_str!(row.temperature, "{:.1}"),
+                        unwrap_to_str!(row.wet_bulb, "{:.1}"),
+                        unwrap_to_str!(row.dew_point, "{:.1}"),
+                        unwrap_to_str!(row.theta_e, "{:.0}"),
+                        unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
+                        unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
+                        unwrap_to_str!(row.pvv, "{:.1}"),
+                        unwrap_to_str!(row.cloud_fraction, "{:.0}"),
+                    ));
+                });
 
             // Get the scroll position before setting the text
             let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
@@ -184,16 +176,8 @@ pub fn update_text_highlight(ac: &AppContext) {
         return;
     };
 
-    if !text_area.is_visible() {
-        return;
-    }
-
-    let tp = if let Some(sample) = ac.get_sample() {
-        if let Some(tp) = sample.pressure.into_option() {
-            tp
-        } else {
-            return;
-        }
+    let tp = if let Some(sample_p) = ac.get_sample().and_then(|s| s.pressure.into_option()) {
+        sample_p
     } else {
         return;
     };
@@ -261,7 +245,7 @@ pub fn update_text_highlight(ac: &AppContext) {
                     // Scroll the view to this point.
                     if let Some(ref mark) = tb.get_mark("scroll_mark") {
                         tb.move_mark(mark, &end_above);
-                        text_area.scroll_to_mark(mark, 0.0, true, 0.0, 0.5);
+                        text_area.scroll_to_mark(mark, 0.2, true, 0.0, 0.5);
                     }
                 }
                 break;
