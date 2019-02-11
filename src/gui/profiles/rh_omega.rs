@@ -15,6 +15,7 @@ use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{PaPS, Quantity};
+use sounding_analysis::relative_humidity;
 use sounding_base::DataRow;
 use std::{cell::Cell, rc::Rc};
 
@@ -413,8 +414,6 @@ impl SlaveProfileDrawable for RHOmegaContext {
 }
 
 fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
-    use metfor::rh;
-
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
@@ -423,37 +422,36 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
     }
 
     if let Some(sndg) = ac.get_sounding_for_display() {
-        let pres_data = sndg.sounding().pressure_profile();
-        let t_data = sndg.sounding().temperature_profile();
-        let td_data = sndg.sounding().dew_point_profile();
-        let mut profile = izip!(pres_data, t_data, td_data)
-            .filter_map(|(p, t, td)| {
-                if let (Some(p), Some(t), Some(td)) =
-                    (p.into_option(), t.into_option(), td.into_option())
-                {
-                    rh(t, td).map(|hum| (p, hum))
-                } else {
-                    None
-                }
-            })
-            .filter_map(|pair| {
-                let (p, rh) = pair;
-                if p > config::MINP {
-                    let ScreenCoords { y, .. } = ac
-                        .rh_omega
-                        .convert_wp_to_screen(WPCoords { w: PaPS(0.0), p });
-                    let bb = ac.rh_omega.bounding_box_in_screen_coords();
-                    let x = bb.lower_left.x + bb.width() * rh;
+        let sndg = sndg.sounding();
 
-                    Some(ScreenCoords { x, y })
-                } else {
-                    None
-                }
+        ac.rh_omega.set_has_data(true);
+
+        let pres_data = sndg.pressure_profile();
+        let rh_data = relative_humidity(sndg);
+
+        let bb = ac.rh_omega.bounding_box_in_screen_coords();
+        let x0 = bb.lower_left.x;
+        let width = bb.width();
+
+        let mut profile = izip!(pres_data, rh_data.iter())
+            // Filter out levels with missing pressure and map missing RH to 0%
+            .filter_map(|(p, rh)| p.map(|p| (p, rh.unwrap_or(0.0))))
+            // Only take up to the highest plottable pressu
+            .take_while(|(p, _)| *p > config::MINP)
+            // Map into ScreenCoords for plotting
+            .map(|(p, rh)| {
+                let ScreenCoords { y, .. } = ac
+                    .rh_omega
+                    .convert_wp_to_screen(WPCoords { w: PaPS(0.0), p });
+                let x = x0 + width * rh;
+                ScreenCoords { x, y }
             });
 
         let line_width = config.bar_graph_line_width;
         let rgba = config.rh_rgba;
 
+        cr.push_group();
+        cr.set_operator(cairo::Operator::Source);
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
@@ -507,6 +505,9 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
             cr.fill_preserve();
             cr.stroke();
         }
+
+        cr.pop_group_to_source();
+        cr.paint();
     } else {
         return false;
     }
