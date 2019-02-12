@@ -26,6 +26,7 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
         ("*.bufr", "Bufr files (*.bufr)"),
     ];
 
+    // All a filter for all supported file types
     let filter = FileFilter::new();
     for &(pattern, _) in &filter_data {
         filter.add_pattern(pattern);
@@ -33,12 +34,19 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     filter.set_name("All Supported");
     dialog.add_filter(&filter);
 
+    // Add a filter for each supported type individually
     for &(pattern, name) in &filter_data {
         let filter = FileFilter::new();
         filter.add_pattern(pattern);
         filter.set_name(name);
         dialog.add_filter(&filter);
     }
+
+    // Add a (not) filter that lets anything through
+    let filter = FileFilter::new();
+    filter.add_pattern("*");
+    filter.set_name("All Files");
+    dialog.add_filter(&filter);
 
     if ResponseType::from(dialog.run()) == ResponseType::Ok {
         if let Some(filename) = dialog.get_filename() {
@@ -47,6 +55,39 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
             }
         } else {
             show_error_dialog("Could not retrieve file name from dialog.", win);
+        }
+    }
+
+    dialog.destroy();
+}
+
+pub fn open_many_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+    let dialog = FileChooserDialog::new(
+        Some("Open Multiple Files"),
+        Some(win),
+        FileChooserAction::Open,
+    );
+
+    dialog.add_buttons(&[
+        ("Open", ResponseType::Ok.into()),
+        ("Cancel", ResponseType::Cancel.into()),
+    ]);
+
+    let filter = FileFilter::new();
+    filter.add_pattern("*.bufr");
+    filter.set_name("Bufr files (*.bufr)");
+    dialog.add_filter(&filter);
+
+    dialog.set_select_multiple(true);
+
+    if ResponseType::from(dialog.run()) == ResponseType::Ok {
+        let paths: Vec<_> = dialog
+            .get_filenames()
+            .into_iter()
+            .filter(|pb| pb.is_file())
+            .collect();
+        if let Err(ref err) = load_file::load_multiple_bufr(&paths, ac) {
+            show_error_dialog(&format!("Error loading file: {}", err), win);
         }
     }
 

@@ -31,6 +31,21 @@ pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn E
     Ok(())
 }
 
+pub fn load_multiple_bufr(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
+    let datas: Result<Vec<_>, _> = paths
+        .iter()
+        .map(|p| BufrFile::new(&p.to_string_lossy()))
+        .collect();
+    let datas: Result<Vec<_>, _> = datas?.into_iter().flat_map(|iter| iter).collect();
+    let datas: Result<Vec<Analysis>, _> = datas?.into_iter().map(bufr_to_sounding).collect();
+    let datas: Vec<Analysis> = datas?;
+
+    ac.load_data(datas.into_iter());
+    ac.set_source_description(Some("Multiple BUFR files".to_owned()));
+
+    Ok(())
+}
+
 fn load_bufkit(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let file = BufkitFile::load(path)?;
     let data = file.data()?;
