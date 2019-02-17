@@ -331,7 +331,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         if button.get_active() {
             ac.config.borrow_mut().helicity_layer = htype;
             ac.mark_data_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
         }
     }
 
@@ -367,7 +367,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         if button.get_active() {
             ac.config.borrow_mut().helicity_storm_motion = stype;
             ac.mark_data_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
         }
     }
 

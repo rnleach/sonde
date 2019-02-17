@@ -723,7 +723,8 @@ trait Drawable: PlotContext + PlotContextExt {
         self.bound_view();
         self.mark_background_dirty();
 
-        ac.update_all_gui();
+        draw_all(ac);
+        text_area::update_text_highlight(ac);
 
         Inhibit(true)
     }
@@ -752,7 +753,9 @@ trait Drawable: PlotContext + PlotContextExt {
     fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
         self.set_last_cursor_position(None);
         ac.set_sample(None);
-        ac.update_all_gui();
+
+        draw_all(ac);
+        text_area::update_text_highlight(ac);
 
         Inhibit(false)
     }
@@ -782,7 +785,9 @@ trait Drawable: PlotContext + PlotContextExt {
                 self.set_translate(translate);
                 self.bound_view();
                 self.mark_background_dirty();
-                ac.update_all_gui();
+
+                draw_all(ac);
+                text_area::update_text_highlight(ac);
             }
         }
         Inhibit(false)

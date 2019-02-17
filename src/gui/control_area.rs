@@ -29,7 +29,8 @@ macro_rules! build_config_color_and_check {
         check.connect_toggled(move |button| {
             acp.config.borrow_mut().$show_var = button.get_active();
             acp.mark_background_dirty();
-            acp.update_all_gui();
+            crate::gui::draw_all(&acp);
+            crate::gui::text_area::update_text_highlight(&acp);
         });
 
         // Create color button callback
@@ -39,7 +40,8 @@ macro_rules! build_config_color_and_check {
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.mark_background_dirty();
-            acp.update_all_gui();
+            crate::gui::draw_all(&acp);
+            crate::gui::text_area::update_text_highlight(&acp);
         });
 
         // Layout
@@ -61,7 +63,8 @@ macro_rules! build_config_check {
         check.connect_toggled(move |button| {
             acp.config.borrow_mut().$show_var = button.get_active();
             acp.mark_background_dirty();
-            acp.update_all_gui();
+            crate::gui::draw_all(&acp);
+            crate::gui::text_area::update_text_highlight(&acp);
         });
 
         // Layout
@@ -95,7 +98,9 @@ macro_rules! build_config_color {
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.mark_background_dirty();
-            acp.update_all_gui();
+
+            crate::gui::draw_all(&acp);
+            crate::gui::text_area::update_text_highlight(&acp);
         });
 
         // Layout

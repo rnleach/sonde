@@ -395,7 +395,8 @@ impl Drawable for RHOmegaContext {
             );
             ac.set_sample(sample.ok());
             ac.mark_overlay_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
+            crate::gui::text_area::update_text_highlight(&ac);
         }
         Inhibit(false)
     }
