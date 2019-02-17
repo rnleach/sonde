@@ -64,7 +64,7 @@ my top priority.
    - The indexes tab lists several common and some uncommon indexes and parcel analysis values for
      thunderstorms and fire weather.
  - Data sources
-   - Currently only supports Bufkit files, but I have plans to expand it to include bufr data.
+   - Currently supports Bufkit files and loading [bufr][bufr] files.
    - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
  - Configuration
    - Controls tab allows configuration of what data, background lines, and background shading are 
@@ -101,7 +101,6 @@ well as some experimental fire weather indexes.
 
 ## Future Development
  - A data downloader and manager.
- - Support for loading [bufr][bufr] files so that measured data can be inspected too.
  - Saving and loading of the configuration and colors.
  - For a more complete and up to date list of issues and enhancements see the [issues][issues] page.
 
