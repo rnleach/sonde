@@ -279,7 +279,11 @@ impl Drawable for HodoContext {
      **********************************************************************************************/
     fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
-        if event.get_button() == 3 {
+        if event.get_button() == 1 {
+            self.set_last_cursor_position(Some(event.get_position().into()));
+            self.set_left_button_pressed(true);
+            Inhibit(true)
+        } else if event.get_button() == 3 {
             if let Ok(menu) = ac.fetch_widget::<Menu>("hodograph_context_menu") {
                 // waiting for version 3.22...
                 // let ev: &::gdk::Event = evt;
@@ -327,7 +331,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         if button.get_active() {
             ac.config.borrow_mut().helicity_layer = htype;
             ac.mark_data_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
         }
     }
 
@@ -363,7 +367,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         if button.get_active() {
             ac.config.borrow_mut().helicity_storm_motion = stype;
             ac.mark_data_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
         }
     }
 

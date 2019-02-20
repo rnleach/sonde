@@ -737,7 +737,8 @@ impl Drawable for SkewTContext {
         self.bound_view();
         ac.mark_background_dirty();
 
-        ac.update_all_gui();
+        crate::gui::draw_all(&ac);
+        crate::gui::text_area::update_text_highlight(&ac);
 
         Inhibit(true)
     }
@@ -786,7 +787,8 @@ impl Drawable for SkewTContext {
                 self.set_translate(translate);
                 self.bound_view();
                 ac.mark_background_dirty();
-                ac.update_all_gui();
+                crate::gui::draw_all(&ac);
+                crate::gui::text_area::update_text_highlight(&ac);
 
                 ac.set_sample(None);
             }
@@ -801,7 +803,8 @@ impl Drawable for SkewTContext {
             );
             ac.set_sample(sample.ok());
             ac.mark_overlay_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
+            crate::gui::text_area::update_text_highlight(&ac);
         }
         Inhibit(false)
     }
@@ -843,7 +846,7 @@ macro_rules! make_check_item {
         check_menu_item.connect_toggled(move |button| {
             ac.config.borrow_mut().$check_val = button.get_active();
             ac.mark_data_dirty();
-            ac.update_all_gui()
+            crate::gui::draw_all(&ac);
         });
 
         $menu.append(&check_menu_item);
@@ -879,7 +882,7 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
         if button.get_active() {
             ac.config.borrow_mut().parcel_type = parcel_type;
             ac.mark_data_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
         }
     }
 

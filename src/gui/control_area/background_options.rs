@@ -135,7 +135,8 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
         let rgba = button.get_rgba();
 
         ac.config.borrow_mut().background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
-        ac.update_all_gui();
+        crate::gui::draw_all(&ac);
+        crate::gui::text_area::update_text_highlight(&ac);
     });
 
     // Layout

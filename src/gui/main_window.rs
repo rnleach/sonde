@@ -36,6 +36,12 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let ac1 = Rc::clone(ac);
     open_item.connect_activate(move |mi| menu_callbacks::open_callback(mi, &ac1, &win1));
 
+    // The open multiple item
+    let open_many_item = MenuItem::new_with_label("Open Multiple");
+    let win1: Window = ac.fetch_widget("main_window")?;
+    let ac1 = Rc::clone(ac);
+    open_many_item.connect_activate(move |mi| menu_callbacks::open_many_callback(mi, &ac1, &win1));
+
     // The save image item
     let save_image_item = MenuItem::new_with_label("Save Image");
     let win1: Window = ac.fetch_widget("main_window")?;
@@ -51,6 +57,7 @@ fn build_menu_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     // Build the file menu
     let file_menu: Menu = ac.fetch_widget("main_menu_file")?;
     file_menu.append(&open_item);
+    file_menu.append(&open_many_item);
     file_menu.append(&save_image_item);
     file_menu.append(&quit_item);
 

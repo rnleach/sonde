@@ -14,7 +14,6 @@ use crate::{
 use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use metfor::HectoPascal;
 use sounding_base::DataRow;
 use std::rc::Rc;
 
@@ -318,7 +317,8 @@ impl Drawable for CloudContext {
             );
             ac.set_sample(sample.ok());
             ac.mark_overlay_dirty();
-            ac.update_all_gui();
+            crate::gui::draw_all(&ac);
+            crate::gui::text_area::update_text_highlight(&ac);
         }
         Inhibit(false)
     }
@@ -347,28 +347,25 @@ fn draw_cloud_profile(args: DrawingArgs<'_, '_>) {
 
         let pres_data = sndg.pressure_profile();
         let c_data = sndg.cloud_fraction_profile();
+
         let mut profile = izip!(pres_data, c_data)
-            .filter_map(|(p, cld)| {
-                if let (Some(p), Some(c)) = (p.into_option(), cld.into_option()) {
-                    Some((p, c))
-                } else {
-                    None
-                }
-            })
-            .filter_map(|(press, pcnt): (HectoPascal, f64)| {
-                if press > config::MINP {
-                    Some(ac.cloud.convert_pp_to_screen(PPCoords {
-                        pcnt: pcnt / 100.0,
-                        press,
-                    }))
-                } else {
-                    None
-                }
+            // Filter out levels with missing data
+            .filter_map(|(p, cld)| p.into_option().and_then(|p| cld.map(|cld| (p, cld))))
+            // Only take up to the highest plottable pressu
+            .take_while(|(p, _)| *p > config::MINP)
+            // Map into ScreenCoords for plotting
+            .map(|(press, cld)| {
+                ac.cloud.convert_pp_to_screen(PPCoords {
+                    pcnt: cld / 100.0,
+                    press,
+                })
             });
 
         let line_width = config.bar_graph_line_width;
         let rgba = config.cloud_rgba;
 
+        cr.push_group();
+        cr.set_operator(cairo::Operator::Source);
         cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
@@ -424,6 +421,9 @@ fn draw_cloud_profile(args: DrawingArgs<'_, '_>) {
             cr.fill_preserve();
             cr.stroke();
         }
+
+        cr.pop_group_to_source();
+        cr.paint();
     } else {
         ac.cloud.set_has_data(false);
     }

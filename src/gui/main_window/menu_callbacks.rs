@@ -9,8 +9,9 @@ use gtk::{
     DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt, FileFilter,
     FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
 };
-use sounding_bufkit::BufkitFile;
 use std::path::PathBuf;
+
+mod load_file;
 
 pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
@@ -20,14 +21,36 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
         ("Cancel", ResponseType::Cancel.into()),
     ]);
 
+    let filter_data = [
+        ("*.buf", "Bufkit files (*.buf)"),
+        ("*.bufr", "Bufr files (*.bufr)"),
+    ];
+
+    // All a filter for all supported file types
     let filter = FileFilter::new();
-    filter.add_pattern("*.buf");
-    filter.set_name("Bufkit files (*.buf)");
+    for &(pattern, _) in &filter_data {
+        filter.add_pattern(pattern);
+    }
+    filter.set_name("All Supported");
+    dialog.add_filter(&filter);
+
+    // Add a filter for each supported type individually
+    for &(pattern, name) in &filter_data {
+        let filter = FileFilter::new();
+        filter.add_pattern(pattern);
+        filter.set_name(name);
+        dialog.add_filter(&filter);
+    }
+
+    // Add a (not) filter that lets anything through
+    let filter = FileFilter::new();
+    filter.add_pattern("*");
+    filter.set_name("All Files");
     dialog.add_filter(&filter);
 
     if ResponseType::from(dialog.run()) == ResponseType::Ok {
         if let Some(filename) = dialog.get_filename() {
-            if let Err(ref err) = load_file(&filename, ac) {
+            if let Err(ref err) = load_file::load_file(&filename, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
             }
         } else {
@@ -38,19 +61,37 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     dialog.destroy();
 }
 
-fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let file = BufkitFile::load(path)?;
-    let data = file.data()?;
+pub fn open_many_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+    let dialog = FileChooserDialog::new(
+        Some("Open Multiple Files"),
+        Some(win),
+        FileChooserAction::Open,
+    );
 
-    ac.load_data(&mut data.into_iter());
+    dialog.add_buttons(&[
+        ("Open", ResponseType::Ok.into()),
+        ("Cancel", ResponseType::Cancel.into()),
+    ]);
 
-    if let Some(name) = path.file_name() {
-        let mut src_name = "File: ".to_owned();
-        src_name.push_str(&name.to_string_lossy());
-        ac.set_source_description(Some(src_name));
+    let filter = FileFilter::new();
+    filter.add_pattern("*.bufr");
+    filter.set_name("Bufr files (*.bufr)");
+    dialog.add_filter(&filter);
+
+    dialog.set_select_multiple(true);
+
+    if ResponseType::from(dialog.run()) == ResponseType::Ok {
+        let paths: Vec<_> = dialog
+            .get_filenames()
+            .into_iter()
+            .filter(|pb| pb.is_file())
+            .collect();
+        if let Err(ref err) = load_file::load_multiple_bufr(&paths, ac) {
+            show_error_dialog(&format!("Error loading file: {}", err), win);
+        }
     }
 
-    Ok(())
+    dialog.destroy();
 }
 
 pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
