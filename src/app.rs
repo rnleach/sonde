@@ -7,7 +7,6 @@ use crate::gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
 use glib;
 use gtk::Builder;
 use itertools::izip;
-use log::{error, log_enabled, trace};
 use metfor::Quantity;
 use rayon::{
     iter::{IterBridge, ParallelBridge},
@@ -329,11 +328,6 @@ impl AppContext {
     #[inline]
     fn set_currently_displayed(&self, idx: usize) {
         self.currently_displayed_index.set(idx);
-
-        if log_enabled!(::log::Level::Trace) {
-            self.log_anal_summary();
-        }
-
         self.update_sample();
         self.mark_data_dirty();
         self.update_all_gui();
@@ -441,40 +435,6 @@ impl AppContext {
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
-    }
-
-    fn log_anal_summary(&self) {
-        const IDX_KEY: &str = "CAPE";
-
-        let anal = if let Some(anal) = self.get_sounding_for_display() {
-            anal
-        } else {
-            error!("Could not retrieve analysis!");
-            return;
-        };
-
-        if let Some(val) = anal.provider_analysis().get(IDX_KEY) {
-            anal.surface_parcel_analysis().and_then(|sfc_pa| {
-                anal.mixed_layer_parcel_analysis().and_then(|ml_pa| {
-                    anal.most_unstable_parcel_analysis().and_then(|mu_pa| {
-                        trace!(
-                            "{} {} SFC: {:?} ML: {:?} MU: {:?}",
-                            IDX_KEY,
-                            val,
-                            sfc_pa.cape(),
-                            ml_pa.cape(),
-                            mu_pa.cape(),
-                        );
-                        Some(())
-                    })
-                })
-            });
-        } else {
-            trace!("Error loading {} from provider analysis.\n\n", IDX_KEY);
-            for (key, val) in anal.provider_analysis().iter() {
-                trace!("{} => {}", key, val);
-            }
-        }
     }
 }
 

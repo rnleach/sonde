@@ -6,7 +6,6 @@ use std::fmt::Display;
 pub enum SondeError {
     WidgetLoadError(&'static str),
     TextBufferLoadError(&'static str),
-    LogError(&'static str),
     CairoError(cairo::Status),
 }
 
@@ -18,7 +17,6 @@ impl Display for SondeError {
             TextBufferLoadError(id) => {
                 write!(f, "Could not load buffer for text area with id = {}.", id)
             }
-            LogError(msg) => write!(f, "Error with logger = {}.", msg),
             CairoError(status) => write!(f, "Error with cairo = {:?}.", status),
         }
     }
