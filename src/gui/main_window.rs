@@ -8,13 +8,12 @@ use std::rc::Rc;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 7] = [
+const TABS: [(&str, &str); 6] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
     ("text_area_container", "Text"),
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),
-    ("console_log_container", "Console"),
     ("indexes_scrolled_window", "Indexes"),
 ];
 

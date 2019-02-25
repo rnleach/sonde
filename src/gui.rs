@@ -20,7 +20,6 @@ use sounding_analysis::{
 };
 use sounding_base::DataRow;
 
-mod console_log;
 mod control_area;
 mod hodograph;
 mod indexes_area;
@@ -46,7 +45,6 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     profiles::initialize_profiles(&app)?;
     main_window::set_up_main_window(&app)?;
     indexes_area::set_up_indexes_area(&app)?;
-    console_log::set_up_console_log(&app)?;
 
     Ok(())
 }
