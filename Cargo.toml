@@ -22,8 +22,8 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-base = "^0.10.0"
-sounding-bufkit = {git = "https://github.com/rnleach/sounding-bufkit.git", tag = "sounding-bufkit-0.10.1"}
-sounding-analysis = {git = "https://github.com/rnleach/sounding-analysis.git", tag = "sounding-analysis-0.10.3"}
+sounding-bufkit = {git = "https://github.com/rnleach/sounding-bufkit.git", tag = "0.10.2"}
+sounding-analysis = {git = "https://github.com/rnleach/sounding-analysis.git", tag = "0.10.4"}
 
 [profile.release]
 lto = true

@@ -3,7 +3,7 @@ use crate::{
     gui::control_area::{BOX_SPACING, PADDING},
 };
 use gdk::RGBA;
-use gtk::{self, prelude::*, CheckButton, ColorButton, Frame, ScrolledWindow};
+use gtk::{self, prelude::*, ColorButton, Frame, ScrolledWindow};
 use std::rc::Rc;
 
 pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {

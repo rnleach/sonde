@@ -6,8 +6,8 @@ use gtk::{prelude::*, Notebook};
 macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-        let check = CheckButton::new_with_label($label);
-        let color = ColorButton::new();
+        let check = gtk::CheckButton::new_with_label($label);
+        let color = gtk::ColorButton::new();
         color.set_use_alpha(true);
 
         // Inner scope to borrow acp
@@ -35,7 +35,7 @@ macro_rules! build_config_color_and_check {
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
-        ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
+        gtk::ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
             let rgba = button.get_rgba();
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
@@ -54,7 +54,7 @@ macro_rules! build_config_color_and_check {
 macro_rules! build_config_check {
     ($v_box:ident, $label:expr, $acp:ident, $show_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-        let check = CheckButton::new_with_label($label);
+        let check = gtk::CheckButton::new_with_label($label);
 
         check.set_active($acp.config.borrow().$show_var);
 
@@ -76,7 +76,7 @@ macro_rules! build_config_check {
 macro_rules! build_config_color {
     ($v_box:ident, $label:expr, $acp_in:expr, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-        let color = ColorButton::new();
+        let color = gtk::ColorButton::new();
         color.set_use_alpha(true);
 
         // Inner scope to borrow acp
