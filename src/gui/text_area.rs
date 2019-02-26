@@ -176,13 +176,17 @@ pub fn update_text_highlight(ac: &AppContext) {
         return;
     };
 
+    if !text_area.get_realized() {
+        return;
+    }
+
     let tp = if let Some(sample_p) = ac.get_sample().and_then(|s| s.pressure.into_option()) {
         sample_p
     } else {
         return;
     };
 
-    if let Some(tb) = text_area.get_buffer() {
+    if let Some(ref tb) = text_area.get_buffer() {
         let start = tb.get_start_iter();
         let end = tb.get_end_iter();
         tb.remove_tag_by_name("highlight_above", &start, &end);
