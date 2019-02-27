@@ -7,7 +7,7 @@ use crate::{
 use cairo;
 use gtk::{
     DialogExt, DialogExtManual, FileChooserAction, FileChooserDialog, FileChooserExt, FileFilter,
-    FileFilterExt, MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
+    MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
 };
 use std::path::PathBuf;
 
