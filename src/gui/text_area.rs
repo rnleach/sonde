@@ -198,7 +198,7 @@ pub fn update_text_highlight(ac: &AppContext) {
             end_above.forward_chars(5);
             let above_val: HectoPascal = f64::from_str(
                 tb.get_text(&start_above, &end_above, false)
-                    .unwrap_or_else(|| "0.0".to_owned())
+                    .unwrap_or_else(|| glib::GString::from("0.0".to_owned()))
                     .trim(),
             )
             .map(HectoPascal)
@@ -209,7 +209,7 @@ pub fn update_text_highlight(ac: &AppContext) {
             end_below.forward_chars(5);
             let below_val: HectoPascal = f64::from_str(
                 tb.get_text(&start_below, &end_below, false)
-                    .unwrap_or_else(|| "0.0".to_owned())
+                    .unwrap_or_else(|| glib::GString::from("0.0".to_owned()))
                     .trim(),
             )
             .map(HectoPascal)
