@@ -1,4 +1,4 @@
-use crate::app::AppContextPointer;
+use crate::app::{AppContext, AppContextPointer};
 use bufr_read::{BufrFile, Message};
 use chrono::naive::NaiveDate;
 use itertools::izip;
@@ -7,7 +7,7 @@ use optional::Optioned;
 use sounding_analysis::Analysis;
 use sounding_base::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, path::PathBuf, rc::Rc};
 
 pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let extension: Option<String> = path
@@ -40,7 +40,7 @@ pub fn load_multiple_bufr(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(
     let datas: Result<Vec<Analysis>, _> = datas?.into_iter().map(bufr_to_sounding).collect();
     let datas: Vec<Analysis> = datas?;
 
-    ac.load_data(datas.into_iter());
+    AppContext::load_data(Rc::clone(ac), datas.into_iter());
     ac.set_source_description(Some("Multiple BUFR files".to_owned()));
 
     Ok(())
@@ -50,7 +50,7 @@ fn load_bufkit(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Err
     let file = BufkitFile::load(path)?;
     let data = file.data()?;
 
-    ac.load_data(&mut data.into_iter());
+    AppContext::load_data(Rc::clone(ac), &mut data.into_iter());
     Ok(())
 }
 
@@ -61,7 +61,7 @@ fn load_bufr(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error
         .filter_map(|result| result.ok())
         .filter_map(|msg| bufr_to_sounding(msg).ok())
         .collect();
-    ac.load_data(data.into_iter());
+    AppContext::load_data(Rc::clone(ac), data.into_iter());
 
     Ok(())
 }
@@ -107,7 +107,7 @@ fn bufr_to_sounding(msg: Message) -> Result<Analysis, Box<dyn Error>> {
 
     for (p1, h1, t1, dp1, w1) in izip!(pressure_vals, height, temperature, dpt, wind) {
         if let (Some(p_val), Some(z_val)) = (p1.into(), h1.into()) {
-            if p_val <= p0 - HectoPascal(2.0) && z_val > z0 {
+            if p_val <= p0 && z_val > z0 {
                 p.push(p1);
                 h.push(h1);
                 t.push(t1);

@@ -57,7 +57,8 @@ pub fn update_indexes_area(ac: &AppContext) {
     }
 
     if let Some(tb) = text_area.get_buffer() {
-        if let Some(ref anal) = ac.get_sounding_for_display() {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = &anal.borrow();
             let text = &mut String::with_capacity(4096);
 
             push_header(text, ac.get_source_description(), anal);

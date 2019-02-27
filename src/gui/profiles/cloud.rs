@@ -311,11 +311,16 @@ impl Drawable for CloudContext {
 
             self.set_last_cursor_position(Some(position));
             let pp_position = self.convert_device_to_pp(position);
-            let sample = ::sounding_analysis::linear_interpolate_sounding(
-                &ac.get_sounding_for_display().expect(file!()).sounding(), // ac.plottable() call ensures this won't panic
-                pp_position.press,
-            );
-            ac.set_sample(sample.ok());
+
+            let sample = ac.get_sounding_for_display().and_then(|anal| {
+                sounding_analysis::linear_interpolate_sounding(
+                    anal.borrow().sounding(),
+                    pp_position.press,
+                )
+                .ok()
+            });
+
+            ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::text_area::update_text_highlight(&ac);
@@ -340,8 +345,9 @@ fn draw_cloud_profile(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
 
         ac.cloud.set_has_data(true);
 

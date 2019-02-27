@@ -404,12 +404,15 @@ impl Drawable for RHOmegaContext {
 
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
-            let sample = ::sounding_analysis::linear_interpolate_sounding(
-                // will not panic due to ac.plottable
-                &ac.get_sounding_for_display().expect(file!()).sounding(),
-                wp_position.p,
-            );
-            ac.set_sample(sample.ok());
+
+            let sample = ac.get_sounding_for_display().and_then(|anal| {
+                sounding_analysis::linear_interpolate_sounding(
+                    anal.borrow().sounding(),
+                    wp_position.p,
+                )
+                .ok()
+            });
+            ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::text_area::update_text_highlight(&ac);
@@ -438,8 +441,9 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         return false;
     }
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
 
         ac.rh_omega.set_has_data(true);
 
@@ -540,8 +544,9 @@ fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
         return false;
     }
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
 
         ac.rh_omega.set_has_data(true);
 
@@ -641,9 +646,12 @@ fn draw_omega_profile(args: DrawingArgs<'_, '_>) -> bool {
         return false;
     }
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let pres_data = sndg.sounding().pressure_profile();
-        let omega_data = sndg.sounding().pvv_profile();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
+
+        let pres_data = sndg.pressure_profile();
+        let omega_data = sndg.pvv_profile();
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 

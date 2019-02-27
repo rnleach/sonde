@@ -114,7 +114,7 @@ pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window)
         let mut src_desc = src_desc.trim_end_matches(".buf").to_string();
         src_desc.push_str("_skewt");
         if let Some(anal) = ac.get_sounding_for_display() {
-            if let Some(lt) = anal.sounding().lead_time().into_option() {
+            if let Some(lt) = anal.borrow().sounding().lead_time().into_option() {
                 src_desc.push_str(&format!("_f{:03}", lt));
             }
         }

@@ -941,8 +941,9 @@ trait SlaveProfileDrawable: Drawable {
             return;
         }
 
-        if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match sounding_analysis::dendritic_snow_zone(snd.sounding()) {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let layers = match sounding_analysis::dendritic_snow_zone(anal.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -960,8 +961,9 @@ trait SlaveProfileDrawable: Drawable {
             return;
         }
 
-        if let Some(ref snd) = ac.get_sounding_for_display() {
-            let layers = match sounding_analysis::hail_growth_zone(snd.sounding()) {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let layers = match sounding_analysis::hail_growth_zone(anal.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -979,8 +981,9 @@ trait SlaveProfileDrawable: Drawable {
             return;
         }
 
-        if let Some(snd) = ac.get_sounding_for_display() {
-            let layers = match warm_temperature_layer_aloft(snd.sounding()) {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let layers = match warm_temperature_layer_aloft(anal.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -989,7 +992,7 @@ trait SlaveProfileDrawable: Drawable {
 
             self.draw_layers(args, &layers, rgba);
 
-            let layers = match warm_wet_bulb_layer_aloft(snd.sounding()) {
+            let layers = match warm_wet_bulb_layer_aloft(anal.sounding()) {
                 Ok(layers) => layers,
                 Err(_) => return,
             };
@@ -1007,8 +1010,9 @@ trait SlaveProfileDrawable: Drawable {
             return;
         }
 
-        if let Some(snd) = ac.get_sounding_for_display() {
-            let levels = match freezing_levels(snd.sounding()) {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let levels = match freezing_levels(anal.sounding()) {
                 Ok(levels) => levels,
                 Err(_) => return,
             };
@@ -1028,8 +1032,9 @@ trait SlaveProfileDrawable: Drawable {
             return;
         }
 
-        if let Some(snd) = ac.get_sounding_for_display() {
-            let levels = match wet_bulb_zero_levels(snd.sounding()) {
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let levels = match wet_bulb_zero_levels(anal.sounding()) {
                 Ok(levels) => levels,
                 Err(_) => return,
             };

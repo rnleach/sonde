@@ -427,8 +427,9 @@ impl Drawable for SkewTContext {
             result.push((src_desc, color));
         }
 
-        if let Some(snd) = ac.get_sounding_for_display() {
-            let snd = snd.sounding();
+        if let Some(anal) = ac.get_sounding_for_display() {
+            let anal = anal.borrow();
+            let snd = anal.sounding();
             // Build the valid time part
             if let Some(vt) = snd.valid_time() {
                 use chrono::{Datelike, Timelike};
@@ -505,6 +506,8 @@ impl Drawable for SkewTContext {
         } else {
             return results;
         };
+
+        let anal = anal.borrow();
 
         let config = ac.config.borrow();
 
@@ -797,11 +800,16 @@ impl Drawable for SkewTContext {
 
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
-            let sample = ::sounding_analysis::linear_interpolate_sounding(
-                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
-                tp_position.pressure,
-            );
-            ac.set_sample(sample.ok());
+
+            let sample = ac.get_sounding_for_display().and_then(|anal| {
+                sounding_analysis::linear_interpolate_sounding(
+                    anal.borrow().sounding(),
+                    tp_position.pressure,
+                )
+                .ok()
+            });
+
+            ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::text_area::update_text_highlight(&ac);
@@ -964,45 +972,51 @@ fn draw_temperature_profile(t_type: TemperatureType, args: DrawingArgs<'_, '_>) 
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
-        let pres_data = sndg.pressure_profile();
-        let temp_data = match t_type {
-            TemperatureType::DryBulb => sndg.temperature_profile(),
-            TemperatureType::WetBulb => sndg.wet_bulb_profile(),
-            TemperatureType::DewPoint => sndg.dew_point_profile(),
-        };
+    let anal = if let Some(anal) = ac.get_sounding_for_display() {
+        anal
+    } else {
+        return;
+    };
 
-        let line_width = match t_type {
-            TemperatureType::DryBulb => config.temperature_line_width,
-            TemperatureType::WetBulb => config.wet_bulb_line_width,
-            TemperatureType::DewPoint => config.dew_point_line_width,
-        };
+    let anal = anal.borrow();
 
-        let line_rgba = match t_type {
-            TemperatureType::DryBulb => config.temperature_rgba,
-            TemperatureType::WetBulb => config.wet_bulb_rgba,
-            TemperatureType::DewPoint => config.dew_point_rgba,
-        };
+    let sndg = anal.sounding();
+    let pres_data = sndg.pressure_profile();
+    let temp_data = match t_type {
+        TemperatureType::DryBulb => sndg.temperature_profile(),
+        TemperatureType::WetBulb => sndg.wet_bulb_profile(),
+        TemperatureType::DewPoint => sndg.dew_point_profile(),
+    };
 
-        let profile_data = izip!(pres_data, temp_data).filter_map(|(pres, temp)| {
-            if let (Some(pressure), Some(temperature)) = (pres.into(), temp.into()) {
-                if pressure > config::MINP {
-                    let tp_coords = TPCoords {
-                        temperature,
-                        pressure,
-                    };
-                    Some(ac.skew_t.convert_tp_to_screen(tp_coords))
-                } else {
-                    None
-                }
+    let line_width = match t_type {
+        TemperatureType::DryBulb => config.temperature_line_width,
+        TemperatureType::WetBulb => config.wet_bulb_line_width,
+        TemperatureType::DewPoint => config.dew_point_line_width,
+    };
+
+    let line_rgba = match t_type {
+        TemperatureType::DryBulb => config.temperature_rgba,
+        TemperatureType::WetBulb => config.wet_bulb_rgba,
+        TemperatureType::DewPoint => config.dew_point_rgba,
+    };
+
+    let profile_data = izip!(pres_data, temp_data).filter_map(|(pres, temp)| {
+        if let (Some(pressure), Some(temperature)) = (pres.into(), temp.into()) {
+            if pressure > config::MINP {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                Some(ac.skew_t.convert_tp_to_screen(tp_coords))
             } else {
                 None
             }
-        });
+        } else {
+            None
+        }
+    });
 
-        plot_curve_from_points(cr, line_width, line_rgba, profile_data);
-    }
+    plot_curve_from_points(cr, line_width, line_rgba, profile_data);
 }
 
 fn draw_wind_profile(args: DrawingArgs<'_, '_>) {
@@ -1010,12 +1024,14 @@ fn draw_wind_profile(args: DrawingArgs<'_, '_>) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
-        let snd = if let Some(snd) = ac.get_sounding_for_display() {
-            snd
+        let anal = if let Some(anal) = ac.get_sounding_for_display() {
+            anal
         } else {
             return;
         };
-        let snd = snd.sounding();
+
+        let anal = anal.borrow();
+        let snd = anal.sounding();
 
         let barb_config = WindBarbConfig::init(args);
         let barb_data = gather_wind_data(&snd, &barb_config, args);
@@ -1040,188 +1056,193 @@ fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg_anal) = ac.get_sounding_for_display() {
-        let sndg = sndg_anal.sounding();
+    let anal = if let Some(anal) = ac.get_sounding_for_display() {
+        anal
+    } else {
+        return;
+    };
 
-        if config.show_parcel_profile {
-            match config.parcel_type {
-                Surface => sndg_anal.surface_parcel_analysis(),
-                MixedLayer => sndg_anal.mixed_layer_parcel_analysis(),
-                MostUnstable => sndg_anal.most_unstable_parcel_analysis(),
-                Convective => sndg_anal.convective_parcel_analysis(),
+    let anal = anal.borrow();
+    let sndg = anal.sounding();
+
+    if config.show_parcel_profile {
+        match config.parcel_type {
+            Surface => anal.surface_parcel_analysis(),
+            MixedLayer => anal.mixed_layer_parcel_analysis(),
+            MostUnstable => anal.most_unstable_parcel_analysis(),
+            Convective => anal.convective_parcel_analysis(),
+        }
+        .and_then(|p_analysis| {
+            let color = config.parcel_rgba;
+            let p_profile = p_analysis.profile();
+
+            draw_parcel_profile(args, &p_profile, color);
+
+            if config.fill_parcel_areas {
+                draw_cape_cin_fill(args, &p_analysis);
             }
-            .and_then(|p_analysis| {
-                let color = config.parcel_rgba;
-                let p_profile = p_analysis.profile();
 
-                draw_parcel_profile(args, &p_profile, color);
+            // Draw overlay tags
+            if p_analysis
+                .cape()
+                .map(|cape| cape > JpKg(0.0))
+                .unwrap_or(false)
+            {
+                // LCL
+                p_analysis
+                    .lcl_pressure()
+                    .into_option()
+                    .and_then(|p| p_analysis.lcl_temperature().map(|t| (p, t)))
+                    .map(|(p, t)| {
+                        let vt = metfor::virtual_temperature(t, t, p)
+                            .map(Celsius::from)
+                            .unwrap_or(t);
+                        (p, vt)
+                    })
+                    .map(|(p, t)| TPCoords {
+                        temperature: t,
+                        pressure: p,
+                    })
+                    .map(|coords| {
+                        let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                        coords.x += 0.025;
+                        coords
+                    })
+                    .and_then(|pos| {
+                        ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
+                        Some(())
+                    });
 
-                if config.fill_parcel_areas {
-                    draw_cape_cin_fill(args, &p_analysis);
+                // LFC
+                p_analysis
+                    .lfc_pressure()
+                    .into_option()
+                    .and_then(|p| p_analysis.lfc_virt_temperature().map(|t| (p, t)))
+                    .map(|(p, t)| TPCoords {
+                        temperature: t,
+                        pressure: p,
+                    })
+                    .map(|coords| {
+                        let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                        coords.x += 0.025;
+                        coords
+                    })
+                    .and_then(|pos| {
+                        ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
+                        Some(())
+                    });
+
+                // EL
+                p_analysis
+                    .el_pressure()
+                    .into_option()
+                    .and_then(|p| p_analysis.el_temperature().map(|t| (p, t)))
+                    .map(|(p, t)| {
+                        let vt = metfor::virtual_temperature(t, t, p)
+                            .map(Celsius::from)
+                            .unwrap_or(t);
+                        (p, vt)
+                    })
+                    .map(|(p, t)| TPCoords {
+                        temperature: t,
+                        pressure: p,
+                    })
+                    .map(|coords| {
+                        let mut coords = ac.skew_t.convert_tp_to_screen(coords);
+                        coords.x += 0.025;
+                        coords
+                    })
+                    .and_then(|pos| {
+                        ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
+                        Some(())
+                    });
+            }
+
+            Some(())
+        })
+        .or_else(|| {
+            warn!("Parcel analysis returned None.");
+            Some(())
+        });
+    }
+
+    if config.show_downburst {
+        draw_downburst(args, &anal);
+    }
+
+    if config.show_inversion_mix_down {
+        sounding_analysis::sfc_based_inversion(sndg)
+            .ok()
+            .and_then(|lyr| lyr) // unwrap a layer of options
+            .map(|lyr| lyr.top)
+            .and_then(Parcel::from_datarow)
+            .and_then(|parcel| sounding_analysis::mix_down(parcel, sndg).ok())
+            .and_then(|parcel_profile| {
+                let color = config.inversion_mix_down_rgba;
+                draw_parcel_profile(args, &parcel_profile, color);
+
+                if let (Some(&pressure), Some(&temperature)) = (
+                    parcel_profile.pressure.get(0),
+                    parcel_profile.parcel_t.get(0),
+                ) {
+                    let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+                        temperature,
+                        pressure,
+                    });
+                    let deg_f = format!(
+                        "{:.0}\u{00B0}F",
+                        Fahrenheit::from(temperature).unpack().round()
+                    );
+                    ac.skew_t.draw_tag(
+                        &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
+                        pos,
+                        color,
+                        args,
+                    );
                 }
 
-                // Draw overlay tags
-                if p_analysis
-                    .cape()
-                    .map(|cape| cape > JpKg(0.0))
-                    .unwrap_or(false)
-                {
-                    // LCL
-                    p_analysis
-                        .lcl_pressure()
-                        .into_option()
-                        .and_then(|p| p_analysis.lcl_temperature().map(|t| (p, t)))
-                        .map(|(p, t)| {
-                            let vt = metfor::virtual_temperature(t, t, p)
-                                .map(Celsius::from)
-                                .unwrap_or(t);
-                            (p, vt)
-                        })
-                        .map(|(p, t)| TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
-                        .map(|coords| {
-                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
-                            coords.x += 0.025;
-                            coords
-                        })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
-
-                    // LFC
-                    p_analysis
-                        .lfc_pressure()
-                        .into_option()
-                        .and_then(|p| p_analysis.lfc_virt_temperature().map(|t| (p, t)))
-                        .map(|(p, t)| TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
-                        .map(|coords| {
-                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
-                            coords.x += 0.025;
-                            coords
-                        })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
-
-                    // EL
-                    p_analysis
-                        .el_pressure()
-                        .into_option()
-                        .and_then(|p| p_analysis.el_temperature().map(|t| (p, t)))
-                        .map(|(p, t)| {
-                            let vt = metfor::virtual_temperature(t, t, p)
-                                .map(Celsius::from)
-                                .unwrap_or(t);
-                            (p, vt)
-                        })
-                        .map(|(p, t)| TPCoords {
-                            temperature: t,
-                            pressure: p,
-                        })
-                        .map(|coords| {
-                            let mut coords = ac.skew_t.convert_tp_to_screen(coords);
-                            coords.x += 0.025;
-                            coords
-                        })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
-                }
-
-                Some(())
-            })
-            .or_else(|| {
-                warn!("Parcel analysis returned None.");
                 Some(())
             });
-        }
+    }
 
-        if config.show_downburst {
-            draw_downburst(args, &sndg_anal);
-        }
+    if config.show_inflow_layer {
+        if let Some(lyr) = anal.effective_inflow_layer() {
+            if let (Some(bottom_p), Some(top_p)) = (
+                lyr.bottom.pressure.into_option(),
+                lyr.top.pressure.into_option(),
+            ) {
+                // Values from wind barbs, make this to the left of the wind barbs
+                let (shaft_length, _) = cr.device_to_user_distance(
+                    config.wind_barb_shaft_length,
+                    -config.wind_barb_barb_length,
+                );
+                let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
 
-        if config.show_inversion_mix_down {
-            sounding_analysis::sfc_based_inversion(sndg)
-                .ok()
-                .and_then(|lyr| lyr) // unwrap a layer of options
-                .map(|lyr| lyr.top)
-                .and_then(Parcel::from_datarow)
-                .and_then(|parcel| sounding_analysis::mix_down(parcel, sndg).ok())
-                .and_then(|parcel_profile| {
-                    let color = config.inversion_mix_down_rgba;
-                    draw_parcel_profile(args, &parcel_profile, color);
+                let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
+                let XYCoords { x: mut xmax, .. } =
+                    ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
-                    if let (Some(&pressure), Some(&temperature)) = (
-                        parcel_profile.pressure.get(0),
-                        parcel_profile.parcel_t.get(0),
-                    ) {
-                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
-                            temperature,
-                            pressure,
-                        });
-                        let deg_f = format!(
-                            "{:.0}\u{00B0}F",
-                            Fahrenheit::from(temperature).unpack().round()
-                        );
-                        ac.skew_t.draw_tag(
-                            &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
-                            pos,
-                            color,
-                            args,
-                        );
-                    }
+                xmax = xmax.min(1.0);
 
-                    Some(())
-                });
-        }
+                let ScreenCoords { x: xmax, .. } =
+                    ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
 
-        if config.show_inflow_layer {
-            if let Some(lyr) = sndg_anal.effective_inflow_layer() {
-                if let (Some(bottom_p), Some(top_p)) = (
-                    lyr.bottom.pressure.into_option(),
-                    lyr.top.pressure.into_option(),
-                ) {
-                    // Values from wind barbs, make this to the left of the wind barbs
-                    let (shaft_length, _) = cr.device_to_user_distance(
-                        config.wind_barb_shaft_length,
-                        -config.wind_barb_barb_length,
-                    );
-                    let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+                let xcoord = xmax - 2.0 * padding - 2.0 * shaft_length;
+                let yb = get_wind_barb_center(bottom_p, xcoord, args);
+                let yt = get_wind_barb_center(top_p, xcoord, args);
 
-                    let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
-                    let XYCoords { x: mut xmax, .. } =
-                        ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
+                const WIDTH: f64 = 0.02;
 
-                    xmax = xmax.min(1.0);
-
-                    let ScreenCoords { x: xmax, .. } =
-                        ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
-
-                    let xcoord = xmax - 2.0 * padding - 2.0 * shaft_length;
-                    let yb = get_wind_barb_center(bottom_p, xcoord, args);
-                    let yt = get_wind_barb_center(top_p, xcoord, args);
-
-                    const WIDTH: f64 = 0.02;
-
-                    let rgba = config.inflow_layer_rgba;
-                    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-                    cr.set_line_width(cr.device_to_user_distance(4.0, 0.0).0);
-                    cr.move_to(yt.x + WIDTH, yt.y);
-                    cr.line_to(yt.x - WIDTH, yt.y);
-                    cr.move_to(yt.x, yt.y);
-                    cr.line_to(yb.x, yb.y);
-                    cr.move_to(yb.x + WIDTH, yb.y);
-                    cr.line_to(yb.x - WIDTH, yb.y);
-                    cr.stroke();
-                }
+                let rgba = config.inflow_layer_rgba;
+                cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+                cr.set_line_width(cr.device_to_user_distance(4.0, 0.0).0);
+                cr.move_to(yt.x + WIDTH, yt.y);
+                cr.line_to(yt.x - WIDTH, yt.y);
+                cr.move_to(yt.x, yt.y);
+                cr.line_to(yb.x, yb.y);
+                cr.move_to(yb.x + WIDTH, yb.y);
+                cr.line_to(yb.x - WIDTH, yb.y);
+                cr.stroke();
             }
         }
     }
@@ -1693,59 +1714,69 @@ fn draw_sample_parcel_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) 
     let ac = args.ac;
     let config = ac.config.borrow();
 
-    if let Some(anal) = ac.get_sounding_for_display() {
-        let sndg = anal.sounding();
+    let anal = if let Some(anal) = ac.get_sounding_for_display() {
+        anal
+    } else {
+        return;
+    };
 
-        // build the parcel profile
-        let parcel_analysis = sounding_analysis::lift_parcel(sample_parcel, sndg);
-        let profile = if let Ok(ref parcel_analysis) = parcel_analysis {
-            parcel_analysis.profile()
-        } else {
-            return;
-        };
+    let anal = anal.borrow();
+    let sndg = anal.sounding();
 
-        let color = config.sample_parcel_profile_color;
+    // build the parcel profile
+    let parcel_analysis = sounding_analysis::lift_parcel(sample_parcel, sndg);
+    let profile = if let Ok(ref parcel_analysis) = parcel_analysis {
+        parcel_analysis.profile()
+    } else {
+        return;
+    };
 
-        draw_parcel_profile(args, &profile, color);
-    }
+    let color = config.sample_parcel_profile_color;
+
+    draw_parcel_profile(args, &profile, color);
 }
 
 fn draw_sample_mix_down_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
     let ac = args.ac;
     let config = ac.config.borrow();
 
-    if let Some(anal) = ac.get_sounding_for_display() {
-        let sndg = anal.sounding();
+    let anal = if let Some(anal) = ac.get_sounding_for_display() {
+        anal
+    } else {
+        return;
+    };
 
-        // build the parcel profile
-        let profile = if let Ok(profile) = sounding_analysis::mix_down(sample_parcel, sndg) {
-            profile
-        } else {
-            return;
-        };
+    let anal = anal.borrow();
+    let sndg = anal.sounding();
 
-        let color = config.sample_mix_down_rgba;
+    // build the parcel profile
+    let profile = if let Ok(profile) = sounding_analysis::mix_down(sample_parcel, sndg) {
+        profile
+    } else {
+        return;
+    };
 
-        draw_parcel_profile(args, &profile, color);
+    let color = config.sample_mix_down_rgba;
 
-        if let (Some(&pressure), Some(&temperature)) =
-            (profile.pressure.get(0), profile.parcel_t.get(0))
-        {
-            let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
-                temperature,
-                pressure,
-            });
-            let deg_f = format!(
-                "{:.0}\u{00B0}F",
-                Fahrenheit::from(temperature).unpack().round()
-            );
-            ac.skew_t.draw_tag(
-                &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
-                pos,
-                color,
-                args,
-            );
-        }
+    draw_parcel_profile(args, &profile, color);
+
+    if let (Some(&pressure), Some(&temperature)) =
+        (profile.pressure.get(0), profile.parcel_t.get(0))
+    {
+        let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+            temperature,
+            pressure,
+        });
+        let deg_f = format!(
+            "{:.0}\u{00B0}F",
+            Fahrenheit::from(temperature).unpack().round()
+        );
+        ac.skew_t.draw_tag(
+            &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
+            pos,
+            color,
+            args,
+        );
     }
 }
 

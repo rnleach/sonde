@@ -322,11 +322,15 @@ impl Drawable for WindSpeedContext {
 
             self.set_last_cursor_position(Some(position));
             let sp_position = self.convert_device_to_sp(position);
-            let sample = ::sounding_analysis::linear_interpolate_sounding(
-                &ac.get_sounding_for_display().unwrap().sounding(), // ac.plottable() call ensures this won't panic
-                sp_position.press,
-            );
-            ac.set_sample(sample.ok());
+
+            let sample = ac.get_sounding_for_display().and_then(|anal| {
+                sounding_analysis::linear_interpolate_sounding(
+                    anal.borrow().sounding(),
+                    sp_position.press,
+                )
+                .ok()
+            });
+            ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::text_area::update_text_highlight(&ac);
@@ -351,11 +355,13 @@ fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
         ac.wind_speed.set_has_data(true);
 
-        let pres_data = sndg.sounding().pressure_profile();
-        let spd_data = sndg.sounding().wind_profile();
+        let pres_data = sndg.pressure_profile();
+        let spd_data = sndg.wind_profile();
         let profile = izip!(pres_data, spd_data)
             .filter_map(|(p, spd)| {
                 if let (Some(p), Some(WindSpdDir { speed: s, .. })) =

@@ -1,21 +1,22 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
-use crate::coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect};
-use crate::errors::SondeError;
-use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::{self, HodoContext, PlotContext, PlotContextExt, SkewTContext};
-use glib;
-use gtk::Builder;
+use crate::{
+    coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect},
+    errors::SondeError,
+    gui::{
+        self,
+        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
+        HodoContext, PlotContext, PlotContextExt, SkewTContext,
+    },
+};
 use itertools::izip;
 use metfor::Quantity;
-use rayon::{
-    iter::{IterBridge, ParallelBridge},
-    prelude::*,
-};
 use sounding_analysis::{self, Analysis};
-use sounding_base::{DataRow, Sounding};
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use sounding_base::DataRow;
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 // Module for configuring application
 pub mod config;
@@ -35,13 +36,13 @@ pub struct AppContext {
     source_description: RefCell<Option<String>>,
 
     // Lists of soundings and currently displayed one
-    list: RefCell<Vec<Rc<Analysis>>>,
-    extra_profiles: RefCell<Vec<Rc<ExtraProfiles>>>,
+    list: RefCell<Vec<Rc<RefCell<Analysis>>>>,
+    analyzed_count: Cell<usize>,
     currently_displayed_index: Cell<usize>,
     last_sample: Cell<Option<DataRow>>,
 
     // Handle to the GUI
-    gui: Builder,
+    gui: gtk::Builder,
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
@@ -71,10 +72,10 @@ impl AppContext {
             config: RefCell::new(Config::default()),
             source_description: RefCell::new(None),
             list: RefCell::new(vec![]),
-            extra_profiles: RefCell::new(vec![]),
+            analyzed_count: Cell::new(0),
             currently_displayed_index: Cell::new(0),
             last_sample: Cell::new(None),
-            gui: Builder::new_from_string(glade_src),
+            gui: gtk::Builder::new_from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),
@@ -92,42 +93,14 @@ impl AppContext {
             .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
     }
 
-    pub fn load_data<I>(&self, src: I)
+    pub fn load_data<I>(acp: AppContextPointer, src: I)
     where
-        I: Iterator<Item = Analysis> + ParallelBridge,
-        IterBridge<I>: ParallelIterator<Item = Analysis>,
+        I: Iterator<Item = Analysis>,
     {
-        use crate::app::config;
+        *acp.list.borrow_mut() = src.map(RefCell::new).map(Rc::new).collect();
 
-        // Fill in all analysis in parallel
-        let mut list: Vec<Box<Analysis>> = src
-            .par_bridge()
-            // Need to use Box since it is Send and Rc is !Send.
-            .map(|anal: Analysis| Box::new(anal.fill_in_missing_analysis()))
-            .collect();
-
-        // Parallel computation and collect most likely mixed up the order, so sort on valid time
-        list.sort_unstable_by_key(|anal| {
-            anal.sounding()
-                .valid_time()
-                // In the odd case where there is no valid time, assume the maximum possible
-                // valid time to just push this one to the end.
-                .unwrap_or_else(|| chrono::naive::MAX_DATE.and_hms(23, 59, 59))
-        });
-
-        // Map from Box to Rc and assign to the list
-        *self.list.borrow_mut() = list.into_iter().map(Rc::from).collect();
-
-        *self.extra_profiles.borrow_mut() = self
-            .list
-            .borrow()
-            .iter()
-            .map(|anal| ExtraProfiles::new(anal.sounding()))
-            .map(Rc::new)
-            .collect();
-
-        self.currently_displayed_index.set(0);
-        *self.source_description.borrow_mut() = None;
+        acp.currently_displayed_index.set(0);
+        *acp.source_description.borrow_mut() = None;
 
         let mut skew_t_xy_envelope = XYRect {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
@@ -144,10 +117,9 @@ impl AppContext {
             upper_right: XYCoords { x: 0.55, y: 0.55 },
         };
 
-        let snd_list = self.list.borrow();
-        let snd_list = snd_list.iter().map(|anal| anal.sounding());
-
-        for snd in snd_list {
+        for anal in acp.list.borrow().iter() {
+            let anal = anal.borrow();
+            let snd = anal.sounding();
             for pair in snd
                 .pressure_profile()
                 .iter()
@@ -255,7 +227,7 @@ impl AppContext {
 
             for pair in izip!(snd.pressure_profile(), snd.wind_profile()).filter_map(|(p, wind)| {
                 if let (Some(p), Some(w)) = (p.into_option(), wind.into_option()) {
-                    if p < self.config.borrow().min_hodo_pressure {
+                    if p < acp.config.borrow().min_hodo_pressure {
                         None
                     } else {
                         Some(SDCoords { spd_dir: w })
@@ -280,18 +252,53 @@ impl AppContext {
             }
         }
 
-        self.skew_t.set_xy_envelope(skew_t_xy_envelope);
-        self.hodo.set_xy_envelope(hodo_xy_envelope);
+        acp.skew_t.set_xy_envelope(skew_t_xy_envelope);
+        acp.hodo.set_xy_envelope(hodo_xy_envelope);
 
-        self.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
+        acp.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
 
         let mut cloud_envelope = rh_omega_xy_envelope;
         cloud_envelope.lower_left.x = 0.0;
         cloud_envelope.upper_right.x = 1.0;
-        self.cloud.set_xy_envelope(cloud_envelope);
+        acp.cloud.set_xy_envelope(cloud_envelope);
 
-        self.fit_to_data();
-        self.set_currently_displayed(0);
+        acp.fit_to_data();
+        acp.set_currently_displayed(0);
+
+        // Once everything we need for this thread is taken care of, fill in any missing data
+        // in the analysis.
+        let pool = threadpool::ThreadPool::default();
+        let (tx, rx) = crossbeam_channel::unbounded();
+
+        for (i, anal) in acp.list.borrow().iter().enumerate() {
+            let anal = anal.borrow().clone();
+            let tx = tx.clone();
+            pool.execute(move || {
+                let mut anal = anal;
+                anal.fill_in_missing_analysis_mut();
+                tx.send((i, anal)).unwrap();
+            });
+        }
+
+        let acp = Rc::clone(&acp);
+        acp.analyzed_count.set(0);
+        gtk::idle_add(move || {
+            for (i, anal) in rx.try_iter() {
+                *(*acp).list.borrow_mut()[i].borrow_mut() = anal;
+                acp.analyzed_count.set(acp.analyzed_count.get() + 1);
+
+                if (*acp).currently_displayed_index.get() == i {
+                    acp.mark_data_dirty();
+                    acp.update_all_gui();
+                }
+            }
+
+            if acp.analyzed_count.get() == acp.list.borrow().len() {
+                glib::Continue(false)
+            } else {
+                glib::Continue(true)
+            }
+        });
     }
 
     /// Is there any data to plot?
@@ -337,11 +344,16 @@ impl AppContext {
         if let Some(sample) = self.last_sample.get() {
             if let Some(p) = sample.pressure.into() {
                 self.last_sample.set(
-                    ::sounding_analysis::linear_interpolate_sounding(
-                        self.list.borrow()[self.currently_displayed_index.get()].sounding(),
-                        p,
-                    )
-                    .ok(),
+                    self.list
+                        .borrow()
+                        .get(self.currently_displayed_index.get())
+                        .and_then(|anal| {
+                            sounding_analysis::linear_interpolate_sounding(
+                                anal.borrow().sounding(),
+                                p,
+                            )
+                            .ok()
+                        }),
                 );
             } else {
                 self.last_sample.set(None);
@@ -356,26 +368,13 @@ impl AppContext {
         gui::update_text_views(&self);
     }
 
-    /// Get the sounding to draw.
-    pub fn get_sounding_for_display(&self) -> Option<Rc<Analysis>> {
-        if self.plottable() {
-            let shared_ptr = Rc::clone(&self.list.borrow()[self.currently_displayed_index.get()]);
-            Some(shared_ptr)
-        } else {
-            None
-        }
+    /// Get the analysis for drawing, etc.
+    pub fn get_sounding_for_display(&self) -> Option<Rc<RefCell<Analysis>>> {
+        self.list
+            .borrow()
+            .get(self.currently_displayed_index.get())
+            .map(Rc::clone)
     }
-
-    /// Get the extra profiles to draw.
-    // pub fn get_extra_profiles_for_display(&self) -> Option<Rc<ExtraProfiles>> {
-    //     if self.plottable() {
-    //         let shared_ptr =
-    //             Rc::clone(&self.extra_profiles.borrow()[self.currently_displayed_index.get()]);
-    //         Some(shared_ptr)
-    //     } else {
-    //         None
-    //     }
-    // }
 
     /// Set the source name
     pub fn set_source_description(&self, new_name: Option<String>) {
@@ -435,24 +434,5 @@ impl AppContext {
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();
         self.wind_speed.mark_background_dirty();
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct ExtraProfiles {
-    // pub lapse_rate: Vec<Optioned<f64>>,
-// pub sfc_avg_lapse_rate: Vec<Optioned<f64>>,
-}
-
-impl ExtraProfiles {
-    pub fn new(_snd: &Sounding) -> Self {
-        // let lapse_rate = sounding_analysis::profile::temperature_lapse_rate(snd);
-        // let sfc_avg_lapse_rate =
-        //     sounding_analysis::profile::sfc_to_level_temperature_lapse_rate(snd);
-
-        ExtraProfiles {
-            // lapse_rate,
-            // sfc_avg_lapse_rate,
-        }
     }
 }
