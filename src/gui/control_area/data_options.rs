@@ -3,7 +3,7 @@ use crate::{
     gui::control_area::{BOX_SPACING, PADDING},
 };
 use gdk::RGBA;
-use gtk::{self, prelude::*, ColorButton, Frame, ScrolledWindow};
+use gtk::{self, prelude::*, Frame, ScrolledWindow};
 use std::rc::Rc;
 
 pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
@@ -45,8 +45,21 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(data_box, "Wet Bulb", ac, wet_bulb_rgba);
     build_config_color!(data_box, "Dew Point", ac, dew_point_rgba);
     build_config_color!(data_box, "Wind", ac, wind_rgba);
-    build_config_color!(data_box, "Vertical Velocity (\u{03C9})", ac, omega_rgba);
-    build_config_color!(data_box, "Relative Humidity", ac, rh_rgba);
+    build_config_color_and_check!(
+        data_box,
+        "Vertical Velocity (\u{03C9})",
+        ac,
+        show_omega,
+        omega_rgba
+    );
+    build_config_color_and_check!(data_box, "Relative Humidity", ac, show_rh, rh_rgba);
+    build_config_color_and_check!(
+        data_box,
+        "Relative Humidity (ice)",
+        ac,
+        show_rh_ice,
+        rh_ice_rgba
+    );
     build_config_color!(data_box, "Cloud Coverage", ac, cloud_rgba);
 
     // Third set is overlays

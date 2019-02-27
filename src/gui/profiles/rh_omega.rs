@@ -15,7 +15,7 @@ use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{PaPS, Quantity};
-use sounding_analysis::relative_humidity;
+use sounding_analysis::{relative_humidity, relative_humidity_ice};
 use sounding_base::DataRow;
 use std::{cell::Cell, rc::Rc};
 
@@ -310,7 +310,11 @@ impl Drawable for RHOmegaContext {
         let config = ac.config.borrow();
 
         if config.show_rh {
-            result.push(("RH".to_owned(), config.rh_rgba));
+            result.push(("RH (water)".to_owned(), config.rh_rgba));
+        }
+
+        if config.show_rh_ice {
+            result.push(("RH (ice)".to_owned(), config.rh_ice_rgba));
         }
 
         if config.show_omega {
@@ -331,9 +335,10 @@ impl Drawable for RHOmegaContext {
         self.draw_wet_bulb_zero_levels(args);
         self.draw_freezing_levels(args);
 
+        let rh_ice_drawn = draw_rh_ice_profile(args);
         let rh_drawn = draw_rh_profile(args);
         let omega_drawn = draw_omega_profile(args);
-        let has_data = rh_drawn || omega_drawn;
+        let has_data = rh_ice_drawn || rh_drawn || omega_drawn;
         self.set_has_data(has_data);
         if !has_data {
             self.draw_no_data(args);
@@ -358,10 +363,21 @@ impl Drawable for RHOmegaContext {
             if config.show_rh {
                 if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
                     if let Some(rh) = rh(t_c, dp_c) {
-                        results.push((format!("{:.0}%\n", 100.0 * rh), config.rh_rgba));
+                        results.push((format!("{:.0}% (water)\n", 100.0 * rh), config.rh_rgba));
                     }
                 }
             }
+
+            if config.show_rh_ice {
+                if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
+                    let vp_water = metfor::vapor_pressure_liquid_water(dp_c);
+                    let sat_vp_ice = metfor::vapor_pressure_ice(t_c);
+                    if let Some(rh) = vp_water.and_then(|vpw| sat_vp_ice.map(|vpi| vpw / vpi)) {
+                        results.push((format!("{:.0}% (ice)\n", 100.0 * rh), config.rh_ice_rgba));
+                    }
+                }
+            }
+
             if config.show_omega {
                 if let Some(omega) = omega.into_option() {
                     results.push((format!("{:.1} Pa/s\n", omega.unpack()), config.omega_rgba));
@@ -388,12 +404,15 @@ impl Drawable for RHOmegaContext {
 
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
-            let sample = ::sounding_analysis::linear_interpolate_sounding(
-                // will not panic due to ac.plottable
-                &ac.get_sounding_for_display().expect(file!()).sounding(),
-                wp_position.p,
-            );
-            ac.set_sample(sample.ok());
+
+            let sample = ac.get_sounding_for_display().and_then(|anal| {
+                sounding_analysis::linear_interpolate_sounding(
+                    anal.borrow().sounding(),
+                    wp_position.p,
+                )
+                .ok()
+            });
+            ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::text_area::update_text_highlight(&ac);
@@ -422,8 +441,9 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         return false;
     }
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
 
         ac.rh_omega.set_has_data(true);
 
@@ -515,6 +535,109 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
     true
 }
 
+// FIXME: factor out common code for drawing bar graphs - applies to cloud profile too.
+fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
+    let (ac, cr) = (args.ac, args.cr);
+    let config = ac.config.borrow();
+
+    if !config.show_rh_ice {
+        return false;
+    }
+
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
+
+        ac.rh_omega.set_has_data(true);
+
+        let pres_data = sndg.pressure_profile();
+        let rh_data = relative_humidity_ice(sndg);
+
+        let bb = ac.rh_omega.bounding_box_in_screen_coords();
+        let x0 = bb.lower_left.x;
+        let width = bb.width();
+
+        let mut profile = izip!(pres_data, rh_data.iter())
+            // Filter out levels with missing pressure and map missing RH to 0%
+            .filter_map(|(p, rh)| p.map(|p| (p, rh.unwrap_or(0.0))))
+            // Only take up to the highest plottable pressu
+            .take_while(|(p, _)| *p > config::MINP)
+            // Map into ScreenCoords for plotting
+            .map(|(p, rh)| {
+                let ScreenCoords { y, .. } = ac
+                    .rh_omega
+                    .convert_wp_to_screen(WPCoords { w: PaPS(0.0), p });
+                let x = x0 + width * rh;
+                ScreenCoords { x, y }
+            });
+
+        let line_width = config.bar_graph_line_width;
+        let rgba = config.rh_ice_rgba;
+
+        cr.push_group();
+        cr.set_operator(cairo::Operator::Source);
+        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
+        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+        let mut previous: Option<ScreenCoords>;
+        let mut curr: Option<ScreenCoords> = None;
+        let mut next: Option<ScreenCoords> = None;
+        loop {
+            previous = curr;
+            curr = next;
+            next = profile.next();
+
+            const XMIN: f64 = 0.0;
+            let xmax: f64;
+            let ymin: f64;
+            let ymax: f64;
+            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
+                // In the middle - most common
+                xmax = c.x;
+                let down = (c.y - p.y) / 2.0;
+                let up = (n.y - c.y) / 2.0;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
+                // Last point
+                xmax = c.x;
+                let down = (c.y - p.y) / 2.0;
+                let up = down;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
+                // First point
+                xmax = c.x;
+                let up = (n.y - c.y) / 2.0;
+                let down = up;
+                ymin = c.y - down;
+                ymax = c.y + up;
+            } else if let (Some(_), None, None) = (previous, curr, next) {
+                // Done - get out of here
+                break;
+            } else if let (None, None, Some(_)) = (previous, curr, next) {
+                // Just getting into the loop - do nothing
+                continue;
+            } else if let (None, None, None) = (previous, curr, next) {
+                return false;
+            } else {
+                // Impossible state
+                unreachable!();
+            }
+
+            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
+            cr.fill_preserve();
+            cr.stroke();
+        }
+
+        cr.pop_group_to_source();
+        cr.paint();
+    } else {
+        return false;
+    }
+    true
+}
+
 fn draw_omega_profile(args: DrawingArgs<'_, '_>) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -523,9 +646,12 @@ fn draw_omega_profile(args: DrawingArgs<'_, '_>) -> bool {
         return false;
     }
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let pres_data = sndg.sounding().pressure_profile();
-        let omega_data = sndg.sounding().pvv_profile();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
+
+        let pres_data = sndg.pressure_profile();
+        let omega_data = sndg.pvv_profile();
         let line_width = config.profile_line_width;
         let line_rgba = config.omega_rgba;
 

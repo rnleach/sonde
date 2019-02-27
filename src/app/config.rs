@@ -175,10 +175,14 @@ pub struct Config {
     pub show_omega: bool,
     /// Show the rh profile
     pub show_rh: bool,
+    /// Show the rh_ice profile
+    pub show_rh_ice: bool,
     /// Color used for omega line
     pub omega_rgba: Rgba,
-    /// RH Color
+    /// RH color
     pub rh_rgba: Rgba,
+    /// RH ice color
+    pub rh_ice_rgba: Rgba,
 
     //
     // Cloud profile
@@ -381,8 +385,10 @@ impl Default for Config {
             //
             show_omega: true,
             show_rh: true,
+            show_rh_ice: false,
             omega_rgba: (0.0, 0.0, 0.0, 1.0),
             rh_rgba: (0.305_880, 0.603_921, 0.023_529_4, 0.75),
+            rh_ice_rgba: (0.0, 0.603_921, 0.603_921, 0.50),
 
             //
             // Cloud profile

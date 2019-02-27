@@ -81,47 +81,46 @@ pub fn update_text_area(ac: &AppContext) {
         return;
     };
 
-    if let Some(tb) = text_area.get_buffer() {
-        if let Some(snd) = ac.get_sounding_for_display() {
-            let mut text = String::with_capacity(4096);
+    if let (Some(tb), Some(anal)) = (text_area.get_buffer(), ac.get_sounding_for_display()) {
+        let anal = anal.borrow();
+        let mut text = String::with_capacity(4096);
 
-            snd.sounding()
-                .top_down()
-                .filter(|row| row.pressure.map(|p| p > config::MINP).unwrap_or(false))
-                .for_each(|row| {
-                    text.push_str(&format!(
-                        " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
-                        unwrap_to_str!(row.pressure, "{:.0}"),
-                        unwrap_to_str!(row.height, "{:.0}"),
-                        unwrap_to_str!(row.temperature, "{:.1}"),
-                        unwrap_to_str!(row.wet_bulb, "{:.1}"),
-                        unwrap_to_str!(row.dew_point, "{:.1}"),
-                        unwrap_to_str!(row.theta_e, "{:.0}"),
-                        unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
-                        unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
-                        unwrap_to_str!(row.pvv, "{:.1}"),
-                        unwrap_to_str!(row.cloud_fraction, "{:.0}"),
-                    ));
-                });
+        anal.sounding()
+            .top_down()
+            .filter(|row| row.pressure.map(|p| p > config::MINP).unwrap_or(false))
+            .for_each(|row| {
+                text.push_str(&format!(
+                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
+                    unwrap_to_str!(row.pressure, "{:.0}"),
+                    unwrap_to_str!(row.height, "{:.0}"),
+                    unwrap_to_str!(row.temperature, "{:.1}"),
+                    unwrap_to_str!(row.wet_bulb, "{:.1}"),
+                    unwrap_to_str!(row.dew_point, "{:.1}"),
+                    unwrap_to_str!(row.theta_e, "{:.0}"),
+                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
+                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
+                    unwrap_to_str!(row.pvv, "{:.1}"),
+                    unwrap_to_str!(row.cloud_fraction, "{:.0}"),
+                ));
+            });
 
-            // Get the scroll position before setting the text
-            let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
+        // Get the scroll position before setting the text
+        let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
 
-            set_text!(tb, &text);
+        set_text!(tb, &text);
 
-            // I don't totally understand this, but after quite a lot of experimentation this works
-            // well at keeping the scroll of the text view in the same area as you step through
-            // time.
-            if !ac.config.borrow().show_active_readout {
-                if let Some(adj) = text_area.get_vadjustment() {
-                    if let Some(val) = old_adj {
-                        let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
-                            val.round()
-                        } else {
-                            (adj.get_upper() - adj.get_page_size() - 1.0).round()
-                        };
-                        adj.set_value(val);
-                    }
+        // I don't totally understand this, but after quite a lot of experimentation this works
+        // well at keeping the scroll of the text view in the same area as you step through
+        // time.
+        if !ac.config.borrow().show_active_readout {
+            if let Some(adj) = text_area.get_vadjustment() {
+                if let Some(val) = old_adj {
+                    let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
+                        val.round()
+                    } else {
+                        (adj.get_upper() - adj.get_page_size() - 1.0).round()
+                    };
+                    adj.set_value(val);
                 }
             }
         }
@@ -176,13 +175,17 @@ pub fn update_text_highlight(ac: &AppContext) {
         return;
     };
 
+    if !text_area.get_realized() {
+        return;
+    }
+
     let tp = if let Some(sample_p) = ac.get_sample().and_then(|s| s.pressure.into_option()) {
         sample_p
     } else {
         return;
     };
 
-    if let Some(tb) = text_area.get_buffer() {
+    if let Some(ref tb) = text_area.get_buffer() {
         let start = tb.get_start_iter();
         let end = tb.get_end_iter();
         tb.remove_tag_by_name("highlight_above", &start, &end);

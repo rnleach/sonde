@@ -396,8 +396,9 @@ fn draw_data(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if let Some(sndg) = ac.get_sounding_for_display() {
-        let sndg = sndg.sounding();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
         let pres_data = sndg.pressure_profile();
         let wind_data = sndg.wind_profile();
 
@@ -433,6 +434,7 @@ fn draw_helicity_fill(args: DrawingArgs<'_, '_>) {
     let config = ac.config.borrow();
 
     if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
         // Get the storm motion
         let motion = {
             let motion = match config.helicity_storm_motion {
@@ -492,6 +494,7 @@ fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
     let config = ac.config.borrow();
 
     if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
         if let (Some(rm), Some(lm), Some(mw)) = (
             anal.right_mover().into_option(),
             anal.left_mover().into_option(),
