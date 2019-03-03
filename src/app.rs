@@ -97,7 +97,12 @@ impl AppContext {
     where
         I: Iterator<Item = Analysis>,
     {
-        *acp.list.borrow_mut() = src.map(RefCell::new).map(Rc::new).collect();
+        // Copy in the list and make sure it is sorted.
+        {
+            let list: &mut Vec<_> = &mut acp.list.borrow_mut();
+            *list = src.map(RefCell::new).map(Rc::new).collect();
+            list.sort_by_key(|anal| anal.borrow().sounding().valid_time());
+        }
 
         acp.currently_displayed_index.set(0);
         *acp.source_description.borrow_mut() = None;
