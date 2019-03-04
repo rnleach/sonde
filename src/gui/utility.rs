@@ -54,6 +54,73 @@ where
     }
 }
 
+// Draw a horizontal bar graph like is done for RH and clouds.
+pub fn draw_horizontal_bars<I>(cr: &Context, line_width_pixels: f64, rgba: Rgba, profile: I)
+where
+    I: Iterator<Item = ScreenCoords>,
+{
+    cr.push_group();
+    cr.set_operator(cairo::Operator::Source);
+    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
+    cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+
+    let mut profile = profile;
+    let mut previous: Option<ScreenCoords>;
+    let mut curr: Option<ScreenCoords> = None;
+    let mut next: Option<ScreenCoords> = None;
+    loop {
+        previous = curr;
+        curr = next;
+        next = profile.next();
+
+        const XMIN: f64 = 0.0;
+        let xmax: f64;
+        let ymin: f64;
+        let ymax: f64;
+        if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
+            // In the middle - most common
+            xmax = c.x;
+            let down = (c.y - p.y) / 2.0;
+            let up = (n.y - c.y) / 2.0;
+            ymin = c.y - down;
+            ymax = c.y + up;
+        } else if let (Some(p), Some(c), None) = (previous, curr, next) {
+            // Last point
+            xmax = c.x;
+            let down = (c.y - p.y) / 2.0;
+            let up = down;
+            ymin = c.y - down;
+            ymax = c.y + up;
+        } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
+            // First point
+            xmax = c.x;
+            let up = (n.y - c.y) / 2.0;
+            let down = up;
+            ymin = c.y - down;
+            ymax = c.y + up;
+        } else if let (Some(_), None, None) = (previous, curr, next) {
+            // Done - get out of here
+            break;
+        } else if let (None, None, Some(_)) = (previous, curr, next) {
+            // Just getting into the loop - do nothing
+            continue;
+        } else if let (None, None, None) = (previous, curr, next) {
+            // This means there was absolutely nothing in the iterator.
+            return;
+        } else {
+            // Impossible state
+            unreachable!();
+        }
+
+        cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
+        cr.fill_preserve();
+        cr.stroke();
+    }
+
+    cr.pop_group_to_source();
+    cr.paint();
+}
+
 pub fn check_overlap_then_add(
     cr: &Context,
     ac: &AppContext,
