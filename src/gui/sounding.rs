@@ -423,8 +423,10 @@ impl Drawable for SkewTContext {
 
         let mut result = vec![];
 
-        if let Some(src_desc) = ac.get_source_description() {
-            result.push((src_desc, color));
+        if let Some(anal) = ac.get_sounding_for_display() {
+            if let Some(src_desc) = anal.borrow().sounding().source_description() {
+                result.push((src_desc.to_owned(), color));
+            }
         }
 
         if let Some(anal) = ac.get_sounding_for_display() {

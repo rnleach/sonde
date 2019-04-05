@@ -1,4 +1,7 @@
-use crate::app::{AppContext, AppContextPointer};
+use crate::{
+    app::{AppContext, AppContextPointer},
+    errors::SondeError,
+};
 use bufr_read::{BufrFile, Message};
 use chrono::naive::NaiveDate;
 use itertools::izip;
@@ -10,63 +13,104 @@ use sounding_bufkit::BufkitFile;
 use std::{error::Error, path::PathBuf, rc::Rc};
 
 pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let extension: Option<String> = path
-        .extension()
-        .map(|ext| ext.to_string_lossy().to_string());
-    let extension = extension.as_ref().map(|ext| ext.as_str());
-
-    match extension {
-        Some("buf") => load_bufkit(path, ac)?,
-        Some("bufr") => load_bufr(path, ac)?,
-        Some(_) => unreachable!(),
-        None => unreachable!(),
-    }
-
-    if let Some(name) = path.file_name() {
-        let mut src_name = "File: ".to_owned();
-        src_name.push_str(&name.to_string_lossy());
-        ac.set_source_description(Some(src_name));
-    }
-
-    Ok(())
-}
-
-pub fn load_multiple_bufr(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let datas: Result<Vec<_>, _> = paths
-        .iter()
-        .map(|p| BufrFile::new(&p.to_string_lossy()))
-        .collect();
-    let datas: Result<Vec<_>, _> = datas?.into_iter().flat_map(|iter| iter).collect();
-    let datas: Result<Vec<Analysis>, _> = datas?.into_iter().map(bufr_to_sounding).collect();
-    let datas: Vec<Analysis> = datas?;
-
-    AppContext::load_data(Rc::clone(ac), datas.into_iter());
-    ac.set_source_description(Some("Multiple BUFR files".to_owned()));
-
-    Ok(())
-}
-
-fn load_bufkit(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let file = BufkitFile::load(path)?;
-    let data = file.data()?;
-
-    AppContext::load_data(Rc::clone(ac), &mut data.into_iter());
-    Ok(())
-}
-
-fn load_bufr(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let file = BufrFile::new(&path.to_string_lossy())?;
-
-    let data: Vec<Analysis> = file
-        .filter_map(|result| result.ok())
-        .filter_map(|msg| bufr_to_sounding(msg).ok())
-        .collect();
+    let data = load_data(path)?;
+    // FIXME: Change AppContext to take a vector?
     AppContext::load_data(Rc::clone(ac), data.into_iter());
 
     Ok(())
 }
 
-fn bufr_to_sounding(msg: Message) -> Result<Analysis, Box<dyn Error>> {
+pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
+    let datas: Result<Vec<_>, _> = paths.iter().map(load_data).collect();
+    let mut datas: Vec<_> = datas?.into_iter().flat_map(|iter| iter).collect();
+
+    // Sort by valid time ascending, then by lead time ascending
+    datas.sort_by(|left, right| {
+        if let (Some(left_vt), Some(right_vt)) =
+            (left.sounding().valid_time(), right.sounding().valid_time())
+        {
+            if left_vt == right_vt {
+                if let (Some(left_lt), Some(right_lt)) = (
+                    left.sounding().lead_time().into_option(),
+                    right.sounding().lead_time().into_option(),
+                ) {
+                    left_lt.cmp(&right_lt)
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            } else {
+                left_vt.cmp(&right_vt)
+            }
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    });
+
+    // Scan through the list and only pass the first value with a given valid time.
+    let datas = datas
+        .into_iter()
+        .scan(None, |prev, anal| {
+            let valid_time = anal.sounding().valid_time();
+            if *prev == valid_time {
+                Some(None)
+            } else {
+                *prev = valid_time;
+                Some(Some(anal))
+            }
+        })
+        // Get rid of the None and only let the
+        .filter_map(|opt| opt);
+
+    AppContext::load_data(Rc::clone(ac), datas);
+
+    Ok(())
+}
+
+fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+    let extension: Option<String> = path
+        .extension()
+        .map(|ext| ext.to_string_lossy().to_string());
+    let extension = extension.as_ref().map(|ext| ext.as_str());
+
+    let mut load_fns = [load_bufkit, load_bufr];
+
+    if Some("bufr") == extension {
+        // Try the bufr loader first.
+        load_fns.swap(0, 1);
+    }
+
+    for load_fn in load_fns.into_iter() {
+        match load_fn(path) {
+            Ok(data_vec) => return Ok(data_vec),
+            Err(_) => continue,
+        }
+    }
+
+    Err(SondeError::NoMatchingFileType)?
+}
+
+fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+    let file = BufkitFile::load(path)?;
+    let data = file.data()?.into_iter().collect();
+    Ok(data)
+}
+
+fn load_bufr(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+    let file = BufrFile::new(&path.to_string_lossy())?;
+    let file_name = path
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .unwrap_or_else(|| "Unknown file.".to_owned());
+
+    let data: Vec<Analysis> = file
+        .filter_map(|result| result.ok())
+        .filter_map(|msg| bufr_to_sounding(msg, file_name.clone()).ok())
+        .collect();
+
+    Ok(data)
+}
+
+fn bufr_to_sounding(msg: Message, file_name: String) -> Result<Analysis, Box<dyn Error>> {
     let pressure_vals = msg.double_array("pressure")?;
     let pressure_vals = pressure_vals
         .iter()
@@ -148,6 +192,7 @@ fn bufr_to_sounding(msg: Message) -> Result<Analysis, Box<dyn Error>> {
         .map(|(y, m, d, h)| NaiveDate::from_ymd(y, m, d).and_hms(h, 0, 0));
 
     let snd = Sounding::new()
+        .with_source_description(file_name)
         .with_station_info(stn)
         .with_valid_time(vt)
         .with_lead_time(0) // Lead time in hours for forecast soundings.

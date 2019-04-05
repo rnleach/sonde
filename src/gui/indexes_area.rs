@@ -61,7 +61,11 @@ pub fn update_indexes_area(ac: &AppContext) {
             let anal = &anal.borrow();
             let text = &mut String::with_capacity(4096);
 
-            push_header(text, ac.get_source_description(), anal);
+            push_header(
+                text,
+                anal.sounding().source_description().map(|s| s.to_owned()),
+                anal,
+            );
             push_profile_indexes(text, anal);
             push_parcel_indexes(text, anal);
             push_fire_indexes(text, anal);

@@ -13,7 +13,15 @@ use std::path::PathBuf;
 
 mod load_file;
 
-pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+pub fn open_callback(mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+    open_files(mi, ac, win, false);
+}
+
+pub fn open_many_callback(mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+    open_files(mi, ac, win, true);
+}
+
+fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multiple: bool) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
     dialog.add_buttons(&[
@@ -21,12 +29,14 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
         ("Cancel", ResponseType::Cancel.into()),
     ]);
 
+    dialog.set_select_multiple(open_multiple);
+
     let filter_data = [
         ("*.buf", "Bufkit files (*.buf)"),
         ("*.bufr", "Bufr files (*.bufr)"),
     ];
 
-    // All a filter for all supported file types
+    // A filter for all supported file types
     let filter = FileFilter::new();
     for &(pattern, _) in &filter_data {
         filter.add_pattern(pattern);
@@ -49,45 +59,23 @@ pub fn open_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     dialog.add_filter(&filter);
 
     if ResponseType::from(dialog.run()) == ResponseType::Ok {
-        if let Some(filename) = dialog.get_filename() {
-            if let Err(ref err) = load_file::load_file(&filename, ac) {
+        if open_multiple {
+            let paths: Vec<_> = dialog
+                .get_filenames()
+                .into_iter()
+                .filter(|pb| pb.is_file())
+                .collect();
+            if let Err(ref err) = load_file::load_multiple(&paths, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
             }
         } else {
-            show_error_dialog("Could not retrieve file name from dialog.", win);
-        }
-    }
-
-    dialog.destroy();
-}
-
-pub fn open_many_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
-    let dialog = FileChooserDialog::new(
-        Some("Open Multiple Files"),
-        Some(win),
-        FileChooserAction::Open,
-    );
-
-    dialog.add_buttons(&[
-        ("Open", ResponseType::Ok.into()),
-        ("Cancel", ResponseType::Cancel.into()),
-    ]);
-
-    let filter = FileFilter::new();
-    filter.add_pattern("*.bufr");
-    filter.set_name("Bufr files (*.bufr)");
-    dialog.add_filter(&filter);
-
-    dialog.set_select_multiple(true);
-
-    if ResponseType::from(dialog.run()) == ResponseType::Ok {
-        let paths: Vec<_> = dialog
-            .get_filenames()
-            .into_iter()
-            .filter(|pb| pb.is_file())
-            .collect();
-        if let Err(ref err) = load_file::load_multiple_bufr(&paths, ac) {
-            show_error_dialog(&format!("Error loading file: {}", err), win);
+            if let Some(filename) = dialog.get_filename() {
+                if let Err(ref err) = load_file::load_file(&filename, ac) {
+                    show_error_dialog(&format!("Error loading file: {}", err), win);
+                }
+            } else {
+                show_error_dialog("Could not retrieve file name from dialog.", win);
+            }
         }
     }
 
@@ -107,20 +95,28 @@ pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window)
     filter.set_name("PNG files (*.png)");
     dialog.add_filter(&filter);
 
-    if let Some(mut src_desc) = ac.get_source_description() {
-        src_desc
-            .retain(|c| c == '.' || c.is_alphabetic() || c.is_digit(10) || c == '_' || c == ' ');
-        let src_desc = src_desc.replace(" ", "_");
-        let mut src_desc = src_desc.trim_end_matches(".buf").to_string();
-        src_desc.push_str("_skewt");
-        if let Some(anal) = ac.get_sounding_for_display() {
-            if let Some(lt) = anal.borrow().sounding().lead_time().into_option() {
-                src_desc.push_str(&format!("_f{:03}", lt));
+    if let Some(anal) = ac.get_sounding_for_display() {
+        if let Some(mut src_desc) = anal
+            .borrow()
+            .sounding()
+            .source_description()
+            .map(|desc| desc.to_owned())
+        {
+            src_desc.retain(|c| {
+                c == '.' || c.is_alphabetic() || c.is_digit(10) || c == '_' || c == ' '
+            });
+            let src_desc = src_desc.replace(" ", "_");
+            let mut src_desc = src_desc.trim_end_matches(".buf").to_string();
+            src_desc.push_str("_skewt");
+            if let Some(anal) = ac.get_sounding_for_display() {
+                if let Some(lt) = anal.borrow().sounding().lead_time().into_option() {
+                    src_desc.push_str(&format!("_f{:03}", lt));
+                }
             }
-        }
-        src_desc.push_str(".png");
+            src_desc.push_str(".png");
 
-        dialog.set_current_name(src_desc);
+            dialog.set_current_name(src_desc);
+        }
     }
 
     if ResponseType::from(dialog.run()) == ResponseType::Ok {
