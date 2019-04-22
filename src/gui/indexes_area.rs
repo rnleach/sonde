@@ -299,7 +299,7 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
 
     let empty = " - \n";
 
-    buffer.push_str("Experimental\n");
+    buffer.push_str("\nExperimental\n");
     buffer.push_str("----------------------------------------------------\n");
     push_fire_index!(buffer, "Conv. T def.", anal, convective_deficit,"{:>9.1} \u{00b0}C\n", empty);
     push_fire_index!(buffer, "CAPE ratio  ", anal, cape_ratio,        "{:>12.2}\n", empty);
