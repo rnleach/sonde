@@ -12,6 +12,7 @@ Cargo.lock
 .vscode
 \#*.glade\#
 .buildconfig
+*.swp
 
 //
 // OS specific
@@ -27,4 +28,5 @@ config.yml
 // misc
 //
 *~
+tags
 
