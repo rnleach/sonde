@@ -3,7 +3,7 @@ use crate::{
     errors::SondeError,
 };
 use gtk::{prelude::*, TextTag, TextView};
-use metfor::{Fahrenheit, Feet, Inches, Quantity};
+use metfor::{Fahrenheit, Inches, Quantity};
 use sounding_analysis::{partition_cape, Analysis};
 
 macro_rules! make_default_tag {
@@ -61,11 +61,6 @@ pub fn update_indexes_area(ac: &AppContext) {
             let anal = &anal.borrow();
             let text = &mut String::with_capacity(4096);
 
-            push_header(
-                text,
-                anal.sounding().source_description().map(|s| s.to_owned()),
-                anal,
-            );
             push_profile_indexes(text, anal);
             push_parcel_indexes(text, anal);
             push_fire_indexes(text, anal);
@@ -89,30 +84,6 @@ pub fn update_indexes_area(ac: &AppContext) {
                 }
             }
         }
-    }
-}
-
-#[inline]
-fn push_header(buffer: &mut String, source_desc: Option<String>, anal: &Analysis) {
-    if let Some(desc) = source_desc {
-        buffer.push_str(&desc);
-        buffer.push('\n');
-    }
-
-    if let Some(vt) = anal.sounding().valid_time() {
-        buffer.push_str(&format!("     Valid: {}Z\n", vt));
-    }
-
-    let station_info = anal.sounding().station_info();
-    if let Some((lat, lon)) = station_info.location() {
-        buffer.push_str(&format!("(lat, lon): ({:.6},{:.6})\n", lat, lon));
-    }
-    if let Some(elev_m) = station_info.elevation().into_option() {
-        buffer.push_str(&format!(
-            " Elevation: {:.0}m ({:.0}ft)\n",
-            elev_m.unpack(),
-            Feet::from(elev_m).unpack(),
-        ));
     }
 }
 
