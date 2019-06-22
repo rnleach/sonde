@@ -30,7 +30,7 @@ pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     v_box.pack_start(&lines_frame, true, true, PADDING);
     v_box.pack_start(&fills_frame, true, true, PADDING);
     v_box.pack_start(&font_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Option<_>, Adjustment, Option<_>>(None, None);
+    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
     sw.add(&f);
 
     sw
@@ -141,7 +141,7 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
 
     // Layout
     hbox.pack_end(&color, false, true, PADDING);
-    hbox.pack_start(&gtk::Label::new("Background"), false, true, PADDING);
+    hbox.pack_start(&gtk::Label::new(Some("Background")), false, true, PADDING);
 
     target_box.pack_start(&hbox, false, true, PADDING);
 }

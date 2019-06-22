@@ -9,6 +9,7 @@ use crate::{
         HodoContext, PlotContext, PlotContextExt, SkewTContext,
     },
 };
+use gtk::BuilderExtManual;
 use itertools::izip;
 use metfor::Quantity;
 use sounding_analysis::{self, Analysis};

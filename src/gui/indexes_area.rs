@@ -9,7 +9,7 @@ use sounding_analysis::{partition_cape, Analysis};
 macro_rules! make_default_tag {
     ($tb:ident) => {
         if let Some(tag_table) = $tb.get_tag_table() {
-            let tag = TextTag::new("default");
+            let tag = TextTag::new(Some("default"));
 
             tag.set_property_font(Some("courier bold 12"));
 
@@ -37,7 +37,7 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         make_default_tag!(tb);
         set_text!(tb, "No data loaded");
 
-        tb.create_mark("scroll_mark", &tb.get_start_iter(), true);
+        tb.create_mark(Some("scroll_mark"), &tb.get_start_iter(), true);
 
         Ok(())
     } else {

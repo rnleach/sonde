@@ -8,7 +8,7 @@ use metfor::{HectoPascal, Quantity};
 macro_rules! make_default_tag {
     ($tb:ident) => {
         if let Some(tag_table) = $tb.get_tag_table() {
-            let tag = TextTag::new("default");
+            let tag = TextTag::new(Some("default"));
 
             tag.set_property_font(Some("courier bold 12"));
 
@@ -38,8 +38,8 @@ pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         set_text!(tb, "No data loaded");
 
         if let Some(tag_table) = tb.get_tag_table() {
-            let above_tag = TextTag::new("highlight_above");
-            let below_tag = TextTag::new("highlight_below");
+            let above_tag = TextTag::new(Some("highlight_above"));
+            let below_tag = TextTag::new(Some("highlight_below"));
 
             let mut success = tag_table.add(&above_tag);
             debug_assert!(success, "Failed to add highlight_above tag");
@@ -47,7 +47,7 @@ pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
             debug_assert!(success, "Failed to add highlight_below tag");
         }
 
-        tb.create_mark("scroll_mark", &tb.get_start_iter(), true);
+        tb.create_mark(Some("scroll_mark"), &tb.get_start_iter(), true);
 
         Ok(())
     } else {

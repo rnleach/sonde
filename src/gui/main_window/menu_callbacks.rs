@@ -41,21 +41,21 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
     for &(pattern, _) in &filter_data {
         filter.add_pattern(pattern);
     }
-    filter.set_name("All Supported");
+    filter.set_name(Some("All Supported"));
     dialog.add_filter(&filter);
 
     // Add a filter for each supported type individually
     for &(pattern, name) in &filter_data {
         let filter = FileFilter::new();
         filter.add_pattern(pattern);
-        filter.set_name(name);
+        filter.set_name(Some(name));
         dialog.add_filter(&filter);
     }
 
     // Add a (not) filter that lets anything through
     let filter = FileFilter::new();
     filter.add_pattern("*");
-    filter.set_name("All Files");
+    filter.set_name(Some("All Files"));
     dialog.add_filter(&filter);
 
     if ResponseType::from(dialog.run()) == ResponseType::Ok {
@@ -92,7 +92,7 @@ pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window)
 
     let filter = FileFilter::new();
     filter.add_pattern("*.png");
-    filter.set_name("PNG files (*.png)");
+    filter.set_name(Some("PNG files (*.png)"));
     dialog.add_filter(&filter);
 
     if let Some(anal) = ac.get_sounding_for_display() {

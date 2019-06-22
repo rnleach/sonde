@@ -2,7 +2,7 @@ use crate::{
     coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect},
     gui::AppContext,
 };
-use cairo::{Context, Format, ImageSurface, Matrix, MatrixTrait};
+use cairo::{Context, Format, ImageSurface, Matrix};
 use gtk::{prelude::*, DrawingArea};
 use std::cell::{Cell, RefCell};
 
