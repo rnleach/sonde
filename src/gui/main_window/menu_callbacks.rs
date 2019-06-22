@@ -24,10 +24,7 @@ pub fn open_many_callback(mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
 fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multiple: bool) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
-    dialog.add_buttons(&[
-        ("Open", ResponseType::Ok.into()),
-        ("Cancel", ResponseType::Cancel.into()),
-    ]);
+    dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
 
     dialog.set_select_multiple(open_multiple);
 
@@ -58,7 +55,7 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
     filter.set_name(Some("All Files"));
     dialog.add_filter(&filter);
 
-    if ResponseType::from(dialog.run()) == ResponseType::Ok {
+    if dialog.run() == ResponseType::Ok {
         if open_multiple {
             let paths: Vec<_> = dialog
                 .get_filenames()
@@ -68,14 +65,12 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
             if let Err(ref err) = load_file::load_multiple(&paths, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
             }
-        } else {
-            if let Some(filename) = dialog.get_filename() {
-                if let Err(ref err) = load_file::load_file(&filename, ac) {
-                    show_error_dialog(&format!("Error loading file: {}", err), win);
-                }
-            } else {
-                show_error_dialog("Could not retrieve file name from dialog.", win);
+        } else if let Some(filename) = dialog.get_filename() {
+            if let Err(ref err) = load_file::load_file(&filename, ac) {
+                show_error_dialog(&format!("Error loading file: {}", err), win);
             }
+        } else {
+            show_error_dialog("Could not retrieve file name from dialog.", win);
         }
     }
 
@@ -85,10 +80,7 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
 pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Save Image"), Some(win), FileChooserAction::Save);
 
-    dialog.add_buttons(&[
-        ("Save", ResponseType::Ok.into()),
-        ("Cancel", ResponseType::Cancel.into()),
-    ]);
+    dialog.add_buttons(&[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
 
     let filter = FileFilter::new();
     filter.add_pattern("*.png");
@@ -119,7 +111,7 @@ pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window)
         }
     }
 
-    if ResponseType::from(dialog.run()) == ResponseType::Ok {
+    if dialog.run() == ResponseType::Ok {
         if let Some(mut filename) = dialog.get_filename() {
             filename.set_extension("png");
             if let Err(err) = save_image(&filename, ac) {
