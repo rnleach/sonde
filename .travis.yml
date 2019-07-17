@@ -12,6 +12,8 @@ addons:
     packages:
     - libgtk-3-dev
     - libjasper-dev
+    - libjasper1
+    - libjasper-runtime
 script:
     - WD="$PWD"
     - cd "$HOME"
