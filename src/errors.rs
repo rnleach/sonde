@@ -7,6 +7,7 @@ pub enum SondeError {
     WidgetLoadError(&'static str),
     TextBufferLoadError(&'static str),
     CairoError(cairo::Status),
+    NoMatchingFileType,
 }
 
 impl Display for SondeError {
@@ -18,6 +19,7 @@ impl Display for SondeError {
                 write!(f, "Could not load buffer for text area with id = {}.", id)
             }
             CairoError(status) => write!(f, "Error with cairo = {:?}.", status),
+            NoMatchingFileType => write!(f, "Unable to find a way to load this file."),
         }
     }
 }

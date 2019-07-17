@@ -423,8 +423,10 @@ impl Drawable for SkewTContext {
 
         let mut result = vec![];
 
-        if let Some(src_desc) = ac.get_source_description() {
-            result.push((src_desc, color));
+        if let Some(anal) = ac.get_sounding_for_display() {
+            if let Some(src_desc) = anal.borrow().sounding().source_description() {
+                result.push((src_desc.to_owned(), color));
+            }
         }
 
         if let Some(anal) = ac.get_sounding_for_display() {
@@ -874,9 +876,9 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     make_heading!(menu, "Parcel Type");
 
     let sfc = RadioMenuItem::new_with_label("Surface");
-    let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, "Mixed Layer");
-    let mu = RadioMenuItem::new_with_label_from_widget(&sfc, "Most Unstable");
-    let con = RadioMenuItem::new_with_label_from_widget(&sfc, "Convective");
+    let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Mixed Layer"));
+    let mu = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Most Unstable"));
+    let con = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Convective"));
 
     let p_type = acp.config.borrow().parcel_type;
     match p_type {

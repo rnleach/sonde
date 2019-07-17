@@ -7,7 +7,7 @@ use crate::{
     errors::SondeError,
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
-        utility::{check_overlap_then_add, plot_curve_from_points},
+        utility::{check_overlap_then_add, draw_horizontal_bars, plot_curve_from_points},
         Drawable, DrawingArgs, SlaveProfileDrawable,
     },
 };
@@ -454,7 +454,7 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         let x0 = bb.lower_left.x;
         let width = bb.width();
 
-        let mut profile = izip!(pres_data, rh_data.iter())
+        let profile = izip!(pres_data, rh_data.iter())
             // Filter out levels with missing pressure and map missing RH to 0%
             .filter_map(|(p, rh)| p.map(|p| (p, rh.unwrap_or(0.0))))
             // Only take up to the highest plottable pressu
@@ -471,71 +471,13 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         let line_width = config.bar_graph_line_width;
         let rgba = config.rh_rgba;
 
-        cr.push_group();
-        cr.set_operator(cairo::Operator::Source);
-        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut previous: Option<ScreenCoords>;
-        let mut curr: Option<ScreenCoords> = None;
-        let mut next: Option<ScreenCoords> = None;
-        loop {
-            previous = curr;
-            curr = next;
-            next = profile.next();
-
-            const XMIN: f64 = 0.0;
-            let xmax: f64;
-            let ymin: f64;
-            let ymax: f64;
-            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
-                // In the middle - most common
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = (n.y - c.y) / 2.0;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
-                // Last point
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = down;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
-                // First point
-                xmax = c.x;
-                let up = (n.y - c.y) / 2.0;
-                let down = up;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(_), None, None) = (previous, curr, next) {
-                // Done - get out of here
-                break;
-            } else if let (None, None, Some(_)) = (previous, curr, next) {
-                // Just getting into the loop - do nothing
-                continue;
-            } else if let (None, None, None) = (previous, curr, next) {
-                return false;
-            } else {
-                // Impossible state
-                unreachable!();
-            }
-
-            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
-            cr.fill_preserve();
-            cr.stroke();
-        }
-
-        cr.pop_group_to_source();
-        cr.paint();
+        draw_horizontal_bars(cr, line_width, rgba, profile);
     } else {
         return false;
     }
     true
 }
 
-// FIXME: factor out common code for drawing bar graphs - applies to cloud profile too.
 fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
@@ -557,7 +499,7 @@ fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
         let x0 = bb.lower_left.x;
         let width = bb.width();
 
-        let mut profile = izip!(pres_data, rh_data.iter())
+        let profile = izip!(pres_data, rh_data.iter())
             // Filter out levels with missing pressure and map missing RH to 0%
             .filter_map(|(p, rh)| p.map(|p| (p, rh.unwrap_or(0.0))))
             // Only take up to the highest plottable pressu
@@ -574,64 +516,7 @@ fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
         let line_width = config.bar_graph_line_width;
         let rgba = config.rh_ice_rgba;
 
-        cr.push_group();
-        cr.set_operator(cairo::Operator::Source);
-        cr.set_line_width(cr.device_to_user_distance(line_width, 0.0).0);
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-
-        let mut previous: Option<ScreenCoords>;
-        let mut curr: Option<ScreenCoords> = None;
-        let mut next: Option<ScreenCoords> = None;
-        loop {
-            previous = curr;
-            curr = next;
-            next = profile.next();
-
-            const XMIN: f64 = 0.0;
-            let xmax: f64;
-            let ymin: f64;
-            let ymax: f64;
-            if let (Some(p), Some(c), Some(n)) = (previous, curr, next) {
-                // In the middle - most common
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = (n.y - c.y) / 2.0;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(p), Some(c), None) = (previous, curr, next) {
-                // Last point
-                xmax = c.x;
-                let down = (c.y - p.y) / 2.0;
-                let up = down;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (None, Some(c), Some(n)) = (previous, curr, next) {
-                // First point
-                xmax = c.x;
-                let up = (n.y - c.y) / 2.0;
-                let down = up;
-                ymin = c.y - down;
-                ymax = c.y + up;
-            } else if let (Some(_), None, None) = (previous, curr, next) {
-                // Done - get out of here
-                break;
-            } else if let (None, None, Some(_)) = (previous, curr, next) {
-                // Just getting into the loop - do nothing
-                continue;
-            } else if let (None, None, None) = (previous, curr, next) {
-                return false;
-            } else {
-                // Impossible state
-                unreachable!();
-            }
-
-            cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
-            cr.fill_preserve();
-            cr.stroke();
-        }
-
-        cr.pop_group_to_source();
-        cr.paint();
+        draw_horizontal_bars(cr, line_width, rgba, profile);
     } else {
         return false;
     }

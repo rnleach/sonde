@@ -99,7 +99,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     v_box.pack_start(&sample_frame, true, true, PADDING);
     v_box.pack_start(&data_frame, true, true, PADDING);
     v_box.pack_start(&overlays_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Option<_>, Adjustment, Option<_>>(None, None);
+    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
     sw.add(&f);
 
     sw

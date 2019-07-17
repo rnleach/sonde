@@ -583,7 +583,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
         for &(ref val, rgba) in lines {
             let show_val = if val.ends_with('\n') {
-                val.trim_right()
+                val.trim_end()
             } else {
                 val
             };

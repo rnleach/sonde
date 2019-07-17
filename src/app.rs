@@ -9,6 +9,7 @@ use crate::{
         HodoContext, PlotContext, PlotContextExt, SkewTContext,
     },
 };
+use gtk::BuilderExtManual;
 use itertools::izip;
 use metfor::Quantity;
 use sounding_analysis::{self, Analysis};
@@ -29,11 +30,6 @@ pub type AppContextPointer = Rc<AppContext>;
 pub struct AppContext {
     // Configuration, style and layout settings.
     pub config: RefCell<Config>,
-
-    // Source description is used in the legend if it is present. Not all file formats include a
-    // station name or model name or base time. In bufkit files this is usually part of the file
-    // name. So whatever function loads a sounding should set this to reflect where it came from.
-    source_description: RefCell<Option<String>>,
 
     // Lists of soundings and currently displayed one
     list: RefCell<Vec<Rc<RefCell<Analysis>>>>,
@@ -70,7 +66,6 @@ impl AppContext {
 
         Rc::new(AppContext {
             config: RefCell::new(Config::default()),
-            source_description: RefCell::new(None),
             list: RefCell::new(vec![]),
             analyzed_count: Cell::new(0),
             currently_displayed_index: Cell::new(0),
@@ -97,10 +92,14 @@ impl AppContext {
     where
         I: Iterator<Item = Analysis>,
     {
-        *acp.list.borrow_mut() = src.map(RefCell::new).map(Rc::new).collect();
+        // Copy in the list and make sure it is sorted.
+        {
+            let list: &mut Vec<_> = &mut acp.list.borrow_mut();
+            *list = src.map(RefCell::new).map(Rc::new).collect();
+            list.sort_by_key(|anal| anal.borrow().sounding().valid_time());
+        }
 
         acp.currently_displayed_index.set(0);
-        *acp.source_description.borrow_mut() = None;
 
         let mut skew_t_xy_envelope = XYRect {
             lower_left: XYCoords { x: 0.45, y: 0.45 },
@@ -374,19 +373,6 @@ impl AppContext {
             .borrow()
             .get(self.currently_displayed_index.get())
             .map(Rc::clone)
-    }
-
-    /// Set the source name
-    pub fn set_source_description(&self, new_name: Option<String>) {
-        *self.source_description.borrow_mut() = new_name;
-    }
-
-    /// Get the source name
-    pub fn get_source_description(&self) -> Option<String> {
-        match *self.source_description.borrow() {
-            Some(ref name) => Some(name.clone()),
-            None => None,
-        }
     }
 
     /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.

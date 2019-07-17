@@ -888,7 +888,6 @@ lazy_static! {
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
-    use crate::app::config::{ISENTROPS_TOP_P, MAXP, POINTS_PER_ISENTROP};
     use metfor::temperature_from_theta;
     use std::f64;
 

@@ -105,7 +105,7 @@ macro_rules! build_config_color {
 
         // Layout
         hbox.pack_end(&color, false, true, PADDING);
-        hbox.pack_start(&gtk::Label::new($label), false, true, PADDING);
+        hbox.pack_start(&gtk::Label::new(Some($label)), false, true, PADDING);
         $v_box.pack_start(&hbox, false, true, PADDING);
     };
 }

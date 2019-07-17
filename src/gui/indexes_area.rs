@@ -3,13 +3,13 @@ use crate::{
     errors::SondeError,
 };
 use gtk::{prelude::*, TextTag, TextView};
-use metfor::{Fahrenheit, Feet, Inches, Quantity};
+use metfor::{Fahrenheit, Inches, Quantity};
 use sounding_analysis::{partition_cape, Analysis};
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
         if let Some(tag_table) = $tb.get_tag_table() {
-            let tag = TextTag::new("default");
+            let tag = TextTag::new(Some("default"));
 
             tag.set_property_font(Some("courier bold 12"));
 
@@ -37,7 +37,7 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         make_default_tag!(tb);
         set_text!(tb, "No data loaded");
 
-        tb.create_mark("scroll_mark", &tb.get_start_iter(), true);
+        tb.create_mark(Some("scroll_mark"), &tb.get_start_iter(), true);
 
         Ok(())
     } else {
@@ -61,7 +61,6 @@ pub fn update_indexes_area(ac: &AppContext) {
             let anal = &anal.borrow();
             let text = &mut String::with_capacity(4096);
 
-            push_header(text, ac.get_source_description(), anal);
             push_profile_indexes(text, anal);
             push_parcel_indexes(text, anal);
             push_fire_indexes(text, anal);
@@ -85,30 +84,6 @@ pub fn update_indexes_area(ac: &AppContext) {
                 }
             }
         }
-    }
-}
-
-#[inline]
-fn push_header(buffer: &mut String, source_desc: Option<String>, anal: &Analysis) {
-    if let Some(desc) = source_desc {
-        buffer.push_str(&desc);
-        buffer.push('\n');
-    }
-
-    if let Some(vt) = anal.sounding().valid_time() {
-        buffer.push_str(&format!("     Valid: {}Z\n", vt));
-    }
-
-    let station_info = anal.sounding().station_info();
-    if let Some((lat, lon)) = station_info.location() {
-        buffer.push_str(&format!("(lat, lon): ({:.6},{:.6})\n", lat, lon));
-    }
-    if let Some(elev_m) = station_info.elevation().into_option() {
-        buffer.push_str(&format!(
-            " Elevation: {:.0}m ({:.0}ft)\n",
-            elev_m.unpack(),
-            Feet::from(elev_m).unpack(),
-        ));
     }
 }
 
@@ -295,7 +270,7 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
 
     let empty = " - \n";
 
-    buffer.push_str("Experimental\n");
+    buffer.push_str("\nExperimental\n");
     buffer.push_str("----------------------------------------------------\n");
     push_fire_index!(buffer, "Conv. T def.", anal, convective_deficit,"{:>9.1} \u{00b0}C\n", empty);
     push_fire_index!(buffer, "CAPE ratio  ", anal, cape_ratio,        "{:>12.2}\n", empty);

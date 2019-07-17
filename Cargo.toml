@@ -6,13 +6,13 @@ edition = "2018"
 publish = false
 
 [dependencies]
-bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.1.0"}
-cairo-rs = { version = "^0.6", features = ["png"] }
+bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.3"}
+cairo-rs = { version = "^0.7", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "0.3.8"
-gdk = "^0.10"
-glib = "^0.7"
-gtk = { version = "^0.6", features = ["v3_18"] }
+gdk = "^0.11"
+glib = "^0.8"
+gtk = { version = "^0.7", features = ["v3_18"] }
 itertools = "^0.8"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
@@ -21,9 +21,9 @@ optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
-sounding-base = "^0.10.0"
-sounding-bufkit = {git = "https://github.com/rnleach/sounding-bufkit.git", tag = "0.10.3"}
-sounding-analysis = {git = "https://github.com/rnleach/sounding-analysis.git", tag = "0.10.5"}
+sounding-base = "0.11.0"
+sounding-bufkit = "0.11.0"
+sounding-analysis = "0.11.0"
 threadpool = "1.7.1"
 
 [profile.release]
