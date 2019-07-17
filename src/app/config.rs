@@ -13,6 +13,7 @@ pub enum ParcelType {
     Surface,
     MixedLayer,
     MostUnstable,
+    Effective,
     Convective,
 }
 

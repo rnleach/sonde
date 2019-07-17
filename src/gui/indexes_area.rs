@@ -216,6 +216,7 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     let ml = anal.mixed_layer_parcel_analysis();
     let mu = anal.most_unstable_parcel_analysis();
     let con = anal.convective_parcel_analysis();
+    let eff = anal.effective_parcel_analysis();
 
     let empty = "     -";
     buffer.push_str("Parcel          CAPE   CIN NCAPE  Hail    LI\n");
@@ -225,6 +226,7 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     parcel_index_row!(buffer, "Mixed Layer   ", ml,  empty);
     parcel_index_row!(buffer, "Most Unstable ", mu,  empty);
     parcel_index_row!(buffer, "Convective    ", con, empty);
+    parcel_index_row!(buffer, "Effective     ", eff, empty);
     buffer.push('\n');
     buffer.push_str("Parcel           LCL    LCL   LFC    EL     EL    EL\n");
     buffer.push_str("                 hPa  m AGL   hPa   hPa  m ASL     C\n");
@@ -233,6 +235,7 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     parcel_level_row!(buffer, "Mixed Layer   ", ml,  empty);
     parcel_level_row!(buffer, "Most Unstable ", mu,  empty);
     parcel_level_row!(buffer, "Convective    ", con, empty);
+    parcel_level_row!(buffer, "Effective     ", eff, empty);
 }
 
 #[inline]

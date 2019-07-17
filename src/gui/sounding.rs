@@ -879,6 +879,7 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
     let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Mixed Layer"));
     let mu = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Most Unstable"));
     let con = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Convective"));
+    let eff = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Effective"));
 
     let p_type = acp.config.borrow().parcel_type;
     match p_type {
@@ -886,6 +887,7 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
         MixedLayer => mxd.set_active(true),
         MostUnstable => mu.set_active(true),
         Convective => con.set_active(true),
+        Effective => eff.set_active(true),
     }
 
     fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
@@ -916,9 +918,15 @@ fn build_overlays_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) 
         handle_toggle(button, Convective, &ac);
     });
 
+    let ac = Rc::clone(acp);
+    eff.connect_toggled(move |button| {
+        handle_toggle(button, Effective, &ac);
+    });
+
     menu.append(&sfc);
     menu.append(&mxd);
     menu.append(&mu);
+    menu.append(&eff);
     menu.append(&con);
 
     menu.append(&SeparatorMenuItem::new());
@@ -1073,6 +1081,7 @@ fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
             MixedLayer => anal.mixed_layer_parcel_analysis(),
             MostUnstable => anal.most_unstable_parcel_analysis(),
             Convective => anal.convective_parcel_analysis(),
+            Effective => anal.effective_parcel_analysis(),
         }
         .and_then(|p_analysis| {
             let color = config.parcel_rgba;
