@@ -1,10 +1,11 @@
 use crate::{
+    analysis::Analysis,
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
 use gtk::{prelude::*, TextTag, TextView};
 use metfor::{Fahrenheit, Inches, Quantity};
-use sounding_analysis::{partition_cape, Analysis};
+use sounding_analysis::experimental::fire::partition_cape;
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -149,9 +150,6 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
 
     buffer.push_str("Index        Value\n");
     buffer.push_str("----------------------------------------------------\n");
-    push_prof!(anal, buffer, "SWeT                ", swet,               "{:>10.0}",                                                 empty_val);
-    push_prof!(anal, buffer, "K                   ", k_index,            "{:>8.0}\u{00b0}C",                                         empty_val);
-    push_prof!(anal, buffer, "Total Totals        ", total_totals,       "{:>10.0}",                                                 empty_val);
     push_prof!(anal, buffer, "DCAPE               ", dcape,              "{:>5.0} J/kg",                                             empty_val);
     push_prof!(anal, buffer, "PWAT                ", pwat,               "{:>7.0} mm",                  mm,   " ({:>4.2} in)",       empty_val);
     push_prof!(anal, buffer, "Downrush T          ", downrush_t,         "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)", empty_val);
@@ -191,7 +189,6 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
             push_var!($buf, $opt_pcl_anal, cin,          " {:>5.0}", $empty);
             push_var!($buf, $opt_pcl_anal, ncape,        " {:>5.2}", $empty);
             push_var!($buf, $opt_pcl_anal, hail_cape,    " {:>5.0}", $empty);
-            push_var!($buf, $opt_pcl_anal, lifted_index, " {:>5.1}", $empty);
 
             $buf.push('\n');
         }
@@ -219,8 +216,8 @@ fn push_parcel_indexes(buffer: &mut String, anal: &Analysis) {
     let eff = anal.effective_parcel_analysis();
 
     let empty = "     -";
-    buffer.push_str("Parcel          CAPE   CIN NCAPE  Hail    LI\n");
-    buffer.push_str("                J/Kg  J/Kg        CAPE     C\n");
+    buffer.push_str("Parcel          CAPE   CIN NCAPE  Hail\n");
+    buffer.push_str("                J/Kg  J/Kg        CAPE\n");
     buffer.push_str("----------------------------------------------------\n");
     parcel_index_row!(buffer, "Surface       ", sfc, empty);
     parcel_index_row!(buffer, "Mixed Layer   ", ml,  empty);

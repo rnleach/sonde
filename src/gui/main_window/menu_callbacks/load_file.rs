@@ -1,4 +1,5 @@
 use crate::{
+    analysis::Analysis,
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
@@ -7,8 +8,7 @@ use chrono::naive::NaiveDate;
 use itertools::izip;
 use metfor::{Celsius, HectoPascal, Kelvin, Knots, Meters, WindSpdDir};
 use optional::Optioned;
-use sounding_analysis::Analysis;
-use sounding_base::{Sounding, StationInfo};
+use sounding_analysis::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
 use std::{error::Error, path::PathBuf, rc::Rc};
 
@@ -79,7 +79,7 @@ fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
         load_fns.swap(0, 1);
     }
 
-    for load_fn in load_fns.into_iter() {
+    for load_fn in load_fns.iter() {
         match load_fn(path) {
             Ok(data_vec) => return Ok(data_vec),
             Err(_) => continue,
@@ -91,7 +91,11 @@ fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
 
 fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let file = BufkitFile::load(path)?;
-    let data = file.data()?.into_iter().collect();
+    let data = file
+        .data()?
+        .into_iter()
+        .map(|(snd, provider_anal)| Analysis::new(snd).with_provider_analysis(provider_anal))
+        .collect();
     Ok(data)
 }
 

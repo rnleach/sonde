@@ -1,6 +1,7 @@
 //! Module for storing and manipulating the application state. This state is globally shared
 //! via smart pointers.
 use crate::{
+    analysis::Analysis,
     coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect},
     errors::SondeError,
     gui::{
@@ -12,8 +13,7 @@ use crate::{
 use gtk::BuilderExtManual;
 use itertools::izip;
 use metfor::Quantity;
-use sounding_analysis::{self, Analysis};
-use sounding_base::DataRow;
+use sounding_analysis::{self, DataRow};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

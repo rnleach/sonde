@@ -15,7 +15,7 @@ use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{Knots, Quantity, WindSpdDir};
-use sounding_base::DataRow;
+use sounding_analysis::DataRow;
 use std::rc::Rc;
 
 pub struct WindSpeedContext {

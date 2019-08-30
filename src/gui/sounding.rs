@@ -1,4 +1,5 @@
 use crate::{
+    analysis::Analysis,
     app::{
         config::{self, ParcelType, Rgba},
         AppContext, AppContextPointer,
@@ -27,8 +28,7 @@ use log::warn;
 use metfor::{
     Celsius, CelsiusDiff, Fahrenheit, Feet, HectoPascal, JpKg, Knots, Quantity, WindSpdDir,
 };
-use sounding_analysis::{self, Analysis, Parcel, ParcelAnalysis, ParcelProfile};
-use sounding_base::DataRow;
+use sounding_analysis::{self, DataRow, Parcel, ParcelAscentAnalysis, ParcelProfile};
 use std::rc::Rc;
 
 pub struct SkewTContext {
@@ -1259,7 +1259,7 @@ fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
     }
 }
 
-fn draw_cape_cin_fill(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAnalysis) {
+fn draw_cape_cin_fill(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAscentAnalysis) {
     let cape = match parcel_analysis.cape().into_option() {
         Some(cape) => cape,
         None => return,
@@ -1407,7 +1407,7 @@ fn draw_downburst(args: DrawingArgs<'_, '_>, sounding_analysis: &Analysis) {
 }
 
 fn gather_wind_data(
-    snd: &::sounding_base::Sounding,
+    snd: &::sounding_analysis::Sounding,
     barb_config: &WindBarbConfig,
     args: DrawingArgs<'_, '_>,
 ) -> Vec<WindBarbData> {

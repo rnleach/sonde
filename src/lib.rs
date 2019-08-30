@@ -1,6 +1,9 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
+// Module for aggregating analysis information
+mod analysis;
+
 // Module for maintaining application state
 mod app;
 use crate::app::AppContext;

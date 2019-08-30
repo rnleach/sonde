@@ -15,8 +15,7 @@ use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{PaPS, Quantity};
-use sounding_analysis::{relative_humidity, relative_humidity_ice};
-use sounding_base::DataRow;
+use sounding_analysis::{relative_humidity, relative_humidity_ice, DataRow};
 use std::{cell::Cell, rc::Rc};
 
 #[derive(Debug)]

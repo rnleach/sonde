@@ -16,7 +16,7 @@ use crate::{
 use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use sounding_base::DataRow;
+use sounding_analysis::DataRow;
 use std::rc::Rc;
 
 pub struct CloudContext {

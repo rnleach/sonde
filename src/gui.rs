@@ -16,9 +16,8 @@ use gtk::{prelude::*, DrawingArea};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
     self, freezing_levels, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft,
-    wet_bulb_zero_levels, Layer,
+    wet_bulb_zero_levels, DataRow, Layer,
 };
-use sounding_base::DataRow;
 
 mod control_area;
 mod hodograph;
