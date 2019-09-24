@@ -13,6 +13,7 @@ Cargo.lock
 \#*.glade\#
 .buildconfig
 *.swp
+Session.vim
 
 //
 // OS specific
