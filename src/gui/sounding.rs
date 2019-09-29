@@ -1,7 +1,8 @@
 use crate::{
     analysis::Analysis,
     app::{
-        config::{self, ParcelType, Rgba},
+        config::{self, Config, ParcelType, Rgba},
+        sample::{create_sample_plume, create_sample_sounding, Sample},
         AppContext, AppContextPointer,
     },
     coords::{
@@ -28,7 +29,10 @@ use log::warn;
 use metfor::{
     Celsius, CelsiusDiff, Fahrenheit, Feet, HectoPascal, JpKg, Knots, Quantity, WindSpdDir,
 };
-use sounding_analysis::{self, DataRow, Parcel, ParcelAscentAnalysis, ParcelProfile};
+use sounding_analysis::{
+    self, experimental::fire::PlumeAscentAnalysis, DataRow, Parcel, ParcelAscentAnalysis,
+    ParcelProfile,
+};
 use std::rc::Rc;
 
 pub struct SkewTContext {
@@ -81,7 +85,7 @@ impl SkewTContext {
     }
 
     /***********************************************************************************************
-     * Support methods for drawing the background..
+     * Support methods for drawing the background.
      **********************************************************************************************/
     fn draw_clear_background(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
@@ -163,6 +167,187 @@ impl SkewTContext {
         cr.close_path();
         cr.fill();
     }
+
+    /***********************************************************************************************
+     *  Support methods for creating sample readout text.
+     **********************************************************************************************/
+    fn create_active_readout_text_sounding(
+        data: &DataRow,
+        anal: &Analysis,
+        pcl_anal: &ParcelAscentAnalysis,
+        config: &Config,
+        results: &mut Vec<(String, Rgba)>,
+    ) {
+        use metfor::rh;
+
+        let default_color = config.label_rgba;
+
+        let t_c = data.temperature;
+        let dp_c = data.dew_point;
+        let pres = data.pressure;
+        let wind = data.wind;
+        let hgt_asl = data.height;
+        let omega = data.pvv;
+        let elevation = anal.sounding().station_info().elevation();
+
+        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
+            if let Some(t_c) = t_c.into_option() {
+                let mut line = String::with_capacity(10);
+                line.push_str(&format!("{:.0}\u{00B0}C", t_c.unpack().round()));
+                if dp_c.is_none() && omega.is_none() {
+                    line.push('\n');
+                } else if dp_c.is_none() {
+                    line.push(' ');
+                }
+                results.push((line, config.temperature_rgba));
+            }
+            if let Some(dp_c) = dp_c.into_option() {
+                if t_c.is_some() {
+                    results.push(("/".to_owned(), default_color));
+                }
+                let mut line = String::with_capacity(10);
+                line.push_str(&format!("{:.0}\u{00B0}C", dp_c.unpack().round()));
+                if t_c.is_none() && omega.is_none() {
+                    line.push('\n');
+                } else {
+                    line.push(' ');
+                }
+                results.push((line, config.dew_point_rgba));
+            }
+
+            if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
+                if let Some(rh) = rh(t_c, dp_c) {
+                    let mut line = String::with_capacity(5);
+                    line.push_str(&format!(" {:.0}%", 100.0 * rh));
+                    if omega.is_none() {
+                        line.push('\n');
+                    } else {
+                        line.push(' ');
+                    }
+                    results.push((line, config.rh_rgba));
+                }
+            }
+
+            if let Some(omega) = omega.into_option() {
+                results.push((
+                    format!(" {:.1} Pa/s\n", (omega.unpack() * 10.0).round() / 10.0),
+                    config.omega_rgba,
+                ));
+            }
+        }
+
+        if pres.is_some() || wind.is_some() {
+            if let Some(pres) = pres.into_option() {
+                let mut line = String::with_capacity(10);
+                line.push_str(&format!("{:.0}hPa", pres.unpack()));
+                if wind.is_none() {
+                    line.push('\n');
+                } else {
+                    line.push(' ');
+                }
+                results.push((line, config.isobar_rgba));
+            }
+            if let Some(wind) = wind.into_option() {
+                results.push((
+                    format!(
+                        "{:03.0} {:02.0}KT\n",
+                        wind.direction,
+                        wind.speed.unpack().round()
+                    ),
+                    config.wind_rgba,
+                ));
+            }
+        }
+
+        if let Some(hgt) = hgt_asl.into_option() {
+            let color = config.active_readout_line_rgba;
+
+            results.push((
+                format!(
+                    "ASL: {:5.0}m ({:5.0}ft)\n",
+                    hgt.unpack().round(),
+                    Feet::from(hgt).unpack().round()
+                ),
+                color,
+            ));
+        }
+
+        if elevation.is_some() && hgt_asl.is_some() {
+            if let (Some(elev), Some(hgt)) = (elevation.into_option(), hgt_asl.into_option()) {
+                let color = config.active_readout_line_rgba;
+                let mut line = String::with_capacity(128);
+                line.push_str(&format!(
+                    "AGL: {:5.0}m ({:5.0}ft)\n",
+                    (hgt - elev).unpack().round(),
+                    Feet::from(hgt - elev).unpack().round(),
+                ));
+                results.push((line, color));
+            }
+        }
+
+        if config.show_sample_parcel_profile {
+            let mut line = String::with_capacity(32);
+            let color = config.parcel_positive_rgba;
+            if let Some(cape) = pcl_anal.cape().into_option() {
+                line.push_str(&format!("CAPE: {:.0} J/Kg ", cape.unpack()));
+            } else {
+                line.push_str("CAPE: 0 J/Kg ");
+            }
+            results.push((line, color));
+
+            let mut line = String::with_capacity(32);
+            let color = config.parcel_negative_rgba;
+            if let Some(cin) = pcl_anal.cin().into_option() {
+                line.push_str(&format!("CIN: {:.0} J/Kg\n", cin.unpack()));
+            } else {
+                line.push_str("CIN: 0 J/Kg\n");
+            }
+            results.push((line, color));
+        }
+    }
+
+    fn create_active_readout_text_plume(
+        parcel: &Parcel,
+        anal: &Analysis,
+        plume_anal: &PlumeAscentAnalysis,
+        config: &Config,
+        results: &mut Vec<(String, Rgba)>,
+    ) {
+        let default_color = config.label_rgba;
+
+        let t_c = parcel.temperature;
+        let starting_t_c = anal
+            .starting_parcel_for_blow_up_anal()
+            .map(|pcl| pcl.temperature);
+        let delta_t_c = starting_t_c.map(|stc| t_c - stc);
+
+        if let Some(delta_t) = delta_t_c {
+            let mut line = String::with_capacity(10);
+            line.push_str(&format!("∆T {:.1}\u{00B0}C\n", delta_t.unpack()));
+            results.push((line, default_color));
+        }
+
+        if config.show_sample_parcel_profile {
+            let mut line = String::with_capacity(32);
+            let color = config.parcel_positive_rgba;
+            if let Some(cape) = plume_anal.net_cape {
+                line.push_str(&format!("Net CAPE: {:.0} J/Kg\n", cape.unpack()));
+            } else {
+                line.push_str("Net CAPE: 0 J/Kg\n");
+            }
+            results.push((line, color));
+            let mut line = String::with_capacity(32);
+            if let Some(el) = plume_anal.el_height {
+                line.push_str(&format!("EL: {:.0} m\n", el.unpack()));
+            }
+            results.push((line, default_color));
+            let mut line = String::with_capacity(32);
+            if let Some(mh) = plume_anal.max_height {
+                line.push_str(&format!("Max Height: {:.0} m\n", mh.unpack()));
+            }
+            results.push((line, default_color));
+        }
+    }
 }
 
 impl HasGenericContext for SkewTContext {
@@ -174,7 +359,7 @@ impl HasGenericContext for SkewTContext {
 impl PlotContextExt for SkewTContext {}
 
 impl Drawable for SkewTContext {
-    /********************** *************************************************************************
+    /***********************************************************************************************
      * Initialization
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
@@ -498,9 +683,7 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
-        use metfor::rh;
-
+    fn create_active_readout_text(vals: &Sample, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
         let anal = if let Some(anal) = ac.get_sounding_for_display() {
@@ -510,175 +693,32 @@ impl Drawable for SkewTContext {
         };
 
         let anal = anal.borrow();
-
         let config = ac.config.borrow();
 
-        let default_color = config.label_rgba;
-
-        let t_c = vals.temperature;
-        let dp_c = vals.dew_point;
-        let pres = vals.pressure;
-        let wind = vals.wind;
-        let hgt_asl = vals.height;
-        let omega = vals.pvv;
-        let elevation = anal.sounding().station_info().elevation();
-
-        if t_c.is_some() || dp_c.is_some() || omega.is_some() {
-            if let Some(t_c) = t_c.into_option() {
-                let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}\u{00B0}C", t_c.unpack().round()));
-                if dp_c.is_none() && omega.is_none() {
-                    line.push('\n');
-                } else if dp_c.is_none() {
-                    line.push(' ');
-                }
-                results.push((line, config.temperature_rgba));
+        match vals {
+            Sample::Sounding {
+                ref data,
+                ref pcl_anal,
+            } => {
+                Self::create_active_readout_text_sounding(
+                    data,
+                    &anal,
+                    pcl_anal,
+                    &config,
+                    &mut results,
+                );
             }
-            if let Some(dp_c) = dp_c.into_option() {
-                if t_c.is_some() {
-                    results.push(("/".to_owned(), default_color));
-                }
-                let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}\u{00B0}C", dp_c.unpack().round()));
-                if t_c.is_none() && omega.is_none() {
-                    line.push('\n');
-                } else {
-                    line.push(' ');
-                }
-                results.push((line, config.dew_point_rgba));
-            }
-
-            if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
-                if let Some(rh) = rh(t_c, dp_c) {
-                    let mut line = String::with_capacity(5);
-                    line.push_str(&format!(" {:.0}%", 100.0 * rh));
-                    if omega.is_none() {
-                        line.push('\n');
-                    } else {
-                        line.push(' ');
-                    }
-                    results.push((line, config.rh_rgba));
-                }
-            }
-
-            if let Some(omega) = omega.into_option() {
-                results.push((
-                    format!(" {:.1} Pa/s\n", (omega.unpack() * 10.0).round() / 10.0),
-                    config.omega_rgba,
-                ));
-            }
+            Sample::FirePlume {
+                parcel, plume_anal, ..
+            } => Self::create_active_readout_text_plume(
+                &parcel,
+                &anal,
+                &plume_anal,
+                &config,
+                &mut results,
+            ),
+            Sample::None => {}
         }
-
-        if pres.is_some() || wind.is_some() {
-            if let Some(pres) = pres.into_option() {
-                let mut line = String::with_capacity(10);
-                line.push_str(&format!("{:.0}hPa", pres.unpack()));
-                if wind.is_none() {
-                    line.push('\n');
-                } else {
-                    line.push(' ');
-                }
-                results.push((line, config.isobar_rgba));
-            }
-            if let Some(wind) = wind.into_option() {
-                results.push((
-                    format!(
-                        "{:03.0} {:02.0}KT\n",
-                        wind.direction,
-                        wind.speed.unpack().round()
-                    ),
-                    config.wind_rgba,
-                ));
-            }
-        }
-
-        if let Some(hgt) = hgt_asl.into_option() {
-            let color = config.active_readout_line_rgba;
-
-            results.push((
-                format!(
-                    "ASL: {:5.0}m ({:5.0}ft)\n",
-                    hgt.unpack().round(),
-                    Feet::from(hgt).unpack().round()
-                ),
-                color,
-            ));
-        }
-
-        if elevation.is_some() && hgt_asl.is_some() {
-            if let (Some(elev), Some(hgt)) = (elevation.into_option(), hgt_asl.into_option()) {
-                let color = config.active_readout_line_rgba;
-                let mut line = String::with_capacity(128);
-                line.push_str(&format!(
-                    "AGL: {:5.0}m ({:5.0}ft)\n",
-                    (hgt - elev).unpack().round(),
-                    Feet::from(hgt - elev).unpack().round(),
-                ));
-                results.push((line, color));
-            }
-        }
-
-        if config.show_sample_parcel_profile {
-            if let Some(pcl) = Parcel::from_datarow(*vals) {
-                if let Ok(pcl_anal) = sounding_analysis::lift_parcel(pcl, anal.sounding()) {
-                    let mut line = String::with_capacity(32);
-                    let color = config.parcel_positive_rgba;
-                    if let Some(cape) = pcl_anal.cape().into_option() {
-                        line.push_str(&format!("CAPE: {:.0} J/Kg ", cape.unpack()));
-                    } else {
-                        line.push_str("CAPE: 0 J/Kg ");
-                    }
-                    results.push((line, color));
-
-                    let mut line = String::with_capacity(32);
-                    let color = config.parcel_negative_rgba;
-                    if let Some(cin) = pcl_anal.cin().into_option() {
-                        line.push_str(&format!("CIN: {:.0} J/Kg\n", cin.unpack()));
-                    } else {
-                        line.push_str("CIN: 0 J/Kg\n");
-                    }
-                    results.push((line, color));
-                }
-            };
-        }
-
-        // Sample the screen coords. Leave these commented out for debugging later possibly.
-        // {
-        //     use app::PlotContext;
-        //     if let Some(pnt) = _ac.skew_t.last_cursor_position_skew_t {
-        //         let mut line = String::with_capacity(128);
-        //         line.push_str(&format!(
-        //             "col: {:3.0} row: {:3.0}",
-        //             pnt.col,
-        //             pnt.row
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt = _ac.skew_t.convert_device_to_screen(pnt);
-        //         line.push_str(&format!(
-        //             "screen x: {:.3} y: {:.3}",
-        //             pnt.x,
-        //             pnt.y
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt2 = _ac.skew_t.convert_screen_to_xy(pnt);
-        //         line.push_str(&format!(
-        //             "x: {:.3} y: {:.3}",
-        //             pnt2.x,
-        //             pnt2.y
-        //         ));
-        //         results.push(line);
-        //         let mut line = String::with_capacity(128);
-        //         let pnt = _ac.skew_t.convert_screen_to_tp(pnt);
-        //         line.push_str(&format!(
-        //             "t: {:3.0} p: {:3.0}",
-        //             pnt.temperature,
-        //             pnt.pressure
-        //         ));
-        //         results.push(line);
-        //     }
-        // }
 
         results
     }
@@ -689,14 +729,25 @@ impl Drawable for SkewTContext {
         if config.show_active_readout {
             self.draw_active_sample(args);
 
-            if let Some(sample_parcel) = get_sample_parcel(args) {
-                if config.show_sample_parcel_profile {
-                    draw_sample_parcel_profile(args, sample_parcel);
+            match *args.ac.get_sample() {
+                Sample::Sounding { data, ref pcl_anal } => {
+                    if let Some(sample_parcel) = Parcel::from_datarow(data) {
+                        if config.show_sample_mix_down {
+                            draw_sample_mix_down_profile(args, sample_parcel);
+                        }
+                    }
+
+                    if config.show_sample_parcel_profile {
+                        draw_sample_parcel_profile(args, &pcl_anal);
+                    }
                 }
 
-                if config.show_sample_mix_down {
-                    draw_sample_mix_down_profile(args, sample_parcel);
+                Sample::FirePlume { ref profile, .. } => {
+                    if config.show_sample_parcel_profile {
+                        draw_plume_parcel_profile(args, profile);
+                    }
                 }
+                Sample::None => {}
             }
         }
     }
@@ -795,7 +846,7 @@ impl Drawable for SkewTContext {
                 crate::gui::draw_all(&ac);
                 crate::gui::text_area::update_text_highlight(&ac);
 
-                ac.set_sample(None);
+                ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
             let position: DeviceCoords = event.get_position().into();
@@ -803,13 +854,46 @@ impl Drawable for SkewTContext {
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
 
-            let sample = ac.get_sounding_for_display().and_then(|anal| {
-                sounding_analysis::linear_interpolate_sounding(
-                    anal.borrow().sounding(),
-                    tp_position.pressure,
-                )
-                .ok()
-            });
+            let sample = if let Some(max_p) = ac
+                .get_sounding_for_display()
+                .map(|anal| anal.borrow().max_pressure())
+            {
+                if tp_position.pressure <= max_p {
+                    // This is a sample from some level in the sounding.
+                    ac.get_sounding_for_display()
+                        .and_then(|anal| {
+                            sounding_analysis::linear_interpolate_sounding(
+                                anal.borrow().sounding(),
+                                tp_position.pressure,
+                            )
+                            .ok()
+                            .map(|data| create_sample_sounding(data, &anal.borrow()))
+                        })
+                        .unwrap_or(Sample::None)
+                } else {
+                    // We are below the lowest level in the sounding, so lets generate a plume
+                    // parcel!
+                    ac.get_sounding_for_display()
+                        .and_then(|anal| {
+                            let anal = anal.borrow();
+
+                            anal.starting_parcel_for_blow_up_anal()
+                                .filter(|pcl| pcl.temperature < tp_position.temperature)
+                                .map(|parcel| {
+                                    create_sample_plume(
+                                        Parcel {
+                                            temperature: tp_position.temperature,
+                                            ..parcel
+                                        },
+                                        &anal,
+                                    )
+                                })
+                        })
+                        .unwrap_or(Sample::None)
+                }
+            } else {
+                Sample::None
+            };
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
@@ -1721,29 +1805,19 @@ fn get_wind_barb_center(
 /**************************************************************************************************
  *                              Active Readout Layer Drawing
  **************************************************************************************************/
-fn draw_sample_parcel_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
-    let ac = args.ac;
-    let config = ac.config.borrow();
-
-    let anal = if let Some(anal) = ac.get_sounding_for_display() {
-        anal
-    } else {
-        return;
-    };
-
-    let anal = anal.borrow();
-    let sndg = anal.sounding();
+fn draw_sample_parcel_profile(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAscentAnalysis) {
+    let config = args.ac.config.borrow();
 
     // build the parcel profile
-    let parcel_analysis = sounding_analysis::lift_parcel(sample_parcel, sndg);
-    let profile = if let Ok(ref parcel_analysis) = parcel_analysis {
-        parcel_analysis.profile()
-    } else {
-        return;
-    };
+    let profile = parcel_analysis.profile();
+    let color = config.sample_parcel_profile_color;
+    draw_parcel_profile(args, &profile, color);
+}
+
+fn draw_plume_parcel_profile(args: DrawingArgs<'_, '_>, profile: &ParcelProfile) {
+    let config = args.ac.config.borrow();
 
     let color = config.sample_parcel_profile_color;
-
     draw_parcel_profile(args, &profile, color);
 }
 
@@ -1813,8 +1887,4 @@ fn draw_parcel_profile(args: DrawingArgs<'_, '_>, profile: &ParcelProfile, line_
     });
 
     plot_dashed_curve_from_points(cr, line_width, line_rgba, profile_data);
-}
-
-fn get_sample_parcel(args: DrawingArgs<'_, '_>) -> Option<Parcel> {
-    args.ac.get_sample().and_then(Parcel::from_datarow)
 }

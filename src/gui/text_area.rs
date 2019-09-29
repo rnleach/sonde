@@ -1,5 +1,5 @@
 use crate::{
-    app::{AppContext, AppContextPointer},
+    app::{sample::Sample, AppContext, AppContextPointer},
     errors::SondeError,
 };
 use gtk::{prelude::*, TextTag, TextView};
@@ -179,10 +179,15 @@ pub fn update_text_highlight(ac: &AppContext) {
         return;
     }
 
-    let tp = if let Some(sample_p) = ac.get_sample().and_then(|s| s.pressure.into_option()) {
-        sample_p
-    } else {
-        return;
+    let tp = match *ac.get_sample() {
+        Sample::Sounding { data, .. } => {
+            if let Some(pr) = data.pressure.into_option() {
+                pr
+            } else {
+                return;
+            }
+        }
+        _ => return,
     };
 
     if let Some(ref tb) = text_area.get_buffer() {

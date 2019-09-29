@@ -1,6 +1,7 @@
 use crate::{
     app::{
         config::{self, HelicityType, Rgba, StormMotionType},
+        sample::Sample,
         AppContext, AppContextPointer,
     },
     coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords},
@@ -15,6 +16,7 @@ use gdk::EventButton;
 use gtk::{prelude::*, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
 use itertools::izip;
 use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
+use sounding_analysis::DataRow;
 use std::{iter::once, rc::Rc};
 
 pub struct HodoContext {
@@ -243,20 +245,22 @@ impl Drawable for HodoContext {
 
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        let spd_dir = if let Some(sample) = ac.get_sample() {
-            if let (Some(pressure), Some(wind)) =
-                (sample.pressure.into_option(), sample.wind.into_option())
-            {
-                if pressure >= config.min_hodo_pressure {
+        let spd_dir = match *ac.get_sample() {
+            Sample::Sounding {
+                data: DataRow { pressure, wind, .. },
+                ..
+            } => {
+                if let Some(wind) = pressure
+                    .into_option()
+                    .filter(|pr| *pr > config.min_hodo_pressure)
+                    .and(wind.into_option())
+                {
                     wind
                 } else {
                     return;
                 }
-            } else {
-                return;
             }
-        } else {
-            return;
+            Sample::FirePlume { .. } | Sample::None => return,
         };
 
         let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;

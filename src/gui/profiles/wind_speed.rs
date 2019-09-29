@@ -1,5 +1,10 @@
 use crate::{
-    app::{config, config::Rgba, AppContext, AppContextPointer},
+    app::{
+        config,
+        config::Rgba,
+        sample::{create_sample_sounding, Sample},
+        AppContext, AppContextPointer,
+    },
     coords::{
         convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, SPCoords, ScreenCoords,
         ScreenRect, XYCoords,
@@ -15,7 +20,6 @@ use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{Knots, Quantity, WindSpdDir};
-use sounding_analysis::DataRow;
 use std::rc::Rc;
 
 pub struct WindSpeedContext {
@@ -291,12 +295,14 @@ impl Drawable for WindSpeedContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
+    fn create_active_readout_text(vals: &Sample, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(WindSpdDir { speed, .. }) = vals.wind.into_option() {
-            let line = format!("{:.0}KT\n", speed.unpack());
-            results.push((line, ac.config.borrow().wind_speed_profile_rgba));
+        if let Sample::Sounding { data, .. } = vals {
+            if let Some(WindSpdDir { speed, .. }) = data.wind.into_option() {
+                let line = format!("{:.0}KT\n", speed.unpack());
+                results.push((line, ac.config.borrow().wind_speed_profile_rgba));
+            }
         }
 
         results
@@ -323,13 +329,17 @@ impl Drawable for WindSpeedContext {
             self.set_last_cursor_position(Some(position));
             let sp_position = self.convert_device_to_sp(position);
 
-            let sample = ac.get_sounding_for_display().and_then(|anal| {
-                sounding_analysis::linear_interpolate_sounding(
-                    anal.borrow().sounding(),
-                    sp_position.press,
-                )
-                .ok()
-            });
+            let sample = ac
+                .get_sounding_for_display()
+                .and_then(|anal| {
+                    sounding_analysis::linear_interpolate_sounding(
+                        anal.borrow().sounding(),
+                        sp_position.press,
+                    )
+                    .ok()
+                    .map(|data| create_sample_sounding(data, &anal.borrow()))
+                })
+                .unwrap_or(Sample::None);
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);

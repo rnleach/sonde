@@ -86,7 +86,7 @@ fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
         }
     }
 
-    Err(SondeError::NoMatchingFileType)?
+    Err(Box::new(SondeError::NoMatchingFileType))
 }
 
 fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {

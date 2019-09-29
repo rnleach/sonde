@@ -1,13 +1,9 @@
-//
 // cargo and rustc
-//
 /target/
 **/*.rs.bk
 Cargo.lock
 
-//
 // Dev tools (editor, IDE, Glade, etc)
-//
 *.sublime*
 .vscode
 \#*.glade\#
@@ -15,19 +11,13 @@ Cargo.lock
 *.swp
 Session.vim
 
-//
 // OS specific
-//
 .DS_Store
 
-//
 // Application specific
-//
 config.yml
 
-//
 // misc
-//
 *~
 tags
 

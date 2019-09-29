@@ -13,15 +13,19 @@ use crate::{
 use gtk::BuilderExtManual;
 use itertools::izip;
 use metfor::Quantity;
-use sounding_analysis::{self, DataRow};
+use sounding_analysis::{self};
 use std::{
-    cell::{Cell, RefCell},
+    cell::{Cell, Ref, RefCell},
     rc::Rc,
 };
 
 // Module for configuring application
 pub mod config;
 use self::config::Config;
+
+// Module for dealing with sample data from the program
+pub mod sample;
+use sample::{create_sample_sounding, Sample};
 
 /// Smart pointer for globally shareable data
 pub type AppContextPointer = Rc<AppContext>;
@@ -35,7 +39,7 @@ pub struct AppContext {
     list: RefCell<Vec<Rc<RefCell<Analysis>>>>,
     analyzed_count: Cell<usize>,
     currently_displayed_index: Cell<usize>,
-    last_sample: Cell<Option<DataRow>>,
+    last_sample: RefCell<Sample>,
 
     // Handle to the GUI
     gui: gtk::Builder,
@@ -69,7 +73,7 @@ impl AppContext {
             list: RefCell::new(vec![]),
             analyzed_count: Cell::new(0),
             currently_displayed_index: Cell::new(0),
-            last_sample: Cell::new(None),
+            last_sample: RefCell::new(Sample::None),
             gui: gtk::Builder::new_from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
@@ -340,24 +344,32 @@ impl AppContext {
     }
 
     fn update_sample(&self) {
-        if let Some(sample) = self.last_sample.get() {
-            if let Some(p) = sample.pressure.into() {
-                self.last_sample.set(
-                    self.list
-                        .borrow()
-                        .get(self.currently_displayed_index.get())
-                        .and_then(|anal| {
-                            sounding_analysis::linear_interpolate_sounding(
-                                anal.borrow().sounding(),
-                                p,
-                            )
-                            .ok()
-                        }),
-                );
-            } else {
-                self.last_sample.set(None);
+        let sample: &mut Sample = &mut self.last_sample.borrow_mut();
+
+        match sample {
+            Sample::Sounding { data, .. } => {
+                *sample = data
+                    .pressure
+                    .into_option()
+                    .and_then(|p| {
+                        self.list
+                            .borrow()
+                            .get(self.currently_displayed_index.get())
+                            .and_then(|anal| {
+                                sounding_analysis::linear_interpolate_sounding(
+                                    anal.borrow().sounding(),
+                                    p,
+                                )
+                                .ok()
+                                .map(|dr| create_sample_sounding(dr, &anal.borrow()))
+                            })
+                    })
+                    .unwrap_or(Sample::None);
             }
+            Sample::FirePlume { .. } => *sample = Sample::None,
+            Sample::None => {}
         }
+
         self.mark_overlay_dirty();
     }
 
@@ -385,15 +397,12 @@ impl AppContext {
         self.mark_background_dirty();
     }
 
-    pub fn get_sample(&self) -> Option<DataRow> {
-        self.last_sample.get()
+    pub fn get_sample(&self) -> Ref<Sample> {
+        self.last_sample.borrow()
     }
 
-    pub fn set_sample<T>(&self, sample: T)
-    where
-        Option<DataRow>: From<T>,
-    {
-        self.last_sample.set(Option::from(sample));
+    pub fn set_sample(&self, sample: Sample) {
+        *self.last_sample.borrow_mut() = sample;
         gui::update_text_highlight(&self);
         self.mark_overlay_dirty();
     }

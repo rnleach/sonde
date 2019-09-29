@@ -1,7 +1,7 @@
 //! Module for the GUI components of the application.
 
 use crate::{
-    app::{config::Rgba, AppContext, AppContextPointer},
+    app::{config::Rgba, sample::Sample, AppContext, AppContextPointer},
     coords::{
         convert_pressure_to_y, DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords,
     },
@@ -386,7 +386,7 @@ trait Drawable: PlotContext + PlotContextExt {
      * Active readout Drawing.
      **********************************************************************************************/
     /// Override to activate the active readout/sampling.
-    fn create_active_readout_text(_vals: &DataRow, _ac: &AppContext) -> Vec<(String, Rgba)> {
+    fn create_active_readout_text(_vals: &Sample, _ac: &AppContext) -> Vec<(String, Rgba)> {
         vec![]
     }
 
@@ -407,13 +407,13 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let (ac, cr) = (args.ac, args.cr);
 
-        let vals = if let Some(vals) = ac.get_sample() {
-            vals
-        } else {
-            return;
-        };
+        let vals = ac.get_sample();
 
-        let sample_p = if let Some(sample_p) = vals.pressure.into_option() {
+        let sample_p = if let Some(sample_p) = match *vals {
+            Sample::Sounding { data, .. } => data.pressure.into_option(),
+            Sample::FirePlume { parcel, .. } => Some(parcel.pressure),
+            Sample::None => None,
+        } {
             sample_p
         } else {
             return;
@@ -749,7 +749,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
         self.set_last_cursor_position(None);
-        ac.set_sample(None);
+        ac.set_sample(Sample::None);
 
         draw_all(ac);
         text_area::update_text_highlight(ac);

@@ -2,15 +2,15 @@
 //!
 //! Not every possible analysis is in this data.
 use metfor::{
-    Celsius, CelsiusDiff, IntHelicityM2pS2, JpKg, Meters, MetersPSec, Mm, Quantity, WindUV,
+    Celsius, CelsiusDiff, HectoPascal, IntHelicityM2pS2, JpKg, Meters, MetersPSec, Mm, WindUV,
 };
 use optional::{none, some, Optioned};
 use sounding_analysis::Sounding;
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::partition_cape, haines, haines_high, haines_low, haines_mid, hot_dry_windy,
+    experimental::fire::blow_up, haines, haines_high, haines_low, haines_mid, hot_dry_windy,
     lift_parcel, mean_wind, mixed_layer_parcel, most_unstable_parcel, precipitable_water,
-    robust_convective_parcel, sr_helicity, surface_parcel, Layer, ParcelAscentAnalysis,
+    robust_convective_parcel, sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis,
     ParcelProfile,
 };
 use std::collections::HashMap;
@@ -41,8 +41,10 @@ pub struct Analysis {
     haines_mid: Optioned<u8>,
     haines_high: Optioned<u8>,
     hdw: Optioned<f64>,
-    convective_deficit: Optioned<CelsiusDiff>,
-    cape_ratio: Optioned<f64>,
+    blow_up_dt: Optioned<CelsiusDiff>,
+    blow_up_height: Optioned<Meters>,
+    blow_up_anal_start_parcel: Option<Parcel>,
+    max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
     dcape: Optioned<JpKg>,
@@ -63,6 +65,12 @@ pub struct Analysis {
 impl Analysis {
     /// Create a new `Analysis`.
     pub fn new(snd: Sounding) -> Self {
+        let max_p = snd
+            .bottom_up()
+            .filter_map(|dr| dr.pressure.into_option())
+            .nth(0)
+            .unwrap_or(HectoPascal(0.0));
+
         Analysis {
             sounding: snd,
             precipitable_water: none(),
@@ -81,8 +89,10 @@ impl Analysis {
             haines_mid: none(),
             haines_high: none(),
             hdw: none(),
-            convective_deficit: none(),
-            cape_ratio: none(),
+            blow_up_dt: none(),
+            blow_up_height: none(),
+            blow_up_anal_start_parcel: None,
+            max_p,
 
             dcape: none(),
             downrush_t: none(),
@@ -179,14 +189,24 @@ impl Analysis {
         self.hdw
     }
 
-    /// Get the wet/dry CAPE ratio. EXPERIMENTAL.
-    pub fn cape_ratio(&self) -> Optioned<f64> {
-        self.cape_ratio
+    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
+    pub fn blow_up_dt(&self) -> Optioned<CelsiusDiff> {
+        self.blow_up_dt
     }
 
-    /// Get the convective temperature deficit.
-    pub fn convective_deficit(&self) -> Optioned<CelsiusDiff> {
-        self.convective_deficit
+    /// Get the height change of the EL if the blow up dt is met.
+    pub fn blow_up_height_change(&self) -> Optioned<Meters> {
+        self.blow_up_height
+    }
+
+    /// Get the starting parcel for a blow up analysis.
+    pub fn starting_parcel_for_blow_up_anal(&self) -> Option<Parcel> {
+        self.blow_up_anal_start_parcel
+    }
+
+    /// Get the max pressure (lowest level) in the sounding
+    pub fn max_pressure(&self) -> HectoPascal {
+        self.max_p
     }
 
     /// Get the DCAPE.
@@ -371,30 +391,25 @@ impl Analysis {
                 };
         }
 
-        // Convective deficit
-        if self.convective_deficit.is_none() {
-            self.convective_deficit = self.convective_t.and_then(|ct| {
-                self.mixed_layer
-                    .as_ref()
-                    .map(|parcel_anal| ct - parcel_anal.parcel().temperature)
-                    .into()
-            });
-        }
-
-        // Cape ratio
-        if self.cape_ratio.is_none() {
-            self.cape_ratio = self
-                .convective
-                .as_ref()
-                .and_then(|parcel_anal| partition_cape(parcel_anal).ok())
-                .and_then(|(dry, wet)| {
-                    if dry.unpack().abs() > 0.1 {
-                        Some(wet / dry)
-                    } else {
-                        None
-                    }
+        // Fill in the experimental fire weather parameters.
+        if self.blow_up_dt.is_none()
+            || self.blow_up_height.is_none()
+            || self.blow_up_anal_start_parcel.is_none()
+        {
+            let blow_up_anal = blow_up(self.sounding()).ok();
+            let (starting_pcl, dt, height) = blow_up_anal
+                .map(|bu_anal| {
+                    (
+                        Some(bu_anal.starting_parcel),
+                        some(bu_anal.delta_t),
+                        some(bu_anal.height),
+                    )
                 })
-                .into();
+                .unwrap_or((None, none(), none()));
+
+            self.blow_up_dt = dt;
+            self.blow_up_height = height;
+            self.blow_up_anal_start_parcel = starting_pcl;
         }
     }
 }

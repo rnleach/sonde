@@ -1,5 +1,10 @@
 use crate::{
-    app::{config, config::Rgba, AppContext, AppContextPointer},
+    app::{
+        config,
+        config::Rgba,
+        sample::{create_sample_sounding, Sample},
+        AppContext, AppContextPointer,
+    },
     coords::{
         convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, Rect, ScreenCoords, ScreenRect,
         WPCoords, XYCoords,
@@ -15,7 +20,7 @@ use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
 use metfor::{PaPS, Quantity};
-use sounding_analysis::{relative_humidity, relative_humidity_ice, DataRow};
+use sounding_analysis::{relative_humidity, relative_humidity_ice};
 use std::{cell::Cell, rc::Rc};
 
 #[derive(Debug)]
@@ -347,12 +352,17 @@ impl Drawable for RHOmegaContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
+    fn create_active_readout_text(vals: &Sample, ac: &AppContext) -> Vec<(String, Rgba)> {
         use metfor::rh;
 
         let config = ac.config.borrow();
 
         let mut results = vec![];
+
+        let vals = match vals {
+            Sample::Sounding { data, .. } => data,
+            Sample::FirePlume { .. } | Sample::None => return results,
+        };
 
         let t_c = vals.temperature;
         let dp_c = vals.dew_point;
@@ -404,13 +414,17 @@ impl Drawable for RHOmegaContext {
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);
 
-            let sample = ac.get_sounding_for_display().and_then(|anal| {
-                sounding_analysis::linear_interpolate_sounding(
-                    anal.borrow().sounding(),
-                    wp_position.p,
-                )
-                .ok()
-            });
+            let sample = ac
+                .get_sounding_for_display()
+                .and_then(|anal| {
+                    sounding_analysis::linear_interpolate_sounding(
+                        anal.borrow().sounding(),
+                        wp_position.p,
+                    )
+                    .ok()
+                    .map(|data| create_sample_sounding(data, &anal.borrow()))
+                })
+                .unwrap_or(Sample::None);
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);

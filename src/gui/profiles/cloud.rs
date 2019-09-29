@@ -1,5 +1,10 @@
 use crate::{
-    app::{config, config::Rgba, AppContext, AppContextPointer},
+    app::{
+        config,
+        config::Rgba,
+        sample::{create_sample_sounding, Sample},
+        AppContext, AppContextPointer,
+    },
     coords::{
         convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, PPCoords, ScreenCoords,
         ScreenRect, XYCoords,
@@ -16,7 +21,6 @@ use crate::{
 use gdk::{EventMotion, EventScroll};
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use sounding_analysis::DataRow;
 use std::rc::Rc;
 
 pub struct CloudContext {
@@ -281,15 +285,19 @@ impl Drawable for CloudContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
-    fn create_active_readout_text(vals: &DataRow, ac: &AppContext) -> Vec<(String, Rgba)> {
+    fn create_active_readout_text(vals: &Sample, ac: &AppContext) -> Vec<(String, Rgba)> {
         let mut results = vec![];
 
-        if let Some(cloud) = Into::<Option<f64>>::into(vals.cloud_fraction) {
-            let cld = (cloud).round();
-            let line = format!("{:.0}%\n", cld);
-            results.push((line, ac.config.borrow().cloud_rgba));
+        match vals {
+            Sample::Sounding { data, .. } => {
+                if let Some(cloud) = Into::<Option<f64>>::into(data.cloud_fraction) {
+                    let cld = (cloud).round();
+                    let line = format!("{:.0}%\n", cld);
+                    results.push((line, ac.config.borrow().cloud_rgba));
+                }
+            }
+            Sample::FirePlume { .. } | Sample::None => {}
         }
-
         results
     }
 
@@ -314,13 +322,17 @@ impl Drawable for CloudContext {
             self.set_last_cursor_position(Some(position));
             let pp_position = self.convert_device_to_pp(position);
 
-            let sample = ac.get_sounding_for_display().and_then(|anal| {
-                sounding_analysis::linear_interpolate_sounding(
-                    anal.borrow().sounding(),
-                    pp_position.press,
-                )
-                .ok()
-            });
+            let sample = ac
+                .get_sounding_for_display()
+                .and_then(|anal| {
+                    sounding_analysis::linear_interpolate_sounding(
+                        anal.borrow().sounding(),
+                        pp_position.press,
+                    )
+                    .ok()
+                    .map(|data| create_sample_sounding(data, &anal.borrow()))
+                })
+                .unwrap_or(Sample::None);
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
