@@ -243,7 +243,7 @@ impl Drawable for HodoContext {
             return;
         }
 
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+        let (ac, config) = (args.ac, args.ac.config.borrow());
 
         let spd_dir = match *ac.get_sample() {
             Sample::Sounding {
@@ -263,19 +263,9 @@ impl Drawable for HodoContext {
             Sample::FirePlume { .. } | Sample::None => return,
         };
 
-        let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
         let coords = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir });
-
         let rgba = config.active_readout_line_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.arc(
-            coords.x,
-            coords.y,
-            pnt_size,
-            0.0,
-            2.0 * ::std::f64::consts::PI,
-        );
-        cr.fill();
+        Self::draw_point(coords, rgba, args);
     }
 
     /***********************************************************************************************

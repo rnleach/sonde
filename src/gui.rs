@@ -679,6 +679,22 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.show_text(text);
     }
 
+    fn draw_point(location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
+        let cr = args.cr;
+
+        let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
+
+        cr.set_source_rgba(color.0, color.1, color.2, color.3);
+        cr.arc(
+            location.x,
+            location.y,
+            pnt_size,
+            0.0,
+            2.0 * ::std::f64::consts::PI,
+        );
+        cr.fill();
+    }
+
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
