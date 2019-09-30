@@ -57,32 +57,33 @@ pub fn update_indexes_area(ac: &AppContext) {
         return;
     }
 
-    if let Some(tb) = text_area.get_buffer() {
-        if let Some(anal) = ac.get_sounding_for_display() {
-            let anal = &anal.borrow();
-            let text = &mut String::with_capacity(4096);
+    if let Some((tb, anal)) = text_area
+        .get_buffer()
+        .and_then(|tb| ac.get_sounding_for_display().map(|anal| (tb, anal)))
+    {
+        let anal = &anal.borrow();
+        let text = &mut String::with_capacity(4096);
 
-            push_profile_indexes(text, anal);
-            push_parcel_indexes(text, anal);
-            push_fire_indexes(text, anal);
+        push_profile_indexes(text, anal);
+        push_parcel_indexes(text, anal);
+        push_fire_indexes(text, anal);
 
-            // Get the scroll position before setting the text
-            let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
+        // Get the scroll position before setting the text
+        let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
 
-            set_text!(tb, &text);
+        set_text!(tb, &text);
 
-            // I don't totally understand this, but after quite a lot of experimentation this works
-            // well at keeping the scroll of the text view in the same area as you step through
-            // time.
-            if let Some(adj) = text_area.get_vadjustment() {
-                if let Some(val) = old_adj {
-                    let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
-                        val.round()
-                    } else {
-                        (adj.get_upper() - adj.get_page_size() - 1.0).round()
-                    };
-                    adj.set_value(val);
-                }
+        // I don't totally understand this, but after quite a lot of experimentation this works
+        // well at keeping the scroll of the text view in the same area as you step through
+        // time.
+        if let Some(adj) = text_area.get_vadjustment() {
+            if let Some(val) = old_adj {
+                let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
+                    val.round()
+                } else {
+                    (adj.get_upper() - adj.get_page_size() - 1.0).round()
+                };
+                adj.set_value(val);
             }
         }
     }
@@ -139,6 +140,24 @@ macro_rules! push_prof {
             });
         $buf.push('\n');
     };
+    ($anal: expr, $buf:ident, $name:expr, $selector:tt, $format:expr, cape, $format2:expr, $empty_val:expr) => {
+        $buf.push_str($name);
+        $anal
+            .$selector()
+            .into_option()
+            .and_then(|val| {
+                let mps = (val.unpack() * 2.0).sqrt();
+                let mph = mps * 2.23694;
+                $buf.push_str(&format!($format, val.unpack()));
+                $buf.push_str(&format!($format2, mps.round(), mph.round(),));
+                Some(())
+            })
+            .or_else(|| {
+                $buf.push_str($empty_val);
+                Some(())
+            });
+        $buf.push('\n');
+    };
 }
 
 #[inline]
@@ -150,14 +169,14 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
 
     buffer.push_str("Index                Value\n");
     buffer.push_str("----------------------------------------------------\n");
-    push_prof!(anal, buffer, "DCAPE               ", dcape,              "{:>5.0} J/kg",                                             empty_val);
-    push_prof!(anal, buffer, "PWAT                ", pwat,               "{:>7.0} mm",                  mm,   " ({:>4.2} in)",       empty_val);
-    push_prof!(anal, buffer, "Downrush T          ", downrush_t,         "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)", empty_val);
-    push_prof!(anal, buffer, "Convective T        ", convective_t,       "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)", empty_val);
-    push_prof!(anal, buffer, "3km SR Helicity (RM)", sr_helicity_3k_rm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
-    push_prof!(anal, buffer, "3km SR Helicity (LM)", sr_helicity_3k_lm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
-    push_prof!(anal, buffer, "Eff SR Helicity (RM)", sr_helicity_eff_rm, "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
-    push_prof!(anal, buffer, "Eff SR Helicity (LM)", sr_helicity_eff_lm, "{:>4.0} m\u{00b2}/s\u{00b2}",                              empty_val);
+    push_prof!(anal, buffer, "DCAPE               ", dcape,              "{:>5.0} J/kg",                cape, " ({:>3.0} m/s {:>3.0} m/h)", empty_val);
+    push_prof!(anal, buffer, "PWAT                ", pwat,               "{:>7.0} mm",                  mm,   " ({:>4.2} in)",              empty_val);
+    push_prof!(anal, buffer, "Downrush T          ", downrush_t,         "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)",        empty_val);
+    push_prof!(anal, buffer, "Convective T        ", convective_t,       "{:>8.0}\u{00b0}C",            temp, " ({:>3.0}\u{00b0}F)",        empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (RM)", sr_helicity_3k_rm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                                     empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (LM)", sr_helicity_3k_lm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                                     empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (RM)", sr_helicity_eff_rm, "{:>4.0} m\u{00b2}/s\u{00b2}",                                     empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (LM)", sr_helicity_eff_lm, "{:>4.0} m\u{00b2}/s\u{00b2}",                                     empty_val);
 }
 
 #[inline]
