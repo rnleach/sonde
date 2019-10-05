@@ -114,11 +114,13 @@ pub struct Config {
     pub show_parcel_profile: bool,
     /// Parcel profile color.
     pub parcel_rgba: Rgba,
+    /// Background higlighting in the index view for the parcel indexes.
+    pub parcel_indexes_highlight: Rgba,
     /// Fill parcel positive and negative areas
     pub fill_parcel_areas: bool,
     /// Positive parcel area color.
     pub parcel_positive_rgba: Rgba,
-    /// Negative parcela rea color.
+    /// Negative parcel area color.
     pub parcel_negative_rgba: Rgba,
     /// Show the inversion mix downs
     pub show_inversion_mix_down: bool,
@@ -351,6 +353,7 @@ impl Default for Config {
             parcel_type: ParcelType::MostUnstable,
             show_parcel_profile: true,
             parcel_rgba: (0.0, 0.0, 0.0, 0.75),
+            parcel_indexes_highlight: (0.0, 0.75, 0.75, 1.0),
             fill_parcel_areas: true,
             parcel_positive_rgba: (0.80, 0.0, 0.0, 0.5),
             parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),

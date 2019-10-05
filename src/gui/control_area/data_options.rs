@@ -74,6 +74,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         ac,
         inversion_mix_down_rgba
     );
+    build_config_color!(
+        overlays_box,
+        "Indexes: Parcel Highlight",
+        ac,
+        parcel_indexes_highlight
+    );
     build_config_color!(overlays_box, "CAPE", ac, parcel_positive_rgba);
     build_config_color!(overlays_box, "CIN", ac, parcel_negative_rgba);
     build_config_color!(overlays_box, "Downburst Profile", ac, downburst_rgba);

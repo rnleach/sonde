@@ -9,7 +9,7 @@ use sounding_analysis::{
 pub enum Sample {
     Sounding {
         data: DataRow,
-        pcl_anal: ParcelAscentAnalysis,
+        pcl_anal: Option<ParcelAscentAnalysis>,
     },
     FirePlume {
         parcel: Parcel,
@@ -20,10 +20,10 @@ pub enum Sample {
 }
 
 pub fn create_sample_sounding(data: DataRow, anal: &Analysis) -> Sample {
-    Parcel::from_datarow(data)
-        .and_then(|pcl| lift_parcel(pcl, anal.sounding()).ok())
-        .map(|pcl_anal| Sample::Sounding { data, pcl_anal })
-        .unwrap_or(Sample::None)
+    let pcl_anal =
+        Parcel::from_datarow(data).and_then(|pcl| lift_parcel(pcl, anal.sounding()).ok());
+
+    Sample::Sounding { data, pcl_anal }
 }
 
 pub fn create_sample_plume(parcel: Parcel, anal: &Analysis) -> Sample {

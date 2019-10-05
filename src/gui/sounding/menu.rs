@@ -24,6 +24,7 @@ macro_rules! make_check_item {
             ac.config.borrow_mut().$check_val = button.get_active();
             ac.mark_data_dirty();
             crate::gui::draw_all(&ac);
+            crate::gui::update_text_views(&ac);
         });
 
         $menu.append(&check_menu_item);
@@ -77,6 +78,7 @@ impl SkewTContext {
                 ac.config.borrow_mut().parcel_type = parcel_type;
                 ac.mark_data_dirty();
                 crate::gui::draw_all(&ac);
+                crate::gui::update_text_views(&ac);
             }
         }
 

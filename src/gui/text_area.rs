@@ -4,6 +4,8 @@ use crate::{
 };
 use gtk::{prelude::*, TextTag, TextView};
 use metfor::{HectoPascal, Quantity};
+use sounding_analysis::DataRow;
+use std::fmt::Write;
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
@@ -58,23 +60,6 @@ pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
 pub fn update_text_area(ac: &AppContext) {
     use crate::app::config;
 
-    macro_rules! unwrap_to_str {
-        ($opt_val:expr, $fmt:expr) => {
-            if let Some(val) = $opt_val.into_option() {
-                format!($fmt, val.unpack())
-            } else {
-                "".to_owned()
-            }
-        };
-        ($opt_val:expr, $fmt:expr, $multiplier:expr) => {
-            if let Some(val) = $opt_val {
-                format!($fmt, val * $multiplier)
-            } else {
-                "".to_owned()
-            }
-        };
-    }
-
     let text_area: TextView = if let Ok(ta) = ac.fetch_widget("text_area") {
         ta
     } else {
@@ -89,19 +74,7 @@ pub fn update_text_area(ac: &AppContext) {
             .top_down()
             .filter(|row| row.pressure.map(|p| p > config::MINP).unwrap_or(false))
             .for_each(|row| {
-                text.push_str(&format!(
-                    " {:>4} {:>5} {:>5} {:>5} {:>5} {:^7}  {:>3}{:>4} {:>5}  {:>3}\n",
-                    unwrap_to_str!(row.pressure, "{:.0}"),
-                    unwrap_to_str!(row.height, "{:.0}"),
-                    unwrap_to_str!(row.temperature, "{:.1}"),
-                    unwrap_to_str!(row.wet_bulb, "{:.1}"),
-                    unwrap_to_str!(row.dew_point, "{:.1}"),
-                    unwrap_to_str!(row.theta_e, "{:.0}"),
-                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.direction), "{:.0}"),
-                    unwrap_to_str!(row.wind.map_t(|wnd| wnd.speed), "{:.0}"),
-                    unwrap_to_str!(row.pvv, "{:.1}"),
-                    unwrap_to_str!(row.cloud_fraction, "{:.0}"),
-                ));
+                write_row(&mut text, row);
             });
 
         // Get the scroll position before setting the text
@@ -124,6 +97,31 @@ pub fn update_text_area(ac: &AppContext) {
                 }
             }
         }
+    }
+
+    macro_rules! write_opt {
+        ($opt_val:expr, $num_fmt: expr, $width_fmt: expr, $buf:ident) => {
+            if $opt_val.is_some() {
+                // Should never panic because $buf is a String.
+                write!($buf, $num_fmt, $opt_val.unpack().unpack()).unwrap();
+            } else {
+                write!($buf, $width_fmt, "").unwrap();
+            }
+        };
+    }
+
+    fn write_row(buf: &mut String, row: DataRow) {
+        write_opt!(row.pressure, "{:5.0}", "{:5}", buf);
+        write_opt!(row.height, "{:6.0}", "{:6}", buf);
+        write_opt!(row.temperature, "{:6.1}", "{:6}", buf);
+        write_opt!(row.wet_bulb, "{:6.1}", "{:6}", buf);
+        write_opt!(row.dew_point, "{:6.1}", "{:6}", buf);
+        write_opt!(row.theta_e, "{:^8.0}", "{:^8}", buf);
+        write_opt!(row.wind.map_t(|wnd| wnd.direction), "{:5.0}", "{:5}", buf);
+        write_opt!(row.wind.map_t(|wnd| wnd.speed), "{:4.0}", "{:4}", buf);
+        write_opt!(row.pvv, "{:6.1}", "{:6}", buf);
+        write_opt!(row.cloud_fraction, "{:6.0}", "{:6}", buf);
+        writeln!(buf).unwrap();
     }
 }
 

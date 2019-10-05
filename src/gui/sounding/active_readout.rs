@@ -15,7 +15,7 @@ impl SkewTContext {
     pub fn create_active_readout_text_sounding(
         data: &DataRow,
         anal: &Analysis,
-        pcl_anal: &ParcelAscentAnalysis,
+        pcl_anal: &Option<ParcelAscentAnalysis>,
         config: &Config,
         results: &mut Vec<(String, Rgba)>,
     ) {
@@ -125,23 +125,25 @@ impl SkewTContext {
         }
 
         if config.show_sample_parcel_profile {
-            let mut line = String::with_capacity(32);
-            let color = config.parcel_positive_rgba;
-            if let Some(cape) = pcl_anal.cape().into_option() {
-                line.push_str(&format!("CAPE: {:.0} J/Kg ", cape.unpack()));
-            } else {
-                line.push_str("CAPE: 0 J/Kg ");
-            }
-            results.push((line, color));
+            if let Some(ref pcl_anal) = pcl_anal {
+                let mut line = String::with_capacity(32);
+                let color = config.parcel_positive_rgba;
+                if let Some(cape) = pcl_anal.cape().into_option() {
+                    line.push_str(&format!("CAPE: {:.0} J/Kg ", cape.unpack()));
+                } else {
+                    line.push_str("CAPE: 0 J/Kg ");
+                }
+                results.push((line, color));
 
-            let mut line = String::with_capacity(32);
-            let color = config.parcel_negative_rgba;
-            if let Some(cin) = pcl_anal.cin().into_option() {
-                line.push_str(&format!("CIN: {:.0} J/Kg\n", cin.unpack()));
-            } else {
-                line.push_str("CIN: 0 J/Kg\n");
+                let mut line = String::with_capacity(32);
+                let color = config.parcel_negative_rgba;
+                if let Some(cin) = pcl_anal.cin().into_option() {
+                    line.push_str(&format!("CIN: {:.0} J/Kg\n", cin.unpack()));
+                } else {
+                    line.push_str("CIN: 0 J/Kg\n");
+                }
+                results.push((line, color));
             }
-            results.push((line, color));
         }
     }
 
@@ -211,14 +213,16 @@ impl SkewTContext {
 
     pub fn draw_sample_parcel_profile(
         args: DrawingArgs<'_, '_>,
-        parcel_analysis: &ParcelAscentAnalysis,
+        parcel_analysis: &Option<ParcelAscentAnalysis>,
     ) {
-        let config = args.ac.config.borrow();
+        if let Some(ref parcel_analysis) = parcel_analysis {
+            let config = args.ac.config.borrow();
 
-        // build the parcel profile
-        let profile = parcel_analysis.profile();
-        let color = config.sample_parcel_profile_color;
-        Self::draw_parcel_profile(args, &profile, color);
+            // build the parcel profile
+            let profile = parcel_analysis.profile();
+            let color = config.sample_parcel_profile_color;
+            Self::draw_parcel_profile(args, &profile, color);
+        }
     }
 
     pub fn draw_sample_mix_down_profile(args: DrawingArgs<'_, '_>, sample_parcel: Parcel) {
