@@ -1,10 +1,12 @@
 //! Keep configuration data in this module.
 
-use crate::coords::{PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use crate::coords::{DtHCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
 use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::{HodoContext, SkewTContext};
+use crate::gui::{FirePlumeContext, HodoContext, SkewTContext};
 use lazy_static::lazy_static;
-use metfor::{Celsius, HectoPascal, Kelvin, Knots, PaPS, Quantity, WindSpdDir};
+use metfor::{
+    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
+};
 use serde_derive::{Deserialize, Serialize};
 
 /// Types of parcels you can use when drawing parcel analysis overlays.
@@ -293,6 +295,16 @@ pub struct Config {
     pub helicity_storm_motion: StormMotionType,
 
     //
+    // Fire plume related settings.
+    //
+    /// Line color to plot the fire plot.
+    pub fire_plume_line_color: Rgba,
+    /// Line color of el on fire plume chart.
+    pub fire_plume_el_color: Rgba,
+    /// Line color of max height on fire plume chart.
+    pub fire_plume_maxh_color: Rgba,
+
+    //
     // Misc configuration.
     //
     pub bar_graph_line_width: f64,
@@ -461,6 +473,13 @@ impl Default for Config {
             helicity_storm_motion: StormMotionType::RightMover,
 
             //
+            // Fire plume related settings.
+            //
+            fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
+            fire_plume_el_color: (0.0, 0.0, 0.0, 1.0),
+            fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
+
+            //
             // Misc configuration.
             //
             bar_graph_line_width: 2.0,
@@ -494,6 +513,15 @@ pub const MAX_SPEED: Knots = Knots(250.0);
 
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
+
+/// Maximum DeltaT in fire plume plot
+pub const MAX_DELTA_T: CelsiusDiff = CelsiusDiff(22.0);
+/// Minimum DeltaT in fire plume plot
+pub const MIN_DELTA_T: CelsiusDiff = CelsiusDiff(-2.0);
+/// Maximum height for fire plume plot
+pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(22_000.0);
+/// Minimum height for fire plume plot
+pub const MIN_FIRE_PLUME_HEIGHT: Meters = Meters(-1_000.0);
 
 //
 // Limits on the top pressure level for some background lines.
@@ -703,6 +731,34 @@ pub const PROFILE_SPEEDS: [Knots; 20] = [
     Knots(200.0),
 ];
 
+pub const FIRE_PLUME_DTS: [CelsiusDiff; 11] = [
+    CelsiusDiff(0.0),
+    CelsiusDiff(2.0),
+    CelsiusDiff(4.0),
+    CelsiusDiff(6.0),
+    CelsiusDiff(8.0),
+    CelsiusDiff(10.0),
+    CelsiusDiff(12.0),
+    CelsiusDiff(14.0),
+    CelsiusDiff(16.0),
+    CelsiusDiff(18.0),
+    CelsiusDiff(20.0),
+];
+
+pub const FIRE_PLUME_HEIGHTS: [Meters; 11] = [
+    Meters(0.0),
+    Meters(2_000.0),
+    Meters(4_000.0),
+    Meters(6_000.0),
+    Meters(8_000.0),
+    Meters(10_000.0),
+    Meters(12_000.0),
+    Meters(14_000.0),
+    Meters(16_000.0),
+    Meters(18_000.0),
+    Meters(20_000.0),
+];
+
 /* ------------------------------------------------------------------------------------------------
 Values below this line are automatically calculated based on the configuration values above and
 should not be altered.
@@ -712,7 +768,6 @@ lazy_static! {
 
     /// Compute points for background isotherms only once
     pub static ref ISOTHERM_PNTS: Vec<[XYCoords; 2]> = {
-
         ISOTHERMS
         .iter()
         .map(|t| {
@@ -824,7 +879,6 @@ lazy_static! {
 
     /// Compute points for background speed
     pub static ref ISO_SPEED_PNTS: Vec<Vec<XYCoords>> = {
-
         ISO_SPEED
         .iter()
         .map(|&speed| {
@@ -888,6 +942,57 @@ lazy_static! {
         })
             .collect()
     };
+
+    /// Compute points for background △T in fire plume charts
+    pub static ref FIRE_PLUME_DT_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_DTS
+           .iter()
+           .map(|dt| {
+               [
+                   DtHCoords {
+                   dt: *dt,
+                   height: MAX_FIRE_PLUME_HEIGHT,
+               },
+               DtHCoords {
+                   dt: *dt,
+                   height: MIN_FIRE_PLUME_HEIGHT,
+               },
+               ]
+               })
+       .map(|dt| {
+           [
+               FirePlumeContext::convert_dth_to_xy(dt[0]),
+               FirePlumeContext::convert_dth_to_xy(dt[1]),
+           ]
+       })
+       .collect()
+    };
+
+    /// Compute points for background height in fire plume charts
+    pub static ref FIRE_PLUME_HEIGHT_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_HEIGHTS
+           .iter()
+           .map(|height| {
+               [
+                   DtHCoords {
+                   dt: MIN_DELTA_T,
+                   height: *height,
+               },
+               DtHCoords {
+                   dt: MAX_DELTA_T,
+                   height: *height,
+               },
+               ]
+               })
+       .map(|dt| {
+           [
+               FirePlumeContext::convert_dth_to_xy(dt[0]),
+               FirePlumeContext::convert_dth_to_xy(dt[1]),
+           ]
+       })
+       .collect()
+    };
+
 }
 
 /// Generate a list of Temperature, Pressure points along an isentrope.

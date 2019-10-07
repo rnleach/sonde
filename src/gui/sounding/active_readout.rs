@@ -197,7 +197,7 @@ impl SkewTContext {
     ) {
         let (ac, config) = (args.ac, args.ac.config.borrow());
 
-        let color = config.sample_parcel_profile_color;
+        let color = config.fire_plume_line_color;
         Self::draw_parcel_profile(args, &profile, color);
 
         // Draw a sample point

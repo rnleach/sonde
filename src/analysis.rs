@@ -8,10 +8,10 @@ use optional::{none, some, Optioned};
 use sounding_analysis::Sounding;
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::blow_up, haines, haines_high, haines_low, haines_mid, hot_dry_windy,
-    lift_parcel, mean_wind, mixed_layer_parcel, most_unstable_parcel, precipitable_water,
-    robust_convective_parcel, sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis,
-    ParcelProfile,
+    experimental::fire::{blow_up, calc_plumes, PlumeAscentAnalysis},
+    haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
+    mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel,
+    sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile,
 };
 use std::collections::HashMap;
 
@@ -44,6 +44,7 @@ pub struct Analysis {
     blow_up_dt: Optioned<CelsiusDiff>,
     blow_up_height: Optioned<Meters>,
     blow_up_anal_start_parcel: Option<Parcel>,
+    plumes: Option<Vec<PlumeAscentAnalysis>>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -92,6 +93,7 @@ impl Analysis {
             blow_up_dt: none(),
             blow_up_height: none(),
             blow_up_anal_start_parcel: None,
+            plumes: None,
             max_p,
 
             dcape: none(),
@@ -202,6 +204,11 @@ impl Analysis {
     /// Get the starting parcel for a blow up analysis.
     pub fn starting_parcel_for_blow_up_anal(&self) -> Option<Parcel> {
         self.blow_up_anal_start_parcel
+    }
+
+    /// Get the plumes analysis
+    pub fn plumes(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
+        &self.plumes
     }
 
     /// Get the max pressure (lowest level) in the sounding
@@ -410,6 +417,12 @@ impl Analysis {
             self.blow_up_dt = dt;
             self.blow_up_height = height;
             self.blow_up_anal_start_parcel = starting_pcl;
+        }
+
+        // blow_up_anal_start_parcel is needed for taking the plume ascent parcels' temperature
+        // values into a delta T.
+        if self.plumes.is_none() && self.blow_up_anal_start_parcel.is_some() {
+            self.plumes = calc_plumes(self.sounding(), CelsiusDiff(0.1), CelsiusDiff(20.0)).ok();
         }
     }
 }

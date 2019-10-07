@@ -28,31 +28,6 @@
         <property name="orientation">vertical</property>
         <property name="baseline_position">top</property>
         <child>
-          <object class="GtkMenuBar" id="menu_bar">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <object class="GtkMenuItem">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">_File</property>
-                <property name="use_underline">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="main_menu_file">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkPaned" id="main_pane_view">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -129,6 +104,33 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkDrawingArea" id="fire_plume_area">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                    <property name="reorderable">True</property>
+                    <property name="detachable">True</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Fire Plume</property>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                    <property name="tab_fill">False</property>
+                    <property name="reorderable">True</property>
+                    <property name="detachable">True</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkBox" id="profiles_area_container">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -180,7 +182,7 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
                   </packing>
@@ -192,7 +194,7 @@
                     <property name="label" translatable="yes">Profiles</property>
                   </object>
                   <packing>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                     <property name="tab_fill">False</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
@@ -217,7 +219,7 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="position">2</property>
+                    <property name="position">3</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
                   </packing>
@@ -229,7 +231,7 @@
                     <property name="label" translatable="yes">Indexes</property>
                   </object>
                   <packing>
-                    <property name="position">2</property>
+                    <property name="position">3</property>
                     <property name="tab_fill">False</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
@@ -293,7 +295,7 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="position">3</property>
+                    <property name="position">4</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
                   </packing>
@@ -305,7 +307,7 @@
                     <property name="label" translatable="yes">Text</property>
                   </object>
                   <packing>
-                    <property name="position">3</property>
+                    <property name="position">4</property>
                     <property name="tab_fill">False</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
@@ -317,7 +319,7 @@
                     <property name="can_focus">True</property>
                   </object>
                   <packing>
-                    <property name="position">4</property>
+                    <property name="position">5</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
                   </packing>
@@ -329,7 +331,7 @@
                     <property name="label" translatable="yes">Controls</property>
                   </object>
                   <packing>
-                    <property name="position">4</property>
+                    <property name="position">5</property>
                     <property name="tab_fill">False</property>
                     <property name="reorderable">True</property>
                     <property name="detachable">True</property>
@@ -345,7 +347,32 @@
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="position">470</property>
+            <property name="position">-1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkMenuBar" id="menu_bar">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkMenuItem">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">_File</property>
+                <property name="use_underline">True</property>
+                <child type="submenu">
+                  <object class="GtkMenu" id="main_menu_file">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
           </packing>
         </child>
       </object>

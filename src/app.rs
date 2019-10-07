@@ -7,7 +7,7 @@ use crate::{
     gui::{
         self,
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        HodoContext, PlotContext, PlotContextExt, SkewTContext,
+        FirePlumeContext, HodoContext, PlotContext, PlotContextExt, SkewTContext,
     },
 };
 use gtk::BuilderExtManual;
@@ -50,6 +50,9 @@ pub struct AppContext {
     // Handle to Hodograph context
     pub hodo: HodoContext,
 
+    // Handle to FirePlume context
+    pub fire_plume: FirePlumeContext,
+
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
@@ -79,6 +82,7 @@ impl AppContext {
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),
             hodo: HodoContext::new(),
+            fire_plume: FirePlumeContext::new(),
             wind_speed: WindSpeedContext::new(),
         })
     }
@@ -391,6 +395,7 @@ impl AppContext {
     fn fit_to_data(&self) {
         self.skew_t.zoom_to_envelope();
         self.hodo.zoom_to_envelope();
+        // FIXME: Zoom to envelope for fire_plume?
         self.rh_omega.zoom_to_envelope();
         self.cloud.zoom_to_envelope();
         self.wind_speed.zoom_to_envelope();
@@ -409,6 +414,7 @@ impl AppContext {
 
     pub fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
+        self.fire_plume.mark_data_dirty();
         self.skew_t.mark_data_dirty();
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
@@ -417,6 +423,7 @@ impl AppContext {
 
     pub fn mark_overlay_dirty(&self) {
         self.hodo.mark_overlay_dirty();
+        self.fire_plume.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
@@ -425,6 +432,7 @@ impl AppContext {
 
     pub fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
+        self.fire_plume.mark_background_dirty();
         self.skew_t.mark_background_dirty();
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();

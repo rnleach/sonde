@@ -20,6 +20,7 @@ use sounding_analysis::{
 };
 
 mod control_area;
+mod fire_plume;
 mod hodograph;
 mod indexes_area;
 mod main_window;
@@ -29,6 +30,7 @@ mod sounding;
 mod text_area;
 mod utility;
 
+pub use self::fire_plume::FirePlumeContext;
 pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
@@ -39,6 +41,7 @@ use self::utility::{plot_curve_from_points, DrawingArgs};
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
     hodograph::HodoContext::set_up_drawing_area(&app)?;
+    fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
     control_area::set_up_control_area(&app)?;
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
@@ -49,7 +52,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&str; 2] = ["skew_t", "hodograph_area"];
+    const DRAWING_AREAS: [&str; 3] = ["skew_t", "hodograph_area", "fire_plume_area"];
 
     for &da in &DRAWING_AREAS {
         if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {

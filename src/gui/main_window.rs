@@ -8,9 +8,10 @@ use std::rc::Rc;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 6] = [
+const TABS: [(&str, &str); 7] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
+    ("fire_plume_area", "Fire Plume"),
     ("text_area_container", "Text"),
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),

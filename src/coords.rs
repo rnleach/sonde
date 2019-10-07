@@ -2,7 +2,7 @@
 //! state, and so those functions are a part of the `AppContext`.
 
 use crate::app::config;
-use metfor::{Celsius, HectoPascal, Knots, PaPS, WindSpdDir};
+use metfor::{Celsius, CelsiusDiff, HectoPascal, Knots, Meters, PaPS, WindSpdDir};
 
 /// Common operations on rectangles
 pub trait Rect {
@@ -121,6 +121,18 @@ pub struct SPCoords {
     pub spd: Knots,
     /// Pressure in hPa
     pub press: HectoPascal,
+}
+
+/***************************************************************************************************
+ *                   △T - Height coords for the fire plume chart
+ * ************************************************************************************************/
+/// DeltaT-Pressure coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct DtHCoords {
+    /// DeltaT in Celsius
+    pub dt: CelsiusDiff,
+    /// Height in meters
+    pub height: Meters,
 }
 
 /***************************************************************************************************
