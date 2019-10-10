@@ -1,11 +1,13 @@
 //! Keep configuration data in this module.
 
-use crate::coords::{DtHCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords};
+use crate::coords::{
+    DtECoords, DtHCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+};
 use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::{FirePlumeContext, HodoContext, SkewTContext};
+use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
 use lazy_static::lazy_static;
 use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
+    Celsius, CelsiusDiff, HectoPascal, JpKg, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
 
@@ -303,6 +305,10 @@ pub struct Config {
     pub fire_plume_el_color: Rgba,
     /// Line color of max height on fire plume chart.
     pub fire_plume_maxh_color: Rgba,
+    /// Line color of net cape on fire plume chart.
+    pub fire_plume_net_cape_color: Rgba,
+    /// Line color of ncape on fire plume chart.
+    pub fire_plume_ncape_color: Rgba,
 
     //
     // Misc configuration.
@@ -476,8 +482,10 @@ impl Default for Config {
             // Fire plume related settings.
             //
             fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
-            fire_plume_el_color: (0.0, 0.0, 0.0, 1.0),
+            fire_plume_el_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
+            fire_plume_net_cape_color: (1.0, 0.5, 0.8, 1.0),
+            fire_plume_ncape_color: (0.0, 0.4, 0.8, 1.0),
 
             //
             // Misc configuration.
@@ -519,9 +527,13 @@ pub const MAX_DELTA_T: CelsiusDiff = CelsiusDiff(22.0);
 /// Minimum DeltaT in fire plume plot
 pub const MIN_DELTA_T: CelsiusDiff = CelsiusDiff(-2.0);
 /// Maximum height for fire plume plot
-pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(22_000.0);
+pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(15_000.0);
 /// Minimum height for fire plume plot
 pub const MIN_FIRE_PLUME_HEIGHT: Meters = Meters(-1_000.0);
+/// Maximum cape for fire plume plot
+pub const MAX_FIRE_PLUME_CAPE: JpKg = JpKg(7_000.0);
+/// Minimum cape for fire plume plot
+pub const MIN_FIRE_PLUME_CAPE: JpKg = JpKg(-1_000.0);
 
 //
 // Limits on the top pressure level for some background lines.
@@ -745,7 +757,7 @@ pub const FIRE_PLUME_DTS: [CelsiusDiff; 11] = [
     CelsiusDiff(20.0),
 ];
 
-pub const FIRE_PLUME_HEIGHTS: [Meters; 11] = [
+pub const FIRE_PLUME_HEIGHTS: [Meters; 8] = [
     Meters(0.0),
     Meters(2_000.0),
     Meters(4_000.0),
@@ -754,9 +766,20 @@ pub const FIRE_PLUME_HEIGHTS: [Meters; 11] = [
     Meters(10_000.0),
     Meters(12_000.0),
     Meters(14_000.0),
-    Meters(16_000.0),
-    Meters(18_000.0),
-    Meters(20_000.0),
+];
+
+pub const FIRE_PLUME_CAPES: [JpKg; 11] = [
+    JpKg(0.0),
+    JpKg(500.0),
+    JpKg(1_000.0),
+    JpKg(1_500.0),
+    JpKg(2_000.0),
+    JpKg(2_500.0),
+    JpKg(3_000.0),
+    JpKg(3_500.0),
+    JpKg(4_000.0),
+    JpKg(4_500.0),
+    JpKg(5_000.0),
 ];
 
 /* ------------------------------------------------------------------------------------------------
@@ -953,19 +976,19 @@ lazy_static! {
                    dt: *dt,
                    height: MAX_FIRE_PLUME_HEIGHT,
                },
-               DtHCoords {
-                   dt: *dt,
-                   height: MIN_FIRE_PLUME_HEIGHT,
-               },
+                   DtHCoords {
+                       dt: *dt,
+                       height: MIN_FIRE_PLUME_HEIGHT,
+                   },
                ]
                })
-       .map(|dt| {
-           [
-               FirePlumeContext::convert_dth_to_xy(dt[0]),
-               FirePlumeContext::convert_dth_to_xy(dt[1]),
-           ]
-       })
-       .collect()
+               .map(|dt| {
+                   [
+                       FirePlumeContext::convert_dth_to_xy(dt[0]),
+                       FirePlumeContext::convert_dth_to_xy(dt[1]),
+                   ]
+               })
+           .collect()
     };
 
     /// Compute points for background height in fire plume charts
@@ -978,19 +1001,44 @@ lazy_static! {
                    dt: MIN_DELTA_T,
                    height: *height,
                },
-               DtHCoords {
-                   dt: MAX_DELTA_T,
-                   height: *height,
-               },
+                   DtHCoords {
+                       dt: MAX_DELTA_T,
+                       height: *height,
+                   },
                ]
                })
-       .map(|dt| {
-           [
-               FirePlumeContext::convert_dth_to_xy(dt[0]),
-               FirePlumeContext::convert_dth_to_xy(dt[1]),
-           ]
-       })
-       .collect()
+           .map(|dt| {
+               [
+                   FirePlumeContext::convert_dth_to_xy(dt[0]),
+                   FirePlumeContext::convert_dth_to_xy(dt[1]),
+               ]
+           })
+           .collect()
+    };
+
+    /// Compute points for background height in fire plume charts
+    pub static ref FIRE_PLUME_CAPES_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_CAPES
+           .iter()
+           .map(|energy| {
+               [
+                   DtECoords {
+                       dt: MIN_DELTA_T,
+                       energy: *energy,
+                   },
+                   DtECoords {
+                       dt: MAX_DELTA_T,
+                       energy: *energy,
+                   },
+               ]
+               })
+           .map(|dt| {
+               [
+                   FirePlumeEnergyContext::convert_dte_to_xy(dt[0]),
+                   FirePlumeEnergyContext::convert_dte_to_xy(dt[1]),
+               ]
+           })
+           .collect()
     };
 
 }

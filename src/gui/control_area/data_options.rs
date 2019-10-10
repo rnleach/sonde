@@ -61,7 +61,16 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         rh_ice_rgba
     );
     build_config_color!(data_box, "Cloud Coverage", ac, cloud_rgba);
-    build_config_color!(data_box, "Fire Plume", ac, fire_plume_line_color);
+    build_config_color!(data_box, "Fire Plume Profile", ac, fire_plume_line_color);
+    build_config_color!(data_box, "Fire Plume EL", ac, fire_plume_el_color);
+    build_config_color!(data_box, "Fire Plume Max Hgt", ac, fire_plume_maxh_color);
+    build_config_color!(
+        data_box,
+        "Fire Plume Net CAPE",
+        ac,
+        fire_plume_net_cape_color
+    );
+    build_config_color!(data_box, "Fire Plume NCAPE", ac, fire_plume_ncape_color);
 
     // Third set is overlays
     let overlays_frame = gtk::Frame::new(Some("Overlays"));

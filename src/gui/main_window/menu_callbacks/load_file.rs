@@ -14,7 +14,6 @@ use std::{error::Error, path::PathBuf, rc::Rc};
 
 pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let data = load_data(path)?;
-    // FIXME: Change AppContext to take a vector?
     AppContext::load_data(Rc::clone(ac), data.into_iter());
 
     Ok(())
