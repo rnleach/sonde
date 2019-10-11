@@ -22,6 +22,8 @@ pub struct FirePlumeContext {
     generic: GenericContext,
 }
 
+// FIXME add LCL to the height chart.
+
 impl FirePlumeContext {
     pub fn new() -> Self {
         FirePlumeContext {

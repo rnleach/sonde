@@ -110,8 +110,10 @@ macro_rules! build_config_color {
     };
 }
 
+mod active_readout;
 mod background_options;
 mod data_options;
+mod overlay_options;
 
 const PADDING: u32 = 2;
 const BOX_SPACING: i32 = 5;
@@ -129,6 +131,14 @@ pub fn set_up_control_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     let background_options = background_options::make_background_frame(acp);
     control_area.add(&background_options);
     control_area.set_tab_label_text(&background_options, "Background");
+
+    let active_readout_options = active_readout::make_active_readout_frame(acp);
+    control_area.add(&active_readout_options);
+    control_area.set_tab_label_text(&active_readout_options, "Active Readout");
+
+    let overlay_options = overlay_options::make_overlay_frame(acp);
+    control_area.add(&overlay_options);
+    control_area.set_tab_label_text(&overlay_options, "Overlays");
 
     Ok(())
 }
