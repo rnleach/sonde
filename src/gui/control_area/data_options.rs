@@ -50,14 +50,20 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let fire_plumes_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     fire_plumes_frame.add(&fire_plumes_box);
 
-    build_config_color!(fire_plumes_box, "Equilibrium Level", ac, fire_plume_el_color);
-    build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
     build_config_color!(
         fire_plumes_box,
-        "Net CAPE",
+        "Lifting Condensation Level",
         ac,
-        fire_plume_net_cape_color
+        fire_plume_lcl_color
     );
+    build_config_color!(
+        fire_plumes_box,
+        "Equilibrium Level",
+        ac,
+        fire_plume_el_color
+    );
+    build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
+    build_config_color!(fire_plumes_box, "Net CAPE", ac, fire_plume_net_cape_color);
     build_config_color!(fire_plumes_box, "Plume NCAPE", ac, fire_plume_ncape_color);
 
     f.add(&v_box);

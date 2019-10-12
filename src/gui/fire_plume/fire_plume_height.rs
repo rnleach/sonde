@@ -22,8 +22,6 @@ pub struct FirePlumeContext {
     generic: GenericContext,
 }
 
-// FIXME add LCL to the height chart.
-
 impl FirePlumeContext {
     pub fn new() -> Self {
         FirePlumeContext {
@@ -227,11 +225,15 @@ impl Drawable for FirePlumeContext {
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
         let config = ac.config.borrow();
 
-        let mut lines = Vec::with_capacity(2);
+        let mut lines = Vec::with_capacity(3);
 
         lines.push((
             "Equilibrium Level (km)".to_owned(),
             config.fire_plume_el_color,
+        ));
+        lines.push((
+            "Lifting Condensation Level (km)".to_owned(),
+            config.fire_plume_lcl_color,
         ));
         lines.push((
             "Max Plume Height (km)".to_owned(),
@@ -264,6 +266,7 @@ impl Drawable for FirePlumeContext {
             let line_width = config.profile_line_width;
             let el_rgba = config.fire_plume_el_color;
             let max_hgt_rgba = config.fire_plume_maxh_color;
+            let lcl_rgba = config.fire_plume_lcl_color;
 
             let els = vals
                 .iter()
@@ -276,6 +279,18 @@ impl Drawable for FirePlumeContext {
                 .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
             plot_curve_from_points(cr, line_width, el_rgba, els);
+
+            let lcls = vals
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .lcl_height
+                        .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+
+            plot_curve_from_points(cr, line_width, lcl_rgba, lcls);
 
             let maxhs = vals
                 .iter()
@@ -324,6 +339,12 @@ impl Drawable for FirePlumeContext {
                 let maxh_pnt = DtHCoords { dt, height: maxh };
                 let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
                 Self::draw_point(screen_coords_maxh, pnt_color, args);
+            }
+
+            if let Some(lcl) = plume_anal.lcl_height {
+                let lcl_pnt = DtHCoords { dt, height: lcl };
+                let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
+                Self::draw_point(screen_coords_lcl, pnt_color, args);
             }
         }
     }

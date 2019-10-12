@@ -1,4 +1,3 @@
-
 use crate::{
     app::AppContextPointer,
     gui::control_area::{BOX_SPACING, PADDING},
@@ -38,25 +37,14 @@ pub fn make_overlay_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(skewt_box, "CIN", ac, parcel_negative_rgba);
     build_config_color!(skewt_box, "Downburst Profile", ac, downburst_rgba);
     build_config_color!(skewt_box, "DCAPE", ac, dcape_area_color);
-    build_config_color!(
-        skewt_box,
-        "Effective Inflow Layer",
-        ac,
-        inflow_layer_rgba
-    );
-
+    build_config_color!(skewt_box, "Effective Inflow Layer", ac, inflow_layer_rgba);
 
     let hodo_frame = gtk::Frame::new(Some("Hodograph"));
     let hodo_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     hodo_frame.add(&hodo_box);
 
     build_config_color!(hodo_box, "Storm Motion (hodo)", ac, storm_motion_rgba);
-    build_config_color!(
-        hodo_box,
-        "Helicity area color (hodo)",
-        ac,
-        helicity_rgba
-    );
+    build_config_color!(hodo_box, "Helicity area color (hodo)", ac, helicity_rgba);
 
     // Layout boxes in the frame
     f.add(&v_box);

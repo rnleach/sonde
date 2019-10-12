@@ -1,4 +1,3 @@
-
 use crate::{
     app::AppContextPointer,
     gui::control_area::{BOX_SPACING, PADDING},
@@ -16,7 +15,6 @@ pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
     // Layout vertically
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     v_box.set_baseline_position(gtk::BaselinePosition::Top);
-
 
     let sample_frame = gtk::Frame::new(Some("View"));
     let sample_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
