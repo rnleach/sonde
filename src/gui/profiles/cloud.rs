@@ -72,8 +72,6 @@ impl HasGenericContext for CloudContext {
 }
 
 impl PlotContextExt for CloudContext {
-    fn zoom_to_envelope(&self) {}
-
     fn bound_view(&self) {
         let device_rect = self.get_device_rect();
 

@@ -76,17 +76,6 @@ impl HasGenericContext for RHOmegaContext {
 }
 
 impl PlotContextExt for RHOmegaContext {
-    fn zoom_to_envelope(&self) {
-        let xy_envelope = &self.get_xy_envelope();
-        self.set_translate(xy_envelope.lower_left);
-
-        let width = xy_envelope.width();
-        let width_scale = 1.0 / width;
-
-        self.x_zoom.set(width_scale);
-        self.bound_view();
-    }
-
     fn bound_view(&self) {
         let device_rect = self.get_device_rect();
 

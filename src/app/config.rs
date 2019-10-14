@@ -516,8 +516,6 @@ pub const MAXT: Celsius = Celsius(50.5); // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: PaPS = PaPS(15.0);
-/// Minimum allowable vertical velocity in Pa/s, used only for setting scale.
-pub const MIN_ABS_W: PaPS = PaPS(3.0);
 
 /// Maximum wind speed on hodograph in Knots
 pub const MAX_SPEED: Knots = Knots(250.0);

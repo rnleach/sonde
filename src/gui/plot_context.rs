@@ -13,12 +13,6 @@ pub trait PlotContext: Sized {
     /// Get the device dimensions
     fn get_device_rect(&self) -> DeviceRect;
 
-    /// Get a bounding box in XYCoords around all the data in this plot.
-    fn get_xy_envelope(&self) -> XYRect;
-
-    /// Set the bounding box in XYCoords around all the data in this plot.
-    fn set_xy_envelope(&self, _: XYRect);
-
     /// Get zoom factor
     fn get_zoom_factor(&self) -> f64;
 
@@ -268,26 +262,6 @@ pub trait PlotContextExt: PlotContext {
         }
         self.set_translate(translate);
     }
-
-    /// Zoom in the most possible while still keeping the whole envelope in view.
-    fn zoom_to_envelope(&self) {
-        use std::f64;
-
-        let xy_envelope = self.get_xy_envelope();
-
-        let lower_left = xy_envelope.lower_left;
-        self.set_translate(lower_left);
-
-        let width = xy_envelope.upper_right.x - xy_envelope.lower_left.x;
-        let height = xy_envelope.upper_right.y - xy_envelope.lower_left.y;
-
-        let width_scale = 1.0 / width;
-        let height_scale = 1.0 / height;
-
-        self.set_zoom_factor(f64::min(width_scale, height_scale));
-
-        self.bound_view();
-    }
 }
 
 #[derive(Debug)]
@@ -373,37 +347,6 @@ where
 
     fn get_device_rect(&self) -> DeviceRect {
         self.get_generic_context().device_rect.get()
-    }
-
-    fn get_xy_envelope(&self) -> XYRect {
-        self.get_generic_context().xy_envelope.get()
-    }
-
-    fn set_xy_envelope(&self, mut new_envelope: XYRect) {
-        {
-            let ll = &mut new_envelope.lower_left;
-            let ur = &mut new_envelope.upper_right;
-
-            let xmin = &mut ll.x;
-            let xmax = &mut ur.x;
-            let ymin = &mut ll.y;
-            let ymax = &mut ur.y;
-
-            if *xmin < 0.0 {
-                *xmin = 0.0;
-            }
-            if *xmax > 1.0 {
-                *xmax = 1.0;
-            }
-            if *ymin < 0.0 {
-                *ymin = 0.0;
-            }
-            if *ymax > 1.0 {
-                *ymax = 0.0;
-            }
-        }
-
-        self.get_generic_context().xy_envelope.set(new_envelope);
     }
 
     fn get_zoom_factor(&self) -> f64 {

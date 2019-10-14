@@ -2,18 +2,14 @@
 //! via smart pointers.
 use crate::{
     analysis::Analysis,
-    coords::{SDCoords, TPCoords, WPCoords, XYCoords, XYRect},
     errors::SondeError,
     gui::{
         self,
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
-        SkewTContext,
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, SkewTContext,
     },
 };
 use gtk::BuilderExtManual;
-use itertools::izip;
-use metfor::Quantity;
 use sounding_analysis::{self};
 use std::{
     cell::{Cell, Ref, RefCell},
@@ -113,167 +109,6 @@ impl AppContext {
 
         acp.currently_displayed_index.set(0);
 
-        let mut skew_t_xy_envelope = XYRect {
-            lower_left: XYCoords { x: 0.45, y: 0.45 },
-            upper_right: XYCoords { x: 0.55, y: 0.55 },
-        };
-
-        let mut rh_omega_xy_envelope = XYRect {
-            lower_left: XYCoords { x: 0.45, y: 0.45 },
-            upper_right: XYCoords { x: 0.55, y: 0.55 },
-        };
-
-        let mut hodo_xy_envelope = XYRect {
-            lower_left: XYCoords { x: 0.45, y: 0.45 },
-            upper_right: XYCoords { x: 0.55, y: 0.55 },
-        };
-
-        for anal in acp.list.borrow().iter() {
-            let anal = anal.borrow();
-            let snd = anal.sounding();
-            for pair in snd
-                .pressure_profile()
-                .iter()
-                .zip(snd.temperature_profile())
-                .filter_map(|(p, t)| {
-                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
-                        if p < config::MINP {
-                            None
-                        } else {
-                            Some(TPCoords {
-                                temperature: t,
-                                pressure: p,
-                            })
-                        }
-                    } else {
-                        None
-                    }
-                })
-            {
-                let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
-                if x < skew_t_xy_envelope.lower_left.x {
-                    skew_t_xy_envelope.lower_left.x = x;
-                }
-                if y < skew_t_xy_envelope.lower_left.y {
-                    skew_t_xy_envelope.lower_left.y = y;
-                    rh_omega_xy_envelope.lower_left.y = y;
-                }
-                if x > skew_t_xy_envelope.upper_right.x {
-                    skew_t_xy_envelope.upper_right.x = x;
-                }
-                if y > skew_t_xy_envelope.upper_right.y {
-                    skew_t_xy_envelope.upper_right.y = y;
-                    rh_omega_xy_envelope.upper_right.y = y;
-                }
-            }
-
-            for pair in snd
-                .pressure_profile()
-                .iter()
-                .zip(snd.dew_point_profile())
-                .filter_map(|(p, t)| {
-                    if let (Some(p), Some(t)) = (p.into(), t.into()) {
-                        if p < config::MINP {
-                            None
-                        } else {
-                            Some(TPCoords {
-                                temperature: t,
-                                pressure: p,
-                            })
-                        }
-                    } else {
-                        None
-                    }
-                })
-            {
-                let XYCoords { x, y } = SkewTContext::convert_tp_to_xy(pair);
-                if x < skew_t_xy_envelope.lower_left.x {
-                    skew_t_xy_envelope.lower_left.x = x;
-                }
-                if y < skew_t_xy_envelope.lower_left.y {
-                    skew_t_xy_envelope.lower_left.y = y;
-                    rh_omega_xy_envelope.lower_left.y = y;
-                }
-                if x > skew_t_xy_envelope.upper_right.x {
-                    skew_t_xy_envelope.upper_right.x = x;
-                }
-                if y > skew_t_xy_envelope.upper_right.y {
-                    skew_t_xy_envelope.upper_right.y = y;
-                    rh_omega_xy_envelope.upper_right.y = y;
-                }
-            }
-
-            for pair in snd
-                .pressure_profile()
-                .iter()
-                .zip(snd.pvv_profile())
-                .filter_map(|(p, omega)| {
-                    if let (Some(p), Some(o)) = (p.into_option(), omega.into_option()) {
-                        if p < config::MINP {
-                            None
-                        } else {
-                            Some(WPCoords {
-                                w: o.abs().max(config::MIN_ABS_W),
-                                p,
-                            })
-                        }
-                    } else {
-                        None
-                    }
-                })
-            {
-                let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
-                if x > rh_omega_xy_envelope.upper_right.x {
-                    rh_omega_xy_envelope.upper_right.x = x;
-                }
-                let pair = WPCoords {
-                    w: -pair.w,
-                    p: pair.p,
-                };
-                let XYCoords { x, y: _y } = RHOmegaContext::convert_wp_to_xy(pair);
-                if x < rh_omega_xy_envelope.lower_left.x {
-                    rh_omega_xy_envelope.lower_left.x = x;
-                }
-            }
-
-            for pair in izip!(snd.pressure_profile(), snd.wind_profile()).filter_map(|(p, wind)| {
-                if let (Some(p), Some(w)) = (p.into_option(), wind.into_option()) {
-                    if p < acp.config.borrow().min_hodo_pressure {
-                        None
-                    } else {
-                        Some(SDCoords { spd_dir: w })
-                    }
-                } else {
-                    None
-                }
-            }) {
-                let XYCoords { x, y } = HodoContext::convert_sd_to_xy(pair);
-                if x < hodo_xy_envelope.lower_left.x {
-                    hodo_xy_envelope.lower_left.x = x;
-                }
-                if y < hodo_xy_envelope.lower_left.y {
-                    hodo_xy_envelope.lower_left.y = y;
-                }
-                if x > hodo_xy_envelope.upper_right.x {
-                    hodo_xy_envelope.upper_right.x = x;
-                }
-                if y > hodo_xy_envelope.upper_right.y {
-                    hodo_xy_envelope.upper_right.y = y;
-                }
-            }
-        }
-
-        acp.skew_t.set_xy_envelope(skew_t_xy_envelope);
-        acp.hodo.set_xy_envelope(hodo_xy_envelope);
-
-        acp.rh_omega.set_xy_envelope(rh_omega_xy_envelope);
-
-        let mut cloud_envelope = rh_omega_xy_envelope;
-        cloud_envelope.lower_left.x = 0.0;
-        cloud_envelope.upper_right.x = 1.0;
-        acp.cloud.set_xy_envelope(cloud_envelope);
-
-        acp.fit_to_data();
         acp.set_currently_displayed(0);
 
         // Once everything we need for this thread is taken care of, fill in any missing data
@@ -393,18 +228,6 @@ impl AppContext {
             .borrow()
             .get(self.currently_displayed_index.get())
             .map(Rc::clone)
-    }
-
-    /// Fit to the given x-y max coords. SHOULD NOT BE PUBLIC - DO NOT USE IN DRAWING CALLBACKS.
-    // FIXME: Consider removing this functionality completely, always open a new sounding fully
-    // zoomed out on all charts.
-    fn fit_to_data(&self) {
-        self.skew_t.zoom_to_envelope();
-        self.hodo.zoom_to_envelope();
-        self.rh_omega.zoom_to_envelope();
-        self.cloud.zoom_to_envelope();
-        self.wind_speed.zoom_to_envelope();
-        self.mark_background_dirty();
     }
 
     pub fn get_sample(&self) -> Ref<Sample> {
