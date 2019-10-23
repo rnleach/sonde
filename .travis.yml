@@ -21,4 +21,3 @@ script:
     - export LD_LIBRARY_PATH="$HOME/local/lib/"
     - cargo build --verbose
     - cargo test --verbose
-    - if [ "$TRAVIS_BRANCH" == "master" ]; then echo "Working on master branch" && cargo package --verbose; fi
