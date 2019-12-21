@@ -9,7 +9,7 @@ use crate::{
         FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, SkewTContext,
     },
 };
-use gtk::BuilderExtManual;
+use gtk::prelude::BuilderExtManual;
 use sounding_analysis::{self};
 use std::{
     cell::{Cell, Ref, RefCell},

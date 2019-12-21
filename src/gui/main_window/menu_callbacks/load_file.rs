@@ -21,7 +21,7 @@ pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn E
 
 pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let datas: Result<Vec<_>, _> = paths.iter().map(load_data).collect();
-    let mut datas: Vec<_> = datas?.into_iter().flat_map(|iter| iter).collect();
+    let mut datas: Vec<_> = datas?.into_iter().flatten().collect();
 
     // Sort by valid time ascending, then by lead time ascending
     datas.sort_by(|left, right| {
