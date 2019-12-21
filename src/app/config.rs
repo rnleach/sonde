@@ -769,9 +769,12 @@ pub const FIRE_PLUME_HEIGHTS: [Meters; 8] = [
     Meters(14_000.0),
 ];
 
-pub const FIRE_PLUME_CAPES: [JpKg; 11] = [
+pub const FIRE_PLUME_CAPES: [JpKg; 14] = [
     JpKg(0.0),
+    JpKg(100.0),
+    JpKg(250.0),
     JpKg(500.0),
+    JpKg(750.0),
     JpKg(1_000.0),
     JpKg(1_500.0),
     JpKg(2_000.0),
