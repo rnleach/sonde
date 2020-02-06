@@ -25,6 +25,9 @@ sounding-bufkit = "^0.12.0"
 sounding-analysis = "^0.12.7"
 threadpool = "1.7.1"
 
+[patch.crates-io]
+sounding-bufkit = {path = "../sounding-bufkit"}
+
 [profile.release]
 lto = true
 panic = 'abort'

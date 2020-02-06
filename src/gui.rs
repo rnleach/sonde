@@ -26,6 +26,7 @@ mod indexes_area;
 mod main_window;
 mod plot_context;
 pub mod profiles;
+mod provider_data;
 mod sounding;
 mod text_area;
 mod utility;
@@ -48,6 +49,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     profiles::initialize_profiles(&app)?;
     main_window::set_up_main_window(&app)?;
     indexes_area::set_up_indexes_area(&app)?;
+    provider_data::set_up_provider_text_area(&app)?;
 
     Ok(())
 }
@@ -73,6 +75,7 @@ pub fn update_text_views(app: &AppContext) {
     self::text_area::update_text_area(app);
     self::text_area::update_text_highlight(app);
     self::indexes_area::update_indexes_area(app);
+    self::provider_data::update_text_area(app);
 }
 
 trait Drawable: PlotContext + PlotContextExt {

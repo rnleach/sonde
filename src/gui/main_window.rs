@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 mod menu_callbacks;
 
-const TABS: [(&str, &str); 7] = [
+const TABS: [(&str, &str); 8] = [
     ("skew_t", "Skew T"),
     ("hodograph_area", "Hodograph"),
     ("fire_plume_container", "Fire Plume"),
@@ -16,6 +16,7 @@ const TABS: [(&str, &str); 7] = [
     ("control_area", "Controls"),
     ("profiles_area_container", "Profiles"),
     ("indexes_scrolled_window", "Indexes"),
+    ("provider_data_text_container", "Provider Data"),
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
