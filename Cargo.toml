@@ -11,7 +11,7 @@ cairo-rs = { version = "^0.8", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "^0.4"
 gdk = "^0.12"
-glib = "^0.9"
+glib = "^0.9.1"
 gtk = { version = "^0.8", features = ["v3_18"] }
 itertools = "^0.8"
 lazy_static = "^1"
@@ -22,7 +22,7 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-bufkit = "^0.12.0"
-sounding-analysis = "^0.12.6"
+sounding-analysis = "^0.12.7"
 threadpool = "1.7.1"
 
 [profile.release]
