@@ -144,13 +144,18 @@ macro_rules! push_prof {
             .$selector()
             .into_option()
             .and_then(|val| {
-                write!(
-                    $buf,
-                    $format,
-                    val.unpack(),
-                    (Inches::from(val).unpack() * 100.0).round() / 100.0,
-                )
-                .unwrap();
+                let val_inches = Inches::from(val);
+                if val_inches < Inches(0.01) && val_inches > Inches(0.0) {
+                    write!($buf, "         T").unwrap();
+                } else {
+                    write!(
+                        $buf,
+                        $format,
+                        (val.unpack() * 10.0).round() / 10.0,
+                        (val_inches.unpack() * 100.0).round() / 100.0,
+                    )
+                    .unwrap();
+                }
                 Some(())
             })
             .or_else(|| {
@@ -187,14 +192,15 @@ fn push_profile_indexes(buffer: &mut String, anal: &Analysis){
 
     buffer.push_str("Index                Value\n");
     buffer.push_str(HEADER_LINE);
-    push_prof!(anal, buffer, "DCAPE               ", dcape,              "{:>5.0} J/kg ({:>3.0} m/s {:>3.0} m/h)",            cape, empty_val);
-    push_prof!(anal, buffer, "PWAT                ", pwat,               "{:>7.0} mm ({:>4.2} in)",                           mm,   empty_val);
-    push_prof!(anal, buffer, "Downrush T          ", downrush_t,         "{:>8.0}\u{00b0}C ({:>3.0}\u{00b0}F)",               temp, empty_val);
-    push_prof!(anal, buffer, "Convective T        ", convective_t,       "{:>8.0}\u{00b0}C ({:>3.0}\u{00b0}F)              ", temp, empty_val);
-    push_prof!(anal, buffer, "3km SR Helicity (RM)", sr_helicity_3k_rm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
-    push_prof!(anal, buffer, "3km SR Helicity (LM)", sr_helicity_3k_lm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
-    push_prof!(anal, buffer, "Eff SR Helicity (RM)", sr_helicity_eff_rm, "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
-    push_prof!(anal, buffer, "Eff SR Helicity (LM)", sr_helicity_eff_lm, "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
+    push_prof!(anal, buffer, "1-hour Precip       ", provider_1hr_precip, "{:>7.1} mm ({:>4.2} in)",                           mm,   empty_val);
+    push_prof!(anal, buffer, "DCAPE               ", dcape,               "{:>5.0} J/kg ({:>3.0} m/s {:>3.0} m/h)",            cape, empty_val);
+    push_prof!(anal, buffer, "PWAT                ", pwat,                "{:>7.0} mm ({:>4.2} in)",                           mm,   empty_val);
+    push_prof!(anal, buffer, "Downrush T          ", downrush_t,          "{:>8.0}\u{00b0}C ({:>3.0}\u{00b0}F)",               temp, empty_val);
+    push_prof!(anal, buffer, "Convective T        ", convective_t,        "{:>8.0}\u{00b0}C ({:>3.0}\u{00b0}F)              ", temp, empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (RM)", sr_helicity_3k_rm,   "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
+    push_prof!(anal, buffer, "3km SR Helicity (LM)", sr_helicity_3k_lm,   "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (RM)", sr_helicity_eff_rm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
+    push_prof!(anal, buffer, "Eff SR Helicity (LM)", sr_helicity_eff_lm,  "{:>4.0} m\u{00b2}/s\u{00b2}",                             empty_val);
 }
 
 #[inline]

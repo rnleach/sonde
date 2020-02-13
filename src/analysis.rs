@@ -165,6 +165,15 @@ impl Analysis {
         self.downrush_t
     }
 
+    /// Get the 1 hour precipitation from the provider analysis, if it exists.
+    pub fn provider_1hr_precip(&self) -> Optioned<Mm> {
+        Optioned::from(
+            self.provider_analysis
+                .get("Precipitation1HrMm")
+                .map(|val| Mm(*val)),
+        )
+    }
+
     /// Get the Haines Index.
     #[allow(dead_code)]
     pub fn haines(&self) -> Optioned<u8> {
