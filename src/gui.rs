@@ -195,6 +195,7 @@ trait Drawable: PlotContext + PlotContextExt {
     /// Override to draw data
     fn draw_data(&self, args: DrawingArgs<'_, '_>);
 
+    /// Not recommended to override
     fn draw_data_and_legend(&self, args: DrawingArgs<'_, '_>) {
         self.draw_data(args);
 

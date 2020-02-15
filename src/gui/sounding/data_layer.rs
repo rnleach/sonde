@@ -2,16 +2,18 @@ use super::SkewTContext;
 use crate::{
     analysis::Analysis,
     app::config::{self},
-    coords::{ScreenCoords, TPCoords, XYCoords},
+    coords::{DeviceCoords, Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords},
     gui::{
         utility::{draw_filled_polygon, plot_curve_from_points},
-        Drawable, DrawingArgs, PlotContextExt,
+        Drawable, DrawingArgs, PlotContext, PlotContextExt,
     },
 };
 use itertools::izip;
 use log::warn;
 use metfor::{Celsius, Fahrenheit, JpKg, Quantity};
 use sounding_analysis::{self, Parcel, ParcelAscentAnalysis};
+
+const PRECIP_BOX_SIZE: f64 = 0.07;
 
 #[derive(Clone, Copy, Debug)]
 enum TemperatureType {
@@ -433,4 +435,169 @@ impl SkewTContext {
             draw_filled_polygon(cr, polygon_rgba, polygon);
         }
     }
+
+    pub fn draw_precip_icon(&self, args: DrawingArgs<'_, '_>) {
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+
+        let wx_symbol_code = if let Some(code) = ac
+            .get_sounding_for_display()
+            .map(|anal| anal.borrow().provider_wx_symbol_code())
+        {
+            code
+        } else {
+            return;
+        };
+
+        if wx_symbol_code == 0 {
+            return;
+        }
+
+        let screen = self.device_rect_to_screen_rect();
+
+        let mut box_area = screen;
+        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+        box_area.lower_left.x += padding + PRECIP_BOX_SIZE;
+        box_area.upper_right.x = box_area.lower_left.x + PRECIP_BOX_SIZE;
+        box_area.lower_left.y += PRECIP_BOX_SIZE;
+        box_area.upper_right.y = box_area.lower_left.y + PRECIP_BOX_SIZE;
+
+        Self::draw_legend_rectangle(args, &box_area);
+
+        let box_center = ScreenCoords {
+            x: box_area.lower_left.x + PRECIP_BOX_SIZE / 2.0,
+            y: box_area.lower_left.y + PRECIP_BOX_SIZE / 2.0,
+        };
+
+        cr.move_to(box_center.x, box_center.y);
+        match wx_symbol_code {
+            60 => draw_light_rain(cr),
+            66 => draw_light_freezing_rain(cr),
+            70 => draw_light_snow(cr),
+            79 => draw_ice_pellets(cr),
+            _ => draw_red_x(cr),
+        }
+    }
+
+    // FIXME: Should this be part of PlotContext for drawing things on the screen?
+    fn device_rect_to_screen_rect(&self) -> ScreenRect {
+        let device_rect = self.get_device_rect();
+
+        let mut lower_left = self.convert_device_to_screen(DeviceCoords {
+            row: device_rect.max_y(),
+            ..device_rect.upper_left
+        });
+
+        let mut upper_right = self.convert_device_to_screen(DeviceCoords {
+            col: device_rect.max_x(),
+            ..device_rect.upper_left
+        });
+
+        // Make sure we stay on the x-y coords domain
+        let ScreenCoords { x: xmin, y: ymin } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+        let ScreenCoords { x: xmax, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+
+        lower_left.x = lower_left.x.max(xmin);
+        lower_left.y = lower_left.y.max(ymin);
+        upper_right.x = upper_right.x.min(xmax);
+        upper_right.y = upper_right.y.min(ymax);
+
+        ScreenRect {
+            lower_left,
+            upper_right,
+        }
+    }
+}
+
+fn draw_red_x(cr: &cairo::Context) {
+    cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+    cr.rel_move_to(-PRECIP_BOX_SIZE / 2.0, -PRECIP_BOX_SIZE / 2.0);
+    cr.rel_line_to(PRECIP_BOX_SIZE, PRECIP_BOX_SIZE);
+    cr.rel_move_to(-PRECIP_BOX_SIZE, 0.0);
+    cr.rel_line_to(PRECIP_BOX_SIZE, -PRECIP_BOX_SIZE);
+    cr.stroke();
+}
+
+fn draw_light_rain(cr: &cairo::Context) {
+    let pnt_size = PRECIP_BOX_SIZE / 5.0 / 2.0; // divide by 2.0 for radius
+
+    cr.set_source_rgba(0.0, 0.8, 0.0, 1.0);
+    let (x, y) = cr.get_current_point();
+    cr.arc(x, y, pnt_size, 0.0, 2.0 * ::std::f64::consts::PI);
+    cr.fill();
+}
+
+fn draw_light_snow(cr: &cairo::Context) {
+    draw_snowflake(cr);
+}
+
+fn draw_light_freezing_rain(cr: &cairo::Context) {
+    use std::f64::consts::PI;
+
+    const PNT_SIZE: f64 = PRECIP_BOX_SIZE / 7.0 / 2.0; // divide by 2.0 for radius
+
+    cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    cr.rel_move_to(-PRECIP_BOX_SIZE / 5.0, 0.0);
+    let (x, y) = cr.get_current_point();
+    cr.arc(x, y, PNT_SIZE, 0.0, 2.0 * PI);
+    cr.fill();
+
+    let radius = PRECIP_BOX_SIZE / 5.0 / 1.2;
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+    cr.arc_negative(x, y, radius, 5.0 * PI / 4.0, 9.0 * PI / 4.0);
+    let x = x + PRECIP_BOX_SIZE / 5.0 * 2.0;
+    cr.arc(x, y, radius, 5.0 * PI / 4.0, 9.0 * PI / 4.0);
+    cr.stroke();
+}
+
+fn draw_ice_pellets(cr: &cairo::Context) {
+    use std::f64::consts::PI;
+    const PNT_SIZE: f64 = PRECIP_BOX_SIZE / 7.0 / 2.0; // divide by 2.0 for radius
+    #[allow(non_snake_case)]
+    let TRIANGLE_HEIGHT: f64 = PRECIP_BOX_SIZE * 3.0 * 3.0f64.sqrt() / 10.0;
+    const TRIANGLE_WIDTH: f64 = 3.0 * PRECIP_BOX_SIZE / 5.0;
+    #[allow(non_snake_case)]
+    let Y: f64 = (TRIANGLE_WIDTH * TRIANGLE_WIDTH / 4.0 + TRIANGLE_HEIGHT * TRIANGLE_HEIGHT)
+        / (2.0 * TRIANGLE_HEIGHT);
+
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+
+    cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    cr.rel_move_to(0.0, TRIANGLE_HEIGHT / 2.0 - Y);
+    let (x, y) = cr.get_current_point();
+    cr.arc(x, y, PNT_SIZE, 0.0, 2.0 * PI);
+    cr.fill();
+
+    cr.move_to(x, y);
+    cr.rel_move_to(0.0, Y);
+    cr.rel_line_to(TRIANGLE_WIDTH / 2.0, -TRIANGLE_HEIGHT);
+    cr.rel_line_to(-TRIANGLE_WIDTH, 0.0);
+    cr.close_path();
+    cr.stroke();
+}
+
+fn draw_snowflake(cr: &cairo::Context) {
+    const ANGLE: f64 = std::f64::consts::PI * 2.0 / 5.0;
+
+    let pnt_size = PRECIP_BOX_SIZE / 5.0;
+
+    cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+
+    cr.save();
+
+    let (x, y) = cr.get_current_point();
+    cr.translate(x, y);
+
+    cr.rel_line_to(0.0, pnt_size / 2.0);
+    for _ in 0..5 {
+        cr.rel_move_to(0.0, -pnt_size / 2.0);
+        cr.rotate(ANGLE);
+        cr.rel_line_to(0.0, pnt_size / 2.0);
+    }
+
+    cr.stroke();
+    cr.restore();
 }

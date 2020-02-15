@@ -55,12 +55,12 @@ pub fn update_text_area(ac: &AppContext) {
 
         let mut provider_data = anal
             .provider_analysis()
-            .into_iter()
+            .iter()
             .collect::<Vec<(_, _)>>();
         provider_data.sort_by_key(|kv| kv.0);
 
         for (k, v) in provider_data.into_iter() {
-            write!(text, "{:-35} : {:9.3}\n", k, v).unwrap();
+            writeln!(text, "{:-35} : {:9.3}", k, v).unwrap();
         }
 
         set_text!(tb, &text);

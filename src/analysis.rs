@@ -174,6 +174,43 @@ impl Analysis {
         )
     }
 
+    /// Get the weather symbol code from the provider, i.e. model physics scheme.
+    pub fn provider_wx_symbol_code(&self) -> u8 {
+        if let Some(code) = self
+            .provider_analysis
+            .get("WxSymbolCode")
+            .map(|&code| code as u8)
+        {
+            return code;
+        }
+
+        if let Some(val) = self.provider_analysis.get("PrecipTypeRain") {
+            if *val > 0.5 {
+                return 60;
+            }
+        }
+
+        if let Some(val) = self.provider_analysis.get("PrecipTypeSnow") {
+            if *val > 0.5 {
+                return 70;
+            }
+        }
+
+        if let Some(val) = self.provider_analysis.get("PrecipTypeFreezingRain") {
+            if *val > 0.5 {
+                return 66;
+            }
+        }
+
+        if let Some(val) = self.provider_analysis.get("PrecipTypeIcePellets") {
+            if *val > 0.5 {
+                return 79;
+            }
+        }
+
+        0
+    }
+
     /// Get the Haines Index.
     #[allow(dead_code)]
     pub fn haines(&self) -> Optioned<u8> {
