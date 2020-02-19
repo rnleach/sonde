@@ -32,7 +32,8 @@ my top priority.
    - Freezing line/level emphasized.
    - Showing, hiding, and colors of all lines and shading is configurable.
  - Profiles
-   - Pressure vertical velocity overlaid with relative humidity.
+   - Pressure vertical velocity overlaid with relative humidity, and relative humidity with respect
+     to ice can be shown along with the typical humidity over water.
    - Wind speed.
    - Cloud cover.
  - Profile backgrounds.
@@ -52,8 +53,8 @@ my top priority.
    - Inversion mix downs can be drawn.
    - Sample readout shows the currently sampled parcel profile and dry adiabatic mix down, including
      the CAPE and CIN values for the sampled parcel.
-   - Convective parcel analysis has four parcels to choose from: surface, mixed layer, most unstable
-     and convective.
+   - Convective parcel analysis has five parcels to choose from: surface, mixed layer, most unstable
+     convective, and effective.
    - The effective inflow layer is plotted next to the wind barbs on the skew-t.
    - In the hodograph display the 0-6 km mean wind, right moving, and left moving super cell motions
      are also plotted.
@@ -62,7 +63,8 @@ my top priority.
    - Most analysis options are configurable via a right click menu in the sounding and hodograph 
      areas.
    - The indexes tab lists several common and some uncommon indexes and parcel analysis values for
-     thunderstorms and fire weather.
+     thunderstorms and fire weather. Some of the fire weather parameters are experimental and may
+     change frequently with updates.
  - Data sources
    - Currently supports Bufkit files and loading [bufr][bufr] files.
    - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
@@ -90,14 +92,20 @@ A hodograph is also included. When sampling the skew-t, a dot appears at the cor
 on the hodograph. Mean wind, storm motion, and storm relative helicity are also plotted.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
-The profiles highlight important levels, such as the hail growth and dendritic snow growth zones 
-shown in these profiles. Also, the sample readouts track directly with the one on the skew-t.
+The profiles highlight important levels, such as the dendritic snow growth zone shown in these 
+profiles. A recent addition was also the precipitation icons, where the precipitation type is 
+determined by the model with intensity (Light, Moderate, Heavy) and mode (Stratiform, Convective)
+determined from the precipitation and convective precipitation amounts if they are included in the
+bufkit files. Also, the sample readouts track directly with the one on the skew-t.
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
 The indexes contain several common and some uncommon values from parcel theory and fire weather. I
 decided to include the helicity calculations for both the right and left moving supercell motions as
 well as some experimental fire weather indexes.
 ![screenshot with indexes view](./screenshots/Indexes.png)
+
+Some experimental analysis techniques for analyzing the atmospheric stability related to wildfire
+plumes are also included. ![screenshot with fire plume analysis view](./screenshots/FirePlumes.png)
 
 ## Future Development
  - A data downloader and manager.

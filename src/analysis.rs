@@ -174,6 +174,15 @@ impl Analysis {
         )
     }
 
+    /// Get the 1 hour convective precipitation from the provider analysis, if it exists.
+    pub fn provider_1hr_convective_precip(&self) -> Optioned<Mm> {
+        Optioned::from(
+            self.provider_analysis
+                .get("ConvectivePrecip1HrMm")
+                .map(|val| Mm(*val)),
+        )
+    }
+
     /// Get the weather symbol code from the provider, i.e. model physics scheme.
     pub fn provider_wx_symbol_code(&self) -> u8 {
         if let Some(code) = self

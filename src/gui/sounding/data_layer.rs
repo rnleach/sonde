@@ -10,7 +10,8 @@ use crate::{
 };
 use itertools::izip;
 use log::warn;
-use metfor::{Celsius, Fahrenheit, JpKg, Quantity};
+use metfor::{Celsius, Fahrenheit, JpKg, Mm, Quantity};
+use optional::Optioned;
 use sounding_analysis::{self, Parcel, ParcelAscentAnalysis};
 
 const PRECIP_BOX_SIZE: f64 = 0.07;
@@ -439,10 +440,13 @@ impl SkewTContext {
     pub fn draw_precip_icon(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        let wx_symbol_code = if let Some(code) = ac
-            .get_sounding_for_display()
-            .map(|anal| anal.borrow().provider_wx_symbol_code())
-        {
+        let wx_symbol_code = if let Some(code) = ac.get_sounding_for_display().map(|anal| {
+            let anal = anal.borrow();
+            let code = anal.provider_wx_symbol_code();
+            let conv_precip = anal.provider_1hr_convective_precip();
+            let total_precip = anal.provider_1hr_precip();
+            derived_wx_code(code, conv_precip, total_precip)
+        }) {
             code
         } else {
             return;
@@ -470,9 +474,25 @@ impl SkewTContext {
 
         cr.move_to(box_center.x, box_center.y);
         match wx_symbol_code {
-            60 => draw_light_rain(cr),
-            66 => draw_light_freezing_rain(cr),
-            70 => draw_light_snow(cr),
+            60 => draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_rain_dot),
+            61 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_rain_dot),
+            62 => draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_rain_dot),
+            63 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_rain_dot),
+            64 => draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_rain_dot),
+            65 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_rain_dot),
+
+            // FIXME: draw_freezing_rain(cr, Intensity)
+            66 => draw_freezing_rain(cr, Intensity::Light),
+            67 => draw_freezing_rain(cr, Intensity::Moderate),
+
+            // Add light moderate, heavy, and all showers.
+            70 => draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_snowflake),
+            71 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_snowflake),
+            72 => draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_snowflake),
+            73 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_snowflake),
+            74 => draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_snowflake),
+            75 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_snowflake),
+
             79 => draw_ice_pellets(cr),
             _ => draw_red_x(cr),
         }
@@ -510,30 +530,161 @@ impl SkewTContext {
     }
 }
 
-fn draw_red_x(cr: &cairo::Context) {
-    cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
-    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-    cr.rel_move_to(-PRECIP_BOX_SIZE / 2.0, -PRECIP_BOX_SIZE / 2.0);
-    cr.rel_line_to(PRECIP_BOX_SIZE, PRECIP_BOX_SIZE);
-    cr.rel_move_to(-PRECIP_BOX_SIZE, 0.0);
-    cr.rel_line_to(PRECIP_BOX_SIZE, -PRECIP_BOX_SIZE);
-    cr.stroke();
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Mode {
+    Stratiform,
+    Convective,
 }
 
-fn draw_light_rain(cr: &cairo::Context) {
-    let pnt_size = PRECIP_BOX_SIZE / 5.0 / 2.0; // divide by 2.0 for radius
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Intensity {
+    Light,
+    Moderate,
+    Heavy,
+}
 
-    cr.set_source_rgba(0.0, 0.8, 0.0, 1.0);
+fn derived_wx_code(wx_code: u8, conv_precip: Optioned<Mm>, total_precip: Optioned<Mm>) -> u8 {
+    let total_precip = if let Some(total_precip) = total_precip.into_option() {
+        total_precip
+    } else {
+        return wx_code;
+    };
+
+    let mode = if let Some(conv_precip) = conv_precip.into_option() {
+        if conv_precip > (total_precip - conv_precip) {
+            Mode::Convective
+        } else {
+            Mode::Stratiform
+        }
+    } else {
+        Mode::Stratiform
+    };
+
+    let intensity = if total_precip <= Mm(2.5) {
+        Intensity::Light
+    } else if total_precip <= Mm(7.6) {
+        Intensity::Moderate
+    } else {
+        Intensity::Heavy
+    };
+
+    match wx_code {
+        60 => {
+            // Rain
+            match mode {
+                Mode::Convective => {
+                    match intensity {
+                        Intensity::Light => 60,    // -SHRA
+                        Intensity::Moderate => 62, // SHRA
+                        Intensity::Heavy => 64,    // +SHRA
+                    }
+                }
+                Mode::Stratiform => {
+                    match intensity {
+                        Intensity::Light => 61,    // -RA
+                        Intensity::Moderate => 63, // RA
+                        Intensity::Heavy => 65,    // +RA
+                    }
+                }
+            }
+        }
+        66 => {
+            // Freezing rain
+            match intensity {
+                Intensity::Light => 66, // -FZRA
+                _ => 67,                // FZRA or +FZRA
+            }
+        }
+        70 => {
+            // Snow
+            match mode {
+                Mode::Convective => {
+                    match intensity {
+                        Intensity::Light => 70,    // -SHSN
+                        Intensity::Moderate => 72, // SHSN
+                        Intensity::Heavy => 74,    // +SHSN
+                    }
+                }
+                Mode::Stratiform => {
+                    match intensity {
+                        Intensity::Light => 71,    // -SN
+                        Intensity::Moderate => 73, // SN
+                        Intensity::Heavy => 75,    // +SN
+                    }
+                }
+            }
+        }
+        code => code, // All other codes just get passed through, including IP
+    }
+}
+
+fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
+    cr: &cairo::Context,
+    mode: Mode,
+    inten: Intensity,
+    draw_func: F,
+) {
+    const GRID_SIZE: f64 = PRECIP_BOX_SIZE / 5.0;
+    const PNT_SIZE: f64 = GRID_SIZE / 2.0; // divide by 2.0 for radius
+    const A: f64 = std::f64::consts::SQRT_2 * GRID_SIZE;
+
     let (x, y) = cr.get_current_point();
-    cr.arc(x, y, pnt_size, 0.0, 2.0 * ::std::f64::consts::PI);
-    cr.fill();
+
+    if mode == Mode::Stratiform {
+        match inten {
+            Intensity::Light => {
+                cr.move_to(x - A / 2.0, y);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x + A / 2.0, y);
+                draw_func(cr, PNT_SIZE);
+            }
+            Intensity::Moderate => {
+                const H_SQ: f64 = 3.0 * A * A / 4.0;
+                let h = H_SQ.sqrt();
+                let yt = (A * A + 4.0 * H_SQ) / (8.0 * h);
+
+                cr.move_to(x, y + yt);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x + A / 2.0, y - h + yt);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x - A / 2.0, y - h + yt);
+                draw_func(cr, PNT_SIZE);
+            }
+            Intensity::Heavy => {
+                cr.move_to(x, y + GRID_SIZE);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x, y - GRID_SIZE);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x + GRID_SIZE, y);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x - GRID_SIZE, y);
+                draw_func(cr, PNT_SIZE);
+            }
+        }
+    } else {
+        // Mode::Convective
+        match inten {
+            Intensity::Light => {
+                draw_func(cr, PNT_SIZE);
+            }
+            Intensity::Moderate => {
+                cr.move_to(x, y + A / 2.0);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x, y - A / 2.0);
+                draw_func(cr, PNT_SIZE);
+            }
+            Intensity::Heavy => {
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x, y + A);
+                draw_func(cr, PNT_SIZE);
+                cr.move_to(x, y - A);
+                draw_func(cr, PNT_SIZE);
+            }
+        }
+    }
 }
 
-fn draw_light_snow(cr: &cairo::Context) {
-    draw_snowflake(cr);
-}
-
-fn draw_light_freezing_rain(cr: &cairo::Context) {
+fn draw_freezing_rain(cr: &cairo::Context, intensity: Intensity) {
     use std::f64::consts::PI;
 
     const PNT_SIZE: f64 = PRECIP_BOX_SIZE / 7.0 / 2.0; // divide by 2.0 for radius
@@ -550,6 +701,11 @@ fn draw_light_freezing_rain(cr: &cairo::Context) {
     let x = x + PRECIP_BOX_SIZE / 5.0 * 2.0;
     cr.arc(x, y, radius, 5.0 * PI / 4.0, 9.0 * PI / 4.0);
     cr.stroke();
+
+    if intensity == Intensity::Moderate {
+        cr.arc(x, y, PNT_SIZE, 0.0, 2.0 * PI);
+        cr.fill();
+    }
 }
 
 fn draw_ice_pellets(cr: &cairo::Context) {
@@ -578,10 +734,28 @@ fn draw_ice_pellets(cr: &cairo::Context) {
     cr.stroke();
 }
 
-fn draw_snowflake(cr: &cairo::Context) {
-    const ANGLE: f64 = std::f64::consts::PI * 2.0 / 5.0;
+fn draw_red_x(cr: &cairo::Context) {
+    cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+    cr.rel_move_to(-PRECIP_BOX_SIZE / 2.0, -PRECIP_BOX_SIZE / 2.0);
+    cr.rel_line_to(PRECIP_BOX_SIZE, PRECIP_BOX_SIZE);
+    cr.rel_move_to(-PRECIP_BOX_SIZE, 0.0);
+    cr.rel_line_to(PRECIP_BOX_SIZE, -PRECIP_BOX_SIZE);
+    cr.stroke();
+}
 
-    let pnt_size = PRECIP_BOX_SIZE / 5.0;
+fn draw_rain_dot(cr: &cairo::Context, pnt_size: f64) {
+    use std::f64::consts::PI;
+
+    cr.set_source_rgba(0.0, 0.8, 0.0, 1.0);
+    let (x, y) = cr.get_current_point();
+    cr.arc(x, y, pnt_size, 0.0, 2.0 * PI);
+    cr.fill();
+}
+
+fn draw_snowflake(cr: &cairo::Context, _pnt_size: f64) {
+    const ANGLE: f64 = std::f64::consts::PI * 2.0 / 5.0;
+    const A: f64 = PRECIP_BOX_SIZE / 5.0 / 2.0;
 
     cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
     cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
@@ -591,11 +765,11 @@ fn draw_snowflake(cr: &cairo::Context) {
     let (x, y) = cr.get_current_point();
     cr.translate(x, y);
 
-    cr.rel_line_to(0.0, pnt_size / 2.0);
+    cr.rel_line_to(0.0, A);
     for _ in 0..5 {
-        cr.rel_move_to(0.0, -pnt_size / 2.0);
+        cr.rel_move_to(0.0, -A);
         cr.rotate(ANGLE);
-        cr.rel_line_to(0.0, pnt_size / 2.0);
+        cr.rel_line_to(0.0, A);
     }
 
     cr.stroke();

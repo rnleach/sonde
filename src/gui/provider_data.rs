@@ -53,10 +53,7 @@ pub fn update_text_area(ac: &AppContext) {
         let anal = anal.borrow();
         let mut text = String::with_capacity(4096);
 
-        let mut provider_data = anal
-            .provider_analysis()
-            .iter()
-            .collect::<Vec<(_, _)>>();
+        let mut provider_data = anal.provider_analysis().iter().collect::<Vec<(_, _)>>();
         provider_data.sort_by_key(|kv| kv.0);
 
         for (k, v) in provider_data.into_iter() {
