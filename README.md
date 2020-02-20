@@ -93,10 +93,11 @@ on the hodograph. Mean wind, storm motion, and storm relative helicity are also 
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
 The profiles highlight important levels, such as the dendritic snow growth zone shown in these 
-profiles. A recent addition was also the precipitation icons, where the precipitation type is 
-determined by the model with intensity (Light, Moderate, Heavy) and mode (Stratiform, Convective)
-determined from the precipitation and convective precipitation amounts if they are included in the
-bufkit files. Also, the sample readouts track directly with the one on the skew-t.
+profiles. In the screenshot above the hail growth zone is highlighted on the Skew-T. A recent
+addition was also the precipitation icons, where the precipitation type is determined by the model
+with intensity (Light, Moderate, Heavy) and mode (Stratiform, Convective) determined from the
+precipitation and convective precipitation amounts if they are included in the bufkit files. Also,
+the sample readouts track directly with the one on the skew-t.
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
 The indexes contain several common and some uncommon values from parcel theory and fire weather. I
