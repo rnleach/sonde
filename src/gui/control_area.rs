@@ -98,9 +98,12 @@ macro_rules! build_config_color {
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.mark_background_dirty();
+            acp.mark_data_dirty();
+            acp.mark_overlay_dirty();
 
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
+            crate::gui::indexes_area::update_indexes_area(&acp);
         });
 
         // Layout

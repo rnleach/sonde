@@ -351,6 +351,13 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
         Some(tag) => tag,
         None => return,
     };
+    let rgba = config.parcel_indexes_highlight;
+    tag.set_property_background_rgba(Some(&gdk::RGBA {
+        red: rgba.0,
+        green: rgba.1,
+        blue: rgba.2,
+        alpha: rgba.3,
+    }));
 
     let pcl_label: &'static str = match config.parcel_type {
         ParcelType::Surface => "Surface",
