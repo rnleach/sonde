@@ -10,6 +10,7 @@ use metfor::{
     Celsius, CelsiusDiff, HectoPascal, JpKg, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 /// Types of parcels you can use when drawing parcel analysis overlays.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -42,7 +43,7 @@ pub type Rgba = (f64, f64, f64, f64);
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     //
-    // Window Layout
+    // Session information and window Layout
     //
     /// Width of window in pixels.
     pub window_width: i32,
@@ -58,6 +59,8 @@ pub struct Config {
     pub left_page_selected: i32,
     /// Selected tab on right notebook
     pub right_page_selected: i32,
+    /// The last file opened.
+    pub last_open_file: Option<PathBuf>,
 
     //
     // Wind profile
@@ -333,6 +336,7 @@ impl Default for Config {
             right_tabs: vec![],
             left_page_selected: 0,
             right_page_selected: 0,
+            last_open_file: None,
 
             //
             // Wind profile

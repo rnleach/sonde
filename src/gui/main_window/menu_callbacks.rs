@@ -28,6 +28,10 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
 
     dialog.set_select_multiple(open_multiple);
 
+    if let Some(ref fname) = ac.config.borrow().last_open_file {
+        dialog.set_filename(fname);
+    }
+
     let filter_data = [
         ("*.buf", "Bufkit files (*.buf)"),
         ("*.bufr", "Bufr files (*.bufr)"),
@@ -62,10 +66,19 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
                 .into_iter()
                 .filter(|pb| pb.is_file())
                 .collect();
+
+            // Remember the last opened file in the config.
+            if let Some(ref f0) = paths.get(0) {
+                ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
+            }
+
             if let Err(ref err) = load_file::load_multiple(&paths, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
             }
         } else if let Some(filename) = dialog.get_filename() {
+            // Remember!
+            ac.config.borrow_mut().last_open_file = Some(PathBuf::from(&filename));
+
             if let Err(ref err) = load_file::load_file(&filename, ac) {
                 show_error_dialog(&format!("Error loading file: {}", err), win);
             }
