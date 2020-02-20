@@ -26,8 +26,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let app = AppContext::initialize();
 
     // Load the data configuration from last time, if it exists.
-    File::open("config.yml")
-        .ok()
+    dirs::config_dir()
+        .map(|path| path.join("sonde_config.yml"))
+        .and_then(|path| File::open(path).ok())
         .and_then(|mut f| {
             let mut serialized_config = String::new();
 
@@ -52,7 +53,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     // Save the configuration on closing.
     let serialized_config = serde_yaml::to_string(&app.config)?;
-    File::create("config.yml").and_then(|mut f| f.write_all(serialized_config.as_bytes()))?;
+    if let Some(config_path) = dirs::config_dir().map(|path| path.join("sonde_config.yml")) {
+        File::create(config_path).and_then(|mut f| f.write_all(serialized_config.as_bytes()))?;
+    }
 
     Ok(())
 }

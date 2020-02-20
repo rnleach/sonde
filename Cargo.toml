@@ -10,6 +10,7 @@ bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.3"}
 cairo-rs = { version = "^0.8", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "^0.4"
+dirs = "^2.0.2"
 gdk = "^0.12"
 glib = "^0.9.1"
 gtk = { version = "^0.8", features = ["v3_18"] }

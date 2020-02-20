@@ -10,14 +10,9 @@ Cargo.lock
 .buildconfig
 *.swp
 Session.vim
+*~
+tags
 
 // OS specific
 .DS_Store
-
-// Application specific
-config.yml
-
-// misc
-*~
-tags
 
