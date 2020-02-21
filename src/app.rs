@@ -178,6 +178,21 @@ impl AppContext {
         }
     }
 
+    /// Display the first sounding in the series.
+    pub fn display_first(&self) {
+        if self.plottable() {
+            self.set_currently_displayed(0);
+        }
+    }
+
+    /// Display the last sounding in the series.
+    pub fn display_last(&self) {
+        if self.plottable() {
+            let last_index = self.list.borrow().len() - 1;
+            self.set_currently_displayed(last_index);
+        }
+    }
+
     #[inline]
     fn set_currently_displayed(&self, idx: usize) {
         self.currently_displayed_index.set(idx);

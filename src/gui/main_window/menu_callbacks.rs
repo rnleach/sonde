@@ -7,21 +7,17 @@ use crate::{
 use cairo;
 use gtk::{
     prelude::DialogExtManual, DialogExt, FileChooserAction, FileChooserDialog, FileChooserExt,
-    FileFilter, MenuItem, MessageDialog, ResponseType, WidgetExt, Window,
+    FileFilter, MessageDialog, ResponseType, WidgetExt, Window,
 };
 use std::path::PathBuf;
 
 mod load_file;
 
-pub fn open_callback(mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
-    open_files(mi, ac, win, false);
+pub fn open_toolbar_callback(ac: &AppContextPointer, win: &Window) {
+    open_files(ac, win, true);
 }
 
-pub fn open_many_callback(mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
-    open_files(mi, ac, win, true);
-}
-
-fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multiple: bool) {
+fn open_files(ac: &AppContextPointer, win: &Window, open_multiple: bool) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
     dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
@@ -90,7 +86,7 @@ fn open_files(_mi: &MenuItem, ac: &AppContextPointer, win: &Window, open_multipl
     dialog.destroy();
 }
 
-pub fn save_image_callback(_mi: &MenuItem, ac: &AppContextPointer, win: &Window) {
+pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Save Image"), Some(win), FileChooserAction::Save);
 
     dialog.add_buttons(&[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
