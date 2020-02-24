@@ -57,6 +57,14 @@ fn connect_tool_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let ac1 = Rc::clone(ac);
     last_button.connect_clicked(move |_| ac1.display_last());
 
+    let zoom_in_button: ToolButton = ac.fetch_widget("toolbar-zoomin")?;
+    let ac1 = Rc::clone(ac);
+    zoom_in_button.connect_clicked(move |_| ac1.zoom_in());
+
+    let zoom_out_button: ToolButton = ac.fetch_widget("toolbar-zoomout")?;
+    let ac1 = Rc::clone(ac);
+    zoom_out_button.connect_clicked(move |_| ac1.zoom_out());
+
     let quit_button: ToolButton = ac.fetch_widget("toolbar-quit")?;
     quit_button.connect_clicked(|_| {
         gtk::main_quit();

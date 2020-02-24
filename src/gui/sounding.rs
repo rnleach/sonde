@@ -2,7 +2,7 @@ use crate::{
     app::{
         config::{self, Rgba},
         sample::{create_sample_plume, create_sample_sounding, Sample},
-        AppContext, AppContextPointer,
+        AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{
         convert_pressure_to_y, convert_y_to_pressure, DeviceCoords, ScreenCoords, ScreenRect,
@@ -15,7 +15,7 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt,
     },
 };
-use gdk::{EventButton, EventMotion, EventScroll, ScrollDirection};
+use gdk::{EventButton, EventMotion};
 use gtk::{prelude::*, DrawingArea, Menu};
 use itertools::izip;
 use metfor::{Celsius, Feet, Quantity};
@@ -101,6 +101,9 @@ impl Drawable for SkewTContext {
 
         let ac = Rc::clone(acp);
         da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
+
+        let ac = Rc::clone(acp);
+        da.connect_enter_notify_event(move |_da, _ev| ac.skew_t.enter_event(&ac));
 
         let ac = Rc::clone(acp);
         da.connect_leave_notify_event(move |_da, _ev| ac.skew_t.leave_event(&ac));
@@ -484,48 +487,9 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
-    /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
-        const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
-
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
-
-        let old_zoom = self.get_zoom_factor();
-        let mut new_zoom = old_zoom;
-
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
-
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        self.set_zoom_factor(new_zoom);
-
-        let mut translate = self.get_translate();
-        translate = XYCoords {
-            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
-            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
-        };
-        self.set_translate(translate);
-        self.bound_view();
-        ac.mark_background_dirty();
-
-        crate::gui::draw_all(&ac);
-        crate::gui::text_area::update_text_highlight(&ac);
-
-        Inhibit(true)
+    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+        ac.set_last_focus(ZoomableDrawingAreas::SkewT);
+        Inhibit(false)
     }
 
     fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {

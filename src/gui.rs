@@ -714,8 +714,6 @@ trait Drawable: PlotContext + PlotContextExt {
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
     fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
-        const MIN_ZOOM: f64 = 1.0;
-        const MAX_ZOOM: f64 = 10.0;
 
         let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
         let dir = event.get_direction();
@@ -733,21 +731,13 @@ trait Drawable: PlotContext + PlotContextExt {
             _ => {}
         }
 
-        if new_zoom < MIN_ZOOM {
-            new_zoom = MIN_ZOOM;
-        } else if new_zoom > MAX_ZOOM {
-            new_zoom = MAX_ZOOM;
-        }
-        self.set_zoom_factor(new_zoom);
-
         let mut translate = self.get_translate();
         translate = XYCoords {
             x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
             y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
         };
-        self.set_translate(translate);
-        self.bound_view();
-        self.mark_background_dirty();
+
+        self.zoom(translate, new_zoom);
 
         draw_all(ac);
         text_area::update_text_highlight(ac);
@@ -774,6 +764,10 @@ trait Drawable: PlotContext + PlotContextExt {
         } else {
             Inhibit(false)
         }
+    }
+
+    fn enter_event(&self, _ac: &AppContextPointer) -> Inhibit {
+        Inhibit(false)
     }
 
     fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {

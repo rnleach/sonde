@@ -2,7 +2,7 @@ use crate::{
     app::{
         config::{self, HelicityType, Rgba, StormMotionType},
         sample::Sample,
-        AppContext, AppContextPointer,
+        AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{SDCoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
@@ -74,6 +74,9 @@ impl Drawable for HodoContext {
 
         let ac = Rc::clone(acp);
         da.connect_motion_notify_event(move |da, ev| ac.hodo.mouse_motion_event(da, ev, &ac));
+
+        let ac = Rc::clone(acp);
+        da.connect_enter_notify_event(move |_da, _ev| ac.hodo.enter_event(&ac));
 
         let ac = Rc::clone(acp);
         da.connect_leave_notify_event(move |_da, _ev| ac.hodo.leave_event(&ac));
@@ -288,6 +291,11 @@ impl Drawable for HodoContext {
         } else {
             Inhibit(false)
         }
+    }
+
+    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+        ac.set_last_focus(ZoomableDrawingAreas::Hodo);
+        Inhibit(false)
     }
 }
 

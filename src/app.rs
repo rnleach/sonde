@@ -6,7 +6,8 @@ use crate::{
     gui::{
         self,
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, SkewTContext,
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
+        SkewTContext,
     },
 };
 use gtk::prelude::BuilderExtManual;
@@ -38,6 +39,9 @@ pub struct AppContext {
     currently_displayed_index: Cell<usize>,
     last_sample: RefCell<Sample>,
 
+    // Last Drawing area to have focus, for use with focus buttons
+    last_focus: Cell<ZoomableDrawingAreas>,
+
     // Handle to the GUI
     gui: gtk::Builder,
 
@@ -62,6 +66,14 @@ pub struct AppContext {
     pub wind_speed: WindSpeedContext,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum ZoomableDrawingAreas {
+    SkewT,
+    Hodo,
+    FirePlume,
+    FirePlumeEnergy,
+}
+
 impl AppContext {
     /// Create a new instance of AppContext and return a smart pointer to it.
     ///
@@ -76,6 +88,7 @@ impl AppContext {
             analyzed_count: Cell::new(0),
             currently_displayed_index: Cell::new(0),
             last_sample: RefCell::new(Sample::None),
+            last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
             gui: gtk::Builder::new_from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
@@ -253,6 +266,32 @@ impl AppContext {
         *self.last_sample.borrow_mut() = sample;
         gui::update_text_highlight(&self);
         self.mark_overlay_dirty();
+    }
+
+    pub fn set_last_focus(&self, zoomable: ZoomableDrawingAreas) {
+        self.last_focus.set(zoomable);
+    }
+
+    pub fn zoom_in(&self) {
+        use ZoomableDrawingAreas::*;
+
+        match self.last_focus.get() {
+            SkewT => self.skew_t.zoom_in(),
+            Hodo => self.hodo.zoom_in(),
+            FirePlume => self.fire_plume.zoom_in(),
+            FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
+        }
+    }
+
+    pub fn zoom_out(&self) {
+        use ZoomableDrawingAreas::*;
+
+        match self.last_focus.get() {
+            SkewT => self.skew_t.zoom_out(),
+            Hodo => self.hodo.zoom_out(),
+            FirePlume => self.fire_plume.zoom_out(),
+            FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
+        }
     }
 
     pub fn mark_data_dirty(&self) {

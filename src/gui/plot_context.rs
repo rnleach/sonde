@@ -262,6 +262,52 @@ pub trait PlotContextExt: PlotContext {
         }
         self.set_translate(translate);
     }
+
+    /// Execute a zoom
+    fn zoom(&self, new_translate: XYCoords, mut new_zoom: f64) {
+        const MIN_ZOOM: f64 = 1.0;
+        const MAX_ZOOM: f64 = 10.0;
+
+        if new_zoom < MIN_ZOOM {
+            new_zoom = MIN_ZOOM;
+        } else if new_zoom > MAX_ZOOM {
+            new_zoom = MAX_ZOOM;
+        }
+        self.set_zoom_factor(new_zoom);
+
+        self.set_translate(new_translate);
+        self.bound_view();
+        self.mark_background_dirty();
+    }
+
+    /// Step in a zoom factor.
+    fn zoom_in(&self) {
+        apply_zoom(self, ZoomDirection::In)
+    }
+
+    /// Step out a zoom factor.
+    fn zoom_out(&self) {
+        apply_zoom(self, ZoomDirection::Out)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ZoomDirection {
+    In,
+    Out,
+}
+
+fn apply_zoom<P: PlotContextExt>(context: &P, direction: ZoomDirection) {
+    const DELTA: f64 = 1.1;
+
+    let translate = context.get_translate();
+    let old_zoom = context.get_zoom_factor();
+    let zoom = match direction {
+        ZoomDirection::In => DELTA * old_zoom,
+        ZoomDirection::Out => old_zoom / DELTA,
+    };
+
+    context.zoom(translate, zoom);
 }
 
 #[derive(Debug)]

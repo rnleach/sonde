@@ -2,7 +2,7 @@ use crate::{
     app::{
         config::{self, Rgba},
         sample::Sample,
-        AppContext, AppContextPointer,
+        AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{DeviceCoords, DtECoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
@@ -111,6 +111,9 @@ impl Drawable for FirePlumeEnergyContext {
         da.connect_motion_notify_event(move |da, ev| {
             ac.fire_plume_energy.mouse_motion_event(da, ev, &ac)
         });
+
+        let ac = Rc::clone(acp);
+        da.connect_enter_notify_event(move |_da, _ev| ac.fire_plume_energy.enter_event(&ac));
 
         let ac = Rc::clone(acp);
         da.connect_leave_notify_event(move |_da, _ev| ac.fire_plume_energy.leave_event(&ac));
@@ -411,6 +414,11 @@ impl Drawable for FirePlumeEnergyContext {
             crate::gui::draw_all(&ac);
         }
 
+        Inhibit(false)
+    }
+
+    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+        ac.set_last_focus(ZoomableDrawingAreas::FirePlumeEnergy);
         Inhibit(false)
     }
 }
