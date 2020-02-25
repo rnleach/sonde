@@ -281,6 +281,8 @@ impl AppContext {
             FirePlume => self.fire_plume.zoom_in(),
             FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
         }
+
+        gui::draw_all(self);
     }
 
     pub fn zoom_out(&self) {
@@ -292,6 +294,8 @@ impl AppContext {
             FirePlume => self.fire_plume.zoom_out(),
             FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
         }
+
+        gui::draw_all(self);
     }
 
     pub fn mark_data_dirty(&self) {

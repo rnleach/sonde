@@ -3,7 +3,10 @@ use crate::{
     errors::SondeError,
 };
 use gdk::Event;
-use gtk::{self, prelude::*, Notebook, Paned, ToolButton, ToolButtonExt, Widget, Window};
+use gtk::{
+    self, prelude::*, Button, HeaderBar, IconSize, Notebook, Orientation, Paned, Separator, Widget,
+    Window,
+};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -20,55 +23,78 @@ const TABS: [(&str, &str); 8] = [
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
-    connect_tool_bar(ac)?;
+    connect_header_bar(ac)?;
     configure_main_window(ac)?;
 
     Ok(())
 }
 
-fn connect_tool_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
+fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let win: Window = ac.fetch_widget("main_window")?;
+    let header_bar: HeaderBar = ac.fetch_widget("header-bar")?;
 
-    let open_button: ToolButton = ac.fetch_widget("toolbar-open")?;
+    let open_button = Button::new_from_icon_name(Some("document-open"), IconSize::SmallToolbar);
+    open_button.set_label("Open");
+    open_button.set_always_show_image(true);
     let ac1 = Rc::clone(ac);
     let win1 = win.clone();
     open_button.connect_clicked(move |_| {
         menu_callbacks::open_toolbar_callback(&ac1, &win1);
     });
+    header_bar.pack_start(&open_button);
 
-    let save_image_button: ToolButton = ac.fetch_widget("toolbar-saveimage")?;
+    let save_image_button =
+        Button::new_from_icon_name(Some("insert-image"), IconSize::SmallToolbar);
+    save_image_button.set_label("Save Image");
+    save_image_button.set_always_show_image(true);
     let ac1 = Rc::clone(ac);
     let win1 = win.clone();
     save_image_button.connect_clicked(move |_| menu_callbacks::save_image_callback(&ac1, &win1));
+    header_bar.pack_start(&save_image_button);
 
-    let first_button: ToolButton = ac.fetch_widget("toolbar-first")?;
+    header_bar.pack_start(&Separator::new(Orientation::Vertical));
+
+    let first_button =
+        Button::new_from_icon_name(Some("go-first"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     first_button.connect_clicked(move |_| ac1.display_first());
+    header_bar.pack_start(&first_button);
 
-    let next_button: ToolButton = ac.fetch_widget("toolbar-next")?;
-    let ac1 = Rc::clone(ac);
-    next_button.connect_clicked(move |_| ac1.display_next());
-
-    let previous_button: ToolButton = ac.fetch_widget("toolbar-previous")?;
+    let previous_button =
+        Button::new_from_icon_name(Some("media-skip-backward"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     previous_button.connect_clicked(move |_| ac1.display_previous());
+    header_bar.pack_start(&previous_button);
 
-    let last_button: ToolButton = ac.fetch_widget("toolbar-last")?;
+    let next_button =
+        Button::new_from_icon_name(Some("media-skip-forward"), IconSize::SmallToolbar);
+    let ac1 = Rc::clone(ac);
+    next_button.connect_clicked(move |_| ac1.display_next());
+    header_bar.pack_start(&next_button);
+
+    let last_button = Button::new_from_icon_name(Some("go-last"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     last_button.connect_clicked(move |_| ac1.display_last());
+    header_bar.pack_start(&last_button);
 
-    let zoom_in_button: ToolButton = ac.fetch_widget("toolbar-zoomin")?;
+    header_bar.pack_start(&Separator::new(Orientation::Vertical));
+
+    let zoom_in_button = Button::new_from_icon_name(Some("zoom-in"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     zoom_in_button.connect_clicked(move |_| ac1.zoom_in());
+    header_bar.pack_start(&zoom_in_button);
 
-    let zoom_out_button: ToolButton = ac.fetch_widget("toolbar-zoomout")?;
+    let zoom_out_button = Button::new_from_icon_name(Some("zoom-out"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     zoom_out_button.connect_clicked(move |_| ac1.zoom_out());
+    header_bar.pack_start(&zoom_out_button);
 
-    let quit_button: ToolButton = ac.fetch_widget("toolbar-quit")?;
+    let quit_button =
+        Button::new_from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
     quit_button.connect_clicked(|_| {
         gtk::main_quit();
     });
+    header_bar.pack_end(&quit_button);
 
     Ok(())
 }
