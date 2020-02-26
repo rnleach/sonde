@@ -54,8 +54,7 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     header_bar.pack_start(&Separator::new(Orientation::Vertical));
 
-    let first_button =
-        Button::new_from_icon_name(Some("go-first"), IconSize::SmallToolbar);
+    let first_button = Button::new_from_icon_name(Some("go-first"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     first_button.connect_clicked(move |_| ac1.display_first());
     header_bar.pack_start(&first_button);
