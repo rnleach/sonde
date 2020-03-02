@@ -12,7 +12,10 @@ use itertools::izip;
 use log::warn;
 use metfor::{Celsius, Fahrenheit, JpKg, Mm, Quantity};
 use optional::Optioned;
-use sounding_analysis::{self, Parcel, ParcelAscentAnalysis};
+use sounding_analysis::{
+    self, adjust_precip_type_intensity, bourgouin_precip_type, Parcel, ParcelAscentAnalysis,
+    PrecipType,
+};
 
 const PRECIP_BOX_SIZE: f64 = 0.07;
 
@@ -437,65 +440,136 @@ impl SkewTContext {
         }
     }
 
-    pub fn draw_precip_icon(&self, args: DrawingArgs<'_, '_>) {
+    pub fn draw_precip_icons(&self, args: DrawingArgs<'_, '_>) {
+        // FIXME add options for which boxes to show.
+        self.draw_precip_icon(PrecipTypeAlgorithm::Model, 0, args);
+        self.draw_precip_icon(PrecipTypeAlgorithm::Bourgouin, 1, args);
+        self.draw_precip_icon(PrecipTypeAlgorithm::NSSL, 2, args);
+    }
+
+    fn draw_precip_icon(&self, algo: PrecipTypeAlgorithm, box_num: u8, args: DrawingArgs<'_, '_>) {
+        use PrecipTypeAlgorithm::*;
+
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        let wx_symbol_code = if let Some(code) = ac.get_sounding_for_display().map(|anal| {
-            let anal = anal.borrow();
-            let code = anal.provider_wx_symbol_code();
-            let conv_precip = anal.provider_1hr_convective_precip();
-            let total_precip = anal.provider_1hr_precip();
-            derived_wx_code(code, conv_precip, total_precip)
-        }) {
-            code
+        let (wx_symbol_code, method_str) = if let Some(vals) = match algo {
+            Model => ac
+                .get_sounding_for_display()
+                .map(|anal| {
+                    let anal = anal.borrow();
+                    let code = PrecipType::from(anal.provider_wx_symbol_code());
+                    let conv_precip = anal.provider_1hr_convective_precip();
+                    let total_precip = anal.provider_1hr_precip();
+                    derived_wx_code(code, conv_precip, total_precip)
+                })
+                .map(|code| (code, "--Model--")),
+            Bourgouin => ac
+                .get_sounding_for_display()
+                .and_then(|anal| {
+                    let anal = anal.borrow();
+                    let snd = anal.sounding();
+                    let code = bourgouin_precip_type(snd).unwrap_or(Unknown);
+                    anal.provider_1hr_precip()
+                        .map(|pcp| adjust_precip_type_intensity(code, pcp))
+                })
+                .map(|code| (code, "Bourgouin")),
+            NSSL => std::option::Option::None,
+        } {
+            vals
         } else {
             return;
         };
 
-        if wx_symbol_code == 0 {
+        if wx_symbol_code == PrecipType::None {
             return;
         }
 
-        let screen = self.device_rect_to_screen_rect();
+        self.prepare_to_make_text(args);
 
-        let mut box_area = screen;
         let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
-        box_area.lower_left.x += padding + PRECIP_BOX_SIZE;
-        box_area.upper_right.x = box_area.lower_left.x + PRECIP_BOX_SIZE;
-        box_area.lower_left.y += PRECIP_BOX_SIZE;
-        box_area.upper_right.y = box_area.lower_left.y + PRECIP_BOX_SIZE;
+        let text_extents = cr.text_extents(method_str);
+        let mut width = PRECIP_BOX_SIZE;
+        if width < text_extents.width + 2.0 * padding {
+            width = text_extents.width + 2.0 * padding;
+        }
+        let height = PRECIP_BOX_SIZE + 2.0 * padding + text_extents.height;
+
+        let mut box_area = self.device_rect_to_screen_rect();
+        box_area.lower_left.x += PRECIP_BOX_SIZE;
+        box_area.upper_right.x = box_area.lower_left.x + width;
+        box_area.lower_left.y += PRECIP_BOX_SIZE + (2.0 * padding + height) * box_num as f64;
+        box_area.upper_right.y = box_area.lower_left.y + height;
 
         Self::draw_legend_rectangle(args, &box_area);
 
         let box_center = ScreenCoords {
-            x: box_area.lower_left.x + PRECIP_BOX_SIZE / 2.0,
-            y: box_area.lower_left.y + PRECIP_BOX_SIZE / 2.0,
+            x: box_area.lower_left.x + width / 2.0,
+            y: box_area.lower_left.y + PRECIP_BOX_SIZE / 2.0 + text_extents.height + 2.0 * padding,
         };
 
         cr.move_to(box_center.x, box_center.y);
+        use PrecipType::*;
         match wx_symbol_code {
-            60 => draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_rain_dot),
-            61 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_rain_dot),
-            62 => draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_rain_dot),
-            63 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_rain_dot),
-            64 => draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_rain_dot),
-            65 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_rain_dot),
+            LightRainShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_rain_dot)
+            }
+            LightRain => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_rain_dot),
+            ModerateRainShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_rain_dot)
+            }
+            ModerateRain => {
+                draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_rain_dot)
+            }
+            HeavyRainShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_rain_dot)
+            }
+            HeavyRain => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_rain_dot),
 
-            // FIXME: draw_freezing_rain(cr, Intensity)
-            66 => draw_freezing_rain(cr, Intensity::Light),
-            67 => draw_freezing_rain(cr, Intensity::Moderate),
+            LightFreezingRain => draw_freezing_rain(cr, Intensity::Light),
+            ModerateFreezingRain => draw_freezing_rain(cr, Intensity::Moderate),
 
             // Add light moderate, heavy, and all showers.
-            70 => draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_snowflake),
-            71 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_snowflake),
-            72 => draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_snowflake),
-            73 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_snowflake),
-            74 => draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_snowflake),
-            75 => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_snowflake),
+            LightSnowShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Light, draw_snowflake)
+            }
+            LightSnow => draw_point_symbol(cr, Mode::Stratiform, Intensity::Light, draw_snowflake),
+            ModerateSnowShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Moderate, draw_snowflake)
+            }
+            ModerateSnow => {
+                draw_point_symbol(cr, Mode::Stratiform, Intensity::Moderate, draw_snowflake)
+            }
+            HeavySnowShowers => {
+                draw_point_symbol(cr, Mode::Convective, Intensity::Heavy, draw_snowflake)
+            }
+            HeavySnow => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_snowflake),
 
-            79 => draw_ice_pellets(cr),
+            IcePellets => draw_ice_pellets(cr),
             _ => draw_red_x(cr),
         }
+
+        let mut text_home = ScreenCoords {
+            x: box_area.lower_left.x + padding,
+            y: box_area.lower_left.y + padding,
+        };
+
+        let slack = width - text_extents.width - 2.0 * padding;
+        if slack > 0.0 {
+            text_home.x += slack / 2.0;
+        }
+
+        let rgb = config.label_rgba;
+        cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
+        cr.set_line_width(cr.device_to_user_distance(2.0, 0.0).0);
+        cr.move_to(text_home.x, text_home.y);
+        cr.show_text(method_str);
+
+        cr.move_to(
+            box_area.lower_left.x,
+            box_area.lower_left.y + text_extents.height + 2.0 * padding,
+        );
+        cr.rel_line_to(width, 0.0);
+        cr.stroke();
     }
 
     // FIXME: Should this be part of PlotContext for drawing things on the screen?
@@ -543,12 +617,28 @@ enum Intensity {
     Heavy,
 }
 
-fn derived_wx_code(wx_code: u8, conv_precip: Optioned<Mm>, total_precip: Optioned<Mm>) -> u8 {
+#[derive(Clone, Copy, Debug)]
+enum PrecipTypeAlgorithm {
+    Model,
+    Bourgouin,
+    NSSL,
+}
+
+// FIXME: move to the analysis module
+fn derived_wx_code(
+    wx_code: PrecipType,
+    conv_precip: Optioned<Mm>,
+    total_precip: Optioned<Mm>,
+) -> PrecipType {
     let total_precip = if let Some(total_precip) = total_precip.into_option() {
         total_precip
     } else {
         return wx_code;
     };
+
+    if total_precip <= Mm(0.0) {
+        return PrecipType::None;
+    }
 
     let mode = if let Some(conv_precip) = conv_precip.into_option() {
         if conv_precip > (total_precip - conv_precip) {
@@ -568,7 +658,7 @@ fn derived_wx_code(wx_code: u8, conv_precip: Optioned<Mm>, total_precip: Optione
         Intensity::Heavy
     };
 
-    match wx_code {
+    let code = match wx_code as u8 {
         60 => {
             // Rain
             match mode {
@@ -615,7 +705,9 @@ fn derived_wx_code(wx_code: u8, conv_precip: Optioned<Mm>, total_precip: Optione
             }
         }
         code => code, // All other codes just get passed through, including IP
-    }
+    };
+
+    PrecipType::from(code)
 }
 
 fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(

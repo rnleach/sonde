@@ -405,7 +405,7 @@ impl Drawable for SkewTContext {
         Self::draw_data_overlays(args);
         // Drawing the precip icon requires self because it draws relative to the window (like the
         // legend) and not just in data or X-Y coordinates.
-        self.draw_precip_icon(args);
+        self.draw_precip_icons(args);
     }
 
     /***********************************************************************************************

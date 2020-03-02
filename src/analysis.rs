@@ -10,7 +10,7 @@ use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
     experimental::fire::{blow_up, calc_plumes, PlumeAscentAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
-    mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel,
+    mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
     sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile,
 };
 use std::collections::HashMap;
@@ -378,7 +378,7 @@ impl Analysis {
             };
         }
         if self.convective.is_none() {
-            self.convective = robust_convective_parcel(&self.sounding).ok();
+            self.convective = robust_convective_parcel_ascent(&self.sounding).ok();
         }
 
         // Convective T

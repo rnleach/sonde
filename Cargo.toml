@@ -22,8 +22,8 @@ optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
-sounding-bufkit = "^0.12.2"
-sounding-analysis = "^0.12.7"
+sounding-bufkit = "^0.13.0"
+sounding-analysis = "^0.13.0"
 threadpool = "1.7.1"
 
 [profile.release]
