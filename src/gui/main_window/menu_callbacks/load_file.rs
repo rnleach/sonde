@@ -12,13 +12,6 @@ use sounding_analysis::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
 use std::{error::Error, path::PathBuf, rc::Rc};
 
-pub fn load_file(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let data = load_data(path)?;
-    AppContext::load_data(Rc::clone(ac), data.into_iter());
-
-    Ok(())
-}
-
 pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let datas: Result<Vec<_>, _> = paths.iter().map(load_data).collect();
     let mut datas: Vec<_> = datas?.into_iter().flatten().collect();

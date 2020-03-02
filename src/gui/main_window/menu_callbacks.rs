@@ -7,22 +7,21 @@ use crate::{
 use cairo;
 use gtk::{
     prelude::DialogExtManual, DialogExt, FileChooserAction, FileChooserDialog, FileChooserExt,
-    FileFilter, MessageDialog, ResponseType, WidgetExt, Window,
+    FileFilter, MessageDialog, ResponseType, Widget, WidgetExt, Window,
 };
 use std::path::PathBuf;
 
 mod load_file;
 
 pub fn open_toolbar_callback(ac: &AppContextPointer, win: &Window) {
-    open_files(ac, win, true);
+    open_files(ac, win);
 }
 
-fn open_files(ac: &AppContextPointer, win: &Window, open_multiple: bool) {
+fn open_files(ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
 
     dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
-
-    dialog.set_select_multiple(open_multiple);
+    dialog.set_select_multiple(true);
 
     if let Some(ref fname) = ac.config.borrow().last_open_file {
         dialog.set_filename(fname);
@@ -56,30 +55,22 @@ fn open_files(ac: &AppContextPointer, win: &Window, open_multiple: bool) {
     dialog.add_filter(&filter);
 
     if dialog.run() == ResponseType::Ok {
-        if open_multiple {
-            let paths: Vec<_> = dialog
-                .get_filenames()
-                .into_iter()
-                .filter(|pb| pb.is_file())
-                .collect();
+        let paths: Vec<_> = dialog
+            .get_filenames()
+            .into_iter()
+            .filter(|pb| pb.is_file())
+            .collect();
 
-            // Remember the last opened file in the config.
-            if let Some(ref f0) = paths.get(0) {
-                ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
-            }
+        // Remember the last opened file in the config.
+        if let Some(ref f0) = paths.get(0) {
+            ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
+        }
 
-            if let Err(ref err) = load_file::load_multiple(&paths, ac) {
-                show_error_dialog(&format!("Error loading file: {}", err), win);
-            }
-        } else if let Some(filename) = dialog.get_filename() {
-            // Remember!
-            ac.config.borrow_mut().last_open_file = Some(PathBuf::from(&filename));
-
-            if let Err(ref err) = load_file::load_file(&filename, ac) {
-                show_error_dialog(&format!("Error loading file: {}", err), win);
-            }
+        if let Err(ref err) = load_file::load_multiple(&paths, ac) {
+            show_error_dialog(&format!("Error loading file: {}", err), win);
         } else {
-            show_error_dialog("Could not retrieve file name from dialog.", win);
+            let da: Widget = ac.fetch_widget("skew_t").unwrap();
+            da.grab_focus();
         }
     }
 

@@ -143,7 +143,7 @@ impl Drawable for CloudContext {
         da.connect_key_press_event(move |_da, ev| CloudContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));

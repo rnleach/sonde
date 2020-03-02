@@ -358,7 +358,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let ScreenRect {
             lower_left: ScreenCoords { x: xmin, y: ymin },
             upper_right: ScreenCoords { x: xmax, y: ymax },
-        } = self.bounding_box_in_screen_coords();
+        } = self.get_plot_area();
 
         // Scale the font to fill the view.
         let width = xmax - xmin;
@@ -452,7 +452,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
-        let bb = self.bounding_box_in_screen_coords();
+        let bb = self.get_plot_area();
         let (left, right) = (bb.lower_left.x, bb.upper_right.x);
         let y = convert_pressure_to_y(sample_p);
 
@@ -537,7 +537,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let ScreenRect {
             lower_left: ScreenCoords { x: xmin, y: ymin },
             upper_right: ScreenCoords { x: xmax, y: ymax },
-        } = self.bounding_box_in_screen_coords();
+        } = self.get_plot_area();
         if left < xmin {
             left = xmin;
         }
@@ -830,13 +830,13 @@ trait Drawable: PlotContext + PlotContextExt {
         self.update_cache_allocations(da);
     }
 
-    fn configure_event(&self, event: &EventConfigure) -> bool {
+    fn configure_event(&self, event: &EventConfigure, ac: &AppContextPointer) -> bool {
         let rect = self.get_device_rect();
         let (width, height) = event.get_size();
         if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
             || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
         {
-            self.mark_background_dirty();
+            ac.mark_background_dirty();
         }
         false
     }
@@ -862,6 +862,8 @@ trait Drawable: PlotContext + PlotContextExt {
 
             self.bound_view();
 
+            self.clip(&tmp_cr);
+
             self.draw_background(tmp_args);
 
             self.clear_background_dirty();
@@ -885,6 +887,8 @@ trait Drawable: PlotContext + PlotContextExt {
             tmp_cr.restore();
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
+
+            self.clip(&tmp_cr);
 
             self.draw_data_and_legend(tmp_args);
 
@@ -910,6 +914,8 @@ trait Drawable: PlotContext + PlotContextExt {
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
+            self.clip(&tmp_cr);
+
             self.draw_active_readout(tmp_args);
 
             self.clear_overlay_dirty();
@@ -918,13 +924,24 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
         cr.paint();
     }
+
+    fn clip(&self, cr: &Context) {
+        let clip_area = self.get_plot_area();
+        cr.rectangle(
+            clip_area.min_x(),
+            clip_area.min_y(),
+            clip_area.width(),
+            clip_area.height(),
+        );
+        cr.clip();
+    }
 }
 
 trait MasterDrawable: Drawable {
     fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
         let args = DrawingArgs::new(acp, cr);
-
         self.init_matrix(args);
+
         self.draw_background_cached(args);
         self.draw_data_cached(args);
         self.draw_active_readout_cached(args);
@@ -1072,7 +1089,7 @@ trait SlaveProfileDrawable: Drawable {
     fn draw_layers(&self, args: DrawingArgs<'_, '_>, layers: &[Layer], color_rgba: Rgba) {
         let cr = args.cr;
 
-        let bb = self.bounding_box_in_screen_coords();
+        let bb = self.get_plot_area();
         let (left, right) = (bb.lower_left.x, bb.upper_right.x);
 
         cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);
@@ -1132,7 +1149,7 @@ trait SlaveProfileDrawable: Drawable {
     ) {
         let cr = args.cr;
 
-        let bb = self.bounding_box_in_screen_coords();
+        let bb = self.get_plot_area();
         let (left, right) = (bb.lower_left.x, bb.upper_right.x);
 
         cr.set_source_rgba(color_rgba.0, color_rgba.1, color_rgba.2, color_rgba.3);

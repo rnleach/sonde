@@ -147,7 +147,7 @@ impl Drawable for RHOmegaContext {
         da.connect_key_press_event(move |_da, ev| RHOmegaContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.rh_omega.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.rh_omega.configure_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.rh_omega.size_allocate_event(da));
@@ -452,7 +452,7 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         let pres_data = sndg.pressure_profile();
         let rh_data = relative_humidity(sndg);
 
-        let bb = ac.rh_omega.bounding_box_in_screen_coords();
+        let bb = ac.rh_omega.get_plot_area();
         let x0 = bb.lower_left.x;
         let width = bb.width();
 
@@ -497,7 +497,7 @@ fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
         let pres_data = sndg.pressure_profile();
         let rh_data = relative_humidity_ice(sndg);
 
-        let bb = ac.rh_omega.bounding_box_in_screen_coords();
+        let bb = ac.rh_omega.get_plot_area();
         let x0 = bb.lower_left.x;
         let width = bb.width();
 

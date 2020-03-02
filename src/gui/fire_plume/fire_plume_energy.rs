@@ -122,7 +122,7 @@ impl Drawable for FirePlumeEnergyContext {
         da.connect_key_press_event(move |_da, ev| FirePlumeEnergyContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.fire_plume_energy.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.fire_plume_energy.configure_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.fire_plume_energy.size_allocate_event(da));

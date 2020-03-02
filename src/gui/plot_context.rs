@@ -153,7 +153,7 @@ pub trait PlotContextExt: PlotContext {
         let ScreenRect {
             lower_left,
             upper_right,
-        } = self.bounding_box_in_screen_coords();
+        } = self.get_plot_area();
         let ScreenCoords {
             x: mut screen_x_min,
             y: mut screen_y_min,
@@ -203,18 +203,30 @@ pub trait PlotContextExt: PlotContext {
         }
     }
 
-    /// Get a bounding box in screen coords
-    fn bounding_box_in_screen_coords(&self) -> ScreenRect {
+    /// Get a bounding box in screen coords that limits the area anything can be drawn.
+    fn get_plot_area(&self) -> ScreenRect {
         let device_rect = self.get_device_rect();
 
-        let lower_left = self.convert_device_to_screen(DeviceCoords {
-            col: device_rect.upper_left.col,
-            row: device_rect.height + device_rect.upper_left.row,
+        let mut lower_left = self.convert_device_to_screen(DeviceCoords {
+            row: device_rect.max_y(),
+            ..device_rect.upper_left
         });
-        let upper_right = self.convert_device_to_screen(DeviceCoords {
-            col: device_rect.upper_left.col + device_rect.width,
-            row: device_rect.upper_left.row,
+
+        let mut upper_right = self.convert_device_to_screen(DeviceCoords {
+            col: device_rect.max_x(),
+            ..device_rect.upper_left
         });
+
+        // Make sure we stay on the x-y coords domain
+        let ScreenCoords { x: xmin, y: ymin } =
+            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 0.0 });
+        let ScreenCoords { x: xmax, y: ymax } =
+            self.convert_xy_to_screen(XYCoords { x: 1.0, y: 1.0 });
+
+        lower_left.x = lower_left.x.max(xmin);
+        lower_left.y = lower_left.y.max(ymin);
+        upper_right.x = upper_right.x.min(xmax);
+        upper_right.y = upper_right.y.min(ymax);
 
         ScreenRect {
             lower_left,
@@ -274,10 +286,10 @@ pub trait PlotContextExt: PlotContext {
             new_zoom = MAX_ZOOM;
         }
         self.set_zoom_factor(new_zoom);
+        self.mark_background_dirty();
 
         self.set_translate(new_translate);
         self.bound_view();
-        self.mark_background_dirty();
     }
 
     /// Step in a zoom factor.

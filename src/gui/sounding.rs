@@ -91,7 +91,10 @@ impl Drawable for SkewTContext {
         da.connect_draw(move |_da, cr| ac.skew_t.draw_callback(cr, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.skew_t.scroll_event(ev, &ac));
+        da.connect_scroll_event(move |_da, ev| {
+            ac.mark_background_dirty();
+            ac.skew_t.scroll_event(ev, &ac)
+        });
 
         let ac = Rc::clone(acp);
         da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev, &ac));
@@ -112,7 +115,7 @@ impl Drawable for SkewTContext {
         da.connect_key_press_event(move |_da, ev| SkewTContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.skew_t.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.skew_t.configure_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.skew_t.size_allocate_event(da));

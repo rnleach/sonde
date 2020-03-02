@@ -152,7 +152,7 @@ impl Drawable for WindSpeedContext {
         da.connect_key_press_event(move |_da, ev| WindSpeedContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.wind_speed.configure_event(ev));
+        da.connect_configure_event(move |_da, ev| ac.wind_speed.configure_event(ev, &ac));
 
         let ac = Rc::clone(acp);
         da.connect_size_allocate(move |da, _ev| ac.wind_speed.size_allocate_event(da));

@@ -3,27 +3,37 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
+use gdk::keyval_from_name;
 use gtk::{prelude::*, TextBuffer, TextTag, TextView};
 use metfor::{Fahrenheit, Inches, Quantity};
 use sounding_analysis::experimental::fire::partition_cape;
-use std::fmt::Write;
+use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "indexes_text_area";
 const HEADER_LINE: &str = "----------------------------------------------------\n";
 
 pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
-    acp.fetch_widget(TEXT_AREA_ID)
-        .and_then(|text_area: TextView| {
-            text_area
-                .get_buffer()
-                .ok_or(SondeError::TextBufferLoadError(TEXT_AREA_ID))
-        })
-        .and_then(|text_buffer| {
-            set_up_tags(&text_buffer, acp);
-            set_text(&text_buffer, "No data, loaded");
-            text_buffer.create_mark(Some("scroll_mark"), &text_buffer.get_start_iter(), true);
-            Ok(())
-        })
+    let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
+
+    let ac1 = Rc::clone(acp);
+    text_area.connect_key_press_event(move |_ta, event| {
+        let keyval = event.get_keyval();
+        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+            ac1.display_next();
+        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+            ac1.display_previous();
+        }
+        Inhibit(true)
+    });
+
+    if let Some(text_buffer) = text_area.get_buffer() {
+        set_up_tags(&text_buffer, acp);
+        set_text(&text_buffer, "No data, loaded");
+        text_buffer.create_mark(Some("scroll_mark"), &text_buffer.get_start_iter(), true);
+        Ok(())
+    } else {
+        Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
+    }
 }
 
 pub fn update_indexes_area(ac: &AppContext) {

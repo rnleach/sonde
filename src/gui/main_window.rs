@@ -90,8 +90,9 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     let quit_button =
         Button::new_from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
-    quit_button.connect_clicked(|_| {
-        gtk::main_quit();
+    let ac1 = Rc::clone(ac);
+    quit_button.connect_clicked(move |_| {
+        update_window_config_and_exit(&win, &ac1);
     });
     header_bar.pack_end(&quit_button);
 
@@ -111,7 +112,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
+fn update_window_config_and_exit(win: &Window, ac: &AppContext) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
@@ -158,6 +159,10 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
     }
 
     gtk::main_quit();
+}
+
+fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
+    update_window_config_and_exit(win, ac);
     Inhibit(false)
 }
 

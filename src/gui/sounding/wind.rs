@@ -28,7 +28,7 @@ impl WindBarbConfig {
             .device_to_user_distance(config.wind_barb_dot_radius, -config.wind_barb_pennant_width);
         let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
 
-        let screen_bounds = ac.skew_t.bounding_box_in_screen_coords();
+        let screen_bounds = ac.skew_t.get_plot_area();
         let XYCoords { x: mut xmax, .. } =
             ac.skew_t.convert_screen_to_xy(screen_bounds.upper_right);
 
@@ -317,7 +317,7 @@ impl SkewTContext {
 
         // Remove overlapping barbs, or barbs not on the screen
         let mut keepers: Vec<WindBarbData> = vec![];
-        let screen_box = ac.skew_t.bounding_box_in_screen_coords();
+        let screen_box = ac.skew_t.get_plot_area();
         let mut last_added_bbox: ScreenRect = ScreenRect {
             lower_left: ScreenCoords {
                 x: ::std::f64::MAX,

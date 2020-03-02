@@ -2,8 +2,9 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
+use gdk::keyval_from_name;
 use gtk::{prelude::*, TextTag, TextView};
-use std::fmt::Write;
+use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "provider_data_text";
 
@@ -31,6 +32,17 @@ macro_rules! set_text {
 
 pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
+
+    let ac1 = Rc::clone(acp);
+    text_area.connect_key_press_event(move |_ta, event| {
+        let keyval = event.get_keyval();
+        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+            ac1.display_next();
+        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+            ac1.display_previous();
+        }
+        Inhibit(true)
+    });
 
     if let Some(tb) = text_area.get_buffer() {
         make_default_tag!(tb);
