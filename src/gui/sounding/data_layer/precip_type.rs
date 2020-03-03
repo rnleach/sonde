@@ -1,11 +1,10 @@
 use super::super::SkewTContext;
 use crate::{
+    analysis::{Intensity, Mode, PrecipTypeAlgorithm},
     coords::ScreenCoords,
     gui::{Drawable, DrawingArgs, PlotContextExt},
 };
-use metfor::Mm;
-use optional::Optioned;
-use sounding_analysis::{self, adjust_precip_type_intensity, bourgouin_precip_type, PrecipType};
+use sounding_analysis::{self, PrecipType};
 
 const PRECIP_BOX_SIZE: f64 = 0.07;
 
@@ -23,23 +22,11 @@ impl SkewTContext {
         let (wx_symbol_code, method_str) = if let Some(vals) = match algo {
             Model => ac
                 .get_sounding_for_display()
-                .map(|anal| {
-                    let anal = anal.borrow();
-                    let code = PrecipType::from(anal.provider_wx_symbol_code());
-                    let conv_precip = anal.provider_1hr_convective_precip();
-                    let total_precip = anal.provider_1hr_precip();
-                    derived_wx_code(code, conv_precip, total_precip)
-                })
+                .and_then(|anal| anal.borrow().provider_precip_type())
                 .map(|code| (code, "--Model--")),
             Bourgouin => ac
                 .get_sounding_for_display()
-                .and_then(|anal| {
-                    let anal = anal.borrow();
-                    let snd = anal.sounding();
-                    let code = bourgouin_precip_type(snd).unwrap_or(Unknown);
-                    anal.provider_1hr_precip()
-                        .map(|pcp| adjust_precip_type_intensity(code, pcp))
-                })
+                .and_then(|anal| anal.borrow().bourgouin_precip_type())
                 .map(|code| (code, "Bourgouin")),
             NSSL => std::option::Option::None,
         } {
@@ -140,113 +127,6 @@ impl SkewTContext {
         cr.stroke();
     }
 }
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Mode {
-    Stratiform,
-    Convective,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Intensity {
-    Light,
-    Moderate,
-    Heavy,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum PrecipTypeAlgorithm {
-    Model,
-    Bourgouin,
-    NSSL,
-}
-
-// FIXME: move to the analysis module
-fn derived_wx_code(
-    wx_code: PrecipType,
-    conv_precip: Optioned<Mm>,
-    total_precip: Optioned<Mm>,
-) -> PrecipType {
-    let total_precip = if let Some(total_precip) = total_precip.into_option() {
-        total_precip
-    } else {
-        return wx_code;
-    };
-
-    if total_precip <= Mm(0.0) {
-        return PrecipType::None;
-    }
-
-    let mode = if let Some(conv_precip) = conv_precip.into_option() {
-        if conv_precip > (total_precip - conv_precip) {
-            Mode::Convective
-        } else {
-            Mode::Stratiform
-        }
-    } else {
-        Mode::Stratiform
-    };
-
-    let intensity = if total_precip <= Mm(2.5) {
-        Intensity::Light
-    } else if total_precip <= Mm(7.6) {
-        Intensity::Moderate
-    } else {
-        Intensity::Heavy
-    };
-
-    let code = match wx_code as u8 {
-        60 => {
-            // Rain
-            match mode {
-                Mode::Convective => {
-                    match intensity {
-                        Intensity::Light => 60,    // -SHRA
-                        Intensity::Moderate => 62, // SHRA
-                        Intensity::Heavy => 64,    // +SHRA
-                    }
-                }
-                Mode::Stratiform => {
-                    match intensity {
-                        Intensity::Light => 61,    // -RA
-                        Intensity::Moderate => 63, // RA
-                        Intensity::Heavy => 65,    // +RA
-                    }
-                }
-            }
-        }
-        66 => {
-            // Freezing rain
-            match intensity {
-                Intensity::Light => 66, // -FZRA
-                _ => 67,                // FZRA or +FZRA
-            }
-        }
-        70 => {
-            // Snow
-            match mode {
-                Mode::Convective => {
-                    match intensity {
-                        Intensity::Light => 70,    // -SHSN
-                        Intensity::Moderate => 72, // SHSN
-                        Intensity::Heavy => 74,    // +SHSN
-                    }
-                }
-                Mode::Stratiform => {
-                    match intensity {
-                        Intensity::Light => 71,    // -SN
-                        Intensity::Moderate => 73, // SN
-                        Intensity::Heavy => 75,    // +SN
-                    }
-                }
-            }
-        }
-        code => code, // All other codes just get passed through, including IP
-    };
-
-    PrecipType::from(code)
-}
-
 fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
     cr: &cairo::Context,
     mode: Mode,

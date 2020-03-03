@@ -1,6 +1,6 @@
 use super::SkewTContext;
 use crate::{
-    analysis::Analysis,
+    analysis::{Analysis, PrecipTypeAlgorithm},
     app::config::{self},
     coords::{ScreenCoords, TPCoords, XYCoords},
     gui::{
@@ -437,7 +437,7 @@ impl SkewTContext {
     }
 
     pub fn draw_precip_icons(&self, args: DrawingArgs<'_, '_>) {
-        use precip_type::PrecipTypeAlgorithm::*;
+        use PrecipTypeAlgorithm::*;
 
         // FIXME add options for which boxes to show.
         self.draw_precip_icon(Model, 0, args);

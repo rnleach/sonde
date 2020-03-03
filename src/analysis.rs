@@ -5,13 +5,13 @@ use metfor::{
     Celsius, CelsiusDiff, HectoPascal, IntHelicityM2pS2, JpKg, Meters, MetersPSec, Mm, WindUV,
 };
 use optional::{none, some, Optioned};
-use sounding_analysis::Sounding;
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
     experimental::fire::{blow_up, calc_plumes, PlumeAscentAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
-    sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile,
+    sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile, PrecipType,
+    Sounding,
 };
 use std::collections::HashMap;
 
@@ -59,6 +59,10 @@ pub struct Analysis {
     convective: Option<ParcelAscentAnalysis>,
     effective: Option<ParcelAscentAnalysis>,
 
+    // Precipitation
+    provider_wx_code: Option<PrecipType>,
+    bourgouin_wx_code: Option<PrecipType>,
+
     // Provider analysis
     provider_analysis: HashMap<&'static str, f64>,
 }
@@ -105,6 +109,9 @@ impl Analysis {
             most_unstable: None,
             convective: None,
             effective: None,
+
+            provider_wx_code: None,
+            bourgouin_wx_code: None,
 
             provider_analysis: HashMap::new(),
         }
@@ -181,6 +188,16 @@ impl Analysis {
                 .get("ConvectivePrecip1HrMm")
                 .map(|val| Mm(*val)),
         )
+    }
+
+    /// Get the weather symbol code from the provider, i.e. model physics scheme.
+    pub fn provider_precip_type(&self) -> Option<PrecipType> {
+        self.provider_wx_code
+    }
+
+    /// Get the weather symbol code the Bourgouin method.
+    pub fn bourgouin_precip_type(&self) -> Option<PrecipType> {
+        self.bourgouin_wx_code
     }
 
     /// Get the weather symbol code from the provider, i.e. model physics scheme.
@@ -390,6 +407,23 @@ impl Analysis {
                 .into();
         }
 
+        // File in the model derived precip type.
+        if self.provider_wx_code.is_none() {
+            let code = PrecipType::from(self.provider_wx_symbol_code());
+            let conv_precip = self.provider_1hr_convective_precip();
+            let total_precip = self.provider_1hr_precip();
+            self.provider_wx_code = Some(derived_wx_code(code, conv_precip, total_precip));
+        }
+
+        // File in the bourgouin derived precip type.
+        if self.bourgouin_wx_code.is_none() {
+            let code = sounding_analysis::bourgouin_precip_type(self.sounding())
+                .unwrap_or(PrecipType::Unknown);
+            self.bourgouin_wx_code = self
+                .provider_1hr_precip()
+                .map(|pcp| sounding_analysis::adjust_precip_type_intensity(code, pcp));
+        }
+
         // Left and right mover storm motion
         if self.right_mover.is_none() || self.left_mover.is_none() {
             let (rm, lm) = match bunkers_storm_motion(&self.sounding) {
@@ -480,4 +514,109 @@ impl Analysis {
             self.plumes = calc_plumes(self.sounding(), CelsiusDiff(0.1), CelsiusDiff(20.0)).ok();
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Mode {
+    Stratiform,
+    Convective,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Intensity {
+    Light,
+    Moderate,
+    Heavy,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PrecipTypeAlgorithm {
+    Model,
+    Bourgouin,
+    NSSL,
+}
+
+fn derived_wx_code(
+    wx_code: PrecipType,
+    conv_precip: Optioned<Mm>,
+    total_precip: Optioned<Mm>,
+) -> PrecipType {
+    let total_precip = if let Some(total_precip) = total_precip.into_option() {
+        total_precip
+    } else {
+        return wx_code;
+    };
+
+    if total_precip <= Mm(0.0) {
+        return PrecipType::None;
+    }
+
+    let mode = if let Some(conv_precip) = conv_precip.into_option() {
+        if conv_precip > (total_precip - conv_precip) {
+            Mode::Convective
+        } else {
+            Mode::Stratiform
+        }
+    } else {
+        Mode::Stratiform
+    };
+
+    let intensity = if total_precip <= Mm(2.5) {
+        Intensity::Light
+    } else if total_precip <= Mm(7.6) {
+        Intensity::Moderate
+    } else {
+        Intensity::Heavy
+    };
+
+    let code = match wx_code as u8 {
+        60 => {
+            // Rain
+            match mode {
+                Mode::Convective => {
+                    match intensity {
+                        Intensity::Light => 60,    // -SHRA
+                        Intensity::Moderate => 62, // SHRA
+                        Intensity::Heavy => 64,    // +SHRA
+                    }
+                }
+                Mode::Stratiform => {
+                    match intensity {
+                        Intensity::Light => 61,    // -RA
+                        Intensity::Moderate => 63, // RA
+                        Intensity::Heavy => 65,    // +RA
+                    }
+                }
+            }
+        }
+        66 => {
+            // Freezing rain
+            match intensity {
+                Intensity::Light => 66, // -FZRA
+                _ => 67,                // FZRA or +FZRA
+            }
+        }
+        70 => {
+            // Snow
+            match mode {
+                Mode::Convective => {
+                    match intensity {
+                        Intensity::Light => 70,    // -SHSN
+                        Intensity::Moderate => 72, // SHSN
+                        Intensity::Heavy => 74,    // +SHSN
+                    }
+                }
+                Mode::Stratiform => {
+                    match intensity {
+                        Intensity::Light => 71,    // -SN
+                        Intensity::Moderate => 73, // SN
+                        Intensity::Heavy => 75,    // +SN
+                    }
+                }
+            }
+        }
+        code => code, // All other codes just get passed through, including IP
+    };
+
+    PrecipType::from(code)
 }
