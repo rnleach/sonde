@@ -99,7 +99,7 @@ impl SkewTContext {
             }
             HeavySnow => draw_point_symbol(cr, Mode::Stratiform, Intensity::Heavy, draw_snowflake),
 
-            IcePellets => draw_ice_pellets(cr),
+            LightIcePellets => draw_ice_pellets(cr),
             _ => draw_red_x(cr),
         }
 

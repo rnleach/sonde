@@ -17,13 +17,13 @@ gtk = { version = "^0.8", features = ["v3_18"] }
 itertools = "^0.8"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
-metfor = { version = "^0.7.1", features = ["use_optional", "use_serde"]}
+metfor = { version = "^0.7.4", features = ["use_optional", "use_serde"]}
 optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
-sounding-bufkit = "^0.13.0"
-sounding-analysis = "^0.13.0"
+sounding-bufkit = "^0.13.1"
+sounding-analysis = "^0.13.1"
 threadpool = "1.7.1"
 
 [profile.release]
