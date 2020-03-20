@@ -38,6 +38,9 @@ pub enum StormMotionType {
 
 /// Type used for colors in Gtk
 pub type Rgba = (f64, f64, f64, f64);
+pub const GREEN: Rgba = (0.0, 0.8, 0.0, 1.0);
+pub const BLUE: Rgba = (0.0, 0.0, 1.0, 1.0);
+pub const RED: Rgba = (1.0, 0.0, 0.0, 1.0);
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 #[derive(Debug, Serialize, Deserialize)]

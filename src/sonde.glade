@@ -166,13 +166,19 @@
                   <object class="GtkBox" id="profiles_area_container">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
                     <property name="spacing">5</property>
+                    <property name="homogeneous">True</property>
+                    <property name="baseline_position">bottom</property>
                     <child>
                       <object class="GtkDrawingArea" id="rh_omega_area">
+                        <property name="width_request">-1</property>
+                        <property name="height_request">-1</property>
                         <property name="visible">True</property>
+                        <property name="app_paintable">True</property>
                         <property name="can_focus">True</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
-                        <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                       </object>
@@ -184,10 +190,12 @@
                     </child>
                     <child>
                       <object class="GtkDrawingArea" id="cloud_area">
+                        <property name="width_request">-1</property>
+                        <property name="height_request">-1</property>
                         <property name="visible">True</property>
+                        <property name="app_paintable">True</property>
                         <property name="can_focus">True</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
-                        <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                       </object>
@@ -199,10 +207,12 @@
                     </child>
                     <child>
                       <object class="GtkDrawingArea" id="wind_speed_area">
+                        <property name="width_request">-1</property>
+                        <property name="height_request">-1</property>
                         <property name="visible">True</property>
+                        <property name="app_paintable">True</property>
                         <property name="can_focus">True</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
-                        <property name="no_show_all">True</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                       </object>

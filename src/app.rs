@@ -123,6 +123,7 @@ impl AppContext {
         acp.currently_displayed_index.set(0);
 
         acp.set_currently_displayed(0);
+        acp.mark_background_dirty();
 
         // Once everything we need for this thread is taken care of, fill in any missing data
         // in the analysis.
@@ -282,6 +283,7 @@ impl AppContext {
             FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
         }
 
+        self.mark_background_dirty();
         gui::draw_all(self);
     }
 
@@ -295,6 +297,7 @@ impl AppContext {
             FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
         }
 
+        self.mark_background_dirty();
         gui::draw_all(self);
     }
 

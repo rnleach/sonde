@@ -206,7 +206,6 @@ impl Drawable for WindSpeedContext {
             }
         }
 
-        // Draw percent values
         for line in config::PROFILE_SPEED_PNTS.iter() {
             let pnts = line
                 .iter()

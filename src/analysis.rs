@@ -73,7 +73,7 @@ impl Analysis {
         let max_p = snd
             .bottom_up()
             .filter_map(|dr| dr.pressure.into_option())
-            .nth(0)
+            .next()
             .unwrap_or(HectoPascal(0.0));
 
         Analysis {
@@ -503,12 +503,6 @@ impl Analysis {
             self.plumes = calc_plumes(self.sounding(), CelsiusDiff(0.1), CelsiusDiff(20.0)).ok();
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Mode {
-    Stratiform,
-    Convective,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

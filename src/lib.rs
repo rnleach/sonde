@@ -72,7 +72,8 @@ fn load_config(app: &AppContext) {
                 }
             }
         })
-        .map(|deserialized_config| {
+        .into_iter()
+        .for_each(|deserialized_config| {
             *app.config.borrow_mut() = deserialized_config;
         });
 }
