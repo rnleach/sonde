@@ -10,6 +10,7 @@ use crate::{
         SkewTContext,
     },
 };
+use crossbeam_channel::TryRecvError;
 use gtk::prelude::BuilderExtManual;
 use sounding_analysis::{self};
 use std::{
@@ -35,9 +36,11 @@ pub struct AppContext {
 
     // Lists of soundings and currently displayed one
     list: RefCell<Vec<Rc<RefCell<Analysis>>>>,
-    analyzed_count: Cell<usize>,
     currently_displayed_index: Cell<usize>,
     last_sample: RefCell<Sample>,
+
+    // The number of the times we've called open. Helps keep threads synced.
+    load_calls: Cell<usize>,
 
     // Last Drawing area to have focus, for use with focus buttons
     last_focus: Cell<ZoomableDrawingAreas>,
@@ -85,9 +88,9 @@ impl AppContext {
         Rc::new(AppContext {
             config: RefCell::new(Config::default()),
             list: RefCell::new(vec![]),
-            analyzed_count: Cell::new(0),
             currently_displayed_index: Cell::new(0),
             last_sample: RefCell::new(Sample::None),
+            load_calls: Cell::new(0),
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
             gui: gtk::Builder::new_from_string(glade_src),
             skew_t: SkewTContext::new(),
@@ -129,6 +132,8 @@ impl AppContext {
         // in the analysis.
         let pool = threadpool::ThreadPool::default();
         let (tx, rx) = crossbeam_channel::unbounded();
+        let num_loads = acp.load_calls.get() + 1;
+        acp.load_calls.set(num_loads);
 
         for (i, anal) in acp.list.borrow().iter().enumerate() {
             let anal = anal.borrow().clone();
@@ -136,27 +141,25 @@ impl AppContext {
             pool.execute(move || {
                 let mut anal = anal;
                 anal.fill_in_missing_analysis_mut();
-                tx.send((i, anal)).unwrap();
+                tx.send((num_loads, i, anal)).unwrap();
             });
         }
 
         let acp = Rc::clone(&acp);
-        acp.analyzed_count.set(0);
-        gtk::idle_add(move || {
-            for (i, anal) in rx.try_iter() {
-                *(*acp).list.borrow_mut()[i].borrow_mut() = anal;
-                acp.analyzed_count.set(acp.analyzed_count.get() + 1);
+        gtk::idle_add(move || loop {
+            match rx.try_recv() {
+                Ok((loaded_on, i, anal)) => {
+                    if loaded_on == acp.load_calls.get() {
+                        *(*acp).list.borrow_mut()[i].borrow_mut() = anal;
 
-                if (*acp).currently_displayed_index.get() == i {
-                    acp.mark_data_dirty();
-                    acp.update_all_gui();
+                        if (*acp).currently_displayed_index.get() == i {
+                            acp.mark_data_dirty();
+                            acp.update_all_gui();
+                        }
+                    }
                 }
-            }
-
-            if acp.analyzed_count.get() == acp.list.borrow().len() {
-                glib::Continue(false)
-            } else {
-                glib::Continue(true)
+                Err(TryRecvError::Empty) => return glib::Continue(true),
+                Err(TryRecvError::Disconnected) => return glib::Continue(false),
             }
         });
     }
