@@ -62,6 +62,7 @@ pub struct Analysis {
     // Precipitation
     provider_wx_code: Option<PrecipType>,
     bourgouin_wx_code: Option<PrecipType>,
+    nssl_wx_code: Option<PrecipType>,
 
     // Provider analysis
     provider_analysis: HashMap<&'static str, f64>,
@@ -112,6 +113,7 @@ impl Analysis {
 
             provider_wx_code: None,
             bourgouin_wx_code: None,
+            nssl_wx_code: None,
 
             provider_analysis: HashMap::new(),
         }
@@ -204,9 +206,14 @@ impl Analysis {
         self.provider_wx_code
     }
 
-    /// Get the weather symbol code the Bourgouin method.
+    /// Get the weather symbol code using the Bourgouin method.
     pub fn bourgouin_precip_type(&self) -> Option<PrecipType> {
         self.bourgouin_wx_code
+    }
+
+    /// Get the weather symbol code using the NSSL method.
+    pub fn nssl_precip_type(&self) -> Option<PrecipType> {
+        self.nssl_wx_code
     }
 
     /// Get the Haines Index.
@@ -406,6 +413,21 @@ impl Analysis {
             let conv_precip = self.provider_1hr_convective_precip().into_option();
             let visby = self.provider_vis().into_option();
             self.bourgouin_wx_code = Some(sounding_analysis::check_precip_type_intensity(
+                code,
+                total_precip,
+                conv_precip,
+                visby,
+            ));
+        }
+
+        // Fill in the NSSL derived precip type.
+        if self.nssl_wx_code.is_none() {
+            let code =
+                sounding_analysis::nssl_precip_type(self.sounding()).unwrap_or(PrecipType::Unknown);
+            let total_precip = self.provider_1hr_precip().into_option();
+            let conv_precip = self.provider_1hr_convective_precip().into_option();
+            let visby = self.provider_vis().into_option();
+            self.nssl_wx_code = Some(sounding_analysis::check_precip_type_intensity(
                 code,
                 total_precip,
                 conv_precip,

@@ -29,7 +29,10 @@ impl SkewTContext {
                 .get_sounding_for_display()
                 .and_then(|anal| anal.borrow().bourgouin_precip_type())
                 .map(|code| (code, "Bourgouin")),
-            NSSL => std::option::Option::None,
+            NSSL => ac
+                .get_sounding_for_display()
+                .and_then(|anal| anal.borrow().nssl_precip_type())
+                .map(|code| (code, "NSSL 2012")),
         } {
             vals
         } else {
@@ -43,7 +46,7 @@ impl SkewTContext {
         self.prepare_to_make_text(args);
 
         let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
-        let text_extents = cr.text_extents(method_str);
+        let text_extents = cr.text_extents("Bourgouin");
         let mut width = PRECIP_BOX_SIZE;
         if width < text_extents.width + 2.0 * padding {
             width = text_extents.width + 2.0 * padding;
