@@ -1,7 +1,7 @@
 use crate::{
     app::{
         config::{self, Rgba},
-        sample::Sample,
+        sample::{create_sample_plume, Sample},
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{DeviceCoords, DtECoords, ScreenCoords, ScreenRect, XYCoords},
@@ -15,7 +15,6 @@ use crate::{
 use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use metfor::{CelsiusDiff, JpKg, Quantity};
-use sounding_analysis::{experimental::fire::lift_plume_parcel, Parcel};
 use std::rc::Rc;
 
 pub struct FirePlumeEnergyContext {
@@ -240,7 +239,6 @@ impl Drawable for FirePlumeEnergyContext {
             "Net CAPE (kJ/kg)".to_owned(),
             config.fire_plume_net_cape_color,
         ));
-        lines.push(("NCAPE * 10".to_owned(), config.fire_plume_ncape_color));
 
         lines
     }
@@ -264,7 +262,7 @@ impl Drawable for FirePlumeEnergyContext {
             None => return,
         };
 
-        if let Some(vals) = anal.plumes() {
+        if let Some(vals) = anal.plumes_low() {
             let line_width = config.profile_line_width;
             let net_cape_rgba = config.fire_plume_net_cape_color;
 
@@ -279,29 +277,24 @@ impl Drawable for FirePlumeEnergyContext {
                 .map(|dt_coord| ac.fire_plume_energy.convert_dte_to_screen(dt_coord));
 
             plot_curve_from_points(cr, line_width, net_cape_rgba, capes);
+        }
 
-            let ncape_rgba = config.fire_plume_ncape_color;
-            let ncapes = vals
+        // FIXME: This is the 3rd repitition of this code block, make it a function!
+        if let Some(vals) = anal.plumes_high() {
+            let line_width = config.profile_line_width;
+            let net_cape_rgba = config.fire_plume_net_cape_color;
+
+            let capes = vals
                 .iter()
                 .filter_map(|plume_anal| {
                     plume_anal
                         .net_cape
-                        .and_then(|net_cape| {
-                            plume_anal
-                                .el_height
-                                .map(|el| 10.0 * net_cape.unpack() / el.unpack())
-                        })
-                        .map(|ncape| (plume_anal.parcel.temperature - t0, ncape))
+                        .map(|cape| (plume_anal.parcel.temperature - t0, cape))
                 })
-                // Bogus the ncape into a JpKg wrapper for now instead of creating a new
-                // coordinate.
-                .map(|(dt, ncape)| DtECoords {
-                    dt,
-                    energy: JpKg(1000.0 * ncape),
-                })
+                .map(|(dt, energy)| DtECoords { dt, energy })
                 .map(|dt_coord| ac.fire_plume_energy.convert_dte_to_screen(dt_coord));
 
-            plot_curve_from_points(cr, line_width, ncape_rgba, ncapes);
+            plot_curve_from_points(cr, line_width, net_cape_rgba, capes);
         }
     }
 
@@ -325,24 +318,28 @@ impl Drawable for FirePlumeEnergyContext {
         let vals = ac.get_sample();
         let pnt_color = config.active_readout_line_rgba;
 
-        if let Sample::FirePlume { plume_anal, .. } = *vals {
-            let dt = plume_anal.parcel.temperature - t0;
+        if let Sample::FirePlume {
+            plume_anal_low,
+            plume_anal_high,
+            ..
+        } = *vals
+        {
+            let dt = plume_anal_low.parcel.temperature - t0;
 
-            if let Some(ncape) = plume_anal.net_cape.and_then(|cape| {
-                plume_anal
-                    .el_height
-                    .map(|el| 10.0 * cape.unpack() / el.unpack())
-            }) {
-                let ncape_pnt = DtECoords {
+            if let Some(cape_low) = plume_anal_low.net_cape {
+                let cape_pnt = DtECoords {
                     dt,
-                    energy: JpKg(1_000.0 * ncape),
+                    energy: cape_low,
                 };
-                let screen_coords_cape = ac.fire_plume_energy.convert_dte_to_screen(ncape_pnt);
+                let screen_coords_cape = ac.fire_plume_energy.convert_dte_to_screen(cape_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
 
-            if let Some(cape) = plume_anal.net_cape {
-                let cape_pnt = DtECoords { dt, energy: cape };
+            if let Some(cape_high) = plume_anal_high.net_cape {
+                let cape_pnt = DtECoords {
+                    dt,
+                    energy: cape_high,
+                };
                 let screen_coords_cape = ac.fire_plume_energy.convert_dte_to_screen(cape_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
@@ -389,23 +386,11 @@ impl Drawable for FirePlumeEnergyContext {
                 .get_sounding_for_display()
                 .and_then(|anal| {
                     let DtECoords { dt, .. } = self.convert_device_to_dte(position);
-                    let pcl = anal
-                        .borrow()
-                        .starting_parcel_for_blow_up_anal()
-                        .map(|p0| Parcel {
-                            temperature: p0.temperature + dt,
-                            ..p0
-                        });
-                    pcl.map(|pcl| (anal, pcl))
+                    let pcl = anal.borrow().starting_parcel_for_blow_up_anal();
+                    pcl.map(|pcl| (anal, pcl, dt))
                 })
-                .and_then(|(anal, pcl)| {
-                    lift_plume_parcel(pcl, anal.borrow().sounding())
-                        .ok()
-                        .map(|(pp, pa)| Sample::FirePlume {
-                            parcel: pcl,
-                            profile: pp,
-                            plume_anal: pa,
-                        })
+                .map(|(anal, pcl, dt)| {
+                    create_sample_plume(pcl, pcl.temperature + dt, &anal.borrow())
                 })
                 .unwrap_or(Sample::None);
 

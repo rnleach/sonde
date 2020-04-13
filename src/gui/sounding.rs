@@ -440,11 +440,15 @@ impl Drawable for SkewTContext {
                 );
             }
             Sample::FirePlume {
-                parcel, plume_anal, ..
+                parcel_low,
+                plume_anal_low,
+                plume_anal_high,
+                ..
             } => Self::create_active_readout_text_plume(
-                &parcel,
+                &parcel_low,
                 &anal,
-                &plume_anal,
+                &plume_anal_low,
+                &plume_anal_high,
                 &config,
                 &mut results,
             ),
@@ -474,12 +478,18 @@ impl Drawable for SkewTContext {
                 }
 
                 Sample::FirePlume {
-                    parcel,
-                    ref profile,
+                    parcel_low,
+                    ref profile_low,
+                    ref profile_high,
                     ..
                 } => {
                     if config.show_sample_parcel_profile {
-                        Self::draw_plume_parcel_profile(args, parcel, profile);
+                        Self::draw_plume_parcel_profiles(
+                            args,
+                            parcel_low,
+                            profile_low,
+                            profile_high,
+                        );
                     }
                 }
                 Sample::None => {}
@@ -576,13 +586,7 @@ impl Drawable for SkewTContext {
                             anal.starting_parcel_for_blow_up_anal()
                                 .filter(|pcl| pcl.temperature < tp_position.temperature)
                                 .map(|parcel| {
-                                    create_sample_plume(
-                                        Parcel {
-                                            temperature: tp_position.temperature,
-                                            ..parcel
-                                        },
-                                        &anal,
-                                    )
+                                    create_sample_plume(parcel, tp_position.temperature, &anal)
                                 })
                         })
                         .unwrap_or(Sample::None)

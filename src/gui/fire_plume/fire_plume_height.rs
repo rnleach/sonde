@@ -1,21 +1,20 @@
 use crate::{
     app::{
         config::{self, Rgba},
-        sample::Sample,
+        sample::{create_sample_plume, Sample},
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{DeviceCoords, DtHCoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
-        utility::{check_overlap_then_add, plot_curve_from_points},
+        utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points},
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
 use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use metfor::{CelsiusDiff, Meters, Quantity};
-use sounding_analysis::{experimental::fire::lift_plume_parcel, Parcel};
 use std::rc::Rc;
 
 pub struct FirePlumeContext {
@@ -265,13 +264,21 @@ impl Drawable for FirePlumeContext {
             None => return,
         };
 
-        if let Some(vals) = anal.plumes() {
+        if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
             let line_width = config.profile_line_width;
             let el_rgba = config.fire_plume_el_color;
-            let max_hgt_rgba = config.fire_plume_maxh_color;
-            let lcl_rgba = config.fire_plume_lcl_color;
+            let mut el_polygon_color = el_rgba;
+            el_polygon_color.3 /= 2.0;
 
-            let els = vals
+            let max_hgt_rgba = config.fire_plume_maxh_color;
+            let mut max_hgt_polygon_color = max_hgt_rgba;
+            max_hgt_polygon_color.3 /= 2.0;
+
+            let lcl_rgba = config.fire_plume_lcl_color;
+            let mut lcl_polygon_color = lcl_rgba;
+            lcl_polygon_color.3 /= 2.0;
+
+            let els_low = vals_low
                 .iter()
                 .filter_map(|plume_anal| {
                     plume_anal
@@ -281,9 +288,23 @@ impl Drawable for FirePlumeContext {
                 .map(|(dt, height)| DtHCoords { dt, height })
                 .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-            plot_curve_from_points(cr, line_width, el_rgba, els);
+            let els_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .el_height
+                        .map(|el| (plume_anal.parcel.temperature - t0, el))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-            let lcls = vals
+            let polygon = els_low.clone().chain(els_high.clone().rev());
+            draw_filled_polygon(cr, el_polygon_color, polygon);
+
+            plot_curve_from_points(cr, line_width, el_rgba, els_low);
+            plot_curve_from_points(cr, line_width, el_rgba, els_high);
+
+            let lcls_low = vals_low
                 .iter()
                 .filter_map(|plume_anal| {
                     plume_anal
@@ -293,9 +314,23 @@ impl Drawable for FirePlumeContext {
                 .map(|(dt, height)| DtHCoords { dt, height })
                 .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-            plot_curve_from_points(cr, line_width, lcl_rgba, lcls);
+            let lcls_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .lcl_height
+                        .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-            let maxhs = vals
+            let polygon = lcls_low.clone().chain(lcls_high.clone().rev());
+            draw_filled_polygon(cr, lcl_polygon_color, polygon);
+
+            plot_curve_from_points(cr, line_width, lcl_rgba, lcls_low);
+            plot_curve_from_points(cr, line_width, lcl_rgba, lcls_high);
+
+            let maxhs_low = vals_low
                 .iter()
                 .filter_map(|plume_anal| {
                     plume_anal
@@ -305,7 +340,21 @@ impl Drawable for FirePlumeContext {
                 .map(|(dt, height)| DtHCoords { dt, height })
                 .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs);
+            let maxhs_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .max_height
+                        .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+
+            let polygon = maxhs_low.clone().chain(maxhs_high.clone().rev());
+            draw_filled_polygon(cr, max_hgt_polygon_color, polygon);
+
+            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_low);
+            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_high);
         }
     }
 
@@ -329,23 +378,65 @@ impl Drawable for FirePlumeContext {
         let vals = ac.get_sample();
         let pnt_color = config.active_readout_line_rgba;
 
-        if let Sample::FirePlume { plume_anal, .. } = *vals {
-            let dt = plume_anal.parcel.temperature - t0;
+        if let Sample::FirePlume {
+            plume_anal_low,
+            plume_anal_high,
+            ..
+        } = *vals
+        {
+            let dt_low = plume_anal_low.parcel.temperature - t0;
+            let dt_high = plume_anal_high.parcel.temperature - t0;
 
-            if let Some(el) = plume_anal.el_height {
-                let el_pnt = DtHCoords { dt, height: el };
+            if let Some(el_low) = plume_anal_low.el_height {
+                let el_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: el_low,
+                };
                 let screen_coords_el = ac.fire_plume.convert_dth_to_screen(el_pnt);
                 Self::draw_point(screen_coords_el, pnt_color, args);
             }
 
-            if let Some(maxh) = plume_anal.max_height {
-                let maxh_pnt = DtHCoords { dt, height: maxh };
+            if let Some(el_high) = plume_anal_high.el_height {
+                let el_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: el_high,
+                };
+                let screen_coords_el = ac.fire_plume.convert_dth_to_screen(el_pnt);
+                Self::draw_point(screen_coords_el, pnt_color, args);
+            }
+
+            if let Some(maxh_low) = plume_anal_low.max_height {
+                let maxh_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: maxh_low,
+                };
                 let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
                 Self::draw_point(screen_coords_maxh, pnt_color, args);
             }
 
-            if let Some(lcl) = plume_anal.lcl_height {
-                let lcl_pnt = DtHCoords { dt, height: lcl };
+            if let Some(maxh_high) = plume_anal_high.max_height {
+                let maxh_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: maxh_high,
+                };
+                let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
+                Self::draw_point(screen_coords_maxh, pnt_color, args);
+            }
+
+            if let Some(lcl_low) = plume_anal_low.lcl_height {
+                let lcl_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: lcl_low,
+                };
+                let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
+                Self::draw_point(screen_coords_lcl, pnt_color, args);
+            }
+
+            if let Some(lcl_high) = plume_anal_high.lcl_height {
+                let lcl_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: lcl_high,
+                };
                 let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
                 Self::draw_point(screen_coords_lcl, pnt_color, args);
             }
@@ -392,23 +483,11 @@ impl Drawable for FirePlumeContext {
                 .get_sounding_for_display()
                 .and_then(|anal| {
                     let DtHCoords { dt, .. } = self.convert_device_to_dth(position);
-                    let pcl = anal
-                        .borrow()
-                        .starting_parcel_for_blow_up_anal()
-                        .map(|p0| Parcel {
-                            temperature: p0.temperature + dt,
-                            ..p0
-                        });
-                    pcl.map(|pcl| (anal, pcl))
+                    let pcl = anal.borrow().starting_parcel_for_blow_up_anal();
+                    pcl.map(|pcl| (anal, pcl, dt))
                 })
-                .and_then(|(anal, pcl)| {
-                    lift_plume_parcel(pcl, anal.borrow().sounding())
-                        .ok()
-                        .map(|(pp, pa)| Sample::FirePlume {
-                            parcel: pcl,
-                            profile: pp,
-                            plume_anal: pa,
-                        })
+                .map(|(anal, pcl, dt)| {
+                    create_sample_plume(pcl, pcl.temperature + dt, &anal.borrow())
                 })
                 .unwrap_or(Sample::None);
 

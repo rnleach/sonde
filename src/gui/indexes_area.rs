@@ -306,6 +306,15 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
                 $buf.push_str($empty);
             }
         };
+        ($buf:ident, $label:expr, $anal:ident, $selector_low:tt, $selector_high:tt, $fmt:expr, $empty:expr) => {
+            $buf.push_str($label);
+            if let (Some(val_low), Some(val_high)) = 
+                ($anal.$selector_low().into_option(),$anal.$selector_high().into_option()) {
+                    $buf.push_str(&format!($fmt, val_low.unpack(), val_high.unpack()));
+            } else {
+                $buf.push_str($empty);
+            }
+        };
     }
 
     buffer.push('\n');
@@ -330,19 +339,22 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
 
     buffer.push_str("\nExperimental\n");
     buffer.push_str(HEADER_LINE);
-    push_fire_index!(buffer, "Blow Up ∆T    ", anal, blow_up_dt,            "{:>9.1} \u{00b0}C\n", empty);
-    push_fire_index!(buffer, "Blow Up Height", anal, blow_up_height_change, "{:>11.0}m\n",         empty);
+    push_fire_index!(buffer, "Cloud ∆T         ", anal, lcl_dt_low,                                                    "{:>5.1}\u{00b0}C\n\n",                  empty);
+    push_fire_index!(buffer, "Blow Up ∆T (Top) ", anal, top_blow_up_dt_low, top_blow_up_dt_high,                       "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
+    push_fire_index!(buffer, "Blow Up Hgt (Top)", anal, top_blow_up_height_change_low, top_blow_up_height_change_high, "{:>6.0}m - {:>4.0}m\n\n",               empty);
+    push_fire_index!(buffer, "Blow Up ∆T (EL)  ", anal, el_blow_up_dt_low, el_blow_up_dt_high,                         "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
+    push_fire_index!(buffer, "Blow Up Hgt (EL) ", anal, el_blow_up_height_change_low, el_blow_up_height_change_high,   "{:>6.0}m - {:>4.0}m\n",                 empty);
 
     if let Some(parcel_anal) = anal.convective_parcel_analysis(){
         if let Ok((dry, wet)) = partition_cape(parcel_anal){
             let dry = dry.unpack();
             let wet = wet.unpack();
             buffer.push_str(
-                &format!("Dry cape      {:>7.0} J/kg\nWet cape      {:>7.0} J/kg\n", dry, wet)
+                &format!("Dry cape    {:>7.0} J/kg\nWet cape    {:>7.0} J/kg\n", dry, wet)
             );
 
             buffer.push_str(
-                &format!("Pct Wet               {:>3.0}%\n", 100.0 * wet / (wet + dry))
+                &format!("Pct Wet             {:>3.0}%\n", 100.0 * wet / (wet + dry))
             );
         }
     }

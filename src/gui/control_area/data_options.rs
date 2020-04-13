@@ -64,7 +64,6 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     );
     build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
     build_config_color!(fire_plumes_box, "Net CAPE", ac, fire_plume_net_cape_color);
-    build_config_color!(fire_plumes_box, "Plume NCAPE", ac, fire_plume_ncape_color);
 
     f.add(&v_box);
     v_box.pack_start(&skewt_frame, true, true, PADDING);

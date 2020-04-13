@@ -424,7 +424,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let sample_p = if let Some(sample_p) = match *vals {
             Sample::Sounding { data, .. } => data.pressure.into_option(),
-            Sample::FirePlume { parcel, .. } => Some(parcel.pressure),
+            Sample::FirePlume { parcel_low, .. } => Some(parcel_low.pressure),
             Sample::None => None,
         } {
             sample_p

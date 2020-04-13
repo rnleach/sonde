@@ -1,10 +1,14 @@
 use super::SkewTContext;
 use crate::{
     analysis::Analysis,
-    app::config::{Config, Rgba},
+    app::config::{self, Config, Rgba},
     coords::TPCoords,
-    gui::{Drawable, DrawingArgs},
+    gui::{
+        utility::{draw_filled_polygon, plot_curve_from_points},
+        Drawable, DrawingArgs,
+    },
 };
+use itertools::izip;
 use metfor::{rh, Fahrenheit, Feet, Quantity};
 use sounding_analysis::{
     self, experimental::fire::PlumeAscentAnalysis, DataRow, Parcel, ParcelAscentAnalysis,
@@ -148,15 +152,16 @@ impl SkewTContext {
     }
 
     pub fn create_active_readout_text_plume(
-        parcel: &Parcel,
+        parcel_low: &Parcel,
         anal: &Analysis,
-        plume_anal: &PlumeAscentAnalysis,
+        plume_anal_low: &PlumeAscentAnalysis,
+        plume_anal_high: &PlumeAscentAnalysis,
         config: &Config,
         results: &mut Vec<(String, Rgba)>,
     ) {
         let default_color = config.label_rgba;
 
-        let t_c = parcel.temperature;
+        let t_c = parcel_low.temperature;
         let starting_t_c = anal
             .starting_parcel_for_blow_up_anal()
             .map(|pcl| pcl.temperature);
@@ -171,44 +176,115 @@ impl SkewTContext {
         if config.show_sample_parcel_profile {
             let mut line = String::with_capacity(32);
             let color = config.parcel_positive_rgba;
-            if let Some(cape) = plume_anal.net_cape {
-                line.push_str(&format!("Net CAPE: {:.0} J/Kg\n", cape.unpack()));
+            if let (Some(cape_low), Some(cape_high)) =
+                (plume_anal_low.net_cape, plume_anal_high.net_cape)
+            {
+                line.push_str(&format!(
+                    "Net CAPE: {:.0} - {:.0} J/Kg\n",
+                    cape_high.unpack(),
+                    cape_low.unpack()
+                ));
             } else {
                 line.push_str("Net CAPE: 0 J/Kg\n");
             }
             results.push((line, color));
             let mut line = String::with_capacity(32);
-            if let Some(el) = plume_anal.el_height {
-                line.push_str(&format!("EL: {:.0} m\n", el.unpack()));
+            if let (Some(el_low), Some(el_high)) =
+                (plume_anal_low.el_height, plume_anal_high.el_height)
+            {
+                line.push_str(&format!(
+                    "EL: {:.0} - {:.0} m\n",
+                    el_high.unpack(),
+                    el_low.unpack()
+                ));
             }
             results.push((line, default_color));
             let mut line = String::with_capacity(32);
-            if let Some(mh) = plume_anal.max_height {
-                line.push_str(&format!("Max Height: {:.0} m\n", mh.unpack()));
+            if let (Some(mh_low), Some(mh_high)) =
+                (plume_anal_low.max_height, plume_anal_high.max_height)
+            {
+                line.push_str(&format!(
+                    "Max Height: {:.0} - {:.0} m\n",
+                    mh_high.unpack(),
+                    mh_low.unpack()
+                ));
             }
             results.push((line, default_color));
         }
     }
 
-    pub fn draw_plume_parcel_profile(
+    pub fn draw_plume_parcel_profiles(
         args: DrawingArgs<'_, '_>,
-        parcel: Parcel,
-        profile: &ParcelProfile,
+        parcel_low: Parcel,
+        profile_low: &ParcelProfile,
+        profile_high: &ParcelProfile,
     ) {
-        let (ac, config) = (args.ac, args.ac.config.borrow());
+        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color;
-        Self::draw_parcel_profile(args, &profile, color);
+
+        let pres_up = &profile_low.pressure;
+        let temp_up = &profile_low.parcel_t;
+        let pres_down = &profile_high.pressure;
+        let temp_down = &profile_high.parcel_t;
+
+        let upside = izip!(pres_up, temp_up);
+        let downside = izip!(pres_down, temp_down).rev();
+        let polygon = upside.chain(downside);
+
+        let polygon = polygon.map(|(&pressure, &temperature)| {
+            let tp_coords = TPCoords {
+                temperature,
+                pressure,
+            };
+            ac.skew_t.convert_tp_to_screen(tp_coords)
+        });
+
+        let mut polygon_rgba = color;
+        polygon_rgba.3 /= 2.0;
+
+        draw_filled_polygon(cr, polygon_rgba, polygon);
+        // Draw lines
+        Self::draw_plume_parcel_profile(args, &profile_low, color);
+        Self::draw_plume_parcel_profile(args, &profile_high, color);
 
         // Draw a sample point
         let point = TPCoords {
-            temperature: parcel.temperature,
-            pressure: parcel.pressure,
+            temperature: parcel_low.temperature,
+            pressure: parcel_low.pressure,
         };
         let point = ac.skew_t.convert_tp_to_screen(point);
         let rgba = config.active_readout_line_rgba;
 
         Self::draw_point(point, rgba, args);
+    }
+
+    fn draw_plume_parcel_profile(
+        args: DrawingArgs<'_, '_>,
+        profile: &ParcelProfile,
+        line_rgba: Rgba,
+    ) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let pres_data = &profile.pressure;
+        let temp_data = &profile.parcel_t;
+
+        let line_width = config.temperature_line_width;
+
+        let profile_data = izip!(pres_data, temp_data).filter_map(|(&pressure, &temperature)| {
+            if pressure > config::MINP {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                Some(ac.skew_t.convert_tp_to_screen(tp_coords))
+            } else {
+                None
+            }
+        });
+
+        plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
 
     pub fn draw_sample_parcel_profile(

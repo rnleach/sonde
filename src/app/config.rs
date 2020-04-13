@@ -315,8 +315,6 @@ pub struct Config {
     pub fire_plume_lcl_color: Rgba,
     /// Line color of net cape on fire plume chart.
     pub fire_plume_net_cape_color: Rgba,
-    /// Line color of ncape on fire plume chart.
-    pub fire_plume_ncape_color: Rgba,
 
     //
     // Misc configuration.
@@ -494,7 +492,6 @@ impl Default for Config {
             fire_plume_el_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
             fire_plume_net_cape_color: (1.0, 0.5, 0.8, 1.0),
-            fire_plume_ncape_color: (0.0, 0.4, 0.8, 1.0),
             fire_plume_lcl_color: (0.0, 0.7, 0.8, 1.0),
 
             //
