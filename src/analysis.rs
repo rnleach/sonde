@@ -468,12 +468,17 @@ impl Analysis {
             let total_precip = self.provider_1hr_precip().into_option();
             let conv_precip = self.provider_1hr_convective_precip().into_option();
             let visby = self.provider_vis().into_option();
-            self.bourgouin_wx_code = Some(sounding_analysis::check_precip_type_intensity(
-                code,
-                total_precip,
-                conv_precip,
-                visby,
-            ));
+
+            if total_precip.is_none() {
+                self.bourgouin_wx_code = Some(PrecipType::None);
+            } else {
+                self.bourgouin_wx_code = Some(sounding_analysis::check_precip_type_intensity(
+                    code,
+                    total_precip,
+                    conv_precip,
+                    visby,
+                ));
+            }
         }
 
         // Fill in the NSSL derived precip type.
@@ -483,12 +488,17 @@ impl Analysis {
             let total_precip = self.provider_1hr_precip().into_option();
             let conv_precip = self.provider_1hr_convective_precip().into_option();
             let visby = self.provider_vis().into_option();
-            self.nssl_wx_code = Some(sounding_analysis::check_precip_type_intensity(
-                code,
-                total_precip,
-                conv_precip,
-                visby,
-            ));
+
+            if total_precip.is_none() {
+                self.nssl_wx_code = Some(PrecipType::None);
+            } else {
+                self.nssl_wx_code = Some(sounding_analysis::check_precip_type_intensity(
+                    code,
+                    total_precip,
+                    conv_precip,
+                    visby,
+                ));
+            }
         }
 
         // Left and right mover storm motion
