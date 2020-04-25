@@ -1,4 +1,3 @@
-
 fn main() {
     if let Err(e) = sonde::run() {
         println!("error: {}", e);
