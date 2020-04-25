@@ -4,7 +4,6 @@ use crate::{
     errors::*,
     gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable},
 };
-use cairo;
 use gtk::{
     prelude::DialogExtManual, DialogExt, FileChooserAction, FileChooserDialog, FileChooserExt,
     FileFilter, MessageDialog, ResponseType, Widget, WidgetExt, Window,

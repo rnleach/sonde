@@ -62,7 +62,7 @@ fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let extension: Option<String> = path
         .extension()
         .map(|ext| ext.to_string_lossy().to_string());
-    let extension = extension.as_ref().map(|ext| ext.as_str());
+    let extension = extension.as_deref();
 
     let mut load_fns = [load_bufkit, load_bufr];
 

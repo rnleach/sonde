@@ -1,4 +1,3 @@
-use cairo;
 pub use std::error::Error;
 use std::fmt::Display;
 
