@@ -23,7 +23,7 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-bufkit = "^0.13.1"
-sounding-analysis = "^0.13.8"
+sounding-analysis = "^0.13.9"
 threadpool = "1.7.1"
 
 [profile.release]

@@ -1,13 +1,13 @@
 //! Keep configuration data in this module.
 
 use crate::coords::{
-    DtECoords, DtHCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
 };
 use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
 use lazy_static::lazy_static;
 use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, JpKg, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
+    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -313,8 +313,8 @@ pub struct Config {
     pub fire_plume_maxh_color: Rgba,
     /// Line color of the LCL on the fire plume chart.
     pub fire_plume_lcl_color: Rgba,
-    /// Line color of net cape on fire plume chart.
-    pub fire_plume_net_cape_color: Rgba,
+    /// Line color of percent wet cape on fire plume chart.
+    pub fire_plume_pct_wet_cape_color: Rgba,
 
     //
     // Misc configuration.
@@ -491,7 +491,7 @@ impl Default for Config {
             fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
             fire_plume_el_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
-            fire_plume_net_cape_color: (1.0, 0.5, 0.8, 1.0),
+            fire_plume_pct_wet_cape_color: (0.0, 0.0, 0.0, 1.0),
             fire_plume_lcl_color: (0.0, 0.7, 0.8, 1.0),
 
             //
@@ -536,9 +536,9 @@ pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(15_000.0);
 /// Minimum height for fire plume plot
 pub const MIN_FIRE_PLUME_HEIGHT: Meters = Meters(-1_000.0);
 /// Maximum cape for fire plume plot
-pub const MAX_FIRE_PLUME_CAPE: JpKg = JpKg(7_000.0);
+pub const MAX_FIRE_PLUME_PCT: f64 = 110.0;
 /// Minimum cape for fire plume plot
-pub const MIN_FIRE_PLUME_CAPE: JpKg = JpKg(-1_000.0);
+pub const MIN_FIRE_PLUME_PCT: f64 = -10.0;
 
 //
 // Limits on the top pressure level for some background lines.
@@ -773,21 +773,8 @@ pub const FIRE_PLUME_HEIGHTS: [Meters; 8] = [
     Meters(14_000.0),
 ];
 
-pub const FIRE_PLUME_CAPES: [JpKg; 14] = [
-    JpKg(0.0),
-    JpKg(100.0),
-    JpKg(250.0),
-    JpKg(500.0),
-    JpKg(750.0),
-    JpKg(1_000.0),
-    JpKg(1_500.0),
-    JpKg(2_000.0),
-    JpKg(2_500.0),
-    JpKg(3_000.0),
-    JpKg(3_500.0),
-    JpKg(4_000.0),
-    JpKg(4_500.0),
-    JpKg(5_000.0),
+pub const FIRE_PLUME_PCTS: [f64; 11] = [
+    0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0,
 ];
 
 /* ------------------------------------------------------------------------------------------------
@@ -1025,25 +1012,25 @@ lazy_static! {
     };
 
     /// Compute points for background height in fire plume charts
-    pub static ref FIRE_PLUME_CAPES_PNTS: Vec<[XYCoords; 2]> = {
-       FIRE_PLUME_CAPES
+    pub static ref FIRE_PLUME_PCTS_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_PCTS
            .iter()
-           .map(|energy| {
+           .map(|percent| {
                [
-                   DtECoords {
+                   DtPCoords {
                        dt: MIN_DELTA_T,
-                       energy: *energy,
+                       percent: *percent,
                    },
-                   DtECoords {
+                   DtPCoords {
                        dt: MAX_DELTA_T,
-                       energy: *energy,
+                       percent: *percent,
                    },
                ]
                })
            .map(|dt| {
                [
-                   FirePlumeEnergyContext::convert_dte_to_xy(dt[0]),
-                   FirePlumeEnergyContext::convert_dte_to_xy(dt[1]),
+                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
+                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
                ]
            })
            .collect()

@@ -176,9 +176,10 @@ impl SkewTContext {
         if config.show_sample_parcel_profile {
             let mut line = String::with_capacity(32);
             let color = config.parcel_positive_rgba;
-            if let (Some(cape_low), Some(cape_high)) =
-                (plume_anal_low.net_cape, plume_anal_high.net_cape)
-            {
+            if let (Some(cape_low), Some(cape_high)) = (
+                plume_anal_low.max_int_bouyancy,
+                plume_anal_high.max_int_bouyancy,
+            ) {
                 line.push_str(&format!(
                     "Net CAPE: {:.0} - {:.0} J/Kg\n",
                     cape_high.unpack(),

@@ -63,7 +63,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         fire_plume_el_color
     );
     build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
-    build_config_color!(fire_plumes_box, "Net CAPE", ac, fire_plume_net_cape_color);
+    build_config_color!(
+        fire_plumes_box,
+        "Percent Wet Integrated Bouyancy",
+        ac,
+        fire_plume_pct_wet_cape_color
+    );
 
     f.add(&v_box);
     v_box.pack_start(&skewt_frame, true, true, PADDING);

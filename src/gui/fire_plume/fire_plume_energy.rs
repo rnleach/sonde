@@ -4,11 +4,11 @@ use crate::{
         sample::{create_sample_plume, Sample},
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
-    coords::{DeviceCoords, DtECoords, ScreenCoords, ScreenRect, XYCoords},
+    coords::{DeviceCoords, DtPCoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
-        utility::{check_overlap_then_add, plot_curve_from_points},
+        utility::{draw_filled_polygon, check_overlap_then_add, plot_curve_from_points},
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
@@ -28,41 +28,38 @@ impl FirePlumeEnergyContext {
         }
     }
 
-    pub fn convert_dte_to_xy(coords: DtECoords) -> XYCoords {
-        let min_e = config::MIN_FIRE_PLUME_CAPE.unpack();
-        let max_e = config::MAX_FIRE_PLUME_CAPE.unpack();
+    pub fn convert_dtp_to_xy(coords: DtPCoords) -> XYCoords {
+        let min_p = config::MIN_FIRE_PLUME_PCT;
+        let max_p = config::MAX_FIRE_PLUME_PCT;
 
-        let DtECoords {
-            dt,
-            energy: JpKg(energy),
-        } = coords;
+        let DtPCoords { dt, percent } = coords;
 
         let x = super::convert_dt_to_x(dt);
-        let y = (energy - min_e) / (max_e - min_e);
+        let y = (percent - min_p) / (max_p - min_p);
 
         XYCoords { x, y }
     }
 
-    pub fn convert_xy_to_dte(coords: XYCoords) -> DtECoords {
-        let min_e = config::MIN_FIRE_PLUME_CAPE.unpack();
-        let max_e = config::MAX_FIRE_PLUME_CAPE.unpack();
+    pub fn convert_xy_to_dtp(coords: XYCoords) -> DtPCoords {
+        let min_p = config::MIN_FIRE_PLUME_PCT;
+        let max_p = config::MAX_FIRE_PLUME_PCT;
 
         let XYCoords { x, y } = coords;
 
         let dt = super::convert_x_to_dt(x);
-        let energy = JpKg(y * (max_e - min_e) + min_e);
+        let percent = y * (max_p - min_p) + min_p;
 
-        DtECoords { dt, energy }
+        DtPCoords { dt, percent }
     }
 
-    pub fn convert_dte_to_screen(&self, coords: DtECoords) -> ScreenCoords {
-        let xy = FirePlumeEnergyContext::convert_dte_to_xy(coords);
+    pub fn convert_dtp_to_screen(&self, coords: DtPCoords) -> ScreenCoords {
+        let xy = FirePlumeEnergyContext::convert_dtp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
-    pub fn convert_device_to_dte(&self, coords: DeviceCoords) -> DtECoords {
+    pub fn convert_device_to_dtp(&self, coords: DeviceCoords) -> DtPCoords {
         let xy = self.convert_device_to_xy(coords);
-        Self::convert_xy_to_dte(xy)
+        Self::convert_xy_to_dtp(xy)
     }
 }
 
@@ -143,7 +140,7 @@ impl Drawable for FirePlumeEnergyContext {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         // Draw iso capes
-        for pnts in config::FIRE_PLUME_CAPES_PNTS.iter() {
+        for pnts in config::FIRE_PLUME_PCTS_PNTS.iter() {
             let pnts = pnts
                 .iter()
                 .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
@@ -168,10 +165,7 @@ impl Drawable for FirePlumeEnergyContext {
 
             let ScreenCoords {
                 x: mut screen_x, ..
-            } = self.convert_dte_to_screen(DtECoords {
-                dt,
-                energy: JpKg(0.0),
-            });
+            } = self.convert_dtp_to_screen(DtPCoords { dt, percent: 0.0 });
             screen_x -= extents.width / 2.0;
 
             let label_lower_left = ScreenCoords {
@@ -194,16 +188,16 @@ impl Drawable for FirePlumeEnergyContext {
             check_overlap_then_add(cr, ac, &mut labels, &screen_edges, pair);
         }
 
-        for &e in config::FIRE_PLUME_CAPES.iter().skip(1) {
-            let label = format!("{:.1}", e.unpack() / 1_000.0);
+        for &percent in config::FIRE_PLUME_PCTS.iter().skip(1) {
+            let label = format!("{:.0}%", percent);
 
             let extents = cr.text_extents(&label);
 
             let ScreenCoords {
                 y: mut screen_y, ..
-            } = self.convert_dte_to_screen(DtECoords {
+            } = self.convert_dtp_to_screen(DtPCoords {
                 dt: CelsiusDiff(0.0),
-                energy: e,
+                percent,
             });
             screen_y -= extents.height / 2.0;
 
@@ -236,8 +230,8 @@ impl Drawable for FirePlumeEnergyContext {
         let mut lines = Vec::with_capacity(2);
 
         lines.push((
-            "Net CAPE (kJ/kg)".to_owned(),
-            config.fire_plume_net_cape_color,
+            "Percent Wet Integrated Bouyancy".to_owned(),
+            config.fire_plume_pct_wet_cape_color,
         ));
 
         lines
@@ -262,39 +256,52 @@ impl Drawable for FirePlumeEnergyContext {
             None => return,
         };
 
-        if let Some(vals) = anal.plumes_low() {
+        if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
             let line_width = config.profile_line_width;
-            let net_cape_rgba = config.fire_plume_net_cape_color;
+            let pct_wet_rgba = config.fire_plume_pct_wet_cape_color;
+            let mut pct_wet_polygon_color = pct_wet_rgba;
+            pct_wet_polygon_color.3 /= 2.0;
 
-            let capes = vals
-                .iter()
-                .filter_map(|plume_anal| {
+            let vals_low = vals_low.iter().filter_map(|plume_anal| {
+                plume_anal.max_int_bouyancy.and_then(|max_ib| {
                     plume_anal
-                        .net_cape
-                        .map(|cape| (plume_anal.parcel.temperature - t0, cape))
+                        .max_dry_int_bouyancy
+                        .map(|max_dib| (max_ib, max_dib))
                 })
-                .map(|(dt, energy)| DtECoords { dt, energy })
-                .map(|dt_coord| ac.fire_plume_energy.convert_dte_to_screen(dt_coord));
+                .map(|(max_ib, max_dib)| {
+                    let pct = if max_ib > JpKg(0.0) {
+                        (max_ib - max_dib) / max_ib *100.0
+                    } else { 0.0 };
 
-            plot_curve_from_points(cr, line_width, net_cape_rgba, capes);
-        }
+                    (plume_anal.parcel.temperature -t0, pct)
+                })
+            })
+            .map(|(dt, percent)| DtPCoords { dt, percent})
+            .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
 
-        // FIXME: This is the 3rd repitition of this code block, make it a function!
-        if let Some(vals) = anal.plumes_high() {
-            let line_width = config.profile_line_width;
-            let net_cape_rgba = config.fire_plume_net_cape_color;
-
-            let capes = vals
-                .iter()
-                .filter_map(|plume_anal| {
+            let vals_high = vals_high.iter().filter_map(|plume_anal| {
+                plume_anal.max_int_bouyancy.and_then(|max_ib| {
                     plume_anal
-                        .net_cape
-                        .map(|cape| (plume_anal.parcel.temperature - t0, cape))
+                        .max_dry_int_bouyancy
+                        .map(|max_dib| (max_ib, max_dib))
                 })
-                .map(|(dt, energy)| DtECoords { dt, energy })
-                .map(|dt_coord| ac.fire_plume_energy.convert_dte_to_screen(dt_coord));
+                .map(|(max_ib, max_dib)| {
+                    let pct = if max_ib > JpKg(0.0) {
+                        (max_ib - max_dib) / max_ib *100.0
+                    } else { 0.0 };
 
-            plot_curve_from_points(cr, line_width, net_cape_rgba, capes);
+                    (plume_anal.parcel.temperature -t0, pct)
+                })
+            })
+            .map(|(dt, percent)| DtPCoords { dt, percent})
+            .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
+
+            let polygon = vals_low.clone().chain(vals_high.clone().rev());
+
+            draw_filled_polygon(cr, pct_wet_polygon_color, polygon);
+            plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_low);
+            plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_high);
+
         }
     }
 
@@ -326,21 +333,33 @@ impl Drawable for FirePlumeEnergyContext {
         {
             let dt = plume_anal_low.parcel.temperature - t0;
 
-            if let Some(cape_low) = plume_anal_low.net_cape {
-                let cape_pnt = DtECoords {
-                    dt,
-                    energy: cape_low,
+            if let (Some(max_int_b_low), Some(max_dry_int_b_low)) = (
+                plume_anal_low.max_int_bouyancy,
+                plume_anal_low.max_dry_int_bouyancy,
+            ) {
+                let percent = if max_int_b_low > JpKg(0.0) {
+                    (max_int_b_low - max_dry_int_b_low) / max_int_b_low * 100.0
+                } else {
+                    0.0
                 };
-                let screen_coords_cape = ac.fire_plume_energy.convert_dte_to_screen(cape_pnt);
+
+                let pct_pnt = DtPCoords { dt, percent };
+                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
 
-            if let Some(cape_high) = plume_anal_high.net_cape {
-                let cape_pnt = DtECoords {
-                    dt,
-                    energy: cape_high,
+            if let (Some(max_int_b_high), Some(max_dry_int_b_high)) = (
+                plume_anal_high.max_int_bouyancy,
+                plume_anal_high.max_dry_int_bouyancy,
+            ) {
+                let percent = if max_int_b_high > JpKg(0.0) {
+                    (max_int_b_high - max_dry_int_b_high) / max_int_b_high * 100.0
+                } else {
+                    0.0
                 };
-                let screen_coords_cape = ac.fire_plume_energy.convert_dte_to_screen(cape_pnt);
+
+                let pct_pnt = DtPCoords { dt, percent };
+                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
         }
@@ -385,7 +404,7 @@ impl Drawable for FirePlumeEnergyContext {
             let sample = ac
                 .get_sounding_for_display()
                 .and_then(|anal| {
-                    let DtECoords { dt, .. } = self.convert_device_to_dte(position);
+                    let DtPCoords { dt, .. } = self.convert_device_to_dtp(position);
                     let pcl = anal.borrow().starting_parcel_for_blow_up_anal();
                     pcl.map(|pcl| (anal, pcl, dt))
                 })
