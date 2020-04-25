@@ -47,9 +47,7 @@ pub struct Analysis {
     el_blow_up_dt_high: Optioned<CelsiusDiff>,
     el_blow_up_height_high: Optioned<Meters>,
     top_blow_up_dt_low: Optioned<CelsiusDiff>,
-    top_blow_up_height_low: Optioned<Meters>,
     top_blow_up_dt_high: Optioned<CelsiusDiff>,
-    top_blow_up_height_high: Optioned<Meters>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     plumes_low: Option<Vec<PlumeAscentAnalysis>>,
     plumes_high: Option<Vec<PlumeAscentAnalysis>>,
@@ -109,9 +107,7 @@ impl Analysis {
             el_blow_up_dt_high: none(),
             el_blow_up_height_high: none(),
             top_blow_up_dt_low: none(),
-            top_blow_up_height_low: none(),
             top_blow_up_dt_high: none(),
-            top_blow_up_height_high: none(),
             lcl_dt_low: none(),
             plumes_low: None,
             plumes_high: None,
@@ -286,16 +282,6 @@ impl Analysis {
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
     pub fn top_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
         self.top_blow_up_dt_high
-    }
-
-    /// Get the height change of the EL if the blow up dt is met. EXPERIMENTAL.
-    pub fn top_blow_up_height_change_low(&self) -> Optioned<Meters> {
-        self.top_blow_up_height_low
-    }
-
-    /// Get the height change of the EL if the blow up dt is met. EXPERIMENTAL.
-    pub fn top_blow_up_height_change_high(&self) -> Optioned<Meters> {
-        self.top_blow_up_height_high
     }
 
     /// Get the amount of heating necessary to create a cloud on the plume top.
@@ -568,12 +554,11 @@ impl Analysis {
         if self.el_blow_up_dt_low.is_none()
             || self.top_blow_up_dt_low.is_none()
             || self.el_blow_up_height_low.is_none()
-            || self.top_blow_up_height_low.is_none()
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_low.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(8.0)).ok();
-            let (starting_pcl, dt_el, height_el, dt_top, height_top, lcl_dt_low) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, dt_top, _, lcl_dt_low) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
@@ -589,7 +574,6 @@ impl Analysis {
             self.el_blow_up_dt_low = dt_el;
             self.el_blow_up_height_low = height_el;
             self.top_blow_up_dt_low = dt_top;
-            self.top_blow_up_height_low = height_top;
             self.lcl_dt_low = lcl_dt_low;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
@@ -597,11 +581,10 @@ impl Analysis {
         if self.el_blow_up_dt_high.is_none()
             || self.top_blow_up_dt_high.is_none()
             || self.el_blow_up_height_high.is_none()
-            || self.top_blow_up_height_high.is_none()
             || self.blow_up_anal_start_parcel.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(12.0)).ok();
-            let (starting_pcl, dt_el, height_el, dt_top, height_top) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, dt_top, _) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
@@ -616,7 +599,6 @@ impl Analysis {
             self.el_blow_up_dt_high = dt_el;
             self.el_blow_up_height_high = height_el;
             self.top_blow_up_dt_high = dt_top;
-            self.top_blow_up_height_high = height_top;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
