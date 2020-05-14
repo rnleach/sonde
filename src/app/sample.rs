@@ -19,8 +19,6 @@ pub enum Sample {
         parcel_high: Parcel,
         profile_high: ParcelProfile,
         plume_anal_high: PlumeAscentAnalysis,
-        profile_dry: ParcelProfile,
-        plume_anal_dry: PlumeAscentAnalysis,
     },
     None,
 }
@@ -47,12 +45,6 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
         Err(_) => return Sample::None,
     };
 
-    let parcel_dry = create_plume_parcel_from(parcel_env, target_t - parcel_env.temperature, None);
-    let (profile_dry, plume_anal_dry) = match lift_plume_parcel(parcel_dry, anal.sounding()) {
-        Ok(dry_vals) => dry_vals,
-        Err(_) => return Sample::None,
-    };
-
     Sample::FirePlume {
         parcel_low,
         profile_low,
@@ -60,7 +52,5 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
         parcel_high,
         profile_high,
         plume_anal_high,
-        profile_dry,
-        plume_anal_dry,
     }
 }

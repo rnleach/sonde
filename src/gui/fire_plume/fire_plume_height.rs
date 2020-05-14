@@ -264,152 +264,97 @@ impl Drawable for FirePlumeContext {
             None => return,
         };
 
-        if config.show_moist_parcels_anal {
-            if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
-                let line_width = config.profile_line_width;
-                let lmib_rgba = config.fire_plume_lmib_color;
-                let mut lmib_polygon_color = lmib_rgba;
-                lmib_polygon_color.3 /= 2.0;
+        if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
+            let line_width = config.profile_line_width;
+            let lmib_rgba = config.fire_plume_lmib_color;
+            let mut lmib_polygon_color = lmib_rgba;
+            lmib_polygon_color.3 /= 2.0;
 
-                let max_hgt_rgba = config.fire_plume_maxh_color;
-                let mut max_hgt_polygon_color = max_hgt_rgba;
-                max_hgt_polygon_color.3 /= 2.0;
+            let max_hgt_rgba = config.fire_plume_maxh_color;
+            let mut max_hgt_polygon_color = max_hgt_rgba;
+            max_hgt_polygon_color.3 /= 2.0;
 
-                let lcl_rgba = config.fire_plume_lcl_color;
-                let mut lcl_polygon_color = lcl_rgba;
-                lcl_polygon_color.3 /= 2.0;
+            let lcl_rgba = config.fire_plume_lcl_color;
+            let mut lcl_polygon_color = lcl_rgba;
+            lcl_polygon_color.3 /= 2.0;
 
-                let lmibs_low = vals_low
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .level_max_int_buoyancy
-                            .map(|lmib| (plume_anal.parcel.temperature - t0, lmib))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let lmibs_low = vals_low
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .level_max_int_buoyancy
+                        .map(|lmib| (plume_anal.parcel.temperature - t0, lmib))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let lmibs_high = vals_high
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .level_max_int_buoyancy
-                            .map(|lmib| (plume_anal.parcel.temperature - t0, lmib))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let lmibs_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .level_max_int_buoyancy
+                        .map(|lmib| (plume_anal.parcel.temperature - t0, lmib))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let polygon = lmibs_low.clone().chain(lmibs_high.clone().rev());
-                draw_filled_polygon(cr, lmib_polygon_color, polygon);
+            let polygon = lmibs_low.clone().chain(lmibs_high.clone().rev());
+            draw_filled_polygon(cr, lmib_polygon_color, polygon);
 
-                plot_curve_from_points(cr, line_width, lmib_rgba, lmibs_low);
-                plot_curve_from_points(cr, line_width, lmib_rgba, lmibs_high);
+            plot_curve_from_points(cr, line_width, lmib_rgba, lmibs_low);
+            plot_curve_from_points(cr, line_width, lmib_rgba, lmibs_high);
 
-                let lcls_low = vals_low
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .lcl_height
-                            .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let lcls_low = vals_low
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .lcl_height
+                        .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let lcls_high = vals_high
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .lcl_height
-                            .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let lcls_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .lcl_height
+                        .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let polygon = lcls_low.clone().chain(lcls_high.clone().rev());
-                draw_filled_polygon(cr, lcl_polygon_color, polygon);
+            let polygon = lcls_low.clone().chain(lcls_high.clone().rev());
+            draw_filled_polygon(cr, lcl_polygon_color, polygon);
 
-                plot_curve_from_points(cr, line_width, lcl_rgba, lcls_low);
-                plot_curve_from_points(cr, line_width, lcl_rgba, lcls_high);
+            plot_curve_from_points(cr, line_width, lcl_rgba, lcls_low);
+            plot_curve_from_points(cr, line_width, lcl_rgba, lcls_high);
 
-                let maxhs_low = vals_low
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_height
-                            .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let maxhs_low = vals_low
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .max_height
+                        .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let maxhs_high = vals_high
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_height
-                            .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
+            let maxhs_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .max_height
+                        .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
+                })
+                .map(|(dt, height)| DtHCoords { dt, height })
+                .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
 
-                let polygon = maxhs_low.clone().chain(maxhs_high.clone().rev());
-                draw_filled_polygon(cr, max_hgt_polygon_color, polygon);
+            let polygon = maxhs_low.clone().chain(maxhs_high.clone().rev());
+            draw_filled_polygon(cr, max_hgt_polygon_color, polygon);
 
-                plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_low);
-                plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_high);
-            }
-        }
-
-        if config.show_dry_parcel_anal {
-            if let Some(vals_dry) = anal.plumes_dry() {
-                let line_width = config.profile_line_width;
-                let lmib_rgba = config.fire_plume_lmib_color;
-                let mut lmib_polygon_color = lmib_rgba;
-                lmib_polygon_color.3 /= 2.0;
-
-                let max_hgt_rgba = config.fire_plume_maxh_color;
-                let mut max_hgt_polygon_color = max_hgt_rgba;
-                max_hgt_polygon_color.3 /= 2.0;
-
-                let lcl_rgba = config.fire_plume_lcl_color;
-                let mut lcl_polygon_color = lcl_rgba;
-                lcl_polygon_color.3 /= 2.0;
-
-                let lmibs_dry = vals_dry
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .level_max_int_buoyancy
-                            .map(|lmib| (plume_anal.parcel.temperature - t0, lmib))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
-
-                plot_curve_from_points(cr, line_width, lmib_rgba, lmibs_dry);
-
-                let lcls_dry = vals_dry
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .lcl_height
-                            .map(|lcl| (plume_anal.parcel.temperature - t0, lcl))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
-
-                plot_curve_from_points(cr, line_width, lcl_rgba, lcls_dry);
-
-                let maxhs_dry = vals_dry
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_height
-                            .map(|maxh| (plume_anal.parcel.temperature - t0, maxh))
-                    })
-                    .map(|(dt, height)| DtHCoords { dt, height })
-                    .map(|dt_coord| ac.fire_plume.convert_dth_to_screen(dt_coord));
-
-                plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_dry);
-            }
+            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_low);
+            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_high);
         }
     }
 
@@ -428,7 +373,6 @@ impl Drawable for FirePlumeContext {
         if let Sample::FirePlume {
             plume_anal_low,
             plume_anal_high,
-            plume_anal_dry,
             ..
         } = *vals
         {
@@ -442,94 +386,61 @@ impl Drawable for FirePlumeContext {
 
             let pnt_color = config.active_readout_line_rgba;
 
-            if config.show_moist_parcels_anal {
-                let dt_low = plume_anal_low.parcel.temperature - t0;
-                let dt_high = plume_anal_high.parcel.temperature - t0;
+            let dt_low = plume_anal_low.parcel.temperature - t0;
+            let dt_high = plume_anal_high.parcel.temperature - t0;
 
-                if let Some(lmib_low) = plume_anal_low.level_max_int_buoyancy {
-                    let lmib_pnt = DtHCoords {
-                        dt: dt_low,
-                        height: lmib_low,
-                    };
-                    let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
-                    Self::draw_point(screen_coords_el, pnt_color, args);
-                }
-
-                if let Some(lmib_high) = plume_anal_high.level_max_int_buoyancy {
-                    let lmib_pnt = DtHCoords {
-                        dt: dt_high,
-                        height: lmib_high,
-                    };
-                    let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
-                    Self::draw_point(screen_coords_el, pnt_color, args);
-                }
-
-                if let Some(maxh_low) = plume_anal_low.max_height {
-                    let maxh_pnt = DtHCoords {
-                        dt: dt_low,
-                        height: maxh_low,
-                    };
-                    let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
-                    Self::draw_point(screen_coords_maxh, pnt_color, args);
-                }
-
-                if let Some(maxh_high) = plume_anal_high.max_height {
-                    let maxh_pnt = DtHCoords {
-                        dt: dt_high,
-                        height: maxh_high,
-                    };
-                    let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
-                    Self::draw_point(screen_coords_maxh, pnt_color, args);
-                }
-
-                if let Some(lcl_low) = plume_anal_low.lcl_height {
-                    let lcl_pnt = DtHCoords {
-                        dt: dt_low,
-                        height: lcl_low,
-                    };
-                    let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
-                    Self::draw_point(screen_coords_lcl, pnt_color, args);
-                }
-
-                if let Some(lcl_high) = plume_anal_high.lcl_height {
-                    let lcl_pnt = DtHCoords {
-                        dt: dt_high,
-                        height: lcl_high,
-                    };
-                    let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
-                    Self::draw_point(screen_coords_lcl, pnt_color, args);
-                }
+            if let Some(lmib_low) = plume_anal_low.level_max_int_buoyancy {
+                let lmib_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: lmib_low,
+                };
+                let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
+                Self::draw_point(screen_coords_el, pnt_color, args);
             }
 
-            if config.show_dry_parcel_anal {
-                let dt_dry = plume_anal_dry.parcel.temperature - t0;
+            if let Some(lmib_high) = plume_anal_high.level_max_int_buoyancy {
+                let lmib_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: lmib_high,
+                };
+                let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
+                Self::draw_point(screen_coords_el, pnt_color, args);
+            }
 
-                if let Some(lmib_dry) = plume_anal_dry.level_max_int_buoyancy {
-                    let lmib_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: lmib_dry,
-                    };
-                    let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
-                    Self::draw_point(screen_coords_el, pnt_color, args);
-                }
+            if let Some(maxh_low) = plume_anal_low.max_height {
+                let maxh_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: maxh_low,
+                };
+                let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
+                Self::draw_point(screen_coords_maxh, pnt_color, args);
+            }
 
-                if let Some(maxh_dry) = plume_anal_dry.max_height {
-                    let maxh_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: maxh_dry,
-                    };
-                    let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
-                    Self::draw_point(screen_coords_maxh, pnt_color, args);
-                }
+            if let Some(maxh_high) = plume_anal_high.max_height {
+                let maxh_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: maxh_high,
+                };
+                let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
+                Self::draw_point(screen_coords_maxh, pnt_color, args);
+            }
 
-                if let Some(lcl_dry) = plume_anal_dry.lcl_height {
-                    let lcl_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: lcl_dry,
-                    };
-                    let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
-                    Self::draw_point(screen_coords_lcl, pnt_color, args);
-                }
+            if let Some(lcl_low) = plume_anal_low.lcl_height {
+                let lcl_pnt = DtHCoords {
+                    dt: dt_low,
+                    height: lcl_low,
+                };
+                let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
+                Self::draw_point(screen_coords_lcl, pnt_color, args);
+            }
+
+            if let Some(lcl_high) = plume_anal_high.lcl_height {
+                let lcl_pnt = DtHCoords {
+                    dt: dt_high,
+                    height: lcl_high,
+                };
+                let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
+                Self::draw_point(screen_coords_lcl, pnt_color, args);
             }
         }
     }

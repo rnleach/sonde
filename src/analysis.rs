@@ -46,17 +46,12 @@ pub struct Analysis {
     lmib_blow_up_height_low: Optioned<Meters>,
     lmib_blow_up_dt_high: Optioned<CelsiusDiff>,
     lmib_blow_up_height_high: Optioned<Meters>,
-    lmib_blow_up_dt_dry: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_dry: Optioned<Meters>,
     top_blow_up_dt_low: Optioned<CelsiusDiff>,
-    top_blow_up_dt_dry: Optioned<CelsiusDiff>,
     top_blow_up_dt_high: Optioned<CelsiusDiff>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     lcl_dt_high: Optioned<CelsiusDiff>,
-    lcl_dt_dry: Optioned<CelsiusDiff>,
     plumes_low: Option<Vec<PlumeAscentAnalysis>>,
     plumes_high: Option<Vec<PlumeAscentAnalysis>>,
-    plumes_dry: Option<Vec<PlumeAscentAnalysis>>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -112,17 +107,12 @@ impl Analysis {
             lmib_blow_up_height_low: none(),
             lmib_blow_up_dt_high: none(),
             lmib_blow_up_height_high: none(),
-            lmib_blow_up_dt_dry: none(),
-            lmib_blow_up_height_dry: none(),
             top_blow_up_dt_low: none(),
             top_blow_up_dt_high: none(),
-            top_blow_up_dt_dry: none(),
             lcl_dt_low: none(),
             lcl_dt_high: none(),
-            lcl_dt_dry: none(),
             plumes_low: None,
             plumes_high: None,
-            plumes_dry: None,
             max_p,
 
             dcape: none(),
@@ -276,11 +266,6 @@ impl Analysis {
         self.lmib_blow_up_dt_high
     }
 
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_dry
-    }
-
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
     pub fn lmib_blow_up_height_change_low(&self) -> Optioned<Meters> {
         self.lmib_blow_up_height_low
@@ -289,11 +274,6 @@ impl Analysis {
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
     pub fn lmib_blow_up_height_change_high(&self) -> Optioned<Meters> {
         self.lmib_blow_up_height_high
-    }
-
-    /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_dry(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_dry
     }
 
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
@@ -306,11 +286,6 @@ impl Analysis {
         self.top_blow_up_dt_high
     }
 
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_dry
-    }
-
     /// Get the amount of heating necessary to create a cloud on the plume top.
     pub fn lcl_dt_low(&self) -> Optioned<CelsiusDiff> {
         self.lcl_dt_low
@@ -319,11 +294,6 @@ impl Analysis {
     /// Get the starting parcel for a blow up analysis.
     pub fn starting_parcel_for_blow_up_anal(&self) -> Option<Parcel> {
         self.blow_up_anal_start_parcel
-    }
-
-    /// Get the plumes analysis
-    pub fn plumes_dry(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_dry
     }
 
     /// Get the plumes analysis
@@ -637,33 +607,6 @@ impl Analysis {
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
-        if self.lmib_blow_up_dt_dry.is_none()
-            || self.top_blow_up_dt_dry.is_none()
-            || self.lmib_blow_up_height_dry.is_none()
-            || self.blow_up_anal_start_parcel.is_none()
-            || self.lcl_dt_dry.is_none()
-        {
-            let blow_up_anal = blow_up(self.sounding(), None).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
-                .map(|bu_anal| {
-                    (
-                        Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
-                        some(bu_anal.delta_t_cloud),
-                    )
-                })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
-
-            self.lmib_blow_up_dt_dry = dt_lmib;
-            self.lmib_blow_up_height_dry = height_lmib;
-            self.top_blow_up_dt_dry = dt_top;
-            self.lcl_dt_dry = lcl_dt;
-            self.blow_up_anal_start_parcel = starting_pcl;
-        }
-
         // blow_up_anal_start_parcel is needed for taking the plume ascent parcels' temperature
         // values into a delta T.
         if self.plumes_low.is_none() && self.blow_up_anal_start_parcel.is_some() {
@@ -685,11 +628,6 @@ impl Analysis {
                 Some(15.0),
             )
             .ok();
-        }
-
-        if self.plumes_dry.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_dry =
-                calc_plumes(self.sounding(), CelsiusDiff(0.1), CelsiusDiff(20.0), None).ok();
         }
     }
 }

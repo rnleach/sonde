@@ -256,99 +256,63 @@ impl Drawable for FirePlumeEnergyContext {
             None => return,
         };
 
-        if config.show_moist_parcels_anal {
-            if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
-                let line_width = config.profile_line_width;
-                let pct_wet_rgba = config.fire_plume_pct_wet_cape_color;
-                let mut pct_wet_polygon_color = pct_wet_rgba;
-                pct_wet_polygon_color.3 /= 2.0;
+        if let (Some(vals_low), Some(vals_high)) = (anal.plumes_low(), anal.plumes_high()) {
+            let line_width = config.profile_line_width;
+            let pct_wet_rgba = config.fire_plume_pct_wet_cape_color;
+            let mut pct_wet_polygon_color = pct_wet_rgba;
+            pct_wet_polygon_color.3 /= 2.0;
 
-                let vals_low = vals_low
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_int_buoyancy
-                            .and_then(|max_ib| {
-                                plume_anal
-                                    .max_dry_int_buoyancy
-                                    .map(|max_dib| (max_ib, max_dib))
-                            })
-                            .map(|(max_ib, max_dib)| {
-                                let pct = if max_ib > JpKg(0.0) {
-                                    (max_ib - max_dib) / max_ib * 100.0
-                                } else {
-                                    0.0
-                                };
+            let vals_low = vals_low
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .max_int_buoyancy
+                        .and_then(|max_ib| {
+                            plume_anal
+                                .max_dry_int_buoyancy
+                                .map(|max_dib| (max_ib, max_dib))
+                        })
+                        .map(|(max_ib, max_dib)| {
+                            let pct = if max_ib > JpKg(0.0) {
+                                (max_ib - max_dib) / max_ib * 100.0
+                            } else {
+                                0.0
+                            };
 
-                                (plume_anal.parcel.temperature - t0, pct)
-                            })
-                    })
-                    .map(|(dt, percent)| DtPCoords { dt, percent })
-                    .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
+                            (plume_anal.parcel.temperature - t0, pct)
+                        })
+                })
+                .map(|(dt, percent)| DtPCoords { dt, percent })
+                .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
 
-                let vals_high = vals_high
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_int_buoyancy
-                            .and_then(|max_ib| {
-                                plume_anal
-                                    .max_dry_int_buoyancy
-                                    .map(|max_dib| (max_ib, max_dib))
-                            })
-                            .map(|(max_ib, max_dib)| {
-                                let pct = if max_ib > JpKg(0.0) {
-                                    (max_ib - max_dib) / max_ib * 100.0
-                                } else {
-                                    0.0
-                                };
+            let vals_high = vals_high
+                .iter()
+                .filter_map(|plume_anal| {
+                    plume_anal
+                        .max_int_buoyancy
+                        .and_then(|max_ib| {
+                            plume_anal
+                                .max_dry_int_buoyancy
+                                .map(|max_dib| (max_ib, max_dib))
+                        })
+                        .map(|(max_ib, max_dib)| {
+                            let pct = if max_ib > JpKg(0.0) {
+                                (max_ib - max_dib) / max_ib * 100.0
+                            } else {
+                                0.0
+                            };
 
-                                (plume_anal.parcel.temperature - t0, pct)
-                            })
-                    })
-                    .map(|(dt, percent)| DtPCoords { dt, percent })
-                    .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
+                            (plume_anal.parcel.temperature - t0, pct)
+                        })
+                })
+                .map(|(dt, percent)| DtPCoords { dt, percent })
+                .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
 
-                let polygon = vals_low.clone().chain(vals_high.clone().rev());
+            let polygon = vals_low.clone().chain(vals_high.clone().rev());
 
-                draw_filled_polygon(cr, pct_wet_polygon_color, polygon);
-                plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_low);
-                plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_high);
-            }
-        }
-
-        if config.show_dry_parcel_anal {
-            if let Some(vals_dry) = anal.plumes_dry() {
-                let line_width = config.profile_line_width;
-                let pct_wet_rgba = config.fire_plume_pct_wet_cape_color;
-                let mut pct_wet_polygon_color = pct_wet_rgba;
-                pct_wet_polygon_color.3 /= 2.0;
-
-                let vals_dry = vals_dry
-                    .iter()
-                    .filter_map(|plume_anal| {
-                        plume_anal
-                            .max_int_buoyancy
-                            .and_then(|max_ib| {
-                                plume_anal
-                                    .max_dry_int_buoyancy
-                                    .map(|max_dib| (max_ib, max_dib))
-                            })
-                            .map(|(max_ib, max_dib)| {
-                                let pct = if max_ib > JpKg(0.0) {
-                                    (max_ib - max_dib) / max_ib * 100.0
-                                } else {
-                                    0.0
-                                };
-
-                                (plume_anal.parcel.temperature - t0, pct)
-                            })
-                    })
-                    .map(|(dt, percent)| DtPCoords { dt, percent })
-                    .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
-
-                plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_dry);
-            }
+            draw_filled_polygon(cr, pct_wet_polygon_color, polygon);
+            plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_low);
+            plot_curve_from_points(cr, line_width, pct_wet_rgba, vals_high);
         }
     }
 
@@ -375,59 +339,39 @@ impl Drawable for FirePlumeEnergyContext {
         if let Sample::FirePlume {
             plume_anal_low,
             plume_anal_high,
-            plume_anal_dry,
             ..
         } = *vals
         {
             let dt = plume_anal_low.parcel.temperature - t0;
 
-            if config.show_moist_parcels_anal {
-                if let (Some(max_int_b_low), Some(max_dry_int_b_low)) = (
-                    plume_anal_low.max_int_buoyancy,
-                    plume_anal_low.max_dry_int_buoyancy,
-                ) {
-                    let percent = if max_int_b_low > JpKg(0.0) {
-                        (max_int_b_low - max_dry_int_b_low) / max_int_b_low * 100.0
-                    } else {
-                        0.0
-                    };
+            if let (Some(max_int_b_low), Some(max_dry_int_b_low)) = (
+                plume_anal_low.max_int_buoyancy,
+                plume_anal_low.max_dry_int_buoyancy,
+            ) {
+                let percent = if max_int_b_low > JpKg(0.0) {
+                    (max_int_b_low - max_dry_int_b_low) / max_int_b_low * 100.0
+                } else {
+                    0.0
+                };
 
-                    let pct_pnt = DtPCoords { dt, percent };
-                    let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
-                    Self::draw_point(screen_coords_cape, pnt_color, args);
-                }
-
-                if let (Some(max_int_b_high), Some(max_dry_int_b_high)) = (
-                    plume_anal_high.max_int_buoyancy,
-                    plume_anal_high.max_dry_int_buoyancy,
-                ) {
-                    let percent = if max_int_b_high > JpKg(0.0) {
-                        (max_int_b_high - max_dry_int_b_high) / max_int_b_high * 100.0
-                    } else {
-                        0.0
-                    };
-
-                    let pct_pnt = DtPCoords { dt, percent };
-                    let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
-                    Self::draw_point(screen_coords_cape, pnt_color, args);
-                }
+                let pct_pnt = DtPCoords { dt, percent };
+                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
+                Self::draw_point(screen_coords_cape, pnt_color, args);
             }
 
-            if config.show_dry_parcel_anal {
-                if let (Some(max_int_b_dry), Some(max_dry_int_b_dry)) = (
-                    plume_anal_dry.max_int_buoyancy,
-                    plume_anal_dry.max_dry_int_buoyancy,
-                ) {
-                    let percent = if max_int_b_dry > JpKg(0.0) {
-                        (max_int_b_dry - max_dry_int_b_dry) / max_int_b_dry * 100.0
-                    } else {
-                        0.0
-                    };
+            if let (Some(max_int_b_high), Some(max_dry_int_b_high)) = (
+                plume_anal_high.max_int_buoyancy,
+                plume_anal_high.max_dry_int_buoyancy,
+            ) {
+                let percent = if max_int_b_high > JpKg(0.0) {
+                    (max_int_b_high - max_dry_int_b_high) / max_int_b_high * 100.0
+                } else {
+                    0.0
+                };
 
-                    let pct_pnt = DtPCoords { dt, percent };
-                    let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
-                    Self::draw_point(screen_coords_cape, pnt_color, args);
-                }
+                let pct_pnt = DtPCoords { dt, percent };
+                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
+                Self::draw_point(screen_coords_cape, pnt_color, args);
             }
         }
     }

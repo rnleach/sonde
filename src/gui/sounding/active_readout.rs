@@ -219,42 +219,35 @@ impl SkewTContext {
         parcel_low: Parcel,
         profile_low: &ParcelProfile,
         profile_high: &ParcelProfile,
-        profile_dry: &ParcelProfile,
     ) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color;
 
-        if config.show_moist_parcels_anal {
-            let pres_up = &profile_low.pressure;
-            let temp_up = &profile_low.parcel_t;
-            let pres_down = &profile_high.pressure;
-            let temp_down = &profile_high.parcel_t;
+        let pres_up = &profile_low.pressure;
+        let temp_up = &profile_low.parcel_t;
+        let pres_down = &profile_high.pressure;
+        let temp_down = &profile_high.parcel_t;
 
-            let upside = izip!(pres_up, temp_up);
-            let downside = izip!(pres_down, temp_down).rev();
-            let polygon = upside.chain(downside);
+        let upside = izip!(pres_up, temp_up);
+        let downside = izip!(pres_down, temp_down).rev();
+        let polygon = upside.chain(downside);
 
-            let polygon = polygon.map(|(&pressure, &temperature)| {
-                let tp_coords = TPCoords {
-                    temperature,
-                    pressure,
-                };
-                ac.skew_t.convert_tp_to_screen(tp_coords)
-            });
+        let polygon = polygon.map(|(&pressure, &temperature)| {
+            let tp_coords = TPCoords {
+                temperature,
+                pressure,
+            };
+            ac.skew_t.convert_tp_to_screen(tp_coords)
+        });
 
-            let mut polygon_rgba = color;
-            polygon_rgba.3 /= 2.0;
+        let mut polygon_rgba = color;
+        polygon_rgba.3 /= 2.0;
 
-            draw_filled_polygon(cr, polygon_rgba, polygon);
-            // Draw lines
-            Self::draw_plume_parcel_profile(args, &profile_low, color);
-            Self::draw_plume_parcel_profile(args, &profile_high, color);
-        }
-
-        if config.show_dry_parcel_anal {
-            Self::draw_plume_parcel_profile(args, &profile_dry, color);
-        }
+        draw_filled_polygon(cr, polygon_rgba, polygon);
+        // Draw lines
+        Self::draw_plume_parcel_profile(args, &profile_low, color);
+        Self::draw_plume_parcel_profile(args, &profile_high, color);
 
         // Draw a sample point
         if config.show_active_readout_line {

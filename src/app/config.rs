@@ -312,11 +312,6 @@ pub struct Config {
     //
     // Fire plume related settings.
     //
-    /// Show the dry parcel analysis
-    pub show_dry_parcel_anal: bool,
-    /// Show the range of moist parcel analysis
-    pub show_moist_parcels_anal: bool,
-    /// Line color to plot the fire plume.
     pub fire_plume_line_color: Rgba,
     /// Line color of level of max integrated buoyancy on fire plume chart.
     pub fire_plume_lmib_color: Rgba,
@@ -501,8 +496,6 @@ impl Default for Config {
             //
             // Fire plume related settings.
             //
-            show_dry_parcel_anal: false,
-            show_moist_parcels_anal: true,
             fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
             fire_plume_lmib_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
