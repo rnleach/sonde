@@ -375,7 +375,10 @@ impl Drawable for FirePlumeEnergyContext {
         if let Sample::FirePlume {
             plume_anal_low,
             plume_anal_high,
-            plume_anal_dry,
+            plume_anal_dry1,
+            plume_anal_dry2,
+            plume_anal_dry3,
+            plume_anal_dry4,
             ..
         } = *vals
         {
@@ -414,19 +417,27 @@ impl Drawable for FirePlumeEnergyContext {
             }
 
             if config.show_dry_parcel_anal {
-                if let (Some(max_int_b_dry), Some(max_dry_int_b_dry)) = (
-                    plume_anal_dry.max_int_buoyancy,
-                    plume_anal_dry.max_dry_int_buoyancy,
-                ) {
-                    let percent = if max_int_b_dry > JpKg(0.0) {
-                        (max_int_b_dry - max_dry_int_b_dry) / max_int_b_dry * 100.0
-                    } else {
-                        0.0
-                    };
+                for plume_anal_dry in &[
+                    plume_anal_dry1,
+                    plume_anal_dry2,
+                    plume_anal_dry3,
+                    plume_anal_dry4,
+                ] {
+                    if let (Some(max_int_b_dry), Some(max_dry_int_b_dry)) = (
+                        plume_anal_dry.max_int_buoyancy,
+                        plume_anal_dry.max_dry_int_buoyancy,
+                    ) {
+                        let percent = if max_int_b_dry > JpKg(0.0) {
+                            (max_int_b_dry - max_dry_int_b_dry) / max_int_b_dry * 100.0
+                        } else {
+                            0.0
+                        };
 
-                    let pct_pnt = DtPCoords { dt, percent };
-                    let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
-                    Self::draw_point(screen_coords_cape, pnt_color, args);
+                        let pct_pnt = DtPCoords { dt, percent };
+                        let screen_coords_cape =
+                            ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
+                        Self::draw_point(screen_coords_cape, pnt_color, args);
+                    }
                 }
             }
         }

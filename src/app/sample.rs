@@ -1,5 +1,5 @@
 use crate::analysis::Analysis;
-use metfor::Celsius;
+use metfor::{Celsius, CelsiusDiff};
 use sounding_analysis::{
     experimental::fire::{create_plume_parcel_from, lift_plume_parcel, PlumeAscentAnalysis},
     lift_parcel, DataRow, Parcel, ParcelAscentAnalysis, ParcelProfile,
@@ -19,8 +19,14 @@ pub enum Sample {
         parcel_high: Parcel,
         profile_high: ParcelProfile,
         plume_anal_high: PlumeAscentAnalysis,
-        profile_dry: ParcelProfile,
-        plume_anal_dry: PlumeAscentAnalysis,
+        profile_dry1: ParcelProfile,
+        profile_dry2: ParcelProfile,
+        profile_dry3: ParcelProfile,
+        profile_dry4: ParcelProfile,
+        plume_anal_dry1: PlumeAscentAnalysis,
+        plume_anal_dry2: PlumeAscentAnalysis,
+        plume_anal_dry3: PlumeAscentAnalysis,
+        plume_anal_dry4: PlumeAscentAnalysis,
     },
     None,
 }
@@ -47,8 +53,38 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
         Err(_) => return Sample::None,
     };
 
-    let parcel_dry = create_plume_parcel_from(parcel_env, target_t - parcel_env.temperature, None);
-    let (profile_dry, plume_anal_dry) = match lift_plume_parcel(parcel_dry, anal.sounding()) {
+    let parcel_dry1 = create_plume_parcel_from(parcel_env, target_t - parcel_env.temperature, None);
+    let (profile_dry1, plume_anal_dry1) = match lift_plume_parcel(parcel_dry1, anal.sounding()) {
+        Ok(dry_vals) => dry_vals,
+        Err(_) => return Sample::None,
+    };
+
+    let parcel_dry2 = create_plume_parcel_from(
+        parcel_env,
+        target_t + CelsiusDiff(2.0) - parcel_env.temperature,
+        None,
+    );
+    let (profile_dry2, plume_anal_dry2) = match lift_plume_parcel(parcel_dry2, anal.sounding()) {
+        Ok(dry_vals) => dry_vals,
+        Err(_) => return Sample::None,
+    };
+
+    let parcel_dry3 = create_plume_parcel_from(
+        parcel_env,
+        target_t + CelsiusDiff(4.0) - parcel_env.temperature,
+        None,
+    );
+    let (profile_dry3, plume_anal_dry3) = match lift_plume_parcel(parcel_dry3, anal.sounding()) {
+        Ok(dry_vals) => dry_vals,
+        Err(_) => return Sample::None,
+    };
+
+    let parcel_dry4 = create_plume_parcel_from(
+        parcel_env,
+        target_t + CelsiusDiff(6.0) - parcel_env.temperature,
+        None,
+    );
+    let (profile_dry4, plume_anal_dry4) = match lift_plume_parcel(parcel_dry4, anal.sounding()) {
         Ok(dry_vals) => dry_vals,
         Err(_) => return Sample::None,
     };
@@ -60,7 +96,13 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
         parcel_high,
         profile_high,
         plume_anal_high,
-        profile_dry,
-        plume_anal_dry,
+        profile_dry1,
+        profile_dry2,
+        profile_dry3,
+        profile_dry4,
+        plume_anal_dry1,
+        plume_anal_dry2,
+        plume_anal_dry3,
+        plume_anal_dry4,
     }
 }

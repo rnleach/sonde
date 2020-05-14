@@ -276,11 +276,6 @@ impl Analysis {
         self.lmib_blow_up_dt_high
     }
 
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_dry
-    }
-
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
     pub fn lmib_blow_up_height_change_low(&self) -> Optioned<Meters> {
         self.lmib_blow_up_height_low
@@ -291,11 +286,6 @@ impl Analysis {
         self.lmib_blow_up_height_high
     }
 
-    /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_dry(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_dry
-    }
-
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
     pub fn top_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
         self.top_blow_up_dt_low
@@ -304,11 +294,6 @@ impl Analysis {
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
     pub fn top_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
         self.top_blow_up_dt_high
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_dry
     }
 
     /// Get the amount of heating necessary to create a cloud on the plume top.

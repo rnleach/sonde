@@ -428,7 +428,10 @@ impl Drawable for FirePlumeContext {
         if let Sample::FirePlume {
             plume_anal_low,
             plume_anal_high,
-            plume_anal_dry,
+            plume_anal_dry1,
+            plume_anal_dry2,
+            plume_anal_dry3,
+            plume_anal_dry4,
             ..
         } = *vals
         {
@@ -502,33 +505,40 @@ impl Drawable for FirePlumeContext {
             }
 
             if config.show_dry_parcel_anal {
-                let dt_dry = plume_anal_dry.parcel.temperature - t0;
+                for plume_anal_dry in &[
+                    plume_anal_dry1,
+                    plume_anal_dry2,
+                    plume_anal_dry3,
+                    plume_anal_dry4,
+                ] {
+                    let dt_dry = plume_anal_dry.parcel.temperature - t0;
 
-                if let Some(lmib_dry) = plume_anal_dry.level_max_int_buoyancy {
-                    let lmib_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: lmib_dry,
-                    };
-                    let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
-                    Self::draw_point(screen_coords_el, pnt_color, args);
-                }
+                    if let Some(lmib_dry) = plume_anal_dry.level_max_int_buoyancy {
+                        let lmib_pnt = DtHCoords {
+                            dt: dt_dry,
+                            height: lmib_dry,
+                        };
+                        let screen_coords_el = ac.fire_plume.convert_dth_to_screen(lmib_pnt);
+                        Self::draw_point(screen_coords_el, pnt_color, args);
+                    }
 
-                if let Some(maxh_dry) = plume_anal_dry.max_height {
-                    let maxh_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: maxh_dry,
-                    };
-                    let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
-                    Self::draw_point(screen_coords_maxh, pnt_color, args);
-                }
+                    if let Some(maxh_dry) = plume_anal_dry.max_height {
+                        let maxh_pnt = DtHCoords {
+                            dt: dt_dry,
+                            height: maxh_dry,
+                        };
+                        let screen_coords_maxh = ac.fire_plume.convert_dth_to_screen(maxh_pnt);
+                        Self::draw_point(screen_coords_maxh, pnt_color, args);
+                    }
 
-                if let Some(lcl_dry) = plume_anal_dry.lcl_height {
-                    let lcl_pnt = DtHCoords {
-                        dt: dt_dry,
-                        height: lcl_dry,
-                    };
-                    let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
-                    Self::draw_point(screen_coords_lcl, pnt_color, args);
+                    if let Some(lcl_dry) = plume_anal_dry.lcl_height {
+                        let lcl_pnt = DtHCoords {
+                            dt: dt_dry,
+                            height: lcl_dry,
+                        };
+                        let screen_coords_lcl = ac.fire_plume.convert_dth_to_screen(lcl_pnt);
+                        Self::draw_point(screen_coords_lcl, pnt_color, args);
+                    }
                 }
             }
         }

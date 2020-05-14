@@ -481,7 +481,10 @@ impl Drawable for SkewTContext {
                     parcel_low,
                     ref profile_low,
                     ref profile_high,
-                    ref profile_dry,
+                    ref profile_dry1,
+                    ref profile_dry2,
+                    ref profile_dry3,
+                    ref profile_dry4,
                     ..
                 } => {
                     if config.show_sample_parcel_profile {
@@ -490,7 +493,7 @@ impl Drawable for SkewTContext {
                             parcel_low,
                             profile_low,
                             profile_high,
-                            profile_dry,
+                            &[profile_dry1, profile_dry2, profile_dry3, profile_dry4],
                         );
                     }
                 }

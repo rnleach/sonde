@@ -219,11 +219,11 @@ impl SkewTContext {
         parcel_low: Parcel,
         profile_low: &ParcelProfile,
         profile_high: &ParcelProfile,
-        profile_dry: &ParcelProfile,
+        dry_profiles: &[&ParcelProfile],
     ) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
-        let color = config.fire_plume_line_color;
+        let color = config.fire_plume_line_color1;
 
         if config.show_moist_parcels_anal {
             let pres_up = &profile_low.pressure;
@@ -253,7 +253,17 @@ impl SkewTContext {
         }
 
         if config.show_dry_parcel_anal {
-            Self::draw_plume_parcel_profile(args, &profile_dry, color);
+            for (prof, color) in itertools::izip!(
+                dry_profiles,
+                &[
+                    config.fire_plume_line_color1,
+                    config.fire_plume_line_color2,
+                    config.fire_plume_line_color3,
+                    config.fire_plume_line_color4
+                ]
+            ) {
+                Self::draw_plume_parcel_profile(args, prof, *color);
+            }
         }
 
         // Draw a sample point
@@ -280,7 +290,7 @@ impl SkewTContext {
         let pres_data = &profile.pressure;
         let temp_data = &profile.parcel_t;
 
-        let line_width = config.profile_line_width;
+        let line_width = config.fire_plume_line_width;
 
         let profile_data = izip!(pres_data, temp_data).filter_map(|(&pressure, &temperature)| {
             if pressure > config::MINP {

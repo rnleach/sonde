@@ -317,7 +317,15 @@ pub struct Config {
     /// Show the range of moist parcel analysis
     pub show_moist_parcels_anal: bool,
     /// Line color to plot the fire plume.
-    pub fire_plume_line_color: Rgba,
+    pub fire_plume_line_color1: Rgba,
+    /// Line color to plot the fire plume.
+    pub fire_plume_line_color2: Rgba,
+    /// Line color to plot the fire plume.
+    pub fire_plume_line_color3: Rgba,
+    /// Line color to plot the fire plume.
+    pub fire_plume_line_color4: Rgba,
+    /// Line width for fire plume lines.
+    pub fire_plume_line_width: f64,
     /// Line color of level of max integrated buoyancy on fire plume chart.
     pub fire_plume_lmib_color: Rgba,
     /// Line color of max height on fire plume chart.
@@ -341,9 +349,9 @@ impl Default for Config {
             //
             // Window Layout
             //
-            window_width: 1100,
-            window_height: 550,
-            pane_position: 0.5,
+            window_width: 1500,
+            window_height: 750,
+            pane_position: 0.6,
             left_tabs: vec![],
             right_tabs: vec![],
             left_page_selected: 0,
@@ -359,7 +367,7 @@ impl Default for Config {
             wind_barb_dot_radius: 3.5,
             wind_rgba: (0.0, 0.0, 0.0, 1.0),
             wind_barb_line_width: 1.0,
-            show_wind_profile: true,
+            show_wind_profile: false,
             storm_motion_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
@@ -374,7 +382,7 @@ impl Default for Config {
             //
             wet_bulb_rgba: (0.0, 0.0, 0.0, 1.0),
             wet_bulb_line_width: 1.0,
-            show_wet_bulb: true,
+            show_wet_bulb: false,
 
             //
             // Dew point temperature profile
@@ -393,16 +401,16 @@ impl Default for Config {
             fill_parcel_areas: true,
             parcel_positive_rgba: (0.80, 0.0, 0.0, 0.5),
             parcel_negative_rgba: (0.0, 0.0, 0.80, 0.5),
-            show_inversion_mix_down: true,
+            show_inversion_mix_down: false,
             inversion_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
-            show_downburst: true,
+            show_downburst: false,
             downburst_rgba: (0.0, 0.6, 0.0, 1.0),
             fill_dcape_area: true,
             dcape_area_color: (0.0, 0.6, 0.0, 0.5),
             dendritic_zone_rgba: (0.0, 0.466_666_667, 0.780_392_157, 0.55),
-            show_dendritic_zone: true,
+            show_dendritic_zone: false,
             hail_zone_rgba: (0.0, 0.803_921_569, 0.803_921_569, 0.55),
-            show_hail_zone: true,
+            show_hail_zone: false,
             warm_layer_rgba: (0.717_647, 0.254_9, 0.054_9, 0.55),
             warm_wet_bulb_aloft_rgba: (0.8, 0.0, 0.0, 1.0),
             show_warm_layer_aloft: true,
@@ -412,7 +420,7 @@ impl Default for Config {
             wet_bulb_zero_line_width: 3.0,
             wet_bulb_zero_line_color: (0.360_784_313_725_490_2, 0.207_843_137_254_901_97, 0.4, 1.0),
             show_wet_bulb_zero_line: true,
-            show_inflow_layer: true,
+            show_inflow_layer: false,
             inflow_layer_rgba: (1.0, 0.4, 0.1, 1.0),
 
             //
@@ -467,21 +475,21 @@ impl Default for Config {
             isentrop_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_isentrops: true,
             iso_mixing_ratio_rgba: (0.090_196_078, 0.050_980_392, 0.360_784_314, 1.0),
-            show_iso_mixing_ratio: true,
+            show_iso_mixing_ratio: false,
             iso_theta_e_rgba: (0.333_333_333, 0.662_745_098, 0.278_431_373, 1.0),
-            show_iso_theta_e: true,
+            show_iso_theta_e: false,
 
             //
             // Active readout
             //
             show_active_readout: true,
-            show_active_readout_text: true,
-            show_active_readout_line: true,
+            show_active_readout_text: false,
+            show_active_readout_line: false,
             active_readout_line_width: 3.0,
             active_readout_line_rgba: (1.0, 0.0, 0.0, 1.0),
             show_sample_parcel_profile: true,
             sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
-            show_sample_mix_down: true,
+            show_sample_mix_down: false,
             sample_mix_down_rgba: (0.560_784_313_725, 0.349_019_607_843, 0.007_843_137_254, 1.0),
 
             //
@@ -501,9 +509,13 @@ impl Default for Config {
             //
             // Fire plume related settings.
             //
-            show_dry_parcel_anal: false,
-            show_moist_parcels_anal: true,
-            fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
+            show_dry_parcel_anal: true,
+            show_moist_parcels_anal: false,
+            fire_plume_line_width: 2.2,
+            fire_plume_line_color1: (0.0, 0.0, 0.9, 1.0),
+            fire_plume_line_color2: (0.7, 0.7, 0.0, 1.0),
+            fire_plume_line_color3: (0.9, 0.6, 0.0, 1.0),
+            fire_plume_line_color4: (0.9, 0.0, 0.0, 1.0),
             fire_plume_lmib_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
             fire_plume_pct_wet_cape_color: (0.0, 0.0, 0.0, 1.0),
