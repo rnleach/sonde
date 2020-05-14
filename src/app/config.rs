@@ -263,16 +263,23 @@ pub struct Config {
     //
     // Active readout
     //
+    /// Show/hide the active readout
+    pub show_active_readout: bool,
+
+    /// Show the active readout box
+    pub show_active_readout_text: bool,
+    /// Show the active readout horizontal line
+    pub show_active_readout_line: bool,
     /// Active readout line width
     pub active_readout_line_width: f64,
     /// Active readout line color
     pub active_readout_line_rgba: Rgba,
-    /// Show/hide the active readout
-    pub show_active_readout: bool,
+
     /// Show sample parcel profile
     pub show_sample_parcel_profile: bool,
     /// Color for sample parcel profile
     pub sample_parcel_profile_color: Rgba,
+
     /// Show mix down profile of sample parcel
     pub show_sample_mix_down: bool,
     /// Sample mix down profile color
@@ -305,10 +312,14 @@ pub struct Config {
     //
     // Fire plume related settings.
     //
+    /// Show the dry parcel analysis
+    pub show_dry_parcel_anal: bool,
+    /// Show the range of moist parcel analysis
+    pub show_moist_parcels_anal: bool,
     /// Line color to plot the fire plume.
     pub fire_plume_line_color: Rgba,
-    /// Line color of el on fire plume chart.
-    pub fire_plume_el_color: Rgba,
+    /// Line color of level of max integrated buoyancy on fire plume chart.
+    pub fire_plume_lmib_color: Rgba,
     /// Line color of max height on fire plume chart.
     pub fire_plume_maxh_color: Rgba,
     /// Line color of the LCL on the fire plume chart.
@@ -463,9 +474,11 @@ impl Default for Config {
             //
             // Active readout
             //
+            show_active_readout: true,
+            show_active_readout_text: true,
+            show_active_readout_line: true,
             active_readout_line_width: 3.0,
             active_readout_line_rgba: (1.0, 0.0, 0.0, 1.0),
-            show_active_readout: true,
             show_sample_parcel_profile: true,
             sample_parcel_profile_color: (1.0, 0.0, 0.0, 1.0),
             show_sample_mix_down: true,
@@ -488,8 +501,10 @@ impl Default for Config {
             //
             // Fire plume related settings.
             //
+            show_dry_parcel_anal: false,
+            show_moist_parcels_anal: true,
             fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
-            fire_plume_el_color: (1.0, 0.5, 0.0, 1.0),
+            fire_plume_lmib_color: (1.0, 0.5, 0.0, 1.0),
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
             fire_plume_pct_wet_cape_color: (0.0, 0.0, 0.0, 1.0),
             fire_plume_lcl_color: (0.0, 0.7, 0.8, 1.0),

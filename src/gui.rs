@@ -419,6 +419,7 @@ trait Drawable: PlotContext + PlotContextExt {
         }
 
         let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
 
         let vals = ac.get_sample();
 
@@ -432,19 +433,23 @@ trait Drawable: PlotContext + PlotContextExt {
             return;
         };
 
-        let lines = Self::create_active_readout_text(&vals, ac);
-
-        if lines.is_empty() {
-            return;
+        if config.show_active_readout_line {
+            self.draw_sample_line(args, sample_p);
         }
 
-        self.draw_sample_line(args, sample_p);
+        if config.show_active_readout_text {
+            let lines = Self::create_active_readout_text(&vals, ac);
 
-        self.prepare_to_make_text(args);
+            if lines.is_empty() {
+                return;
+            }
 
-        let box_rect = self.calculate_active_readout_box(args, &lines, sample_p);
+            self.prepare_to_make_text(args);
 
-        Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
+            let box_rect = self.calculate_active_readout_box(args, &lines, sample_p);
+
+            Self::draw_sample_readout_text_box(&box_rect, cr, ac, &lines);
+        }
     }
 
     /// Not recommended to override.

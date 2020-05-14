@@ -174,7 +174,7 @@ fn bufr_to_sounding(msg: Message, file_name: String) -> Result<Analysis, Box<dyn
         .and_then(|val| val.into_option())
         .map(Meters);
     let lat_lon = latitude.and_then(|lat| longitude.map(|lon| (lat, lon)));
-    let stn = StationInfo::new_with_values(None, lat_lon, elevation);
+    let stn = StationInfo::new_with_values(None, None, lat_lon, elevation);
 
     let year = msg.long("year").ok().and_then(|v| v.into_option());
     let month = msg.long("month").ok().and_then(|v| v.into_option());

@@ -58,9 +58,9 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     );
     build_config_color!(
         fire_plumes_box,
-        "Equilibrium Level",
+        "Level of Max Ingetgrated Buoyancy",
         ac,
-        fire_plume_el_color
+        fire_plume_lmib_color
     );
     build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
     build_config_color!(

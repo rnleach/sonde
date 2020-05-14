@@ -49,6 +49,18 @@ impl SkewTContext {
     fn build_active_readout_section_of_context_menu(menu: &Menu, acp: &AppContextPointer) {
         make_heading!(menu, "Active readout");
         make_check_item!(menu, "Show active readout", acp, show_active_readout);
+        make_check_item!(
+            menu,
+            "Show active readout text",
+            acp,
+            show_active_readout_text
+        );
+        make_check_item!(
+            menu,
+            "Show active readout line",
+            acp,
+            show_active_readout_line
+        );
         make_check_item!(menu, "Draw sample parcel", acp, show_sample_parcel_profile);
         make_check_item!(menu, "Draw sample mix down", acp, show_sample_mix_down);
     }

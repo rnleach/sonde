@@ -177,8 +177,8 @@ impl SkewTContext {
             let mut line = String::with_capacity(32);
             let color = config.parcel_positive_rgba;
             if let (Some(cape_low), Some(cape_high)) = (
-                plume_anal_low.max_int_bouyancy,
-                plume_anal_high.max_int_bouyancy,
+                plume_anal_low.max_int_buoyancy,
+                plume_anal_high.max_int_buoyancy,
             ) {
                 line.push_str(&format!(
                     "Net CAPE: {:.0} - {:.0} J/Kg\n",
@@ -194,7 +194,7 @@ impl SkewTContext {
                 (plume_anal_low.el_height, plume_anal_high.el_height)
             {
                 line.push_str(&format!(
-                    "EL: {:.0} - {:.0} m\n",
+                    "LMIB: {:.0} - {:.0} m\n",
                     el_high.unpack(),
                     el_low.unpack()
                 ));
@@ -219,45 +219,54 @@ impl SkewTContext {
         parcel_low: Parcel,
         profile_low: &ParcelProfile,
         profile_high: &ParcelProfile,
+        profile_dry: &ParcelProfile,
     ) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color;
 
-        let pres_up = &profile_low.pressure;
-        let temp_up = &profile_low.parcel_t;
-        let pres_down = &profile_high.pressure;
-        let temp_down = &profile_high.parcel_t;
+        if config.show_moist_parcels_anal {
+            let pres_up = &profile_low.pressure;
+            let temp_up = &profile_low.parcel_t;
+            let pres_down = &profile_high.pressure;
+            let temp_down = &profile_high.parcel_t;
 
-        let upside = izip!(pres_up, temp_up);
-        let downside = izip!(pres_down, temp_down).rev();
-        let polygon = upside.chain(downside);
+            let upside = izip!(pres_up, temp_up);
+            let downside = izip!(pres_down, temp_down).rev();
+            let polygon = upside.chain(downside);
 
-        let polygon = polygon.map(|(&pressure, &temperature)| {
-            let tp_coords = TPCoords {
-                temperature,
-                pressure,
-            };
-            ac.skew_t.convert_tp_to_screen(tp_coords)
-        });
+            let polygon = polygon.map(|(&pressure, &temperature)| {
+                let tp_coords = TPCoords {
+                    temperature,
+                    pressure,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
 
-        let mut polygon_rgba = color;
-        polygon_rgba.3 /= 2.0;
+            let mut polygon_rgba = color;
+            polygon_rgba.3 /= 2.0;
 
-        draw_filled_polygon(cr, polygon_rgba, polygon);
-        // Draw lines
-        Self::draw_plume_parcel_profile(args, &profile_low, color);
-        Self::draw_plume_parcel_profile(args, &profile_high, color);
+            draw_filled_polygon(cr, polygon_rgba, polygon);
+            // Draw lines
+            Self::draw_plume_parcel_profile(args, &profile_low, color);
+            Self::draw_plume_parcel_profile(args, &profile_high, color);
+        }
+
+        if config.show_dry_parcel_anal {
+            Self::draw_plume_parcel_profile(args, &profile_dry, color);
+        }
 
         // Draw a sample point
-        let point = TPCoords {
-            temperature: parcel_low.temperature,
-            pressure: parcel_low.pressure,
-        };
-        let point = ac.skew_t.convert_tp_to_screen(point);
-        let rgba = config.active_readout_line_rgba;
+        if config.show_active_readout_line {
+            let point = TPCoords {
+                temperature: parcel_low.temperature,
+                pressure: parcel_low.pressure,
+            };
+            let point = ac.skew_t.convert_tp_to_screen(point);
+            let rgba = config.active_readout_line_rgba;
 
-        Self::draw_point(point, rgba, args);
+            Self::draw_point(point, rgba, args);
+        }
     }
 
     fn draw_plume_parcel_profile(
@@ -271,7 +280,7 @@ impl SkewTContext {
         let pres_data = &profile.pressure;
         let temp_data = &profile.parcel_t;
 
-        let line_width = config.temperature_line_width;
+        let line_width = config.profile_line_width;
 
         let profile_data = izip!(pres_data, temp_data).filter_map(|(&pressure, &temperature)| {
             if pressure > config::MINP {

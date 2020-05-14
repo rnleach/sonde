@@ -35,6 +35,13 @@ pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
         sample_mix_down_rgba
     );
     build_config_color!(sample_box, "Fire Plume Profile", ac, fire_plume_line_color);
+    build_config_check!(sample_box, "Show Dry Parcel Anal", ac, show_dry_parcel_anal);
+    build_config_check!(
+        sample_box,
+        "Show Moist Parcel Anals",
+        ac,
+        show_moist_parcels_anal
+    );
 
     // Layout boxes in the frame
     f.add(&v_box);
