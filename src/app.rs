@@ -92,7 +92,7 @@ impl AppContext {
             last_sample: RefCell::new(Sample::None),
             load_calls: Cell::new(0),
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
-            gui: gtk::Builder::new_from_string(glade_src),
+            gui: gtk::Builder::from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),

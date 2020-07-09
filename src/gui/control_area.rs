@@ -6,7 +6,7 @@ use gtk::{prelude::*, Notebook};
 macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-        let check = gtk::CheckButton::new_with_label($label);
+        let check = gtk::CheckButton::with_label($label);
         let color = gtk::ColorButton::new();
         color.set_use_alpha(true);
 
@@ -54,7 +54,7 @@ macro_rules! build_config_color_and_check {
 macro_rules! build_config_check {
     ($v_box:ident, $label:expr, $acp:ident, $show_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
-        let check = gtk::CheckButton::new_with_label($label);
+        let check = gtk::CheckButton::with_label($label);
 
         check.set_active($acp.config.borrow().$show_var);
 

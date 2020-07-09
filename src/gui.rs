@@ -8,10 +8,7 @@ use crate::{
     errors::SondeError,
 };
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{
-    keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-    ScrollDirection,
-};
+use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
 use gtk::{prelude::*, DrawingArea};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -819,11 +816,13 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
+        use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+
         let keyval = event.get_keyval();
-        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+        if keyval == KP_Right || keyval == Right {
             ac.display_next();
             Inhibit(true)
-        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+        } else if keyval == KP_Left || keyval == Left {
             ac.display_previous();
             Inhibit(true)
         } else {

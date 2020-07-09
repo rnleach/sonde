@@ -7,13 +7,13 @@ publish = false
 
 [dependencies]
 bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.3"}
-cairo-rs = { version = "^0.8", features = ["png"] }
+cairo-rs = { version = "^0.9", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "^0.4"
 dirs = "^3.0.0"
-gdk = "^0.12"
-glib = "^0.9.1"
-gtk = { version = "^0.8", features = ["v3_18"] }
+gdk = "^0.13"
+glib = "^0.10.1"
+gtk = { version = "^0.9", features = ["v3_18"] }
 itertools = "^0.9"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}

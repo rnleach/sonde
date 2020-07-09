@@ -6,7 +6,7 @@ use crate::{
 };
 use gtk::{
     prelude::DialogExtManual, DialogExt, FileChooserAction, FileChooserDialog, FileChooserExt,
-    FileFilter, MessageDialog, ResponseType, Widget, WidgetExt, Window,
+    FileFilter, GtkWindowExt, MessageDialog, ResponseType, Widget, WidgetExt, Window,
 };
 use std::path::PathBuf;
 
@@ -73,7 +73,7 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
         }
     }
 
-    dialog.destroy();
+    dialog.close();
 }
 
 pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
@@ -121,7 +121,7 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
         }
     }
 
-    dialog.destroy();
+    dialog.close();
 }
 
 fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
@@ -154,5 +154,5 @@ fn show_error_dialog(message: &str, win: &Window) {
         message,
     );
     dialog.run();
-    dialog.destroy();
+    dialog.close();
 }

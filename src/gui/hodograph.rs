@@ -306,7 +306,7 @@ impl MasterDrawable for HodoContext {}
  **************************************************************************************************/
 macro_rules! make_heading {
     ($menu:ident, $label:expr) => {
-        let heading = MenuItem::new_with_label($label);
+        let heading = MenuItem::with_label($label);
         heading.set_sensitive(false);
         $menu.append(&heading);
     };
@@ -317,9 +317,8 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     let config = acp.config.borrow();
 
     make_heading!(menu, "Helicity");
-    let sfc_to_3km = RadioMenuItem::new_with_label("Surface to 3km");
-    let effective =
-        RadioMenuItem::new_with_label_from_widget(&sfc_to_3km, Some("Effective Inflow"));
+    let sfc_to_3km = RadioMenuItem::with_label("Surface to 3km");
+    let effective = RadioMenuItem::with_label_from_widget(&sfc_to_3km, Some("Effective Inflow"));
 
     match config.helicity_layer {
         HelicityType::SurfaceTo3km => sfc_to_3km.set_active(true),
@@ -354,8 +353,8 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     menu.append(&SeparatorMenuItem::new());
 
     make_heading!(menu, "Helicity Storm");
-    let right_mover = RadioMenuItem::new_with_label("Right Mover");
-    let left_mover = RadioMenuItem::new_with_label_from_widget(&right_mover, Some("Left Mover"));
+    let right_mover = RadioMenuItem::with_label("Right Mover");
+    let left_mover = RadioMenuItem::with_label_from_widget(&right_mover, Some("Left Mover"));
 
     match config.helicity_storm_motion {
         StormMotionType::RightMover => right_mover.set_active(true),

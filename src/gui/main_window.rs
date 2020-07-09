@@ -33,7 +33,7 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let win: Window = ac.fetch_widget("main_window")?;
     let header_bar: HeaderBar = ac.fetch_widget("header-bar")?;
 
-    let open_button = Button::new_from_icon_name(Some("document-open"), IconSize::SmallToolbar);
+    let open_button = Button::from_icon_name(Some("document-open"), IconSize::SmallToolbar);
     open_button.set_label("Open");
     open_button.set_always_show_image(true);
     let ac1 = Rc::clone(ac);
@@ -43,8 +43,7 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     });
     header_bar.pack_start(&open_button);
 
-    let save_image_button =
-        Button::new_from_icon_name(Some("insert-image"), IconSize::SmallToolbar);
+    let save_image_button = Button::from_icon_name(Some("insert-image"), IconSize::SmallToolbar);
     save_image_button.set_label("Save Image");
     save_image_button.set_always_show_image(true);
     let ac1 = Rc::clone(ac);
@@ -54,42 +53,41 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     header_bar.pack_start(&Separator::new(Orientation::Vertical));
 
-    let first_button = Button::new_from_icon_name(Some("go-first"), IconSize::SmallToolbar);
+    let first_button = Button::from_icon_name(Some("go-first"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     first_button.connect_clicked(move |_| ac1.display_first());
     header_bar.pack_start(&first_button);
 
     let previous_button =
-        Button::new_from_icon_name(Some("media-skip-backward"), IconSize::SmallToolbar);
+        Button::from_icon_name(Some("media-skip-backward"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     previous_button.connect_clicked(move |_| ac1.display_previous());
     header_bar.pack_start(&previous_button);
 
-    let next_button =
-        Button::new_from_icon_name(Some("media-skip-forward"), IconSize::SmallToolbar);
+    let next_button = Button::from_icon_name(Some("media-skip-forward"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     next_button.connect_clicked(move |_| ac1.display_next());
     header_bar.pack_start(&next_button);
 
-    let last_button = Button::new_from_icon_name(Some("go-last"), IconSize::SmallToolbar);
+    let last_button = Button::from_icon_name(Some("go-last"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     last_button.connect_clicked(move |_| ac1.display_last());
     header_bar.pack_start(&last_button);
 
     header_bar.pack_start(&Separator::new(Orientation::Vertical));
 
-    let zoom_in_button = Button::new_from_icon_name(Some("zoom-in"), IconSize::SmallToolbar);
+    let zoom_in_button = Button::from_icon_name(Some("zoom-in"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     zoom_in_button.connect_clicked(move |_| ac1.zoom_in());
     header_bar.pack_start(&zoom_in_button);
 
-    let zoom_out_button = Button::new_from_icon_name(Some("zoom-out"), IconSize::SmallToolbar);
+    let zoom_out_button = Button::from_icon_name(Some("zoom-out"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     zoom_out_button.connect_clicked(move |_| ac1.zoom_out());
     header_bar.pack_start(&zoom_out_button);
 
     let quit_button =
-        Button::new_from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
+        Button::from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
     let ac1 = Rc::clone(ac);
     quit_button.connect_clicked(move |_| {
         update_window_config_and_exit(&win, &ac1);
