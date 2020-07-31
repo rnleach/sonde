@@ -42,12 +42,10 @@ pub struct Analysis {
     haines_high: Optioned<u8>,
     hdw: Optioned<f64>,
     blow_up_anal_start_parcel: Option<Parcel>,
-    lmib_blow_up_dt_low: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_low: Optioned<Meters>,
-    lmib_blow_up_dt_high: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_high: Optioned<Meters>,
-    top_blow_up_dt_low: Optioned<CelsiusDiff>,
-    top_blow_up_dt_high: Optioned<CelsiusDiff>,
+    el_blow_up_dt_low: Optioned<CelsiusDiff>,
+    el_blow_up_height_low: Optioned<Meters>,
+    el_blow_up_dt_high: Optioned<CelsiusDiff>,
+    el_blow_up_height_high: Optioned<Meters>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     lcl_dt_high: Optioned<CelsiusDiff>,
     plumes_low: Option<Vec<PlumeAscentAnalysis>>,
@@ -103,12 +101,10 @@ impl Analysis {
             haines_high: none(),
             hdw: none(),
             blow_up_anal_start_parcel: None,
-            lmib_blow_up_dt_low: none(),
-            lmib_blow_up_height_low: none(),
-            lmib_blow_up_dt_high: none(),
-            lmib_blow_up_height_high: none(),
-            top_blow_up_dt_low: none(),
-            top_blow_up_dt_high: none(),
+            el_blow_up_dt_low: none(),
+            el_blow_up_height_low: none(),
+            el_blow_up_dt_high: none(),
+            el_blow_up_height_high: none(),
             lcl_dt_low: none(),
             lcl_dt_high: none(),
             plumes_low: None,
@@ -257,33 +253,23 @@ impl Analysis {
     }
 
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_low
+    pub fn el_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
+        self.el_blow_up_dt_low
     }
 
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_high
+    pub fn el_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
+        self.el_blow_up_dt_high
     }
 
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_low(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_low
+    pub fn el_blow_up_height_change_low(&self) -> Optioned<Meters> {
+        self.el_blow_up_height_low
     }
 
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_high(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_high
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_low
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_high
+    pub fn el_blow_up_height_change_high(&self) -> Optioned<Meters> {
+        self.el_blow_up_height_high
     }
 
     /// Get the amount of heating necessary to create a cloud on the plume top.
@@ -553,56 +539,48 @@ impl Analysis {
         }
 
         // Fill in the experimental fire weather parameters.
-        if self.lmib_blow_up_dt_low.is_none()
-            || self.top_blow_up_dt_low.is_none()
-            || self.lmib_blow_up_height_low.is_none()
+        if self.el_blow_up_dt_low.is_none()
+            || self.el_blow_up_height_low.is_none()
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_low.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(8.0)).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
+                        some(bu_anal.delta_t_el),
+                        some(bu_anal.delta_z_el),
                         some(bu_anal.delta_t_cloud),
                     )
                 })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
+                .unwrap_or((None, none(), none(), none()));
 
-            self.lmib_blow_up_dt_low = dt_lmib;
-            self.lmib_blow_up_height_low = height_lmib;
-            self.top_blow_up_dt_low = dt_top;
+            self.el_blow_up_dt_low = dt_el;
+            self.el_blow_up_height_low = height_el;
             self.lcl_dt_low = lcl_dt;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
-        if self.lmib_blow_up_dt_high.is_none()
-            || self.top_blow_up_dt_high.is_none()
-            || self.lmib_blow_up_height_high.is_none()
+        if self.el_blow_up_dt_high.is_none()
+            || self.el_blow_up_height_high.is_none()
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_high.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(15.0)).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
+                        some(bu_anal.delta_t_el),
+                        some(bu_anal.delta_z_el),
                         some(bu_anal.delta_t_cloud),
                     )
                 })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
+                .unwrap_or((None, none(), none(), none()));
 
-            self.lmib_blow_up_dt_high = dt_lmib;
-            self.lmib_blow_up_height_high = height_lmib;
-            self.top_blow_up_dt_high = dt_top;
+            self.el_blow_up_dt_high = dt_el;
+            self.el_blow_up_height_high = height_el;
             self.lcl_dt_high = lcl_dt;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
