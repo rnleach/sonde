@@ -146,7 +146,7 @@ impl AppContext {
         }
 
         let acp = Rc::clone(&acp);
-        gtk::idle_add(move || loop {
+        glib::idle_add_local(move || loop {
             match rx.try_recv() {
                 Ok((loaded_on, i, anal)) => {
                     if loaded_on == acp.load_calls.get() {
