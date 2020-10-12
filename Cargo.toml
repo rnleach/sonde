@@ -9,7 +9,7 @@ publish = false
 bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.3"}
 cairo-rs = { version = "^0.9", features = ["png"] }
 chrono = "^0.4"
-crossbeam-channel = "^0.4"
+crossbeam-channel = "^0.5"
 dirs = "^3.0.0"
 gdk = "^0.13"
 glib = "^0.10.1"
