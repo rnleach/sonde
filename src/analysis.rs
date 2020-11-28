@@ -7,7 +7,7 @@ use metfor::{
 use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::{blow_up, calc_plumes, PlumeAscentAnalysis},
+    experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
     sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile, PrecipType,
@@ -48,8 +48,8 @@ pub struct Analysis {
     el_blow_up_height_high: Optioned<Meters>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     lcl_dt_high: Optioned<CelsiusDiff>,
-    plumes_low: Option<Vec<PlumeAscentAnalysis>>,
-    plumes_high: Option<Vec<PlumeAscentAnalysis>>,
+    plume_heating_low: Option<PlumeHeatingAnalysis>,
+    plume_heating_high: Option<PlumeHeatingAnalysis>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -107,8 +107,8 @@ impl Analysis {
             el_blow_up_height_high: none(),
             lcl_dt_low: none(),
             lcl_dt_high: none(),
-            plumes_low: None,
-            plumes_high: None,
+            plume_heating_low: None,
+            plume_heating_high: None, 
             max_p,
 
             dcape: none(),
@@ -283,13 +283,13 @@ impl Analysis {
     }
 
     /// Get the plumes analysis
-    pub fn plumes_low(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_low
+    pub fn plume_heating_low(&self) -> &Option<PlumeHeatingAnalysis> {
+        &self.plume_heating_low
     }
 
     /// Get the plumes analysis
-    pub fn plumes_high(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_high
+    pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysis> {
+        &self.plume_heating_high
     }
 
     /// Get the max pressure (lowest level) in the sounding
@@ -585,27 +585,12 @@ impl Analysis {
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
-        // blow_up_anal_start_parcel is needed for taking the plume ascent parcels' temperature
-        // values into a delta T.
-        if self.plumes_low.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_low = calc_plumes(
-                self.sounding(),
-                CelsiusDiff(0.1),
-                CelsiusDiff(20.0),
-                Some(8.0),
-            )
-            .ok();
+        if self.plume_heating_low.is_none() {
+            self.plume_heating_low = plume_heating_analysis(self.sounding(), Some(8.0)).ok()
         }
 
-        // FIXME: 8.0 for low and 15.0 for high should be in constants.
-        if self.plumes_high.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_high = calc_plumes(
-                self.sounding(),
-                CelsiusDiff(0.1),
-                CelsiusDiff(20.0),
-                Some(15.0),
-            )
-            .ok();
+        if self.plume_heating_high.is_none() {
+            self.plume_heating_high = plume_heating_analysis(self.sounding(), Some(15.0)).ok()
         }
     }
 }

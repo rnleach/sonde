@@ -177,8 +177,8 @@ impl SkewTContext {
             let mut line = String::with_capacity(32);
             let color = config.parcel_positive_rgba;
             if let (Some(cape_low), Some(cape_high)) = (
-                plume_anal_low.max_int_buoyancy,
-                plume_anal_high.max_int_buoyancy,
+                plume_anal_low.max_int_buoyancy.into_option(),
+                plume_anal_high.max_int_buoyancy.into_option(),
             ) {
                 line.push_str(&format!(
                     "Net CAPE: {:.0} - {:.0} J/Kg\n",
@@ -191,7 +191,7 @@ impl SkewTContext {
             results.push((line, color));
             let mut line = String::with_capacity(32);
             if let (Some(el_low), Some(el_high)) =
-                (plume_anal_low.el_height, plume_anal_high.el_height)
+                (plume_anal_low.el_height.into_option(), plume_anal_high.el_height.into_option())
             {
                 line.push_str(&format!(
                     "LMIB: {:.0} - {:.0} m\n",
@@ -202,7 +202,7 @@ impl SkewTContext {
             results.push((line, default_color));
             let mut line = String::with_capacity(32);
             if let (Some(mh_low), Some(mh_high)) =
-                (plume_anal_low.max_height, plume_anal_high.max_height)
+                (plume_anal_low.max_height.into_option(), plume_anal_high.max_height.into_option())
             {
                 line.push_str(&format!(
                     "Max Height: {:.0} - {:.0} m\n",
