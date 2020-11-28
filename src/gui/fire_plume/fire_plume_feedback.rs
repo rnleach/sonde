@@ -12,9 +12,9 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use itertools::izip;
 use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
+use itertools::{izip, Itertools};
 use metfor::{CelsiusDiff, JpKg, Quantity};
 use std::rc::Rc;
 
@@ -233,7 +233,7 @@ impl Drawable for FirePlumeFeedbackContext {
         let mut lines = Vec::with_capacity(2);
 
         lines.push((
-            "Growth Efficiency (% Fire Heat Input)".to_owned(),
+            "Plume Growth Efficiency (%)".to_owned(),
             config.fire_plume_lmib_color,
         ));
         lines.push((
@@ -258,7 +258,9 @@ impl Drawable for FirePlumeFeedbackContext {
 
         let anal = anal.borrow();
 
-        if let (Some(vals_low), Some(vals_high)) = (anal.plume_heating_low(), anal.plume_heating_high()) {
+        if let (Some(vals_low), Some(vals_high)) =
+            (anal.plume_heating_low(), anal.plume_heating_high())
+        {
             let line_width = config.profile_line_width;
             let plume_growth_efficiency_rgba = config.fire_plume_lmib_color;
             let mut plume_growth_efficiency_polygon_rgba = plume_growth_efficiency_rgba;
@@ -268,61 +270,61 @@ impl Drawable for FirePlumeFeedbackContext {
             let mut eff_polygon_rgba = eff_rgba;
             eff_polygon_rgba.3 /= 2.0;
 
-            let plume_growth_efficiency_vals_low: Vec<_> = vals_low.plume_growth_efficiencies
+            let plume_growth_efficiency_vals_low = vals_low
+                .plume_growth_efficiencies
                 .iter()
-                .map(|&(dt, ratio)| DtPCoords { dt, percent: ratio * 100.0 })
-                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord))
-                .collect();
+                .map(|&(dt, ratio)| DtPCoords {
+                    dt,
+                    percent: ratio * 100.0,
+                })
+                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord));
 
-            let plume_growth_efficiency_vals_high: Vec<ScreenCoords> = vals_high.plume_growth_efficiencies
+            let plume_growth_efficiency_vals_high = vals_high
+                .plume_growth_efficiencies
                 .iter()
-                .map(|&(dt, ratio)| DtPCoords { dt, percent: ratio * 100.0 })
-                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord))
-                .collect();
+                .map(|&(dt, ratio)| DtPCoords {
+                    dt,
+                    percent: ratio * 100.0,
+                })
+                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord));
 
             let plume_growth_efficiency_polygon = plume_growth_efficiency_vals_low
-                .iter()
-                .cloned()
-                .chain(plume_growth_efficiency_vals_high.iter().cloned().rev());
+                .clone()
+                .chain(plume_growth_efficiency_vals_high.clone().rev());
 
             draw_filled_polygon(
                 cr,
                 plume_growth_efficiency_polygon_rgba,
-                plume_growth_efficiency_polygon.into_iter(),
+                plume_growth_efficiency_polygon,
             );
             plot_curve_from_points(
                 cr,
                 line_width,
                 plume_growth_efficiency_rgba,
-                plume_growth_efficiency_vals_low.into_iter(),
+                plume_growth_efficiency_vals_low,
             );
             plot_curve_from_points(
                 cr,
                 line_width,
                 plume_growth_efficiency_rgba,
-                plume_growth_efficiency_vals_high.into_iter(),
+                plume_growth_efficiency_vals_high,
             );
 
-            let eff_vals_low: Vec<_> = izip!(&vals_low.dts, &vals_low.fire_efficiencies)
+            let eff_vals_low = izip!(&vals_low.dts, &vals_low.fire_efficiencies)
                 .filter_map(|(&dt, &ratio)| ratio.map(|r| (dt, r * 100.0)))
                 .map(|(dt, percent)| DtPCoords { dt, percent })
-                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord))
-                .collect();
+                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord));
 
-            let eff_vals_high: Vec<ScreenCoords> = izip!(&vals_high.dts, &vals_high.fire_efficiencies)
+            let eff_vals_high = izip!(&vals_high.dts, &vals_high.fire_efficiencies)
                 .filter_map(|(&dt, &ratio)| ratio.map(|r| (dt, r * 100.0)))
                 .map(|(dt, percent)| DtPCoords { dt, percent })
-                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord))
-                .collect();
+                .map(|dt_coord| ac.fire_plume_feedback.convert_dtp_to_screen(dt_coord));
 
-            let eff_polygon = eff_vals_low
-                .iter()
-                .cloned()
-                .chain(eff_vals_high.iter().cloned().rev());
+            let eff_polygon = eff_vals_low.clone().chain(eff_vals_high.clone().rev());
 
-            draw_filled_polygon(cr, eff_polygon_rgba, eff_polygon.into_iter());
-            plot_curve_from_points(cr, line_width, eff_rgba, eff_vals_low.into_iter());
-            plot_curve_from_points(cr, line_width, eff_rgba, eff_vals_high.into_iter());
+            draw_filled_polygon(cr, eff_polygon_rgba, eff_polygon);
+            plot_curve_from_points(cr, line_width, eff_rgba, eff_vals_low);
+            plot_curve_from_points(cr, line_width, eff_rgba, eff_vals_high);
         }
     }
 
@@ -335,11 +337,15 @@ impl Drawable for FirePlumeFeedbackContext {
         }
 
         let (ac, config) = (args.ac, args.ac.config.borrow());
-        let t0 = match ac.get_sounding_for_display() {
-            Some(anal) => match anal.borrow().starting_parcel_for_blow_up_anal() {
-                Some(pcl) => pcl.temperature,
-                None => return,
-            },
+
+        let anal = match ac.get_sounding_for_display() {
+            Some(anal) => anal,
+            None => return,
+        };
+        let anal = anal.borrow();
+
+        let t0 = match anal.starting_parcel_for_blow_up_anal() {
+            Some(pcl) => pcl.temperature,
             None => return,
         };
 
@@ -354,12 +360,9 @@ impl Drawable for FirePlumeFeedbackContext {
         {
             let dt = plume_anal_low.parcel.temperature - t0;
 
-            if let (Some(max_int_b_low), Some(max_dry_int_b_low)) = (
-                plume_anal_low.max_int_buoyancy.into_option(),
-                plume_anal_low.max_dry_int_buoyancy.into_option(),
-            ) {
+            if let Some(max_int_b_low) = plume_anal_low.max_int_buoyancy.into_option() {
                 let percent = if max_int_b_low > JpKg(0.0) {
-                    (max_int_b_low - max_dry_int_b_low) / max_int_b_low * 100.0
+                    max_int_b_low.unpack() / (dt.unpack() * metfor::cp.unpack()) * 100.0
                 } else {
                     0.0
                 };
@@ -369,12 +372,9 @@ impl Drawable for FirePlumeFeedbackContext {
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
 
-            if let (Some(max_int_b_high), Some(max_dry_int_b_high)) = (
-                plume_anal_high.max_int_buoyancy.into_option(),
-                plume_anal_high.max_dry_int_buoyancy.into_option(),
-            ) {
+            if let Some(max_int_b_high) = plume_anal_high.max_int_buoyancy.into_option() {
                 let percent = if max_int_b_high > JpKg(0.0) {
-                    (max_int_b_high - max_dry_int_b_high) / max_int_b_high * 100.0
+                    max_int_b_high.unpack() / (dt.unpack() * metfor::cp.unpack()) * 100.0
                 } else {
                     0.0
                 };
@@ -382,6 +382,44 @@ impl Drawable for FirePlumeFeedbackContext {
                 let pct_pnt = DtPCoords { dt, percent };
                 let screen_coords_cape = ac.fire_plume_feedback.convert_dtp_to_screen(pct_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
+            }
+
+            if let (Some(vals_low), Some(vals_high)) =
+                (anal.plume_heating_low(), anal.plume_heating_high())
+            {
+                if let Some(percent) = vals_low
+                    .plume_growth_efficiencies
+                    .iter()
+                    .tuple_windows::<(_, _)>()
+                    .filter(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
+                    .nth(0)
+                    .map(|(&(dt0, r0), &(dt1, r1))| ((dt0.unpack(), r0), (dt1.unpack(), r1)))
+                    .map(|((dt0, r0), (dt1, r1))| {
+                        (r1 - r0) / (dt1 - dt0) * (dt.unpack() - dt0) + r0
+                    })
+                    .map(|ratio| 100.0 * ratio)
+                {
+                    let pct_pnt = DtPCoords { dt, percent };
+                    let screen_coords_cape = ac.fire_plume_feedback.convert_dtp_to_screen(pct_pnt);
+                    Self::draw_point(screen_coords_cape, pnt_color, args);
+                }
+
+                if let Some(percent) = vals_high
+                    .plume_growth_efficiencies
+                    .iter()
+                    .tuple_windows::<(_, _)>()
+                    .filter(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
+                    .nth(0)
+                    .map(|(&(dt0, r0), &(dt1, r1))| ((dt0.unpack(), r0), (dt1.unpack(), r1)))
+                    .map(|((dt0, r0), (dt1, r1))| {
+                        (r1 - r0) / (dt1 - dt0) * (dt.unpack() - dt0) + r0
+                    })
+                    .map(|ratio| 100.0 * ratio)
+                {
+                    let pct_pnt = DtPCoords { dt, percent };
+                    let screen_coords_cape = ac.fire_plume_feedback.convert_dtp_to_screen(pct_pnt);
+                    Self::draw_point(screen_coords_cape, pnt_color, args);
+                }
             }
         }
     }
