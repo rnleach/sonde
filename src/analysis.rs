@@ -108,7 +108,7 @@ impl Analysis {
             lcl_dt_low: none(),
             lcl_dt_high: none(),
             plume_heating_low: None,
-            plume_heating_high: None, 
+            plume_heating_high: None,
             max_p,
 
             dcape: none(),

@@ -190,9 +190,10 @@ impl SkewTContext {
             }
             results.push((line, color));
             let mut line = String::with_capacity(32);
-            if let (Some(el_low), Some(el_high)) =
-                (plume_anal_low.el_height.into_option(), plume_anal_high.el_height.into_option())
-            {
+            if let (Some(el_low), Some(el_high)) = (
+                plume_anal_low.el_height.into_option(),
+                plume_anal_high.el_height.into_option(),
+            ) {
                 line.push_str(&format!(
                     "LMIB: {:.0} - {:.0} m\n",
                     el_high.unpack(),
@@ -201,9 +202,10 @@ impl SkewTContext {
             }
             results.push((line, default_color));
             let mut line = String::with_capacity(32);
-            if let (Some(mh_low), Some(mh_high)) =
-                (plume_anal_low.max_height.into_option(), plume_anal_high.max_height.into_option())
-            {
+            if let (Some(mh_low), Some(mh_high)) = (
+                plume_anal_low.max_height.into_option(),
+                plume_anal_high.max_height.into_option(),
+            ) {
                 line.push_str(&format!(
                     "Max Height: {:.0} - {:.0} m\n",
                     mh_high.unpack(),

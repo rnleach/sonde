@@ -12,9 +12,9 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use itertools::izip;
 use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
+use itertools::izip;
 use metfor::{CelsiusDiff, JpKg, Quantity};
 use std::rc::Rc;
 
@@ -252,7 +252,9 @@ impl Drawable for FirePlumeEnergyContext {
 
         let anal = anal.borrow();
 
-        if let (Some(vals_low), Some(vals_high)) = (anal.plume_heating_low(), anal.plume_heating_high()) {
+        if let (Some(vals_low), Some(vals_high)) =
+            (anal.plume_heating_low(), anal.plume_heating_high())
+        {
             let line_width = config.profile_line_width;
             let pct_wet_rgba = config.fire_plume_pct_wet_cape_color;
             let mut pct_wet_polygon_color = pct_wet_rgba;
