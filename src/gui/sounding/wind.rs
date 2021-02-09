@@ -17,7 +17,7 @@ struct WindBarbConfig {
 }
 
 impl WindBarbConfig {
-    fn init(args: DrawingArgs<'_, '_>) -> Self {
+    fn init(args: DrawingArgs<'_, '_>, second_snd: bool) -> Self {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
 
@@ -39,7 +39,11 @@ impl WindBarbConfig {
         let ScreenCoords { x: xmax, .. } =
             ac.skew_t.convert_xy_to_screen(XYCoords { x: xmax, y: 0.0 });
 
-        let xcoord = xmax - padding - shaft_length;
+        let xcoord = if second_snd {
+            xmax - 2.5 * (padding + shaft_length)
+        } else {
+            xmax - (padding + shaft_length)
+        };
 
         WindBarbConfig {
             shaft_length,
@@ -255,23 +259,47 @@ impl SkewTContext {
             let (ac, cr) = (args.ac, args.cr);
             let config = ac.config.borrow();
 
-            let anal = if let Some(anal) = ac.get_sounding_for_display() {
+            let anal0 = if let Some(anal) = ac.get_sounding0_for_display() {
                 anal
             } else {
                 return;
             };
 
-            let anal = anal.borrow();
+            let anal = anal0.borrow();
             let snd = anal.sounding();
 
-            let barb_config = WindBarbConfig::init(args);
+            let barb_config = WindBarbConfig::init(args, false);
             let barb_data = Self::gather_wind_data(&snd, &barb_config, args);
             let barb_data = Self::filter_wind_data(args, barb_data);
 
-            let rgba = config.wind_rgba;
+            let rgba = (0.0, 0.0, 0.0, 1.0);
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.set_line_width(
                 cr.device_to_user_distance(config.wind_barb_line_width, 0.0)
+                    .0,
+            );
+
+            for bdata in &barb_data {
+                bdata.draw(cr);
+            }
+
+            let anal1 = if let Some(anal) = ac.get_sounding1_for_display() {
+                anal
+            } else {
+                return;
+            };
+
+            let anal = anal1.borrow();
+            let snd = anal.sounding();
+
+            let barb_config = WindBarbConfig::init(args, true);
+            let barb_data = Self::gather_wind_data(&snd, &barb_config, args);
+            let barb_data = Self::filter_wind_data(args, barb_data);
+
+            let rgba = (1.0, 0.5, 0.0, 1.0);
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+            cr.set_line_width(
+                cr.device_to_user_distance(1.2*config.wind_barb_line_width, 0.0)
                     .0,
             );
 
