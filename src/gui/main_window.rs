@@ -4,7 +4,7 @@ use crate::{
 };
 use gdk::Event;
 use gtk::{
-    self, prelude::*, Button, HeaderBar, IconSize, Notebook, Orientation, Paned, Separator, Widget,
+    self, prelude::*, Button, Notebook, Paned, Widget,
     Window,
 };
 use std::rc::Rc;
@@ -29,70 +29,32 @@ pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
+macro_rules! set_up_button{
+    ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
+        let button: Button = $ac.fetch_widget($id)?;
+        let ac1 = Rc::clone($ac);
+        let win1 = $win.clone();
+        button.connect_clicked(move |_| {
+            $fn(&ac1, &win1);
+        });
+    }
+}
+
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let win: Window = ac.fetch_widget("main_window")?;
-    let header_bar: HeaderBar = ac.fetch_widget("header-bar")?;
 
-    let open_button = Button::from_icon_name(Some("document-open"), IconSize::SmallToolbar);
-    open_button.set_label("Open");
-    open_button.set_always_show_image(true);
-    let ac1 = Rc::clone(ac);
-    let win1 = win.clone();
-    open_button.connect_clicked(move |_| {
-        menu_callbacks::open_toolbar_callback(&ac1, &win1);
-    });
-    header_bar.pack_start(&open_button);
+    set_up_button!(ac, "open-button", win, menu_callbacks::open_toolbar_callback);
+    set_up_button!(ac, "save-image-button", win, menu_callbacks::save_image_callback);
 
-    let save_image_button = Button::from_icon_name(Some("insert-image"), IconSize::SmallToolbar);
-    save_image_button.set_label("Save Image");
-    save_image_button.set_always_show_image(true);
-    let ac1 = Rc::clone(ac);
-    let win1 = win.clone();
-    save_image_button.connect_clicked(move |_| menu_callbacks::save_image_callback(&ac1, &win1));
-    header_bar.pack_start(&save_image_button);
+    set_up_button!(ac, "go-first-button", win, |ac: &Rc<AppContext>, _win| ac.display_first());
+    set_up_button!(ac, "go-previous-button", win, |ac: &Rc<AppContext>, _win| ac.display_previous());
+    set_up_button!(ac, "go-next-button", win, |ac: &Rc<AppContext>, _win| ac.display_next());
+    set_up_button!(ac, "go-last-button", win, |ac: &Rc<AppContext>, _win| ac.display_last());
 
-    header_bar.pack_start(&Separator::new(Orientation::Vertical));
+    set_up_button!(ac, "zoom-in-button", win, |ac: &Rc<AppContext>, _win| ac.zoom_in());
+    set_up_button!(ac, "zoom-out-button", win, |ac: &Rc<AppContext>, _win| ac.zoom_out());
 
-    let first_button = Button::from_icon_name(Some("go-first"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    first_button.connect_clicked(move |_| ac1.display_first());
-    header_bar.pack_start(&first_button);
-
-    let previous_button =
-        Button::from_icon_name(Some("media-skip-backward"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    previous_button.connect_clicked(move |_| ac1.display_previous());
-    header_bar.pack_start(&previous_button);
-
-    let next_button = Button::from_icon_name(Some("media-skip-forward"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    next_button.connect_clicked(move |_| ac1.display_next());
-    header_bar.pack_start(&next_button);
-
-    let last_button = Button::from_icon_name(Some("go-last"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    last_button.connect_clicked(move |_| ac1.display_last());
-    header_bar.pack_start(&last_button);
-
-    header_bar.pack_start(&Separator::new(Orientation::Vertical));
-
-    let zoom_in_button = Button::from_icon_name(Some("zoom-in"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    zoom_in_button.connect_clicked(move |_| ac1.zoom_in());
-    header_bar.pack_start(&zoom_in_button);
-
-    let zoom_out_button = Button::from_icon_name(Some("zoom-out"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    zoom_out_button.connect_clicked(move |_| ac1.zoom_out());
-    header_bar.pack_start(&zoom_out_button);
-
-    let quit_button =
-        Button::from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    quit_button.connect_clicked(move |_| {
-        update_window_config_and_exit(&win, &ac1);
-    });
-    header_bar.pack_end(&quit_button);
+    set_up_button!(ac, "quit-button", win, |ac, win| update_window_config_and_exit(win, ac));
 
     Ok(())
 }
