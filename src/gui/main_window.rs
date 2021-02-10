@@ -3,10 +3,7 @@ use crate::{
     errors::SondeError,
 };
 use gdk::Event;
-use gtk::{
-    self, prelude::*, Button, Notebook, Paned, Widget,
-    Window,
-};
+use gtk::{self, prelude::*, Button, Notebook, Paned, Widget, Window};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -29,7 +26,7 @@ pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-macro_rules! set_up_button{
+macro_rules! set_up_button {
     ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
         let button: Button = $ac.fetch_widget($id)?;
         let ac1 = Rc::clone($ac);
@@ -37,24 +34,46 @@ macro_rules! set_up_button{
         button.connect_clicked(move |_| {
             $fn(&ac1, &win1);
         });
-    }
+    };
 }
 
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     let win: Window = ac.fetch_widget("main_window")?;
 
-    set_up_button!(ac, "open-button", win, menu_callbacks::open_toolbar_callback);
-    set_up_button!(ac, "save-image-button", win, menu_callbacks::save_image_callback);
+    set_up_button!(
+        ac,
+        "open-button",
+        win,
+        menu_callbacks::open_toolbar_callback
+    );
+    set_up_button!(
+        ac,
+        "save-image-button",
+        win,
+        menu_callbacks::save_image_callback
+    );
 
-    set_up_button!(ac, "go-first-button", win, |ac: &Rc<AppContext>, _win| ac.display_first());
-    set_up_button!(ac, "go-previous-button", win, |ac: &Rc<AppContext>, _win| ac.display_previous());
-    set_up_button!(ac, "go-next-button", win, |ac: &Rc<AppContext>, _win| ac.display_next());
-    set_up_button!(ac, "go-last-button", win, |ac: &Rc<AppContext>, _win| ac.display_last());
+    set_up_button!(ac, "go-first-button", win, |ac: &Rc<AppContext>, _win| ac
+        .display_first());
+    set_up_button!(
+        ac,
+        "go-previous-button",
+        win,
+        |ac: &Rc<AppContext>, _win| ac.display_previous()
+    );
+    set_up_button!(ac, "go-next-button", win, |ac: &Rc<AppContext>, _win| ac
+        .display_next());
+    set_up_button!(ac, "go-last-button", win, |ac: &Rc<AppContext>, _win| ac
+        .display_last());
 
-    set_up_button!(ac, "zoom-in-button", win, |ac: &Rc<AppContext>, _win| ac.zoom_in());
-    set_up_button!(ac, "zoom-out-button", win, |ac: &Rc<AppContext>, _win| ac.zoom_out());
+    set_up_button!(ac, "zoom-in-button", win, |ac: &Rc<AppContext>, _win| ac
+        .zoom_in());
+    set_up_button!(ac, "zoom-out-button", win, |ac: &Rc<AppContext>, _win| ac
+        .zoom_out());
 
-    set_up_button!(ac, "quit-button", win, |ac, win| update_window_config_and_exit(win, ac));
+    set_up_button!(ac, "quit-button", win, |ac, win| {
+        update_window_config_and_exit(win, ac)
+    });
 
     Ok(())
 }
