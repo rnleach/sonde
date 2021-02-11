@@ -46,6 +46,9 @@ pub(crate) fn load_config_from_file(
     app: &AppContext,
     config_path: &std::path::Path,
 ) -> Result<(), Box<dyn Error + 'static>> {
+    // Keep the current "last file opened" info
+    let last_file = app.config.borrow().last_open_file.clone();
+
     let config = File::open(config_path)
         .and_then(|mut f| {
             let mut serialized_config = String::new();
@@ -58,6 +61,11 @@ pub(crate) fn load_config_from_file(
     let config = serde_yaml::from_str::<app::config::Config>(&config)?;
 
     *app.config.borrow_mut() = config;
+
+    if last_file.is_some() {
+        app.config.borrow_mut().last_open_file = last_file;
+    }
+
     app.mark_background_dirty();
     app.mark_data_dirty();
     app.mark_data_dirty();
