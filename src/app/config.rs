@@ -503,9 +503,9 @@ pub const MAXP: HectoPascal = HectoPascal(1050.0); // hPa
 /// Minimum pressure plotted on skew-t (top edge)
 pub const MINP: HectoPascal = HectoPascal(99.0); // hPa
 /// Coldest temperature plotted at max pressure, on the bottom edge.
-pub const MINT: Celsius = Celsius(-46.5); // C - at MAXP
+pub const MINT: Celsius = Celsius(-40.5); // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
-pub const MAXT: Celsius = Celsius(50.5); // C - at MAXP
+pub const MAXT: Celsius = Celsius(55.5); // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: PaPS = PaPS(15.0);
