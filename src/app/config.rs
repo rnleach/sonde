@@ -205,14 +205,6 @@ pub struct Config {
     pub cloud_rgba: Rgba,
 
     //
-    // Wind speed profile
-    //
-    /// Show the wind speed profile frame
-    pub show_wind_speed_profile: bool,
-    /// Wind speed profile color.
-    pub wind_speed_profile_rgba: Rgba,
-
-    //
     // Labeling
     //
     /// Whether to show labels
@@ -293,10 +285,6 @@ pub struct Config {
     pub show_iso_speed: bool,
     /// Velocity plot line width
     pub velocity_line_width: f64,
-    /// Velociy line color
-    pub velocity_rgba: Rgba,
-    /// Show or hide the velocity plot.
-    pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: HectoPascal,
     /// Plot the helicity overlays.
@@ -432,12 +420,6 @@ impl Default for Config {
             cloud_rgba: (0.5, 0.5, 0.5, 0.75),
 
             //
-            // Wind speed profile
-            //
-            show_wind_speed_profile: true,
-            wind_speed_profile_rgba: (0.0, 0.0, 0.0, 1.0),
-
-            //
             // Labeling
             //
             show_labels: true,
@@ -485,8 +467,6 @@ impl Default for Config {
             iso_speed_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_iso_speed: true,
             velocity_line_width: 2.0,
-            velocity_rgba: (0.0, 0.0, 0.0, 1.0),
-            show_velocity: true,
             min_hodo_pressure: HectoPascal(300.0),
             show_helicity_overlay: true,
             helicity_rgba: (1.0, 0.4, 0.1, 0.6),

@@ -321,17 +321,6 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     let menu: Menu = acp.fetch_widget("hodograph_context_menu")?;
     let config = acp.config.borrow();
 
-    make_heading!(menu, "Velocity");
-    let show_velocity = CheckMenuItem::with_label("Show Velocity");
-    show_velocity.set_active(config.show_velocity);
-    let ac = Rc::clone(acp);
-    show_velocity.connect_toggled(move |button| {
-        ac.config.borrow_mut().show_velocity = button.get_active();
-        ac.mark_data_dirty();
-        crate::gui::draw_all(&ac);
-    });
-    menu.append(&show_velocity);
-
     menu.append(&SeparatorMenuItem::new());
 
     make_heading!(menu, "Helicity");
@@ -428,33 +417,31 @@ fn draw_data(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
 
-    if config.show_velocity {
-        if let Some(anal) = ac.get_sounding_for_display() {
-            let anal = anal.borrow();
-            let sndg = anal.sounding();
-            let pres_data = sndg.pressure_profile();
-            let wind_data = sndg.wind_profile();
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let anal = anal.borrow();
+        let sndg = anal.sounding();
+        let pres_data = sndg.pressure_profile();
+        let wind_data = sndg.wind_profile();
 
-            let profile_data = izip!(pres_data, wind_data).filter_map(|(p, wind)| {
-                if let (Some(p), Some(spd_dir)) = (p.into_option(), wind.into_option()) {
-                    if p >= config.min_hodo_pressure {
-                        let sd_coords = SDCoords { spd_dir };
-                        Some(ac.hodo.convert_sd_to_screen(sd_coords))
-                    } else {
-                        None
-                    }
+        let profile_data = izip!(pres_data, wind_data).filter_map(|(p, wind)| {
+            if let (Some(p), Some(spd_dir)) = (p.into_option(), wind.into_option()) {
+                if p >= config.min_hodo_pressure {
+                    let sd_coords = SDCoords { spd_dir };
+                    Some(ac.hodo.convert_sd_to_screen(sd_coords))
                 } else {
                     None
                 }
-            });
+            } else {
+                None
+            }
+        });
 
-            plot_curve_from_points(
-                cr,
-                config.velocity_line_width,
-                config.velocity_rgba,
-                profile_data,
-            );
-        }
+        plot_curve_from_points(
+            cr,
+            config.velocity_line_width,
+            config.wind_rgba,
+            profile_data,
+        );
     }
 }
 

@@ -4,7 +4,6 @@ use crate::{
     gui::Drawable,
 };
 use gtk::{prelude::*, DrawingArea};
-use itertools::izip;
 
 pub mod cloud;
 pub mod rh_omega;
@@ -15,21 +14,11 @@ pub use self::rh_omega::RHOmegaContext;
 pub use self::wind_speed::WindSpeedContext;
 
 pub fn draw_profiles(acp: &AppContext) {
-    let config = acp.config.borrow();
-
     const DRAWING_AREAS: [&str; 3] = ["rh_omega_area", "cloud_area", "wind_speed_area"];
 
-    let do_draw = [
-        config.show_rh || config.show_omega,
-        config.show_cloud_frame,
-        config.show_wind_speed_profile,
-    ];
-
-    for (&da, &show) in izip!(DRAWING_AREAS.iter(), do_draw.iter()) {
+    for &da in DRAWING_AREAS.iter() {
         if let Ok(da) = acp.fetch_widget::<DrawingArea>(da) {
-            if show {
-                da.queue_draw();
-            }
+            da.queue_draw();
         }
     }
 }
