@@ -511,7 +511,7 @@ pub const MAXT: Celsius = Celsius(55.5); // C - at MAXP
 pub const MAX_ABS_W: PaPS = PaPS(15.0);
 
 /// Maximum wind speed on hodograph in Knots
-pub const MAX_SPEED: Knots = Knots(250.0);
+pub const MAX_SPEED: Knots = Knots(200.0);
 
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
@@ -540,7 +540,7 @@ pub const THETA_E_TOP_P: HectoPascal = HectoPascal(200.0);
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 40;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
-pub const ISO_MIXING_RATIO_TOP_P: HectoPascal = HectoPascal(300.0);
+pub const ISO_MIXING_RATIO_TOP_P: HectoPascal = HectoPascal(400.0);
 
 //
 // Constant values to plot on background.
@@ -651,11 +651,9 @@ pub const ISO_THETA_E_C: [Celsius; 31] = [
 ];
 
 /// Isopleths of mixing ratio
-pub const ISO_MIXING_RATIO: [f64; 32] = [
-    0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0,
-    16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0,
-    68.0,
-    //    76.0, // Uncomment this when we can have arrays larger than 32.
+pub const ISO_MIXING_RATIO: [f64; 34] = [
+    0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0,
+    14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0, 68.0, 76.0,
 ];
 
 pub const ISO_OMEGA: [PaPS; 21] = [
@@ -682,7 +680,7 @@ pub const ISO_OMEGA: [PaPS; 21] = [
     PaPS(10.0),
 ];
 
-pub const ISO_SPEED: [Knots; 25] = [
+pub const ISO_SPEED: [Knots; 20] = [
     Knots(10.0),
     Knots(20.0),
     Knots(30.0),
@@ -703,11 +701,6 @@ pub const ISO_SPEED: [Knots; 25] = [
     Knots(180.0),
     Knots(190.0),
     Knots(200.0),
-    Knots(210.0),
-    Knots(220.0),
-    Knots(230.0),
-    Knots(240.0),
-    Knots(250.0),
 ];
 
 pub const PERCENTS: [f64; 11] = [
