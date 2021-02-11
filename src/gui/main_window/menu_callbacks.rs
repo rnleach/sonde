@@ -156,3 +156,77 @@ fn show_error_dialog(message: &str, win: &Window) {
     dialog.run();
     dialog.close();
 }
+
+pub fn save_theme(ac: &AppContextPointer, win: &Window) {
+    let dialog = FileChooserDialog::new(
+        Some("Save Current Them"),
+        Some(win),
+        FileChooserAction::Save,
+    );
+
+    dialog.add_buttons(&[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
+
+    let filter = FileFilter::new();
+    filter.add_pattern("*.yml");
+    filter.set_name(Some("Yaml config files(*.yml)"));
+    dialog.add_filter(&filter);
+
+    if dialog.run() == ResponseType::Ok {
+        if let Some(mut filename) = dialog.get_filename() {
+            filename.set_extension("yml");
+            if let Err(err) = crate::save_config_with_file_name(ac, &filename) {
+                show_error_dialog(&format!("Error saving theme: {}", err), win);
+            }
+        } else {
+            show_error_dialog("Could not retrieve file name from dialog.", win);
+        }
+    }
+
+    dialog.close();
+}
+
+pub fn load_theme(ac: &AppContextPointer, win: &Window) {
+    let dialog = FileChooserDialog::new(Some("Load Theme"), Some(win), FileChooserAction::Open);
+
+    dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
+
+    let filter_data = [("*.yml", "Yaml files(*.yml)")];
+
+    // A filter for all supported file types
+    let filter = FileFilter::new();
+    for &(pattern, _) in &filter_data {
+        filter.add_pattern(pattern);
+    }
+    filter.set_name(Some("All Supported"));
+    dialog.add_filter(&filter);
+
+    // Add a (not) filter that lets anything through
+    let filter = FileFilter::new();
+    filter.add_pattern("*");
+    filter.set_name(Some("All Files"));
+    dialog.add_filter(&filter);
+
+    if dialog.run() == ResponseType::Ok {
+        let path: Option<_> = dialog
+            .get_filename()
+            .into_iter()
+            .filter(|pb| pb.is_file())
+            .next();
+
+        if let Some(ref f0) = path {
+            match crate::load_config_from_file(ac, f0) {
+                Ok(()) => {}
+                Err(_) => show_error_dialog(
+                    &format!("Error loading theme: {}", f0.to_string_lossy()),
+                    win,
+                ),
+            }
+        }
+    }
+
+    dialog.close();
+
+    ac.mark_background_dirty();
+    ac.mark_data_dirty();
+    ac.mark_data_dirty();
+}

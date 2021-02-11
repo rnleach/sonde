@@ -3,7 +3,7 @@ use crate::{
     errors::SondeError,
 };
 use gdk::Event;
-use gtk::{self, prelude::*, Button, Notebook, Paned, Widget, Window};
+use gtk::{self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, Widget, Window};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -44,23 +44,45 @@ macro_rules! set_up_button {
     };
 }
 
+macro_rules! set_up_hamburger_menu_item {
+    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
+        let menu_item: MenuItem = MenuItem::with_label($text);
+        let ac1 = Rc::clone($ac);
+        let win1 = $win.clone();
+        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
+        $parent_menu.append(&menu_item);
+    };
+}
+
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
-    use menu_callbacks::{open_toolbar_callback, save_image_callback};
+    use menu_callbacks::{load_theme, open_toolbar_callback, save_image_callback, save_theme};
 
     let win: Window = ac.fetch_widget("main_window")?;
 
     set_up_button!(ac, "open-button", win, open_toolbar_callback);
     set_up_button!(ac, "save-image-button", win, save_image_callback);
 
-    set_up_button!(ac, "go-first-button", |ac: &Rc<AppContext>| ac.display_first());
-    set_up_button!(ac, "go-previous-button", |ac: &Rc<AppContext>| ac.display_previous());
-    set_up_button!(ac, "go-next-button", |ac: &Rc<AppContext>| ac.display_next());
-    set_up_button!(ac, "go-last-button", |ac: &Rc<AppContext>| ac.display_last());
+    set_up_button!(ac, "go-first-button", |ac: &Rc<AppContext>| ac
+        .display_first());
+    set_up_button!(ac, "go-previous-button", |ac: &Rc<AppContext>| ac
+        .display_previous());
+    set_up_button!(ac, "go-next-button", |ac: &Rc<AppContext>| ac
+        .display_next());
+    set_up_button!(ac, "go-last-button", |ac: &Rc<AppContext>| ac
+        .display_last());
 
     set_up_button!(ac, "zoom-in-button", |ac: &Rc<AppContext>| ac.zoom_in());
     set_up_button!(ac, "zoom-out-button", |ac: &Rc<AppContext>| ac.zoom_out());
 
     set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
+
+    // Set up the hamburger menu
+    let menu: Menu = ac.fetch_widget("hamburger-menu")?;
+
+    set_up_hamburger_menu_item!("Save Theme", ac, win, save_theme, menu);
+    set_up_hamburger_menu_item!("Load Theme", ac, win, load_theme, menu);
+
+    menu.show_all();
 
     Ok(())
 }

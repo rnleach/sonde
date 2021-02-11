@@ -44,6 +44,7 @@ pub const RED: Rgba = (1.0, 0.0, 0.0, 1.0);
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     //
     // Session information and window Layout

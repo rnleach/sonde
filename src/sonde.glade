@@ -17,6 +17,11 @@
     <property name="can_focus">False</property>
     <property name="icon_name">go-last</property>
   </object>
+  <object class="GtkMenu" id="hamburger-menu">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="menu_type_hint">dropdown-menu</property>
+  </object>
   <object class="GtkMenu" id="hodograph_context_menu">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -201,6 +206,28 @@
             <property name="position">10</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkMenuButton" id="hamburger-menu-button">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="focus_on_click">False</property>
+            <property name="receives_default">True</property>
+            <property name="relief">none</property>
+            <property name="popup">hamburger-menu</property>
+            <property name="use_popover">False</property>
+            <child>
+              <object class="GtkImage" id="hamburber-image">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="icon_name">open-menu-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">11</property>
+          </packing>
+        </child>
       </object>
     </child>
     <child>
@@ -213,7 +240,7 @@
           <object class="GtkPaned" id="main_pane_view">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="position">460</property>
+            <property name="position">450</property>
             <property name="position_set">True</property>
             <property name="wide_handle">True</property>
             <child>

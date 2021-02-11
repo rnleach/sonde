@@ -26,7 +26,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let app = AppContext::initialize();
 
     // Load the data configuration from last time, if it exists.
-    load_config(&app);
+    load_last_used_config(&app);
 
     // Build the GUI
     gui::initialize(&app)?;
@@ -42,16 +42,12 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
 const CONFIG_FILE_NAME: &str = "sonde_config.yml";
 
-fn load_config(app: &AppContext) {
-    dirs::config_dir()
-        .map(|path| path.join(CONFIG_FILE_NAME))
-        .and_then(|path| match File::open(path) {
-            Ok(f) => Some(f),
-            Err(err) => {
-                eprintln!("{}", err);
-                None
-            }
-        })
+pub(crate) fn load_config_from_file(
+    app: &AppContext,
+    config_path: &std::path::Path,
+) -> Result<(), ()> {
+    File::open(config_path)
+        .ok()
         .and_then(|mut f| {
             let mut serialized_config = String::new();
 
@@ -76,22 +72,42 @@ fn load_config(app: &AppContext) {
         .for_each(|deserialized_config| {
             *app.config.borrow_mut() = deserialized_config;
         });
+
+    Ok(())
+}
+
+fn load_last_used_config(app: &AppContext) {
+    let path = match dirs::config_dir().map(|path| path.join(CONFIG_FILE_NAME)) {
+        Some(p) => p,
+        None => return,
+    };
+
+    let _ = load_config_from_file(app, &path);
 }
 
 fn save_config(app: &AppContext) -> Result<(), Box<dyn Error>> {
-    let serialized_config = serde_yaml::to_string(&app.config)?;
-    if let Some(config_path) = dirs::config_dir().map(|path| path.join(CONFIG_FILE_NAME)) {
-        match File::create(config_path).and_then(|mut f| f.write_all(serialized_config.as_bytes()))
-        {
-            ok @ Ok(_) => ok,
-            Err(err) => {
-                eprintln!("Error saving configuration: \n{}", &err);
-                Err(err)
-            }
-        }?
+    if let Some(ref config_path) = dirs::config_dir().map(|path| path.join(CONFIG_FILE_NAME)) {
+        save_config_with_file_name(app, config_path)?;
     } else {
         eprintln!("Error creating path to save config.");
     }
+
+    Ok(())
+}
+
+pub(crate) fn save_config_with_file_name(
+    app: &AppContext,
+    config_path: &std::path::Path,
+) -> Result<(), Box<dyn Error>> {
+    let serialized_config = serde_yaml::to_string(&app.config)?;
+
+    match File::create(config_path).and_then(|mut f| f.write_all(serialized_config.as_bytes())) {
+        ok @ Ok(_) => ok,
+        Err(err) => {
+            eprintln!("Error saving configuration: \n{}", &err);
+            Err(err)
+        }
+    }?;
 
     Ok(())
 }
