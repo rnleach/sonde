@@ -35,11 +35,11 @@ macro_rules! set_up_button {
             $fn(&ac1, &win1);
         });
     };
-    ($ac:ident, $id:expr, $fn:expr) => {
+    ($ac:ident, $id:expr, $method:tt) => {
         let button: Button = $ac.fetch_widget($id)?;
         let ac1: Rc<AppContext> = Rc::clone($ac);
         button.connect_clicked(move |_| {
-            $fn(&ac1);
+            ac1.$method();
         });
     };
 }
@@ -62,17 +62,13 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     set_up_button!(ac, "open-button", win, open_toolbar_callback);
     set_up_button!(ac, "save-image-button", win, save_image_callback);
 
-    set_up_button!(ac, "go-first-button", |ac: &Rc<AppContext>| ac
-        .display_first());
-    set_up_button!(ac, "go-previous-button", |ac: &Rc<AppContext>| ac
-        .display_previous());
-    set_up_button!(ac, "go-next-button", |ac: &Rc<AppContext>| ac
-        .display_next());
-    set_up_button!(ac, "go-last-button", |ac: &Rc<AppContext>| ac
-        .display_last());
+    set_up_button!(ac, "go-first-button", display_first);
+    set_up_button!(ac, "go-previous-button", display_previous);
+    set_up_button!(ac, "go-next-button", display_next);
+    set_up_button!(ac, "go-last-button", display_last);
 
-    set_up_button!(ac, "zoom-in-button", |ac: &Rc<AppContext>| ac.zoom_in());
-    set_up_button!(ac, "zoom-out-button", |ac: &Rc<AppContext>| ac.zoom_out());
+    set_up_button!(ac, "zoom-in-button", zoom_in);
+    set_up_button!(ac, "zoom-out-button", zoom_out);
 
     set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
