@@ -83,8 +83,6 @@ pub struct Config {
     pub wind_barb_line_width: f64,
     /// Show the wind profile
     pub show_wind_profile: bool,
-    /// Storm motion points color for the hodograph
-    pub storm_motion_rgba: Rgba,
 
     //
     // Temperature profile
@@ -296,7 +294,7 @@ pub struct Config {
     /// Velocity plot line width
     pub velocity_line_width: f64,
     /// Velociy line color
-    pub veclocity_rgba: Rgba,
+    pub velocity_rgba: Rgba,
     /// Show or hide the velocity plot.
     pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
@@ -309,6 +307,8 @@ pub struct Config {
     pub helicity_layer: HelicityType,
     /// Which storm motion to plot the helicity for.
     pub helicity_storm_motion: StormMotionType,
+    /// Storm motion points color for the hodograph
+    pub storm_motion_rgba: Rgba,
 
     //
     // Fire plume related settings.
@@ -356,7 +356,6 @@ impl Default for Config {
             wind_rgba: (0.0, 0.0, 0.0, 1.0),
             wind_barb_line_width: 1.0,
             show_wind_profile: true,
-            storm_motion_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Temperature profile
@@ -486,13 +485,14 @@ impl Default for Config {
             iso_speed_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_iso_speed: true,
             velocity_line_width: 2.0,
-            veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
+            velocity_rgba: (0.0, 0.0, 0.0, 1.0),
             show_velocity: true,
             min_hodo_pressure: HectoPascal(300.0),
             show_helicity_overlay: true,
             helicity_rgba: (1.0, 0.4, 0.1, 0.6),
             helicity_layer: HelicityType::Effective,
             helicity_storm_motion: StormMotionType::RightMover,
+            storm_motion_rgba: (0.0, 0.0, 0.0, 1.0),
 
             //
             // Fire plume related settings.

@@ -25,6 +25,12 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(skewt_box, "Dew Point", ac, dew_point_rgba);
     build_config_color!(skewt_box, "Wind", ac, wind_rgba);
 
+    let hodo_frame = gtk::Frame::new(Some("Hodograph"));
+    let hodo_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
+    hodo_frame.add(&hodo_box);
+
+    build_config_color!(hodo_box, "Velocity", ac, velocity_rgba);
+
     let profiles_frame = gtk::Frame::new(Some("Profiles"));
     let profiles_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     profiles_frame.add(&profiles_box);
@@ -72,6 +78,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     f.add(&v_box);
     v_box.pack_start(&skewt_frame, true, true, PADDING);
+    v_box.pack_start(&hodo_frame, true, true, PADDING);
     v_box.pack_start(&profiles_frame, true, true, PADDING);
     v_box.pack_start(&fire_plumes_frame, true, true, PADDING);
     let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);

@@ -80,6 +80,14 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
         wet_bulb_zero_line_color
     );
 
+    build_config_color_and_check!(
+        lines_box,
+        "Hodograph Lines",
+        acp,
+        show_iso_speed,
+        iso_speed_rgba
+    );
+
     lines_frame
 }
 
