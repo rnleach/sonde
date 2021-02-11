@@ -113,7 +113,7 @@ impl SkewTContext {
                 Convective => anal.convective_parcel_analysis(),
                 Effective => anal.effective_parcel_analysis(),
             }
-            .and_then(|p_analysis| {
+            .map(|p_analysis| {
                 let color = config.parcel_rgba;
                 let p_profile = p_analysis.profile();
 
@@ -130,7 +130,7 @@ impl SkewTContext {
                     .unwrap_or(false)
                 {
                     // LCL
-                    p_analysis
+                    if let Some(pos) = p_analysis
                         .lcl_pressure()
                         .into_option()
                         .and_then(|p| p_analysis.lcl_temperature().map(|t| (p, t)))
@@ -149,13 +149,12 @@ impl SkewTContext {
                             coords.x += 0.025;
                             coords
                         })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
+                    {
+                        ac.skew_t.draw_tag("LCL", pos, config.parcel_rgba, args);
+                    }
 
                     // LFC
-                    p_analysis
+                    if let Some(pos) = p_analysis
                         .lfc_pressure()
                         .into_option()
                         .and_then(|p| p_analysis.lfc_virt_temperature().map(|t| (p, t)))
@@ -168,13 +167,12 @@ impl SkewTContext {
                             coords.x += 0.025;
                             coords
                         })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
+                    {
+                        ac.skew_t.draw_tag("LFC", pos, config.parcel_rgba, args);
+                    }
 
                     // EL
-                    p_analysis
+                    if let Some(pos) = p_analysis
                         .el_pressure()
                         .into_option()
                         .and_then(|p| p_analysis.el_temperature().map(|t| (p, t)))
@@ -193,13 +191,10 @@ impl SkewTContext {
                             coords.x += 0.025;
                             coords
                         })
-                        .and_then(|pos| {
-                            ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
-                            Some(())
-                        });
+                    {
+                        ac.skew_t.draw_tag("EL", pos, config.parcel_rgba, args);
+                    }
                 }
-
-                Some(())
             })
             .or_else(|| {
                 warn!("Parcel analysis returned None.");
@@ -212,38 +207,36 @@ impl SkewTContext {
         }
 
         if config.show_inversion_mix_down {
-            sounding_analysis::sfc_based_inversion(sndg)
+            if let Some(parcel_profile) = sounding_analysis::sfc_based_inversion(sndg)
                 .ok()
                 .and_then(|lyr| lyr) // unwrap a layer of options
                 .map(|lyr| lyr.top)
                 .and_then(Parcel::from_datarow)
                 .and_then(|parcel| sounding_analysis::mix_down(parcel, sndg).ok())
-                .and_then(|parcel_profile| {
-                    let color = config.inversion_mix_down_rgba;
-                    Self::draw_parcel_profile(args, &parcel_profile, color);
+            {
+                let color = config.inversion_mix_down_rgba;
+                Self::draw_parcel_profile(args, &parcel_profile, color);
 
-                    if let (Some(&pressure), Some(&temperature)) = (
-                        parcel_profile.pressure.get(0),
-                        parcel_profile.parcel_t.get(0),
-                    ) {
-                        let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
-                            temperature,
-                            pressure,
-                        });
-                        let deg_f = format!(
-                            "{:.0}\u{00B0}F",
-                            Fahrenheit::from(temperature).unpack().round()
-                        );
-                        ac.skew_t.draw_tag(
-                            &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
-                            pos,
-                            color,
-                            args,
-                        );
-                    }
-
-                    Some(())
-                });
+                if let (Some(&pressure), Some(&temperature)) = (
+                    parcel_profile.pressure.get(0),
+                    parcel_profile.parcel_t.get(0),
+                ) {
+                    let pos = ac.skew_t.convert_tp_to_screen(TPCoords {
+                        temperature,
+                        pressure,
+                    });
+                    let deg_f = format!(
+                        "{:.0}\u{00B0}F",
+                        Fahrenheit::from(temperature).unpack().round()
+                    );
+                    ac.skew_t.draw_tag(
+                        &format!("{}/{:.0}\u{00B0}C", deg_f, temperature.unpack().round()),
+                        pos,
+                        color,
+                        args,
+                    );
+                }
+            }
         }
 
         if config.show_inflow_layer {
@@ -337,7 +330,7 @@ impl SkewTContext {
                 .map(|(p, _, _)| p)
                 .last();
 
-            bottom.and_then(|&bottom| {
+            if let Some(&bottom) = bottom {
                 let up_side = izip!(pres_data, parcel_t, env_t)
                     .skip_while(|&(&p, _, _)| p > bottom)
                     .take_while(|&(&p, _, _)| p >= lfc)
@@ -365,9 +358,7 @@ impl SkewTContext {
                 let negative_polygon_rgba = config.parcel_negative_rgba;
 
                 draw_filled_polygon(cr, negative_polygon_rgba, negative_polygon);
-
-                Some(())
-            });
+            }
         }
 
         let up_side = izip!(pres_data, parcel_t, env_t)

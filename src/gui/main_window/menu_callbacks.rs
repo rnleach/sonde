@@ -207,11 +207,7 @@ pub fn load_theme(ac: &AppContextPointer, win: &Window) {
     dialog.add_filter(&filter);
 
     if dialog.run() == ResponseType::Ok {
-        let path: Option<_> = dialog
-            .get_filename()
-            .into_iter()
-            .filter(|pb| pb.is_file())
-            .next();
+        let path: Option<_> = dialog.get_filename().into_iter().find(|pb| pb.is_file());
 
         if let Some(ref f0) = path {
             match crate::load_config_from_file(ac, f0) {

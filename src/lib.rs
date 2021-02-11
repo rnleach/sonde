@@ -56,7 +56,7 @@ pub(crate) fn load_config_from_file(
             f.read_to_string(&mut serialized_config)
                 .map(|_| serialized_config)
         })
-        .map_err(|err| Box::new(err))?;
+        .map_err(Box::new)?;
 
     let config = serde_yaml::from_str::<app::config::Config>(&config)?;
 

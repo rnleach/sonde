@@ -186,25 +186,21 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
-                        ac.fetch_widget::<Widget>(TABS[idx].0)
-                            .ok()
-                            .and_then(|widget| {
-                                let tgt_children = tgt_nb.get_children();
-                                let other_children = other_nb.get_children();
+                        ac.fetch_widget::<Widget>(TABS[idx].0).ok().map(|widget| {
+                            let tgt_children = tgt_nb.get_children();
+                            let other_children = other_nb.get_children();
 
-                                if tgt_children.contains(&widget) {
-                                    tgt_nb.remove(&widget);
-                                } else if other_children.contains(&widget) {
-                                    other_nb.remove(&widget);
-                                }
+                            if tgt_children.contains(&widget) {
+                                tgt_nb.remove(&widget);
+                            } else if other_children.contains(&widget) {
+                                other_nb.remove(&widget);
+                            }
 
-                                tgt_nb.add(&widget);
-                                tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
-                                tgt_nb.set_tab_detachable(&widget, true);
-                                tgt_nb.set_tab_reorderable(&widget, true);
-
-                                Some(())
-                            })
+                            tgt_nb.add(&widget);
+                            tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
+                            tgt_nb.set_tab_detachable(&widget, true);
+                            tgt_nb.set_tab_reorderable(&widget, true);
+                        })
                     });
                 }
             };

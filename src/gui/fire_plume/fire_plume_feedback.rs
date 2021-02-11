@@ -391,8 +391,7 @@ impl Drawable for FirePlumeFeedbackContext {
                     .plume_growth_efficiencies
                     .iter()
                     .tuple_windows::<(_, _)>()
-                    .filter(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
-                    .nth(0)
+                    .find(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
                     .map(|(&(dt0, r0), &(dt1, r1))| ((dt0.unpack(), r0), (dt1.unpack(), r1)))
                     .map(|((dt0, r0), (dt1, r1))| {
                         (r1 - r0) / (dt1 - dt0) * (dt.unpack() - dt0) + r0
@@ -408,8 +407,7 @@ impl Drawable for FirePlumeFeedbackContext {
                     .plume_growth_efficiencies
                     .iter()
                     .tuple_windows::<(_, _)>()
-                    .filter(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
-                    .nth(0)
+                    .find(|(&(dt0, _r0), &(dt1, _r1))| dt0 <= dt && dt <= dt1)
                     .map(|(&(dt0, r0), &(dt1, r1))| ((dt0.unpack(), r0), (dt1.unpack(), r1)))
                     .map(|((dt0, r0), (dt1, r1))| {
                         (r1 - r0) / (dt1 - dt0) * (dt.unpack() - dt0) + r0

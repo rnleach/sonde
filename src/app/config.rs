@@ -1085,12 +1085,11 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
             Celsius(-80.0),
             Celsius(50.0),
         )
-        .and_then(|t| {
+        .map(|t| {
             v.push(SkewTContext::convert_tp_to_xy(TPCoords {
                 temperature: t,
                 pressure: p,
             }));
-            Some(())
         }) {
             Some(_) => p += dp,
             None => {
