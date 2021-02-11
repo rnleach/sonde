@@ -35,45 +35,32 @@ macro_rules! set_up_button {
             $fn(&ac1, &win1);
         });
     };
+    ($ac:ident, $id:expr, $fn:expr) => {
+        let button: Button = $ac.fetch_widget($id)?;
+        let ac1: Rc<AppContext> = Rc::clone($ac);
+        button.connect_clicked(move |_| {
+            $fn(&ac1);
+        });
+    };
 }
 
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
+    use menu_callbacks::{open_toolbar_callback, save_image_callback};
+
     let win: Window = ac.fetch_widget("main_window")?;
 
-    set_up_button!(
-        ac,
-        "open-button",
-        win,
-        menu_callbacks::open_toolbar_callback
-    );
-    set_up_button!(
-        ac,
-        "save-image-button",
-        win,
-        menu_callbacks::save_image_callback
-    );
+    set_up_button!(ac, "open-button", win, open_toolbar_callback);
+    set_up_button!(ac, "save-image-button", win, save_image_callback);
 
-    set_up_button!(ac, "go-first-button", win, |ac: &Rc<AppContext>, _win| ac
-        .display_first());
-    set_up_button!(
-        ac,
-        "go-previous-button",
-        win,
-        |ac: &Rc<AppContext>, _win| ac.display_previous()
-    );
-    set_up_button!(ac, "go-next-button", win, |ac: &Rc<AppContext>, _win| ac
-        .display_next());
-    set_up_button!(ac, "go-last-button", win, |ac: &Rc<AppContext>, _win| ac
-        .display_last());
+    set_up_button!(ac, "go-first-button", |ac: &Rc<AppContext>| ac.display_first());
+    set_up_button!(ac, "go-previous-button", |ac: &Rc<AppContext>| ac.display_previous());
+    set_up_button!(ac, "go-next-button", |ac: &Rc<AppContext>| ac.display_next());
+    set_up_button!(ac, "go-last-button", |ac: &Rc<AppContext>| ac.display_last());
 
-    set_up_button!(ac, "zoom-in-button", win, |ac: &Rc<AppContext>, _win| ac
-        .zoom_in());
-    set_up_button!(ac, "zoom-out-button", win, |ac: &Rc<AppContext>, _win| ac
-        .zoom_out());
+    set_up_button!(ac, "zoom-in-button", |ac: &Rc<AppContext>| ac.zoom_in());
+    set_up_button!(ac, "zoom-out-button", |ac: &Rc<AppContext>| ac.zoom_out());
 
-    set_up_button!(ac, "quit-button", win, |ac, win| {
-        update_window_config_and_exit(win, ac)
-    });
+    set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
     Ok(())
 }
@@ -91,7 +78,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-fn update_window_config_and_exit(win: &Window, ac: &AppContext) {
+fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
@@ -141,7 +128,7 @@ fn update_window_config_and_exit(win: &Window, ac: &AppContext) {
 }
 
 fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
-    update_window_config_and_exit(win, ac);
+    update_window_config_and_exit(ac, win);
     Inhibit(false)
 }
 
