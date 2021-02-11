@@ -3,7 +3,9 @@ use crate::{
     errors::SondeError,
 };
 use gdk::Event;
-use gtk::{self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, Widget, Window};
+use gtk::{
+    self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, SeparatorMenuItem, Widget, Window,
+};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -55,7 +57,9 @@ macro_rules! set_up_hamburger_menu_item {
 }
 
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
-    use menu_callbacks::{load_theme, open_toolbar_callback, save_image_callback, save_theme};
+    use menu_callbacks::{
+        load_default_theme, load_theme, open_toolbar_callback, save_image_callback, save_theme,
+    };
 
     let win: Window = ac.fetch_widget("main_window")?;
 
@@ -77,6 +81,10 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     set_up_hamburger_menu_item!("Save Theme", ac, win, save_theme, menu);
     set_up_hamburger_menu_item!("Load Theme", ac, win, load_theme, menu);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    set_up_hamburger_menu_item!("Load Default Theme", ac, win, load_default_theme, menu);
 
     menu.show_all();
 

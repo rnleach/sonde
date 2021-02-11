@@ -45,33 +45,22 @@ const CONFIG_FILE_NAME: &str = "sonde_config.yml";
 pub(crate) fn load_config_from_file(
     app: &AppContext,
     config_path: &std::path::Path,
-) -> Result<(), ()> {
-    File::open(config_path)
-        .ok()
+) -> Result<(), Box<dyn Error + 'static>> {
+    let config = File::open(config_path)
         .and_then(|mut f| {
             let mut serialized_config = String::new();
 
-            match f.read_to_string(&mut serialized_config) {
-                Ok(_) => Some(serialized_config),
-                Err(err) => {
-                    eprintln!("{}", err);
-                    None
-                }
-            }
+            f.read_to_string(&mut serialized_config)
+                .map(|_| serialized_config)
         })
-        .and_then(|serialized_config| {
-            match serde_yaml::from_str::<app::config::Config>(&serialized_config) {
-                Ok(cfg) => Some(cfg),
-                Err(err) => {
-                    eprintln!("{}", err);
-                    None
-                }
-            }
-        })
-        .into_iter()
-        .for_each(|deserialized_config| {
-            *app.config.borrow_mut() = deserialized_config;
-        });
+        .map_err(|err| Box::new(err))?;
+
+    let config = serde_yaml::from_str::<app::config::Config>(&config)?;
+
+    *app.config.borrow_mut() = config;
+    app.mark_background_dirty();
+    app.mark_data_dirty();
+    app.mark_data_dirty();
 
     Ok(())
 }
@@ -85,7 +74,7 @@ fn load_last_used_config(app: &AppContext) {
     let _ = load_config_from_file(app, &path);
 }
 
-fn save_config(app: &AppContext) -> Result<(), Box<dyn Error>> {
+pub(crate) fn save_config(app: &AppContext) -> Result<(), Box<dyn Error>> {
     if let Some(ref config_path) = dirs::config_dir().map(|path| path.join(CONFIG_FILE_NAME)) {
         save_config_with_file_name(app, config_path)?;
     } else {

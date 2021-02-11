@@ -216,8 +216,8 @@ pub fn load_theme(ac: &AppContextPointer, win: &Window) {
         if let Some(ref f0) = path {
             match crate::load_config_from_file(ac, f0) {
                 Ok(()) => {}
-                Err(_) => show_error_dialog(
-                    &format!("Error loading theme: {}", f0.to_string_lossy()),
+                Err(err) => show_error_dialog(
+                    &format!("Error loading theme {}: {}", f0.to_string_lossy(), err),
                     win,
                 ),
             }
@@ -225,6 +225,10 @@ pub fn load_theme(ac: &AppContextPointer, win: &Window) {
     }
 
     dialog.close();
+}
+
+pub fn load_default_theme(ac: &AppContextPointer, _win: &Window) {
+    *ac.config.borrow_mut() = crate::app::config::Config::default();
 
     ac.mark_background_dirty();
     ac.mark_data_dirty();
