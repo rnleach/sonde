@@ -29,6 +29,7 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
     let filter_data = [
         ("*.buf", "Bufkit files (*.buf)"),
         ("*.bufr", "Bufr files (*.bufr)"),
+        ("*.html", "U of WY HTML(*.html)"),
     ];
 
     // A filter for all supported file types

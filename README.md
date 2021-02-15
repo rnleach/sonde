@@ -67,8 +67,12 @@ my top priority.
      thunderstorms and fire weather. Some of the fire weather parameters are experimental and may
      change frequently with updates.
  - Data sources
-   - Currently supports Bufkit files and loading some [bufr][bufr] files.
-   - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
+   - Supports loading Bufkit files (*.buf), which are available from [Bufkit warehouse][warehouse],
+     some U.S. National Weather Service Office sites, and [Penn State][psu download].
+   - Supports loading some [bufr][bufr] files if you can find them.
+   - Supports loading HTML files loaded from the [University of Wyoming][uwyo] website as 
+     "Text: List". Just load the webpage for the sounding you want and then save it as HTML, then
+     open that file in Sonde.
  - Configuration
    - Controls tab allows configuration of what data, background lines, and background shading are 
      displayed. Almost all the colors used are configurable too. It is very much a work in progress.
@@ -115,5 +119,7 @@ plumes are also included. ![screenshot with fire plume analysis view](./screensh
 [gtkrs]:http://gtk-rs.org/
 [rust]:https://www.rust-lang.org/en-US/
 [warehouse]:http://www.meteor.iastate.edu/~ckarsten/bufkit/data/
+[psu download]:http://www.meteo.psu.edu/bufkit/CONUS_NAM_12.html
+[uwyo]:http://weather.uwyo.edu/upperair/sounding.html
 [bufr]:https://www.wmo.int/pages/prog/www/WDM/Guides/Guide-binary-1A.html
 [issues]:https://github.com/rnleach/sonde/issues
