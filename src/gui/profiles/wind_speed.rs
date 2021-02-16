@@ -362,10 +362,16 @@ fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
     if let Some(anal) = ac.get_sounding_for_display() {
         let anal = anal.borrow();
         let sndg = anal.sounding();
-        ac.wind_speed.set_has_data(true);
 
         let pres_data = sndg.pressure_profile();
         let spd_data = sndg.wind_profile();
+
+        if spd_data.iter().any(|opt| opt.is_some()) {
+            ac.wind_speed.set_has_data(true);
+        } else {
+            ac.wind_speed.set_has_data(false);
+        }
+
         let profile = izip!(pres_data, spd_data)
             .filter_map(|(p, spd)| {
                 if let (Some(p), Some(WindSpdDir { speed: s, .. })) =
