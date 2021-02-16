@@ -474,10 +474,11 @@ fn draw_rh_profile(args: DrawingArgs<'_, '_>) -> bool {
         let rgba = config.rh_rgba;
 
         draw_horizontal_bars(cr, line_width, rgba, profile);
+
+        true
     } else {
-        return false;
+        false
     }
-    true
 }
 
 fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
@@ -519,10 +520,11 @@ fn draw_rh_ice_profile(args: DrawingArgs<'_, '_>) -> bool {
         let rgba = config.rh_ice_rgba;
 
         draw_horizontal_bars(cr, line_width, rgba, profile);
+
+        true
     } else {
-        return false;
+        false
     }
-    true
 }
 
 fn draw_omega_profile(args: DrawingArgs<'_, '_>) -> bool {
