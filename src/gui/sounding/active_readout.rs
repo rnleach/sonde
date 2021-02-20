@@ -222,34 +222,13 @@ impl SkewTContext {
         profile_low: &ParcelProfile,
         profile_high: &ParcelProfile,
     ) {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+        let (ac, config) = (args.ac, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color;
 
-        let pres_up = &profile_low.pressure;
-        let temp_up = &profile_low.parcel_t;
-        let pres_down = &profile_high.pressure;
-        let temp_down = &profile_high.parcel_t;
-
-        let upside = izip!(pres_up, temp_up);
-        let downside = izip!(pres_down, temp_down).rev();
-        let polygon = upside.chain(downside);
-
-        let polygon = polygon.map(|(&pressure, &temperature)| {
-            let tp_coords = TPCoords {
-                temperature,
-                pressure,
-            };
-            ac.skew_t.convert_tp_to_screen(tp_coords)
-        });
-
-        let mut polygon_rgba = color;
-        polygon_rgba.3 /= 2.0;
-
-        draw_filled_polygon(cr, polygon_rgba, polygon);
         // Draw lines
         Self::draw_plume_parcel_profile(args, &profile_low, color);
-        Self::draw_plume_parcel_profile(args, &profile_high, color);
+        //Self::draw_plume_parcel_profile(args, &profile_high, color);
 
         // Draw a sample point
         if config.show_active_readout_line {
