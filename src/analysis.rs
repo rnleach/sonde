@@ -7,7 +7,7 @@ use metfor::{
 use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::{blow_up, calc_plumes, PlumeAscentAnalysis},
+    experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
     sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile, PrecipType,
@@ -42,21 +42,14 @@ pub struct Analysis {
     haines_high: Optioned<u8>,
     hdw: Optioned<f64>,
     blow_up_anal_start_parcel: Option<Parcel>,
-    lmib_blow_up_dt_low: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_low: Optioned<Meters>,
-    lmib_blow_up_dt_high: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_high: Optioned<Meters>,
-    lmib_blow_up_dt_dry: Optioned<CelsiusDiff>,
-    lmib_blow_up_height_dry: Optioned<Meters>,
-    top_blow_up_dt_low: Optioned<CelsiusDiff>,
-    top_blow_up_dt_dry: Optioned<CelsiusDiff>,
-    top_blow_up_dt_high: Optioned<CelsiusDiff>,
+    el_blow_up_dt_low: Optioned<CelsiusDiff>,
+    el_blow_up_height_low: Optioned<Meters>,
+    el_blow_up_dt_high: Optioned<CelsiusDiff>,
+    el_blow_up_height_high: Optioned<Meters>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     lcl_dt_high: Optioned<CelsiusDiff>,
-    lcl_dt_dry: Optioned<CelsiusDiff>,
-    plumes_low: Option<Vec<PlumeAscentAnalysis>>,
-    plumes_high: Option<Vec<PlumeAscentAnalysis>>,
-    plumes_dry: Option<Vec<PlumeAscentAnalysis>>,
+    plume_heating_low: Option<PlumeHeatingAnalysis>,
+    plume_heating_high: Option<PlumeHeatingAnalysis>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -108,21 +101,14 @@ impl Analysis {
             haines_high: none(),
             hdw: none(),
             blow_up_anal_start_parcel: None,
-            lmib_blow_up_dt_low: none(),
-            lmib_blow_up_height_low: none(),
-            lmib_blow_up_dt_high: none(),
-            lmib_blow_up_height_high: none(),
-            lmib_blow_up_dt_dry: none(),
-            lmib_blow_up_height_dry: none(),
-            top_blow_up_dt_low: none(),
-            top_blow_up_dt_high: none(),
-            top_blow_up_dt_dry: none(),
+            el_blow_up_dt_low: none(),
+            el_blow_up_height_low: none(),
+            el_blow_up_dt_high: none(),
+            el_blow_up_height_high: none(),
             lcl_dt_low: none(),
             lcl_dt_high: none(),
-            lcl_dt_dry: none(),
-            plumes_low: None,
-            plumes_high: None,
-            plumes_dry: None,
+            plume_heating_low: None,
+            plume_heating_high: None,
             max_p,
 
             dcape: none(),
@@ -267,33 +253,23 @@ impl Analysis {
     }
 
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_low
+    pub fn el_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
+        self.el_blow_up_dt_low
     }
 
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_high
+    pub fn el_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
+        self.el_blow_up_dt_high
     }
 
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_low(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_low
+    pub fn el_blow_up_height_change_low(&self) -> Optioned<Meters> {
+        self.el_blow_up_height_low
     }
 
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_high(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_high
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_low
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_high
+    pub fn el_blow_up_height_change_high(&self) -> Optioned<Meters> {
+        self.el_blow_up_height_high
     }
 
     /// Get the amount of heating necessary to create a cloud on the plume top.
@@ -307,18 +283,13 @@ impl Analysis {
     }
 
     /// Get the plumes analysis
-    pub fn plumes_dry(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_dry
+    pub fn plume_heating_low(&self) -> &Option<PlumeHeatingAnalysis> {
+        &self.plume_heating_low
     }
 
     /// Get the plumes analysis
-    pub fn plumes_low(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_low
-    }
-
-    /// Get the plumes analysis
-    pub fn plumes_high(&self) -> &Option<Vec<PlumeAscentAnalysis>> {
-        &self.plumes_high
+    pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysis> {
+        &self.plume_heating_high
     }
 
     /// Get the max pressure (lowest level) in the sounding
@@ -568,113 +539,58 @@ impl Analysis {
         }
 
         // Fill in the experimental fire weather parameters.
-        if self.lmib_blow_up_dt_low.is_none()
-            || self.top_blow_up_dt_low.is_none()
-            || self.lmib_blow_up_height_low.is_none()
+        if self.el_blow_up_dt_low.is_none()
+            || self.el_blow_up_height_low.is_none()
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_low.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(8.0)).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
+                        some(bu_anal.delta_t_el),
+                        some(bu_anal.delta_z_el),
                         some(bu_anal.delta_t_cloud),
                     )
                 })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
+                .unwrap_or((None, none(), none(), none()));
 
-            self.lmib_blow_up_dt_low = dt_lmib;
-            self.lmib_blow_up_height_low = height_lmib;
-            self.top_blow_up_dt_low = dt_top;
+            self.el_blow_up_dt_low = dt_el;
+            self.el_blow_up_height_low = height_el;
             self.lcl_dt_low = lcl_dt;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
-        if self.lmib_blow_up_dt_high.is_none()
-            || self.top_blow_up_dt_high.is_none()
-            || self.lmib_blow_up_height_high.is_none()
+        if self.el_blow_up_dt_high.is_none()
+            || self.el_blow_up_height_high.is_none()
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_high.is_none()
         {
             let blow_up_anal = blow_up(self.sounding(), Some(15.0)).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
+            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
                         Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
+                        some(bu_anal.delta_t_el),
+                        some(bu_anal.delta_z_el),
                         some(bu_anal.delta_t_cloud),
                     )
                 })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
+                .unwrap_or((None, none(), none(), none()));
 
-            self.lmib_blow_up_dt_high = dt_lmib;
-            self.lmib_blow_up_height_high = height_lmib;
-            self.top_blow_up_dt_high = dt_top;
+            self.el_blow_up_dt_high = dt_el;
+            self.el_blow_up_height_high = height_el;
             self.lcl_dt_high = lcl_dt;
             self.blow_up_anal_start_parcel = starting_pcl;
         }
 
-        if self.lmib_blow_up_dt_dry.is_none()
-            || self.top_blow_up_dt_dry.is_none()
-            || self.lmib_blow_up_height_dry.is_none()
-            || self.blow_up_anal_start_parcel.is_none()
-            || self.lcl_dt_dry.is_none()
-        {
-            let blow_up_anal = blow_up(self.sounding(), None).ok();
-            let (starting_pcl, dt_lmib, height_lmib, dt_top, _, lcl_dt) = blow_up_anal
-                .map(|bu_anal| {
-                    (
-                        Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_lmib),
-                        some(bu_anal.delta_z_lmib),
-                        some(bu_anal.delta_t_top),
-                        some(bu_anal.delta_z_top),
-                        some(bu_anal.delta_t_cloud),
-                    )
-                })
-                .unwrap_or((None, none(), none(), none(), none(), none()));
-
-            self.lmib_blow_up_dt_dry = dt_lmib;
-            self.lmib_blow_up_height_dry = height_lmib;
-            self.top_blow_up_dt_dry = dt_top;
-            self.lcl_dt_dry = lcl_dt;
-            self.blow_up_anal_start_parcel = starting_pcl;
+        if self.plume_heating_low.is_none() {
+            self.plume_heating_low = plume_heating_analysis(self.sounding(), Some(8.0)).ok()
         }
 
-        // blow_up_anal_start_parcel is needed for taking the plume ascent parcels' temperature
-        // values into a delta T.
-        if self.plumes_low.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_low = calc_plumes(
-                self.sounding(),
-                CelsiusDiff(0.1),
-                CelsiusDiff(20.0),
-                Some(8.0),
-            )
-            .ok();
-        }
-
-        // FIXME: 8.0 for low and 15.0 for high should be in constants.
-        if self.plumes_high.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_high = calc_plumes(
-                self.sounding(),
-                CelsiusDiff(0.1),
-                CelsiusDiff(20.0),
-                Some(15.0),
-            )
-            .ok();
-        }
-
-        if self.plumes_dry.is_none() && self.blow_up_anal_start_parcel.is_some() {
-            self.plumes_dry =
-                calc_plumes(self.sounding(), CelsiusDiff(0.1), CelsiusDiff(20.0), None).ok();
+        if self.plume_heating_high.is_none() {
+            self.plume_heating_high = plume_heating_analysis(self.sounding(), Some(15.0)).ok()
         }
     }
 }

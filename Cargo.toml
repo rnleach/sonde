@@ -1,20 +1,20 @@
 [package]
 name = "sonde"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Ryan <rnleach@users.noreply.github.com>"]
 edition = "2018"
 publish = false
 
 [dependencies]
-bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.3"}
-cairo-rs = { version = "^0.8", features = ["png"] }
+bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.4"}
+cairo-rs = { version = "^0.9", features = ["png"] }
 chrono = "^0.4"
-crossbeam-channel = "^0.4"
-dirs = "^2.0.2"
-gdk = "^0.12"
-glib = "^0.9.1"
-gtk = { version = "^0.8", features = ["v3_18"] }
-itertools = "^0.9"
+crossbeam-channel = "^0.5"
+dirs = "^3.0.0"
+gdk = "^0.13"
+glib = "^0.10.1"
+gtk = { version = "^0.9", features = ["v3_18"] }
+itertools = "^0.10"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
 metfor = { version = "^0.7.4", features = ["use_optional", "use_serde"]}
@@ -22,8 +22,9 @@ optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_yaml = "0.8"
+sounding-analysis = "=0.14.4"
 sounding-bufkit = "=0.14.1"
-sounding-analysis = "=0.14.1"
+sounding-wyoming-text-list = "^0.1"
 threadpool = "1.7.1"
 
 [profile.release]

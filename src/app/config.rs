@@ -44,6 +44,7 @@ pub const RED: Rgba = (1.0, 0.0, 0.0, 1.0);
 
 /// Data that can be changed at run-time affecting the look and feel of the application.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     //
     // Session information and window Layout
@@ -82,8 +83,6 @@ pub struct Config {
     pub wind_barb_line_width: f64,
     /// Show the wind profile
     pub show_wind_profile: bool,
-    /// Storm motion points color for the hodograph
-    pub storm_motion_rgba: Rgba,
 
     //
     // Temperature profile
@@ -206,14 +205,6 @@ pub struct Config {
     pub cloud_rgba: Rgba,
 
     //
-    // Wind speed profile
-    //
-    /// Show the wind speed profile frame
-    pub show_wind_speed_profile: bool,
-    /// Wind speed profile color.
-    pub wind_speed_profile_rgba: Rgba,
-
-    //
     // Labeling
     //
     /// Whether to show labels
@@ -294,10 +285,6 @@ pub struct Config {
     pub show_iso_speed: bool,
     /// Velocity plot line width
     pub velocity_line_width: f64,
-    /// Velociy line color
-    pub veclocity_rgba: Rgba,
-    /// Show or hide the velocity plot.
-    pub show_velocity: bool,
     /// Plot hodograph for winds up to a minimum pressure.
     pub min_hodo_pressure: HectoPascal,
     /// Plot the helicity overlays.
@@ -308,6 +295,8 @@ pub struct Config {
     pub helicity_layer: HelicityType,
     /// Which storm motion to plot the helicity for.
     pub helicity_storm_motion: StormMotionType,
+    /// Storm motion points color for the hodograph
+    pub storm_motion_rgba: Rgba,
 
     //
     // Fire plume related settings.
@@ -445,12 +434,6 @@ impl Default for Config {
             cloud_rgba: (0.5, 0.5, 0.5, 0.75),
 
             //
-            // Wind speed profile
-            //
-            show_wind_speed_profile: true,
-            wind_speed_profile_rgba: (0.0, 0.0, 0.0, 1.0),
-
-            //
             // Labeling
             //
             show_labels: true,
@@ -498,8 +481,6 @@ impl Default for Config {
             iso_speed_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),
             show_iso_speed: true,
             velocity_line_width: 2.0,
-            veclocity_rgba: (0.0, 0.0, 0.0, 1.0),
-            show_velocity: true,
             min_hodo_pressure: HectoPascal(300.0),
             show_helicity_overlay: true,
             helicity_rgba: (1.0, 0.4, 0.1, 0.6),
@@ -541,15 +522,15 @@ pub const MAXP: HectoPascal = HectoPascal(1050.0); // hPa
 /// Minimum pressure plotted on skew-t (top edge)
 pub const MINP: HectoPascal = HectoPascal(99.0); // hPa
 /// Coldest temperature plotted at max pressure, on the bottom edge.
-pub const MINT: Celsius = Celsius(-46.5); // C - at MAXP
+pub const MINT: Celsius = Celsius(-40.5); // C - at MAXP
 /// Warmest temperature plotted at max pressure, on the bottom edge.
-pub const MAXT: Celsius = Celsius(50.5); // C - at MAXP
+pub const MAXT: Celsius = Celsius(55.5); // C - at MAXP
 
 /// Maximum absolute vertical velocity in Pa/s
 pub const MAX_ABS_W: PaPS = PaPS(15.0);
 
 /// Maximum wind speed on hodograph in Knots
-pub const MAX_SPEED: Knots = Knots(250.0);
+pub const MAX_SPEED: Knots = Knots(200.0);
 
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
@@ -578,7 +559,7 @@ pub const THETA_E_TOP_P: HectoPascal = HectoPascal(200.0);
 /// Number of points to use per isentrop line when drawing.
 pub const POINTS_PER_ISENTROP: u32 = 40;
 /// Hightest elevation pressure level to draw iso mixing ratio up to
-pub const ISO_MIXING_RATIO_TOP_P: HectoPascal = HectoPascal(300.0);
+pub const ISO_MIXING_RATIO_TOP_P: HectoPascal = HectoPascal(400.0);
 
 //
 // Constant values to plot on background.
@@ -689,11 +670,9 @@ pub const ISO_THETA_E_C: [Celsius; 31] = [
 ];
 
 /// Isopleths of mixing ratio
-pub const ISO_MIXING_RATIO: [f64; 32] = [
-    0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0,
-    16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0,
-    68.0,
-    //    76.0, // Uncomment this when we can have arrays larger than 32.
+pub const ISO_MIXING_RATIO: [f64; 34] = [
+    0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0,
+    14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0, 68.0, 76.0,
 ];
 
 pub const ISO_OMEGA: [PaPS; 21] = [
@@ -720,7 +699,7 @@ pub const ISO_OMEGA: [PaPS; 21] = [
     PaPS(10.0),
 ];
 
-pub const ISO_SPEED: [Knots; 25] = [
+pub const ISO_SPEED: [Knots; 20] = [
     Knots(10.0),
     Knots(20.0),
     Knots(30.0),
@@ -741,11 +720,6 @@ pub const ISO_SPEED: [Knots; 25] = [
     Knots(180.0),
     Knots(190.0),
     Knots(200.0),
-    Knots(210.0),
-    Knots(220.0),
-    Knots(230.0),
-    Knots(240.0),
-    Knots(250.0),
 ];
 
 pub const PERCENTS: [f64; 11] = [
@@ -1103,12 +1077,11 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
             Celsius(-80.0),
             Celsius(50.0),
         )
-        .and_then(|t| {
+        .map(|t| {
             v.push(SkewTContext::convert_tp_to_xy(TPCoords {
                 temperature: t,
                 pressure: p,
             }));
-            Some(())
         }) {
             Some(_) => p += dp,
             None => {

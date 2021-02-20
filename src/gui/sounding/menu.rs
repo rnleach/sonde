@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 macro_rules! make_heading {
     ($menu:ident, $label:expr) => {
-        let heading = MenuItem::new_with_label($label);
+        let heading = MenuItem::with_label($label);
         heading.set_sensitive(false);
         $menu.append(&heading);
     };
@@ -16,7 +16,7 @@ macro_rules! make_heading {
 
 macro_rules! make_check_item {
     ($menu:ident, $label:expr, $acp:ident, $check_val:ident) => {
-        let check_menu_item = CheckMenuItem::new_with_label($label);
+        let check_menu_item = CheckMenuItem::with_label($label);
         check_menu_item.set_active($acp.config.borrow().$check_val);
 
         let ac = Rc::clone($acp);
@@ -70,11 +70,11 @@ impl SkewTContext {
 
         make_heading!(menu, "Parcel Type");
 
-        let sfc = RadioMenuItem::new_with_label("Surface");
-        let mxd = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Mixed Layer"));
-        let mu = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Most Unstable"));
-        let con = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Convective"));
-        let eff = RadioMenuItem::new_with_label_from_widget(&sfc, Some("Effective"));
+        let sfc = RadioMenuItem::with_label("Surface");
+        let mxd = RadioMenuItem::with_label_from_widget(&sfc, Some("Mixed Layer"));
+        let mu = RadioMenuItem::with_label_from_widget(&sfc, Some("Most Unstable"));
+        let con = RadioMenuItem::with_label_from_widget(&sfc, Some("Convective"));
+        let eff = RadioMenuItem::with_label_from_widget(&sfc, Some("Effective"));
 
         let p_type = acp.config.borrow().parcel_type;
         match p_type {

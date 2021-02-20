@@ -3,7 +3,6 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gdk::keyval_from_name;
 use gtk::{prelude::*, TextBuffer, TextTag, TextView};
 use metfor::{Fahrenheit, Inches, Quantity};
 use sounding_analysis::experimental::fire::partition_cape;
@@ -13,14 +12,16 @@ const TEXT_AREA_ID: &str = "indexes_text_area";
 const HEADER_LINE: &str = "----------------------------------------------------\n";
 
 pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
+    use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
 
     let ac1 = Rc::clone(acp);
     text_area.connect_key_press_event(move |_ta, event| {
         let keyval = event.get_keyval();
-        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+        if keyval == KP_Right || keyval == Right {
             ac1.display_next();
-        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+        } else if keyval == KP_Left || keyval == Left {
             ac1.display_previous();
         }
         Inhibit(true)
@@ -339,10 +340,9 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
 
     buffer.push_str("\nExperimental\n");
     buffer.push_str(HEADER_LINE);
-    push_fire_index!(buffer, "Cloud ∆T         ", anal, lcl_dt_low,                                                        "{:>5.1}\u{00b0}C\n\n",                  empty);
-    push_fire_index!(buffer, "Blow Up ∆T (Top) ", anal, top_blow_up_dt_low, top_blow_up_dt_high,                           "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
-    push_fire_index!(buffer, "Blow Up ∆T (LMIB)  ", anal, lmib_blow_up_dt_low, lmib_blow_up_dt_high,                       "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
-    push_fire_index!(buffer, "Blow Up Hgt (LMIB) ", anal, lmib_blow_up_height_change_low, lmib_blow_up_height_change_high, "{:>6.0}m - {:>4.0}m\n",                 empty);
+    push_fire_index!(buffer, "Cloud ∆T         ", anal, lcl_dt_low,                                                    "{:>5.1}\u{00b0}C\n\n",                  empty);
+    push_fire_index!(buffer, "Blow Up ∆T (LMIB)  ", anal, el_blow_up_dt_low, el_blow_up_dt_high,                       "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
+    push_fire_index!(buffer, "Blow Up Hgt (LMIB) ", anal, el_blow_up_height_change_low, el_blow_up_height_change_high, "{:>6.0}m - {:>4.0}m\n",                 empty);
 
     if let Some(parcel_anal) = anal.convective_parcel_analysis(){
         if let Ok((dry, wet)) = partition_cape(parcel_anal){

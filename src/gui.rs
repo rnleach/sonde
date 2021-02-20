@@ -8,10 +8,7 @@ use crate::{
     errors::SondeError,
 };
 use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{
-    keyval_from_name, EventButton, EventConfigure, EventKey, EventMotion, EventScroll,
-    ScrollDirection,
-};
+use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
 use gtk::{prelude::*, DrawingArea};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -31,7 +28,7 @@ mod sounding;
 mod text_area;
 mod utility;
 
-pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
+pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext, FirePlumeFeedbackContext};
 pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
@@ -44,6 +41,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     hodograph::HodoContext::set_up_drawing_area(&app)?;
     fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
     fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
+    fire_plume::FirePlumeFeedbackContext::set_up_drawing_area(&app)?;
     control_area::set_up_control_area(&app)?;
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
@@ -55,11 +53,12 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&str; 4] = [
+    const DRAWING_AREAS: [&str; 5] = [
         "skew_t",
         "hodograph_area",
         "fire_plume_height_area",
         "fire_plume_energy_area",
+        "fire_plume_feedback_area",
     ];
 
     for &da in &DRAWING_AREAS {
@@ -819,11 +818,13 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
+        use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+
         let keyval = event.get_keyval();
-        if keyval == keyval_from_name("Right") || keyval == keyval_from_name("KP_Right") {
+        if keyval == KP_Right || keyval == Right {
             ac.display_next();
             Inhibit(true)
-        } else if keyval == keyval_from_name("Left") || keyval == keyval_from_name("KP_Left") {
+        } else if keyval == KP_Left || keyval == Left {
             ac.display_previous();
             Inhibit(true)
         } else {

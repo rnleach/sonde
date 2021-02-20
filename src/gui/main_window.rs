@@ -4,8 +4,7 @@ use crate::{
 };
 use gdk::Event;
 use gtk::{
-    self, prelude::*, Button, HeaderBar, IconSize, Notebook, Orientation, Paned, Separator, Widget,
-    Window,
+    self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, SeparatorMenuItem, Widget, Window,
 };
 use std::rc::Rc;
 
@@ -29,72 +28,65 @@ pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
+macro_rules! set_up_button {
+    ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
+        let button: Button = $ac.fetch_widget($id)?;
+        let ac1 = Rc::clone($ac);
+        let win1 = $win.clone();
+        button.connect_clicked(move |_| {
+            $fn(&ac1, &win1);
+        });
+    };
+    ($ac:ident, $id:expr, $method:tt) => {
+        let button: Button = $ac.fetch_widget($id)?;
+        let ac1: Rc<AppContext> = Rc::clone($ac);
+        button.connect_clicked(move |_| {
+            ac1.$method();
+        });
+    };
+}
+
+macro_rules! set_up_hamburger_menu_item {
+    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
+        let menu_item: MenuItem = MenuItem::with_label($text);
+        let ac1 = Rc::clone($ac);
+        let win1 = $win.clone();
+        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
+        $parent_menu.append(&menu_item);
+    };
+}
+
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
+    use menu_callbacks::{
+        load_default_theme, load_theme, open_toolbar_callback, save_image_callback, save_theme,
+    };
+
     let win: Window = ac.fetch_widget("main_window")?;
-    let header_bar: HeaderBar = ac.fetch_widget("header-bar")?;
 
-    let open_button = Button::new_from_icon_name(Some("document-open"), IconSize::SmallToolbar);
-    open_button.set_label("Open");
-    open_button.set_always_show_image(true);
-    let ac1 = Rc::clone(ac);
-    let win1 = win.clone();
-    open_button.connect_clicked(move |_| {
-        menu_callbacks::open_toolbar_callback(&ac1, &win1);
-    });
-    header_bar.pack_start(&open_button);
+    set_up_button!(ac, "open-button", win, open_toolbar_callback);
+    set_up_button!(ac, "save-image-button", win, save_image_callback);
 
-    let save_image_button =
-        Button::new_from_icon_name(Some("insert-image"), IconSize::SmallToolbar);
-    save_image_button.set_label("Save Image");
-    save_image_button.set_always_show_image(true);
-    let ac1 = Rc::clone(ac);
-    let win1 = win.clone();
-    save_image_button.connect_clicked(move |_| menu_callbacks::save_image_callback(&ac1, &win1));
-    header_bar.pack_start(&save_image_button);
+    set_up_button!(ac, "go-first-button", display_first);
+    set_up_button!(ac, "go-previous-button", display_previous);
+    set_up_button!(ac, "go-next-button", display_next);
+    set_up_button!(ac, "go-last-button", display_last);
 
-    header_bar.pack_start(&Separator::new(Orientation::Vertical));
+    set_up_button!(ac, "zoom-in-button", zoom_in);
+    set_up_button!(ac, "zoom-out-button", zoom_out);
 
-    let first_button = Button::new_from_icon_name(Some("go-first"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    first_button.connect_clicked(move |_| ac1.display_first());
-    header_bar.pack_start(&first_button);
+    set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
-    let previous_button =
-        Button::new_from_icon_name(Some("media-skip-backward"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    previous_button.connect_clicked(move |_| ac1.display_previous());
-    header_bar.pack_start(&previous_button);
+    // Set up the hamburger menu
+    let menu: Menu = ac.fetch_widget("hamburger-menu")?;
 
-    let next_button =
-        Button::new_from_icon_name(Some("media-skip-forward"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    next_button.connect_clicked(move |_| ac1.display_next());
-    header_bar.pack_start(&next_button);
+    set_up_hamburger_menu_item!("Save Theme", ac, win, save_theme, menu);
+    set_up_hamburger_menu_item!("Load Theme", ac, win, load_theme, menu);
 
-    let last_button = Button::new_from_icon_name(Some("go-last"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    last_button.connect_clicked(move |_| ac1.display_last());
-    header_bar.pack_start(&last_button);
+    menu.append(&SeparatorMenuItem::new());
 
-    header_bar.pack_start(&Separator::new(Orientation::Vertical));
+    set_up_hamburger_menu_item!("Load Default Theme", ac, win, load_default_theme, menu);
 
-    let zoom_in_button = Button::new_from_icon_name(Some("zoom-in"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    zoom_in_button.connect_clicked(move |_| ac1.zoom_in());
-    header_bar.pack_start(&zoom_in_button);
-
-    let zoom_out_button = Button::new_from_icon_name(Some("zoom-out"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    zoom_out_button.connect_clicked(move |_| ac1.zoom_out());
-    header_bar.pack_start(&zoom_out_button);
-
-    let quit_button =
-        Button::new_from_icon_name(Some("application-exit-symbolic"), IconSize::SmallToolbar);
-    let ac1 = Rc::clone(ac);
-    quit_button.connect_clicked(move |_| {
-        update_window_config_and_exit(&win, &ac1);
-    });
-    header_bar.pack_end(&quit_button);
+    menu.show_all();
 
     Ok(())
 }
@@ -112,7 +104,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-fn update_window_config_and_exit(win: &Window, ac: &AppContext) {
+fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
@@ -162,7 +154,7 @@ fn update_window_config_and_exit(win: &Window, ac: &AppContext) {
 }
 
 fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
-    update_window_config_and_exit(win, ac);
+    update_window_config_and_exit(ac, win);
     Inhibit(false)
 }
 
@@ -194,25 +186,21 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
-                        ac.fetch_widget::<Widget>(TABS[idx].0)
-                            .ok()
-                            .and_then(|widget| {
-                                let tgt_children = tgt_nb.get_children();
-                                let other_children = other_nb.get_children();
+                        ac.fetch_widget::<Widget>(TABS[idx].0).ok().map(|widget| {
+                            let tgt_children = tgt_nb.get_children();
+                            let other_children = other_nb.get_children();
 
-                                if tgt_children.contains(&widget) {
-                                    tgt_nb.remove(&widget);
-                                } else if other_children.contains(&widget) {
-                                    other_nb.remove(&widget);
-                                }
+                            if tgt_children.contains(&widget) {
+                                tgt_nb.remove(&widget);
+                            } else if other_children.contains(&widget) {
+                                other_nb.remove(&widget);
+                            }
 
-                                tgt_nb.add(&widget);
-                                tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
-                                tgt_nb.set_tab_detachable(&widget, true);
-                                tgt_nb.set_tab_reorderable(&widget, true);
-
-                                Some(())
-                            })
+                            tgt_nb.add(&widget);
+                            tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
+                            tgt_nb.set_tab_detachable(&widget, true);
+                            tgt_nb.set_tab_reorderable(&widget, true);
+                        })
                     });
                 }
             };

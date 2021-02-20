@@ -4,7 +4,7 @@ use crate::{
     app::config::{self, Config, Rgba},
     coords::TPCoords,
     gui::{
-        utility::{draw_filled_polygon, plot_curve_from_points},
+        utility::{plot_curve_from_points},
         Drawable, DrawingArgs,
     },
 };
@@ -177,8 +177,8 @@ impl SkewTContext {
             let mut line = String::with_capacity(32);
             let color = config.parcel_positive_rgba;
             if let (Some(cape_low), Some(cape_high)) = (
-                plume_anal_low.max_int_buoyancy,
-                plume_anal_high.max_int_buoyancy,
+                plume_anal_low.max_int_buoyancy.into_option(),
+                plume_anal_high.max_int_buoyancy.into_option(),
             ) {
                 line.push_str(&format!(
                     "Net CAPE: {:.0} - {:.0} J/Kg\n",
@@ -190,9 +190,10 @@ impl SkewTContext {
             }
             results.push((line, color));
             let mut line = String::with_capacity(32);
-            if let (Some(el_low), Some(el_high)) =
-                (plume_anal_low.el_height, plume_anal_high.el_height)
-            {
+            if let (Some(el_low), Some(el_high)) = (
+                plume_anal_low.el_height.into_option(),
+                plume_anal_high.el_height.into_option(),
+            ) {
                 line.push_str(&format!(
                     "LMIB: {:.0} - {:.0} m\n",
                     el_high.unpack(),
@@ -201,9 +202,10 @@ impl SkewTContext {
             }
             results.push((line, default_color));
             let mut line = String::with_capacity(32);
-            if let (Some(mh_low), Some(mh_high)) =
-                (plume_anal_low.max_height, plume_anal_high.max_height)
-            {
+            if let (Some(mh_low), Some(mh_high)) = (
+                plume_anal_low.max_height.into_option(),
+                plume_anal_high.max_height.into_option(),
+            ) {
                 line.push_str(&format!(
                     "Max Height: {:.0} - {:.0} m\n",
                     mh_high.unpack(),
@@ -217,40 +219,16 @@ impl SkewTContext {
     pub fn draw_plume_parcel_profiles(
         args: DrawingArgs<'_, '_>,
         parcel_low: Parcel,
-        profile_low: &ParcelProfile,
-        profile_high: &ParcelProfile,
+        _profile_low: &ParcelProfile,
+        _profile_high: &ParcelProfile,
         dry_profiles: &[&ParcelProfile],
     ) {
-        let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
+        let (ac, config) = (args.ac, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color1;
 
-        if config.show_moist_parcels_anal {
-            let pres_up = &profile_low.pressure;
-            let temp_up = &profile_low.parcel_t;
-            let pres_down = &profile_high.pressure;
-            let temp_down = &profile_high.parcel_t;
-
-            let upside = izip!(pres_up, temp_up);
-            let downside = izip!(pres_down, temp_down).rev();
-            let polygon = upside.chain(downside);
-
-            let polygon = polygon.map(|(&pressure, &temperature)| {
-                let tp_coords = TPCoords {
-                    temperature,
-                    pressure,
-                };
-                ac.skew_t.convert_tp_to_screen(tp_coords)
-            });
-
-            let mut polygon_rgba = color;
-            polygon_rgba.3 /= 2.0;
-
-            draw_filled_polygon(cr, polygon_rgba, polygon);
-            // Draw lines
-            Self::draw_plume_parcel_profile(args, &profile_low, color);
-            Self::draw_plume_parcel_profile(args, &profile_high, color);
-        }
+        let mut polygon_rgba = color;
+        polygon_rgba.3 /= 2.0;
 
         if config.show_dry_parcel_anal {
             for (prof, color) in itertools::izip!(

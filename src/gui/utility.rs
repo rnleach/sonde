@@ -106,7 +106,7 @@ where
             continue;
         } else if let (None, None, None) = (previous, curr, next) {
             // This means there was absolutely nothing in the iterator.
-            return;
+            break;
         } else {
             // Impossible state
             unreachable!();

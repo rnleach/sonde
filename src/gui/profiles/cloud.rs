@@ -361,10 +361,14 @@ fn draw_cloud_profile(args: DrawingArgs<'_, '_>) {
         let anal = anal.borrow();
         let sndg = anal.sounding();
 
-        ac.cloud.set_has_data(true);
-
         let pres_data = sndg.pressure_profile();
         let c_data = sndg.cloud_fraction_profile();
+
+        if c_data.iter().any(|opt| opt.is_some()) {
+            ac.cloud.set_has_data(true);
+        } else {
+            ac.cloud.set_has_data(false);
+        }
 
         let profile = izip!(pres_data, c_data)
             // Filter out levels with missing data

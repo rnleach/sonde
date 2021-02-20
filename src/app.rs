@@ -6,8 +6,8 @@ use crate::{
     gui::{
         self,
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
-        SkewTContext,
+        FirePlumeContext, FirePlumeEnergyContext, FirePlumeFeedbackContext, HodoContext,
+        PlotContext, PlotContextExt, SkewTContext,
     },
 };
 use crossbeam_channel::TryRecvError;
@@ -59,6 +59,10 @@ pub struct AppContext {
 
     // Handle to FirePlumeEnergy context
     pub fire_plume_energy: FirePlumeEnergyContext,
+
+    // Handle to FirePlumeEnergy context
+    pub fire_plume_feedback: FirePlumeFeedbackContext,
+
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
@@ -92,13 +96,14 @@ impl AppContext {
             last_sample: RefCell::new(Sample::None),
             load_calls: Cell::new(0),
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
-            gui: gtk::Builder::new_from_string(glade_src),
+            gui: gtk::Builder::from_string(glade_src),
             skew_t: SkewTContext::new(),
             rh_omega: RHOmegaContext::new(),
             cloud: CloudContext::new(),
             hodo: HodoContext::new(),
             fire_plume: FirePlumeContext::new(),
             fire_plume_energy: FirePlumeEnergyContext::new(),
+            fire_plume_feedback: FirePlumeFeedbackContext::new(),
             wind_speed: WindSpeedContext::new(),
         })
     }
@@ -109,7 +114,7 @@ impl AppContext {
     {
         self.gui
             .get_object(widget_id)
-            .ok_or_else(|| SondeError::WidgetLoadError(widget_id))
+            .ok_or(SondeError::WidgetLoadError(widget_id))
     }
 
     pub fn load_data<I>(acp: AppContextPointer, src: I)
@@ -146,7 +151,7 @@ impl AppContext {
         }
 
         let acp = Rc::clone(&acp);
-        gtk::idle_add(move || loop {
+        glib::idle_add_local(move || loop {
             match rx.try_recv() {
                 Ok((loaded_on, i, anal)) => {
                     if loaded_on == acp.load_calls.get() {
@@ -308,6 +313,7 @@ impl AppContext {
         self.hodo.mark_data_dirty();
         self.fire_plume.mark_data_dirty();
         self.fire_plume_energy.mark_data_dirty();
+        self.fire_plume_feedback.mark_data_dirty();
         self.skew_t.mark_data_dirty();
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
@@ -318,6 +324,7 @@ impl AppContext {
         self.hodo.mark_overlay_dirty();
         self.fire_plume.mark_overlay_dirty();
         self.fire_plume_energy.mark_overlay_dirty();
+        self.fire_plume_feedback.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
@@ -328,6 +335,7 @@ impl AppContext {
         self.hodo.mark_background_dirty();
         self.fire_plume.mark_background_dirty();
         self.fire_plume_energy.mark_background_dirty();
+        self.fire_plume_feedback.mark_background_dirty();
         self.skew_t.mark_background_dirty();
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();

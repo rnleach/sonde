@@ -10,10 +10,10 @@ use metfor::{Celsius, HectoPascal, Kelvin, Knots, Meters, WindSpdDir};
 use optional::Optioned;
 use sounding_analysis::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
-use std::{error::Error, path::PathBuf, rc::Rc};
+use std::{error::Error, io::Read, path::PathBuf, rc::Rc};
 
 pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let datas: Result<Vec<_>, _> = paths.iter().map(load_data).collect();
+    let datas: Result<Vec<_>, _> = paths.iter().map(load_file).collect();
     let mut datas: Vec<_> = datas?.into_iter().flatten().collect();
 
     // Sort by valid time ascending, then by lead time ascending
@@ -58,17 +58,22 @@ pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Bo
     Ok(())
 }
 
-fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+fn load_file(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let extension: Option<String> = path
         .extension()
         .map(|ext| ext.to_string_lossy().to_string());
     let extension = extension.as_deref();
 
-    let mut load_fns = [load_bufkit, load_bufr];
+    let mut load_fns = [load_bufkit, load_bufr, load_wyoming_html];
 
     if Some("bufr") == extension {
         // Try the bufr loader first.
         load_fns.swap(0, 1);
+    }
+
+    if Some("html") == extension {
+        // Try the wyoming text list loader first.
+        load_fns.swap(0, 2);
     }
 
     for load_fn in load_fns.iter() {
@@ -79,6 +84,24 @@ fn load_data(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     }
 
     Err(Box::new(SondeError::NoMatchingFileType))
+}
+
+fn load_wyoming_html(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+    let mut text = String::new();
+
+    let mut f = std::fs::File::open(path)?;
+    f.read_to_string(&mut text)?;
+
+    let file_name = path
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .unwrap_or_else(|| "Unknown file.".to_owned());
+
+    let data = sounding_wyoming_text_list::parse_text(&file_name, &text)
+        .map(|(snd, provider_anal)| Analysis::new(snd).with_provider_analysis(provider_anal))
+        .collect();
+
+    Ok(data)
 }
 
 fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {

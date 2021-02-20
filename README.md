@@ -1,5 +1,5 @@
 # Sonde
-A program for viewing and analysis of atmospheric soundings from weather models.
+A program for viewing and analysis of atmospheric soundings.
 
 [![Build Status](https://travis-ci.org/rnleach/sonde.svg?branch=master)](https://travis-ci.org/rnleach/sonde)
 
@@ -46,6 +46,7 @@ my top priority.
    - Wet bulb plot added.
    - Progressive disclosure of winds.
    - Sample readout synchronized across views (skew-t, hodograph, text, profiles).
+   - Showing, hiding, and colors of all data types is configurable.
  - Analysis
    - Convective parcel analysis is drawn using virtual temperature. This is the most appropriate for
      CAPE/CIN calculations.
@@ -66,16 +67,20 @@ my top priority.
      thunderstorms and fire weather. Some of the fire weather parameters are experimental and may
      change frequently with updates.
  - Data sources
-   - Currently supports Bufkit files and loading [bufr][bufr] files.
-   - For now [Bufkit warehouse][warehouse] is a good place to download bufkit files.
+   - Supports loading Bufkit files (*.buf), which are available from [Bufkit warehouse][warehouse],
+     some U.S. National Weather Service Office sites, and [Penn State][psu download].
+   - Supports loading some [bufr][bufr] files if you can find them.
+   - Supports loading HTML files loaded from the [University of Wyoming][uwyo] website as 
+     "Text: List". Just load the webpage for the sounding you want and then save it as HTML, then
+     open that file in Sonde.
  - Configuration
    - Controls tab allows configuration of what data, background lines, and background shading are 
      displayed. Almost all the colors used are configurable too. It is very much a work in progress.
    - Persistence from run to run has been implemented via a config.yml file that is saved every time
      the program shuts down.
    - Right click menu on the sounding to choose parcel type (surface, mixed layer, most unstable, 
-     convective) for parcel analysis.
-   - Does not yet support saving and loading configurations, but that is planned.
+     convective) for parcel analysis and many other data display options.
+   - Supports saving and loading configurations (as themes) from YAML files.
 
 ## Screenshots
 
@@ -92,12 +97,12 @@ A hodograph is also included. When sampling the skew-t, a dot appears at the cor
 on the hodograph. Mean wind, storm motion, and storm relative helicity are also plotted.
 ![screenshot with hodograph view](./screenshots/Hodo.png)
 
-The profiles highlight important levels, such as the dendritic snow growth zone shown in these 
-profiles. In the screenshot above the hail growth zone is highlighted on the Skew-T. A recent
-addition was also the precipitation icons, where the precipitation type is determined by the model
-with intensity (Light, Moderate, Heavy) and mode (Stratiform, Convective) determined from the
-precipitation and convective precipitation amounts if they are included in the bufkit files. Also,
-the sample readouts track directly with the one on the skew-t.
+The profiles highlight important levels, such as the dendritic snow growth zone or the hail growth
+zone. A recent addition was also the precipitation icons, where the precipitation type is 
+determined by the model, the Bourgoin technique, or the Top Down method (NSSL). Intensity
+(Light, Moderate, Heavy) and mode (Stratiform, Convective) are determined from the precipitation
+and convective precipitation amounts if they are included in the bufkit files. Also, the sample
+readouts track directly with the one on the skew-t.
 ![screenshot with profiles view](./screenshots/Profiles.png)
 
 The indexes contain several common and some uncommon values from parcel theory and fire weather. I
@@ -108,16 +113,13 @@ well as some experimental fire weather indexes.
 Some experimental analysis techniques for analyzing the atmospheric stability related to wildfire
 plumes are also included. ![screenshot with fire plume analysis view](./screenshots/FirePlumes.png)
 
-## Future Development
- - A data downloader and manager.
- - Saving and loading of the configuration and colors.
- - For a more complete and up to date list of issues and enhancements see the [issues][issues] page.
-
 [bufkit]:http://training.weather.gov/wdtd/tools/BUFKIT/index.php
 [sharppy]:https://github.com/sharppy/SHARPpy
 [gtk]:https://www.gtk.org/
 [gtkrs]:http://gtk-rs.org/
 [rust]:https://www.rust-lang.org/en-US/
 [warehouse]:http://www.meteor.iastate.edu/~ckarsten/bufkit/data/
+[psu download]:http://www.meteo.psu.edu/bufkit/CONUS_NAM_12.html
+[uwyo]:http://weather.uwyo.edu/upperair/sounding.html
 [bufr]:https://www.wmo.int/pages/prog/www/WDM/Guides/Guide-binary-1A.html
 [issues]:https://github.com/rnleach/sonde/issues

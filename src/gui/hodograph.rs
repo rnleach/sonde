@@ -13,7 +13,9 @@ use crate::{
     },
 };
 use gdk::EventButton;
-use gtk::{prelude::*, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem};
+use gtk::{
+    prelude::*, CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem,
+};
 use itertools::izip;
 use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
 use sounding_analysis::DataRow;
@@ -101,32 +103,34 @@ impl Drawable for HodoContext {
     fn draw_background_fill(&self, args: DrawingArgs<'_, '_>) {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
-        let mut do_draw = true;
-        let rgba = config.background_band_rgba;
-        cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        if config.show_background_bands {
+            let mut do_draw = true;
+            let rgba = config.background_band_rgba;
+            cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
-        for pnts in config::ISO_SPEED_PNTS.iter() {
-            let mut pnts = pnts
-                .iter()
-                .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
+            for pnts in config::ISO_SPEED_PNTS.iter() {
+                let mut pnts = pnts
+                    .iter()
+                    .map(|xy_coords| self.convert_xy_to_screen(*xy_coords));
 
-            if let Some(pnt) = pnts.by_ref().next() {
-                cr.move_to(pnt.x, pnt.y);
-            }
-            if do_draw {
-                for pnt in pnts {
-                    cr.line_to(pnt.x, pnt.y);
+                if let Some(pnt) = pnts.by_ref().next() {
+                    cr.move_to(pnt.x, pnt.y);
                 }
-            } else {
-                for pnt in pnts.rev() {
-                    cr.line_to(pnt.x, pnt.y);
+                if do_draw {
+                    for pnt in pnts {
+                        cr.line_to(pnt.x, pnt.y);
+                    }
+                } else {
+                    for pnt in pnts.rev() {
+                        cr.line_to(pnt.x, pnt.y);
+                    }
                 }
+                cr.close_path();
+                if do_draw {
+                    cr.fill();
+                }
+                do_draw = !do_draw;
             }
-            cr.close_path();
-            if do_draw {
-                cr.fill();
-            }
-            do_draw = !do_draw;
         }
     }
 
@@ -152,6 +156,7 @@ impl Drawable for HodoContext {
                     direction: 360.0,
                 },
             });
+
             for pnts in [
                 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 360.0,
             ]
@@ -306,7 +311,7 @@ impl MasterDrawable for HodoContext {}
  **************************************************************************************************/
 macro_rules! make_heading {
     ($menu:ident, $label:expr) => {
-        let heading = MenuItem::new_with_label($label);
+        let heading = MenuItem::with_label($label);
         heading.set_sensitive(false);
         $menu.append(&heading);
     };
@@ -316,10 +321,23 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     let menu: Menu = acp.fetch_widget("hodograph_context_menu")?;
     let config = acp.config.borrow();
 
+    menu.append(&SeparatorMenuItem::new());
+
     make_heading!(menu, "Helicity");
-    let sfc_to_3km = RadioMenuItem::new_with_label("Surface to 3km");
-    let effective =
-        RadioMenuItem::new_with_label_from_widget(&sfc_to_3km, Some("Effective Inflow"));
+    let show_helicity = CheckMenuItem::with_label("Show Helicity");
+    show_helicity.set_active(config.show_helicity_overlay);
+    let ac = Rc::clone(acp);
+    show_helicity.connect_toggled(move |button| {
+        ac.config.borrow_mut().show_helicity_overlay = button.get_active();
+        ac.mark_data_dirty();
+        crate::gui::draw_all(&ac);
+    });
+    menu.append(&show_helicity);
+
+    menu.append(&SeparatorMenuItem::new());
+
+    let sfc_to_3km = RadioMenuItem::with_label("Surface to 3km");
+    let effective = RadioMenuItem::with_label_from_widget(&sfc_to_3km, Some("Effective Inflow"));
 
     match config.helicity_layer {
         HelicityType::SurfaceTo3km => sfc_to_3km.set_active(true),
@@ -354,8 +372,8 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     menu.append(&SeparatorMenuItem::new());
 
     make_heading!(menu, "Helicity Storm");
-    let right_mover = RadioMenuItem::new_with_label("Right Mover");
-    let left_mover = RadioMenuItem::new_with_label_from_widget(&right_mover, Some("Left Mover"));
+    let right_mover = RadioMenuItem::with_label("Right Mover");
+    let left_mover = RadioMenuItem::with_label_from_widget(&right_mover, Some("Left Mover"));
 
     match config.helicity_storm_motion {
         StormMotionType::RightMover => right_mover.set_active(true),
@@ -421,7 +439,7 @@ fn draw_data(args: DrawingArgs<'_, '_>) {
         plot_curve_from_points(
             cr,
             config.velocity_line_width,
-            config.veclocity_rgba,
+            config.wind_rgba,
             profile_data,
         );
     }
@@ -435,6 +453,10 @@ fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
 fn draw_helicity_fill(args: DrawingArgs<'_, '_>) {
     let (ac, cr) = (args.ac, args.cr);
     let config = ac.config.borrow();
+
+    if !config.show_helicity_overlay {
+        return;
+    }
 
     if let Some(anal) = ac.get_sounding_for_display() {
         let anal = anal.borrow();

@@ -215,10 +215,7 @@ impl Drawable for WindSpeedContext {
     }
 
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
-        vec![(
-            "Wind speed".to_owned(),
-            ac.config.borrow().wind_speed_profile_rgba,
-        )]
+        vec![("Wind speed".to_owned(), ac.config.borrow().wind_rgba)]
     }
 
     fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
@@ -298,7 +295,7 @@ impl Drawable for WindSpeedContext {
         if let Sample::Sounding { data, .. } = vals {
             if let Some(WindSpdDir { speed, .. }) = data.wind.into_option() {
                 let line = format!("{:.0}KT\n", speed.unpack());
-                results.push((line, ac.config.borrow().wind_speed_profile_rgba));
+                results.push((line, ac.config.borrow().wind_rgba));
             }
         }
 
@@ -365,10 +362,16 @@ fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
     if let Some(anal) = ac.get_sounding_for_display() {
         let anal = anal.borrow();
         let sndg = anal.sounding();
-        ac.wind_speed.set_has_data(true);
 
         let pres_data = sndg.pressure_profile();
         let spd_data = sndg.wind_profile();
+
+        if spd_data.iter().any(|opt| opt.is_some()) {
+            ac.wind_speed.set_has_data(true);
+        } else {
+            ac.wind_speed.set_has_data(false);
+        }
+
         let profile = izip!(pres_data, spd_data)
             .filter_map(|(p, spd)| {
                 if let (Some(p), Some(WindSpdDir { speed: s, .. })) =
@@ -388,12 +391,7 @@ fn draw_wind_speed_profile(args: DrawingArgs<'_, '_>) {
                 }
             });
 
-        plot_curve_from_points(
-            cr,
-            config.profile_line_width,
-            config.wind_speed_profile_rgba,
-            profile,
-        );
+        plot_curve_from_points(cr, config.profile_line_width, config.wind_rgba, profile);
     } else {
         ac.wind_speed.set_has_data(false);
     }

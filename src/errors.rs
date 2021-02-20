@@ -1,11 +1,11 @@
 pub use std::error::Error;
 use std::fmt::Display;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub enum SondeError {
     WidgetLoadError(&'static str),
     TextBufferLoadError(&'static str),
-    CairoError(cairo::Status),
+    CairoError(cairo::Error),
     NoMatchingFileType,
 }
 
@@ -17,15 +17,15 @@ impl Display for SondeError {
             TextBufferLoadError(id) => {
                 write!(f, "Could not load buffer for text area with id = {}.", id)
             }
-            CairoError(status) => write!(f, "Error with cairo = {:?}.", status),
+            CairoError(err) => write!(f, "Error with cairo = {:?}.", err),
             NoMatchingFileType => write!(f, "Unable to find a way to load this file."),
         }
     }
 }
 
-impl From<cairo::Status> for SondeError {
-    fn from(status: cairo::Status) -> Self {
-        SondeError::CairoError(status)
+impl From<cairo::Error> for SondeError {
+    fn from(err: cairo::Error) -> Self {
+        SondeError::CairoError(err)
     }
 }
 
