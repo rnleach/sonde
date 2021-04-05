@@ -1,19 +1,10 @@
 use super::SkewTContext;
 use crate::{
-    analysis::{Analysis, PrecipTypeAlgorithm},
     app::config::{self},
-    coords::{ScreenCoords, TPCoords, XYCoords},
-    gui::{
-        utility::{draw_filled_polygon, plot_curve_from_points},
-        Drawable, DrawingArgs, PlotContextExt,
-    },
+    coords::TPCoords,
+    gui::{utility::plot_curve_from_points, DrawingArgs},
 };
 use itertools::izip;
-use log::warn;
-use metfor::{Celsius, Fahrenheit, JpKg, Quantity};
-use sounding_analysis::{self, Parcel, ParcelAscentAnalysis};
-
-mod precip_type;
 
 #[derive(Clone, Copy, Debug)]
 enum TemperatureType {
@@ -128,15 +119,7 @@ impl SkewTContext {
         plot_curve_from_points(cr, line_width, line_rgba, profile_data);
     }
 
-    pub fn draw_data_overlays(args: DrawingArgs<'_, '_>) {
-    }
+    pub fn draw_data_overlays(_args: DrawingArgs<'_, '_>) {}
 
-    fn draw_cape_cin_fill(args: DrawingArgs<'_, '_>, parcel_analysis: &ParcelAscentAnalysis) {
-    }
-
-    fn draw_downburst(args: DrawingArgs<'_, '_>, sounding_analysis: &Analysis) {
-    }
-
-    pub fn draw_precip_icons(&self, args: DrawingArgs<'_, '_>) {
-    }
+    pub fn draw_precip_icons(&self, _args: DrawingArgs<'_, '_>) {}
 }

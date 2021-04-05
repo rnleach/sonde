@@ -299,7 +299,7 @@ impl SkewTContext {
             let rgba = (1.0, 0.5, 0.0, 1.0);
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.set_line_width(
-                cr.device_to_user_distance(1.2*config.wind_barb_line_width, 0.0)
+                cr.device_to_user_distance(1.2 * config.wind_barb_line_width, 0.0)
                     .0,
             );
 

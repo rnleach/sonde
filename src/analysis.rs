@@ -225,21 +225,6 @@ impl Analysis {
         )
     }
 
-    /// Get the weather symbol code from the provider, i.e. model physics scheme.
-    pub fn provider_precip_type(&self) -> Option<PrecipType> {
-        self.provider_wx_code
-    }
-
-    /// Get the weather symbol code using the Bourgouin method.
-    pub fn bourgouin_precip_type(&self) -> Option<PrecipType> {
-        self.bourgouin_wx_code
-    }
-
-    /// Get the weather symbol code using the NSSL method.
-    pub fn nssl_precip_type(&self) -> Option<PrecipType> {
-        self.nssl_wx_code
-    }
-
     /// Get the Haines Index.
     #[allow(dead_code)]
     pub fn haines(&self) -> Optioned<u8> {
@@ -276,11 +261,6 @@ impl Analysis {
         self.lmib_blow_up_dt_high
     }
 
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn lmib_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.lmib_blow_up_dt_dry
-    }
-
     /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
     pub fn lmib_blow_up_height_change_low(&self) -> Optioned<Meters> {
         self.lmib_blow_up_height_low
@@ -291,11 +271,6 @@ impl Analysis {
         self.lmib_blow_up_height_high
     }
 
-    /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn lmib_blow_up_height_change_dry(&self) -> Optioned<Meters> {
-        self.lmib_blow_up_height_dry
-    }
-
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
     pub fn top_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
         self.top_blow_up_dt_low
@@ -304,11 +279,6 @@ impl Analysis {
     /// Get the change in temperature required for a blow up. EXPERIMENTAL.
     pub fn top_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
         self.top_blow_up_dt_high
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn top_blow_up_dt_dry(&self) -> Optioned<CelsiusDiff> {
-        self.top_blow_up_dt_dry
     }
 
     /// Get the amount of heating necessary to create a cloud on the plume top.
@@ -369,11 +339,6 @@ impl Analysis {
     /// Get the effective parcel analysis
     pub fn effective_parcel_analysis(&self) -> Option<&ParcelAscentAnalysis> {
         self.effective.as_ref()
-    }
-
-    /// Get the downburst profile
-    pub fn downburst_profile(&self) -> Option<&ParcelProfile> {
-        self.downburst_profile.as_ref()
     }
 
     /// Set the provider analysis.
@@ -694,16 +659,3 @@ impl Analysis {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Intensity {
-    Light,
-    Moderate,
-    Heavy,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum PrecipTypeAlgorithm {
-    Model,
-    Bourgouin,
-    NSSL,
-}

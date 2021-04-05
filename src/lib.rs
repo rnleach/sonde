@@ -45,11 +45,14 @@ const CONFIG_FILE_NAME: &str = "sonde_config.yml";
 fn load_config(app: &AppContext) {
     dirs::config_dir()
         .map(|path| path.join(CONFIG_FILE_NAME))
-        .and_then(|path| match File::open(path) {
-            Ok(f) => Some(f),
-            Err(err) => {
-                eprintln!("{}", err);
-                None
+        .and_then(|path| {
+            println!("{:?}", &path);
+            match File::open(path) {
+                Ok(f) => Some(f),
+                Err(err) => {
+                    println!("{}", err);
+                    None
+                }
             }
         })
         .and_then(|mut f| {
@@ -58,7 +61,7 @@ fn load_config(app: &AppContext) {
             match f.read_to_string(&mut serialized_config) {
                 Ok(_) => Some(serialized_config),
                 Err(err) => {
-                    eprintln!("{}", err);
+                    println!("{}", err);
                     None
                 }
             }
@@ -67,7 +70,7 @@ fn load_config(app: &AppContext) {
             match serde_yaml::from_str::<app::config::Config>(&serialized_config) {
                 Ok(cfg) => Some(cfg),
                 Err(err) => {
-                    eprintln!("{}", err);
+                    println!("{}", err);
                     None
                 }
             }
@@ -85,12 +88,12 @@ fn save_config(app: &AppContext) -> Result<(), Box<dyn Error>> {
         {
             ok @ Ok(_) => ok,
             Err(err) => {
-                eprintln!("Error saving configuration: \n{}", &err);
+                println!("Error saving configuration: \n{}", &err);
                 Err(err)
             }
         }?
     } else {
-        eprintln!("Error creating path to save config.");
+        println!("Error creating path to save config.");
     }
 
     Ok(())

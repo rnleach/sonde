@@ -120,10 +120,10 @@ impl AppContext {
         {
             let list: &mut Vec<_> = &mut acp.list.borrow_mut();
             *list = src
-                .filter(|anal|{
+                .filter(|anal| {
                     let vt = anal.sounding().valid_time().unwrap();
-                    vt == chrono::naive::NaiveDate::from_ymd(2017,9,3).and_hms(1,0,0) ||
-                        vt == chrono::naive::NaiveDate::from_ymd(2017,9,4).and_hms(1,0,0)
+                    vt == chrono::naive::NaiveDate::from_ymd(2017, 9, 3).and_hms(1, 0, 0)
+                        || vt == chrono::naive::NaiveDate::from_ymd(2017, 9, 4).and_hms(1, 0, 0)
                 })
                 .map(RefCell::new)
                 .map(Rc::new)
@@ -272,18 +272,12 @@ impl AppContext {
 
     /// Get the analysis for drawing, etc.
     pub fn get_sounding0_for_display(&self) -> Option<Rc<RefCell<Analysis>>> {
-        self.list
-            .borrow()
-            .get(0)
-            .map(Rc::clone)
+        self.list.borrow().get(0).map(Rc::clone)
     }
 
     /// Get the analysis for drawing, etc.
     pub fn get_sounding1_for_display(&self) -> Option<Rc<RefCell<Analysis>>> {
-        self.list
-            .borrow()
-            .get(1)
-            .map(Rc::clone)
+        self.list.borrow().get(1).map(Rc::clone)
     }
 
     pub fn get_sample(&self) -> Ref<Sample> {
