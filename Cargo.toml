@@ -4,6 +4,7 @@ version = "0.4.0"
 authors = ["Ryan <rnleach@users.noreply.github.com>"]
 edition = "2018"
 publish = false
+build="build.rs"
 
 [dependencies]
 bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.5"}
@@ -26,6 +27,9 @@ sounding-analysis = "^0.15.0"
 sounding-bufkit = "^0.14.0"
 sounding-wyoming-text-list = "^0.1.0"
 threadpool = "1.7.1"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
 
 [profile.release]
 lto = true
