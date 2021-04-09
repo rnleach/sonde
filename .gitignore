@@ -12,6 +12,8 @@ Cargo.lock
 Session.vim
 *~
 tags
+flamegraph.*
+perf.*
 
 // OS specific
 .DS_Store
