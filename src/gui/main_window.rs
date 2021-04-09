@@ -94,6 +94,9 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     let window: Window = ac.fetch_widget("main_window")?;
 
+    Window::set_default_icon_from_file("graphics/sonde.png")?;
+    window.set_icon_from_file("graphics/sonde.png")?;
+
     layout_tabs_window(&window, ac)?;
 
     let ac1 = Rc::clone(ac);

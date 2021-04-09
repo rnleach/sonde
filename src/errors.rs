@@ -6,6 +6,7 @@ pub enum SondeError {
     WidgetLoadError(&'static str),
     TextBufferLoadError(&'static str),
     CairoError(cairo::Error),
+    GlibError(glib::Error),
     NoMatchingFileType,
 }
 
@@ -18,6 +19,7 @@ impl Display for SondeError {
                 write!(f, "Could not load buffer for text area with id = {}.", id)
             }
             CairoError(err) => write!(f, "Error with cairo = {:?}.", err),
+            GlibError(err) => write!(f, "Error with glib = {:?}.", err),
             NoMatchingFileType => write!(f, "Unable to find a way to load this file."),
         }
     }
@@ -26,6 +28,12 @@ impl Display for SondeError {
 impl From<cairo::Error> for SondeError {
     fn from(err: cairo::Error) -> Self {
         SondeError::CairoError(err)
+    }
+}
+
+impl From<glib::Error> for SondeError {
+    fn from(err: glib::Error) -> Self {
+        SondeError::GlibError(err)
     }
 }
 

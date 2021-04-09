@@ -37,7 +37,10 @@ cd ..
 echo "Copy icons to distribution folder"
 cp -r ${MINGW_PREFIX}/share/icons ${PACKAGE_DIR}/share/icons
 
+echo "Copy graphics"
+cp -r graphics ${PACKAGE_DIR}/
+
 echo "Zipping up into ${DIST_ZIP}"
 cd ${PACKAGE_DIR}
-zip -r ../${DIST_ZIP} ./*
+zip -ruqo9 ../${DIST_ZIP} ./*
 cd ..
