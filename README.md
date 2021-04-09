@@ -1,7 +1,8 @@
 # Sonde
 A program for viewing and analysis of atmospheric soundings.
 
-[![Build Status](https://travis-ci.org/rnleach/sonde.svg?branch=master)](https://travis-ci.org/rnleach/sonde)
+[![Github Actions](https://github.com/rnleach/sonde/actions/workflows/rust.yml/badge.svg)](https://github.com/rnleach/sonde/actions)
+
 
 ## Background
 
