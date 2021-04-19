@@ -396,7 +396,49 @@ impl Analysis {
 
         if self.mixed_layer.is_none() {
             self.mixed_layer = match mixed_layer_parcel(&self.sounding) {
-                Ok(parcel) => lift_parcel(parcel, &self.sounding).ok(),
+                Ok(parcel) => {
+                    let anal = lift_parcel(parcel, &self.sounding).ok();
+                    if let (Some(anal), Some(ref vt)) = (anal.as_ref(), self.sounding.valid_time())
+                    {
+                        use metfor::{MilesPHour, WindSpdDir};
+
+                        let bottom_p = self
+                            .sounding()
+                            .pressure_profile()
+                            .iter()
+                            .filter_map(|p| p.into_option())
+                            .next()
+                            .unwrap();
+                        let top_p = bottom_p - metfor::HectoPascal(100.0);
+                        let layer =
+                            &sounding_analysis::pressure_layer(self.sounding(), bottom_p, top_p)
+                                .unwrap();
+
+                        let parcel = anal.parcel();
+                        let HectoPascal(p) = parcel.pressure;
+                        let Celsius(t) = parcel.temperature;
+                        let Celsius(dp) = parcel.dew_point;
+
+                        let mean_wind =
+                            sounding_analysis::mean_wind(layer, self.sounding()).unwrap();
+                        let mean_wind = WindSpdDir::<MilesPHour>::from(mean_wind);
+                        let WindSpdDir {
+                            speed: MilesPHour(spd),
+                            direction,
+                        } = mean_wind;
+
+                        let WindSpdDir {
+                            speed: MilesPHour(spd_shear),
+                            direction: dir_shear,
+                        } = WindSpdDir::<MilesPHour>::from(layer.wind_shear().unwrap());
+
+                        println!(
+                            "{} ({:.0}hPa / {:.1}C / {:.1}C) Mean Wind => {:.0} {:.0}mph Bulk Shear {:.0} {:.0} mph",
+                            vt, p, t, dp, direction, spd, dir_shear, spd_shear,
+                        );
+                    }
+                    anal
+                }
                 Err(_) => None,
             };
         }
@@ -658,4 +700,3 @@ impl Analysis {
         }
     }
 }
-
