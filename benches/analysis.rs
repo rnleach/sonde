@@ -7,16 +7,21 @@ fn analysis_bench(c: &mut Criterion) {
     let data = load_soundings();
 
     let mut group = c.benchmark_group("Analysis");
-    group.sample_size(10);
+    group.sample_size(100);
 
     for (key, data_vec) in data {
         group.bench_function(key, |b| {
+            let mut dvec = data_vec.clone();
             b.iter_batched(
-                || data_vec.clone(),
-                |dvec| {
-                    for mut anal in dvec {
-                        anal.fill_in_missing_analysis_mut();
+                || {
+                    if dvec.is_empty() {
+                        dvec = data_vec.clone();
                     }
+
+                    dvec.pop().unwrap()
+                },
+                |mut anal| {
+                    anal.fill_in_missing_analysis_mut();
                 },
                 criterion::BatchSize::LargeInput,
             )
