@@ -108,3 +108,9 @@ pub(crate) fn save_config_with_file_name(
 
     Ok(())
 }
+
+//
+// Make the below public for benchmarking only.
+//
+pub use crate::analysis::Analysis;
+pub use crate::app::load_file::load_file;

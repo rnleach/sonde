@@ -27,6 +27,13 @@ sounding-bufkit = "^0.14.0"
 sounding-wyoming-text-list = "^0.1.0"
 threadpool = "1.7.1"
 
+[dev-dependencies]
+criterion = {version = "0.3", features = ['html_reports']}
+
+[[bench]]
+name = "analysis"
+harness = false
+
 [profile.release]
 lto = true
 panic = 'abort'

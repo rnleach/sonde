@@ -22,6 +22,10 @@ use std::{
 pub mod config;
 use self::config::Config;
 
+// Module for loading data
+// make it pub so it can be used for bench tests too.
+pub mod load_file;
+
 // Module for dealing with sample data from the program
 pub mod sample;
 use sample::{create_sample_sounding, Sample};

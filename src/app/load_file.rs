@@ -58,7 +58,8 @@ pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Bo
     Ok(())
 }
 
-fn load_file(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+// Make `pub` so I can use it in benches too.
+pub fn load_file(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let extension: Option<String> = path
         .extension()
         .map(|ext| ext.to_string_lossy().to_string());

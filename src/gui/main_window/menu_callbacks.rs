@@ -10,8 +10,6 @@ use gtk::{
 };
 use std::path::PathBuf;
 
-mod load_file;
-
 pub fn open_toolbar_callback(ac: &AppContextPointer, win: &Window) {
     open_files(ac, win);
 }
@@ -66,7 +64,7 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
             ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
         }
 
-        if let Err(ref err) = load_file::load_multiple(&paths, ac) {
+        if let Err(ref err) = crate::app::load_file::load_multiple(&paths, ac) {
             show_error_dialog(&format!("Error loading file: {}", err), win);
         } else {
             let da: Widget = ac.fetch_widget("skew_t").unwrap();
