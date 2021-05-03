@@ -368,7 +368,7 @@ impl Drawable for RHOmegaContext {
 
             if config.show_rh_ice {
                 if let (Some(t_c), Some(dp_c)) = (t_c.into_option(), dp_c.into_option()) {
-                    let vp_water = metfor::vapor_pressure_liquid_water(dp_c);
+                    let vp_water = metfor::vapor_pressure_water(dp_c);
                     let sat_vp_ice = metfor::vapor_pressure_ice(t_c);
                     if let Some(rh) = vp_water.and_then(|vpw| sat_vp_ice.map(|vpi| vpw / vpi)) {
                         results.push((format!("{:.0}% (ice)\n", 100.0 * rh), config.rh_ice_rgba));

@@ -5,7 +5,6 @@ use crate::{
 };
 use gtk::{prelude::*, TextBuffer, TextTag, TextView};
 use metfor::{Fahrenheit, Inches, Quantity};
-use sounding_analysis::experimental::fire::partition_cape;
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "indexes_text_area";
@@ -344,19 +343,6 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     push_fire_index!(buffer, "Blow Up ∆T (LMIB)  ", anal, el_blow_up_dt_low, el_blow_up_dt_high,                       "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
     push_fire_index!(buffer, "Blow Up Hgt (LMIB) ", anal, el_blow_up_height_change_low, el_blow_up_height_change_high, "{:>6.0}m - {:>4.0}m\n",                 empty);
 
-    if let Some(parcel_anal) = anal.convective_parcel_analysis(){
-        if let Ok((dry, wet)) = partition_cape(parcel_anal){
-            let dry = dry.unpack();
-            let wet = wet.unpack();
-            buffer.push_str(
-                &format!("Dry cape    {:>7.0} J/kg\nWet cape    {:>7.0} J/kg\n", dry, wet)
-            );
-
-            buffer.push_str(
-                &format!("Pct Wet             {:>3.0}%\n", 100.0 * wet / (wet + dry))
-            );
-        }
-    }
 }
 
 fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {

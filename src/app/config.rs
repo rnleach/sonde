@@ -843,11 +843,11 @@ lazy_static! {
 
     /// Compute points for background theta-e
     pub static ref ISO_THETA_E_PNTS: Vec<Vec<XYCoords>> = {
-        use metfor::theta_e;
+        use metfor::equiv_pot_temperature;
 
         ISO_THETA_E_C
         .iter()
-        .map(|theta_c| theta_e(*theta_c, *theta_c, HectoPascal(1000.0)).expect("theta_e isopleth failed"))
+        .map(|theta_c| equiv_pot_temperature(*theta_c, *theta_c, HectoPascal(1000.0)).expect("theta_e isopleth failed"))
         .map(generate_theta_e_isopleth)
         .collect()
     };
@@ -1022,21 +1022,21 @@ lazy_static! {
 
 /// Generate a list of Temperature, Pressure points along an isentrope.
 fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
-    use metfor::temperature_from_theta;
+    use metfor::temperature_from_pot_temp;
     use std::f64;
 
     let mut result = vec![];
 
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
-        let t: Celsius = temperature_from_theta(theta, p).into();
+        let t: Celsius = temperature_from_pot_temp(theta, p).into();
         result.push(SkewTContext::convert_tp_to_xy(TPCoords {
             temperature: t,
             pressure: p,
         }));
         p += HectoPascal((ISENTROPS_TOP_P - MAXP).unpack() / f64::from(POINTS_PER_ISENTROP));
     }
-    let t: Celsius = temperature_from_theta(theta, ISENTROPS_TOP_P).into();
+    let t: Celsius = temperature_from_pot_temp(theta, ISENTROPS_TOP_P).into();
 
     result.push(SkewTContext::convert_tp_to_xy(TPCoords {
         temperature: t,
@@ -1054,7 +1054,7 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
 
     while p < MAXP + dp * 1.0001 {
         match find_root(
-            &|t| Some(metfor::theta_e(t, t, p)? - theta_e_k),
+            &|t| Some(metfor::equiv_pot_temperature(t, t, p)? - theta_e_k),
             Celsius(-80.0),
             Celsius(50.0),
         )
@@ -1067,7 +1067,12 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
             Some(_) => p += dp,
             None => {
                 p = find_root(
-                    &|p| Some(metfor::theta_e(Celsius(-79.999), Celsius(-79.999), p)? - theta_e_k),
+                    &|p| {
+                        Some(
+                            metfor::equiv_pot_temperature(Celsius(-79.999), Celsius(-79.999), p)?
+                                - theta_e_k,
+                        )
+                    },
                     THETA_E_TOP_P,
                     MAXP,
                 )
