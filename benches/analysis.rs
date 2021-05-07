@@ -12,7 +12,7 @@ fn analysis_bench(c: &mut Criterion) {
     for (key, data_vec) in data {
         group.bench_function(key, |b| {
             let mut dvec = data_vec.clone();
-            b.iter_batched(
+            b.iter_batched_ref(
                 || {
                     if dvec.is_empty() {
                         dvec = data_vec.clone();
@@ -20,7 +20,7 @@ fn analysis_bench(c: &mut Criterion) {
 
                     dvec.pop().unwrap()
                 },
-                |mut anal| {
+                |anal| {
                     anal.fill_in_missing_analysis_mut();
                 },
                 criterion::BatchSize::LargeInput,
