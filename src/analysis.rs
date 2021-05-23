@@ -7,7 +7,9 @@ use metfor::{
 use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
+    experimental::fire::{
+        blow_up, calculate_subcloud_entrained_parcel, plume_heating_analysis, PlumeHeatingAnalysis,
+    },
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
     sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile, PrecipType,
@@ -50,6 +52,7 @@ pub struct Analysis {
     lcl_dt_high: Optioned<CelsiusDiff>,
     plume_heating_low: Option<PlumeHeatingAnalysis>,
     plume_heating_high: Option<PlumeHeatingAnalysis>,
+
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -109,6 +112,7 @@ impl Analysis {
             lcl_dt_high: none(),
             plume_heating_low: None,
             plume_heating_high: None,
+
             max_p,
 
             dcape: none(),
@@ -544,7 +548,7 @@ impl Analysis {
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_low.is_none()
         {
-            let blow_up_anal = blow_up(self.sounding(), Some(8.0)).ok();
+            let blow_up_anal = blow_up(self.sounding(), Some(8.0), calculate_subcloud_entrained_parcel).ok();
             let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
@@ -567,7 +571,7 @@ impl Analysis {
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_high.is_none()
         {
-            let blow_up_anal = blow_up(self.sounding(), Some(15.0)).ok();
+            let blow_up_anal = blow_up(self.sounding(), Some(15.0), calculate_subcloud_entrained_parcel).ok();
             let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
@@ -586,11 +590,13 @@ impl Analysis {
         }
 
         if self.plume_heating_low.is_none() {
-            self.plume_heating_low = plume_heating_analysis(self.sounding(), Some(8.0)).ok()
+            self.plume_heating_low =
+                plume_heating_analysis(self.sounding(), Some(8.0), calculate_subcloud_entrained_parcel).ok()
         }
 
         if self.plume_heating_high.is_none() {
-            self.plume_heating_high = plume_heating_analysis(self.sounding(), Some(15.0)).ok()
+            self.plume_heating_high =
+                plume_heating_analysis(self.sounding(), Some(15.0), calculate_subcloud_entrained_parcel).ok()
         }
     }
 }
