@@ -1,5 +1,4 @@
 use crate::analysis::Analysis;
-use metfor::Celsius;
 use sounding_analysis::{
     experimental::fire::{create_plume_parcel_from, lift_plume_parcel, PlumeAscentAnalysis},
     lift_parcel, DataRow, Parcel, ParcelAscentAnalysis, ParcelProfile,
@@ -13,6 +12,7 @@ pub enum Sample {
         pcl_anal: Option<ParcelAscentAnalysis>,
     },
     FirePlume {
+        fire_power: f64,
         parcel_low: Parcel,
         profile_low: ParcelProfile,
         plume_anal_low: PlumeAscentAnalysis,
@@ -30,7 +30,11 @@ pub fn create_sample_sounding(data: DataRow, anal: &Analysis) -> Sample {
     Sample::Sounding { data, pcl_anal }
 }
 
-pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysis) -> Sample {
+pub fn create_sample_plume(_fire_power: f64, _anal: &Analysis) -> Sample {
+
+    // FIXME
+    Sample::None
+    /*
     let parcel_low =
         create_plume_parcel_from(parcel_env, target_t - parcel_env.temperature, Some(8.0));
     let (profile_low, plume_anal_low) = match lift_plume_parcel(parcel_low, anal.sounding()) {
@@ -46,6 +50,7 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
     };
 
     Sample::FirePlume {
+        fire_power,
         parcel_low,
         profile_low,
         plume_anal_low,
@@ -53,4 +58,5 @@ pub fn create_sample_plume(parcel_env: Parcel, target_t: Celsius, anal: &Analysi
         profile_high,
         plume_anal_high,
     }
+    */
 }

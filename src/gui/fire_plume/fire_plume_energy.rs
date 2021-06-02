@@ -1,10 +1,10 @@
 use crate::{
     app::{
         config::{self, Rgba},
-        sample::{create_sample_plume, Sample},
+        sample::Sample,
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
-    coords::{DeviceCoords, DtPCoords, ScreenCoords, ScreenRect, XYCoords},
+    coords::{DeviceCoords, FirePowerPCoords, ScreenCoords, ScreenRect, XYCoords},
     errors::SondeError,
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
@@ -15,7 +15,7 @@ use crate::{
 use gdk::EventMotion;
 use gtk::{prelude::*, DrawingArea};
 use itertools::izip;
-use metfor::{CelsiusDiff, JpKg, Quantity};
+use metfor::JpKg;
 use std::rc::Rc;
 
 pub struct FirePlumeEnergyContext {
@@ -29,38 +29,38 @@ impl FirePlumeEnergyContext {
         }
     }
 
-    pub fn convert_dtp_to_xy(coords: DtPCoords) -> XYCoords {
+    pub fn convert_fpp_to_xy(coords: FirePowerPCoords) -> XYCoords {
         let min_p = config::MIN_FIRE_PLUME_PCT;
         let max_p = config::MAX_FIRE_PLUME_PCT;
 
-        let DtPCoords { dt, percent } = coords;
+        let FirePowerPCoords { fp, percent } = coords;
 
-        let x = super::convert_dt_to_x(dt);
+        let x = super::convert_fp_to_x(fp);
         let y = (percent - min_p) / (max_p - min_p);
 
         XYCoords { x, y }
     }
 
-    pub fn convert_xy_to_dtp(coords: XYCoords) -> DtPCoords {
+    pub fn convert_xy_to_fpp(coords: XYCoords) -> FirePowerPCoords {
         let min_p = config::MIN_FIRE_PLUME_PCT;
         let max_p = config::MAX_FIRE_PLUME_PCT;
 
         let XYCoords { x, y } = coords;
 
-        let dt = super::convert_x_to_dt(x);
+        let fp = super::convert_x_to_fp(x);
         let percent = y * (max_p - min_p) + min_p;
 
-        DtPCoords { dt, percent }
+        FirePowerPCoords { fp, percent }
     }
 
-    pub fn convert_dtp_to_screen(&self, coords: DtPCoords) -> ScreenCoords {
-        let xy = FirePlumeEnergyContext::convert_dtp_to_xy(coords);
+    pub fn convert_fpp_to_screen(&self, coords: FirePowerPCoords) -> ScreenCoords {
+        let xy = FirePlumeEnergyContext::convert_fpp_to_xy(coords);
         self.convert_xy_to_screen(xy)
     }
 
-    pub fn convert_device_to_dtp(&self, coords: DeviceCoords) -> DtPCoords {
+    pub fn convert_device_to_fpp(&self, coords: DeviceCoords) -> FirePowerPCoords {
         let xy = self.convert_device_to_xy(coords);
-        Self::convert_xy_to_dtp(xy)
+        Self::convert_xy_to_fpp(xy)
     }
 }
 
@@ -148,7 +148,7 @@ impl Drawable for FirePlumeEnergyContext {
             plot_curve_from_points(cr, config.background_line_width, config.isobar_rgba, pnts);
         }
 
-        super::draw_iso_dts(self, &config, cr);
+        super::draw_iso_fps(self, &config, cr);
     }
 
     fn collect_labels(&self, args: DrawingArgs<'_, '_>) -> Vec<(String, ScreenRect)> {
@@ -159,14 +159,14 @@ impl Drawable for FirePlumeEnergyContext {
         let screen_edges = self.calculate_plot_edges(cr, ac);
         let ScreenRect { lower_left, .. } = screen_edges;
 
-        for &dt in config::FIRE_PLUME_DTS.iter().skip(1) {
-            let label = format!("{:.0}\u{00B0}C", dt.unpack());
+        for &fp in config::FIRE_PLUME_FIRE_POWERS.iter().skip(1) {
+            let label = format!("{:.0}GW", fp);
 
             let extents = cr.text_extents(&label);
 
             let ScreenCoords {
                 x: mut screen_x, ..
-            } = self.convert_dtp_to_screen(DtPCoords { dt, percent: 0.0 });
+            } = self.convert_fpp_to_screen(FirePowerPCoords { fp, percent: 0.0 });
             screen_x -= extents.width / 2.0;
 
             let label_lower_left = ScreenCoords {
@@ -196,10 +196,7 @@ impl Drawable for FirePlumeEnergyContext {
 
             let ScreenCoords {
                 y: mut screen_y, ..
-            } = self.convert_dtp_to_screen(DtPCoords {
-                dt: CelsiusDiff(0.0),
-                percent,
-            });
+            } = self.convert_fpp_to_screen(FirePowerPCoords { fp: 0.0, percent });
             screen_y -= extents.height / 2.0;
 
             let label_lower_left = ScreenCoords {
@@ -260,15 +257,15 @@ impl Drawable for FirePlumeEnergyContext {
             let mut pct_wet_polygon_color = pct_wet_rgba;
             pct_wet_polygon_color.3 /= 2.0;
 
-            let vals_low = izip!(&vals_low.dts, &vals_low.wet_ratio)
+            let vals_low = izip!(&vals_low.fps, &vals_low.wet_ratio)
                 .filter_map(|(&dt, &ratio)| ratio.map(|r| (dt, r * 100.0)))
-                .map(|(dt, percent)| DtPCoords { dt, percent })
-                .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
+                .map(|(fp, percent)| FirePowerPCoords { fp, percent })
+                .map(|fp_coord| ac.fire_plume_energy.convert_fpp_to_screen(fp_coord));
 
-            let vals_high = izip!(&vals_high.dts, &vals_high.wet_ratio)
+            let vals_high = izip!(&vals_high.fps, &vals_high.wet_ratio)
                 .filter_map(|(&dt, &ratio)| ratio.map(|r| (dt, r * 100.0)))
-                .map(|(dt, percent)| DtPCoords { dt, percent })
-                .map(|dt_coord| ac.fire_plume_energy.convert_dtp_to_screen(dt_coord));
+                .map(|(fp, percent)| FirePowerPCoords { fp, percent })
+                .map(|fp_coord| ac.fire_plume_energy.convert_fpp_to_screen(fp_coord));
 
             let polygon = vals_low.clone().chain(vals_high.clone().rev());
 
@@ -287,25 +284,17 @@ impl Drawable for FirePlumeEnergyContext {
         }
 
         let (ac, config) = (args.ac, args.ac.config.borrow());
-        let t0 = match ac.get_sounding_for_display() {
-            Some(anal) => match anal.borrow().starting_parcel_for_blow_up_anal() {
-                Some(pcl) => pcl.temperature,
-                None => return,
-            },
-            None => return,
-        };
 
         let vals = ac.get_sample();
         let pnt_color = config.active_readout_line_rgba;
 
         if let Sample::FirePlume {
+            fire_power,
             plume_anal_low,
             plume_anal_high,
             ..
         } = *vals
         {
-            let dt = plume_anal_low.parcel.temperature - t0;
-
             if let (Some(max_int_b_low), Some(max_dry_int_b_low)) = (
                 plume_anal_low.max_int_buoyancy.into_option(),
                 plume_anal_low.max_dry_int_buoyancy.into_option(),
@@ -316,8 +305,11 @@ impl Drawable for FirePlumeEnergyContext {
                     0.0
                 };
 
-                let pct_pnt = DtPCoords { dt, percent };
-                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
+                let pct_pnt = FirePowerPCoords {
+                    fp: fire_power,
+                    percent,
+                };
+                let screen_coords_cape = ac.fire_plume_energy.convert_fpp_to_screen(pct_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
 
@@ -331,8 +323,11 @@ impl Drawable for FirePlumeEnergyContext {
                     0.0
                 };
 
-                let pct_pnt = DtPCoords { dt, percent };
-                let screen_coords_cape = ac.fire_plume_energy.convert_dtp_to_screen(pct_pnt);
+                let pct_pnt = FirePowerPCoords {
+                    fp: fire_power,
+                    percent,
+                };
+                let screen_coords_cape = ac.fire_plume_energy.convert_fpp_to_screen(pct_pnt);
                 Self::draw_point(screen_coords_cape, pnt_color, args);
             }
         }
@@ -374,17 +369,21 @@ impl Drawable for FirePlumeEnergyContext {
             let position: DeviceCoords = event.get_position().into();
             self.set_last_cursor_position(Some(position));
 
+            // FIXME: Get samples working again
+            /*
             let sample = ac
                 .get_sounding_for_display()
                 .and_then(|anal| {
-                    let DtPCoords { dt, .. } = self.convert_device_to_dtp(position);
+                    let FirePowerPCoords { fp, .. } = self.convert_device_to_fpp(position);
                     let pcl = anal.borrow().starting_parcel_for_blow_up_anal();
-                    pcl.map(|pcl| (anal, pcl, dt))
+                    pcl.map(|pcl| (anal, pcl, fp))
                 })
                 .map(|(anal, pcl, dt)| {
                     create_sample_plume(pcl, pcl.temperature + dt, &anal.borrow())
                 })
                 .unwrap_or(Sample::None);
+            */
+            let sample = Sample::None;
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();

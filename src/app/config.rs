@@ -1,14 +1,12 @@
 //! Keep configuration data in this module.
 
 use crate::coords::{
-    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+    FirePowerHCoords, FirePowerPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
 };
 use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
 use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
 use lazy_static::lazy_static;
-use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
-};
+use metfor::{Celsius, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir};
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -516,10 +514,10 @@ pub const MAX_SPEED: Knots = Knots(200.0);
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
 
-/// Maximum DeltaT in fire plume plot
-pub const MAX_DELTA_T: CelsiusDiff = CelsiusDiff(22.0);
-/// Minimum DeltaT in fire plume plot
-pub const MIN_DELTA_T: CelsiusDiff = CelsiusDiff(-2.0);
+/// Maximum Fire Power in fire plume plot
+pub const MAX_FIRE_POWER: f64 = 1_000.0;
+/// Minimum Fire Power in fire plume plot
+pub const MIN_FIRE_POWER: f64 = 0.0;
 /// Maximum height for fire plume plot
 pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(15_000.0);
 /// Minimum height for fire plume plot
@@ -730,18 +728,8 @@ pub const PROFILE_SPEEDS: [Knots; 20] = [
     Knots(200.0),
 ];
 
-pub const FIRE_PLUME_DTS: [CelsiusDiff; 11] = [
-    CelsiusDiff(0.0),
-    CelsiusDiff(2.0),
-    CelsiusDiff(4.0),
-    CelsiusDiff(6.0),
-    CelsiusDiff(8.0),
-    CelsiusDiff(10.0),
-    CelsiusDiff(12.0),
-    CelsiusDiff(14.0),
-    CelsiusDiff(16.0),
-    CelsiusDiff(18.0),
-    CelsiusDiff(20.0),
+pub const FIRE_PLUME_FIRE_POWERS: [f64; 11] = [
+    0.0, 100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0, 1_000.0,
 ];
 
 pub const FIRE_PLUME_HEIGHTS: [Meters; 8] = [
@@ -944,25 +932,25 @@ lazy_static! {
     };
 
     /// Compute points for background △T in fire plume charts
-    pub static ref FIRE_PLUME_DT_PNTS: Vec<[XYCoords; 2]> = {
-       FIRE_PLUME_DTS
+    pub static ref FIRE_PLUME_FIRE_POWER_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_FIRE_POWERS
            .iter()
-           .map(|dt| {
+           .map(|fp| {
                [
-                   DtHCoords {
-                   dt: *dt,
+                   FirePowerHCoords{
+                   fp: *fp,
                    height: MAX_FIRE_PLUME_HEIGHT,
                },
-                   DtHCoords {
-                       dt: *dt,
+                   FirePowerHCoords {
+                       fp: *fp,
                        height: MIN_FIRE_PLUME_HEIGHT,
                    },
                ]
                })
                .map(|dt| {
                    [
-                       FirePlumeContext::convert_dth_to_xy(dt[0]),
-                       FirePlumeContext::convert_dth_to_xy(dt[1]),
+                       FirePlumeContext::convert_fph_to_xy(dt[0]),
+                       FirePlumeContext::convert_fph_to_xy(dt[1]),
                    ]
                })
            .collect()
@@ -974,20 +962,20 @@ lazy_static! {
            .iter()
            .map(|height| {
                [
-                   DtHCoords {
-                   dt: MIN_DELTA_T,
+                   FirePowerHCoords {
+                   fp: MIN_FIRE_POWER,
                    height: *height,
                },
-                   DtHCoords {
-                       dt: MAX_DELTA_T,
+                   FirePowerHCoords {
+                       fp: MAX_FIRE_POWER,
                        height: *height,
                    },
                ]
                })
            .map(|dt| {
                [
-                   FirePlumeContext::convert_dth_to_xy(dt[0]),
-                   FirePlumeContext::convert_dth_to_xy(dt[1]),
+                   FirePlumeContext::convert_fph_to_xy(dt[0]),
+                   FirePlumeContext::convert_fph_to_xy(dt[1]),
                ]
            })
            .collect()
@@ -999,20 +987,20 @@ lazy_static! {
            .iter()
            .map(|percent| {
                [
-                   DtPCoords {
-                       dt: MIN_DELTA_T,
+                   FirePowerPCoords {
+                       fp: MIN_FIRE_POWER,
                        percent: *percent,
                    },
-                   DtPCoords {
-                       dt: MAX_DELTA_T,
+                   FirePowerPCoords {
+                       fp: MAX_FIRE_POWER,
                        percent: *percent,
                    },
                ]
                })
            .map(|dt| {
                [
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+                   FirePlumeEnergyContext::convert_fpp_to_xy(dt[0]),
+                   FirePlumeEnergyContext::convert_fpp_to_xy(dt[1]),
                ]
            })
            .collect()

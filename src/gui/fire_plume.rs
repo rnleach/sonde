@@ -8,7 +8,6 @@ use crate::{
     },
 };
 use cairo::{FontFace, FontSlant, FontWeight};
-use metfor::{CelsiusDiff, Quantity};
 
 mod fire_plume_height;
 pub use fire_plume_height::FirePlumeContext;
@@ -16,21 +15,18 @@ pub use fire_plume_height::FirePlumeContext;
 mod fire_plume_energy;
 pub use fire_plume_energy::FirePlumeEnergyContext;
 
-mod fire_plume_feedback;
-pub use fire_plume_feedback::FirePlumeFeedbackContext;
+fn convert_fp_to_x(fp: f64) -> f64 {
+    let min_fp = config::MIN_FIRE_POWER;
+    let max_fp = config::MAX_FIRE_POWER;
 
-fn convert_dt_to_x(dt: CelsiusDiff) -> f64 {
-    let min_dt = config::MIN_DELTA_T;
-    let max_dt = config::MAX_DELTA_T;
-
-    (dt - min_dt) / (max_dt - min_dt)
+    (fp - min_fp) / (max_fp - min_fp)
 }
 
-pub fn convert_x_to_dt(x: f64) -> CelsiusDiff {
-    let min_dt = config::MIN_DELTA_T.unpack();
-    let max_dt = config::MAX_DELTA_T.unpack();
+pub fn convert_x_to_fp(x: f64) -> f64 {
+    let min_fp = config::MIN_FIRE_POWER;
+    let max_fp = config::MAX_FIRE_POWER;
 
-    CelsiusDiff(x * (max_dt - min_dt) + min_dt)
+    x * (max_fp - min_fp) + min_fp
 }
 
 fn convert_xy_to_screen<T>(context: &T, coords: XYCoords) -> ScreenCoords
@@ -73,14 +69,14 @@ where
     let font_face = &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    context.set_font_size(config.label_font_size * 3.0, cr);
+    context.set_font_size(config.label_font_size * 2.0, cr);
 }
 
-fn draw_iso_dts<T>(context: &T, config: &config::Config, cr: &cairo::Context)
+fn draw_iso_fps<T>(context: &T, config: &config::Config, cr: &cairo::Context)
 where
     T: PlotContextExt,
 {
-    for pnts in config::FIRE_PLUME_DT_PNTS.iter() {
+    for pnts in config::FIRE_PLUME_FIRE_POWER_PNTS.iter() {
         let pnts = pnts
             .iter()
             .map(|xy_coords| context.convert_xy_to_screen(*xy_coords));

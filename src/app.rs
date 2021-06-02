@@ -6,8 +6,8 @@ use crate::{
     gui::{
         self,
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        FirePlumeContext, FirePlumeEnergyContext, FirePlumeFeedbackContext, HodoContext,
-        PlotContext, PlotContextExt, SkewTContext,
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
+        SkewTContext,
     },
 };
 use crossbeam_channel::TryRecvError;
@@ -64,9 +64,6 @@ pub struct AppContext {
     // Handle to FirePlumeEnergy context
     pub fire_plume_energy: FirePlumeEnergyContext,
 
-    // Handle to FirePlumeEnergy context
-    pub fire_plume_feedback: FirePlumeFeedbackContext,
-
     // Handle to RH Omega Context
     pub rh_omega: RHOmegaContext,
 
@@ -107,7 +104,6 @@ impl AppContext {
             hodo: HodoContext::new(),
             fire_plume: FirePlumeContext::new(),
             fire_plume_energy: FirePlumeEnergyContext::new(),
-            fire_plume_feedback: FirePlumeFeedbackContext::new(),
             wind_speed: WindSpeedContext::new(),
         })
     }
@@ -153,6 +149,8 @@ impl AppContext {
                 tx.send((num_loads, i, anal)).unwrap();
             });
         }
+
+        let list_len = acp.list.borrow().iter().count();
 
         let acp = Rc::clone(&acp);
         glib::idle_add_local(move || loop {
@@ -317,7 +315,6 @@ impl AppContext {
         self.hodo.mark_data_dirty();
         self.fire_plume.mark_data_dirty();
         self.fire_plume_energy.mark_data_dirty();
-        self.fire_plume_feedback.mark_data_dirty();
         self.skew_t.mark_data_dirty();
         self.rh_omega.mark_data_dirty();
         self.cloud.mark_data_dirty();
@@ -328,7 +325,6 @@ impl AppContext {
         self.hodo.mark_overlay_dirty();
         self.fire_plume.mark_overlay_dirty();
         self.fire_plume_energy.mark_overlay_dirty();
-        self.fire_plume_feedback.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
         self.rh_omega.mark_overlay_dirty();
         self.cloud.mark_overlay_dirty();
@@ -339,7 +335,6 @@ impl AppContext {
         self.hodo.mark_background_dirty();
         self.fire_plume.mark_background_dirty();
         self.fire_plume_energy.mark_background_dirty();
-        self.fire_plume_feedback.mark_background_dirty();
         self.skew_t.mark_background_dirty();
         self.rh_omega.mark_background_dirty();
         self.cloud.mark_background_dirty();

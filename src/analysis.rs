@@ -8,7 +8,8 @@ use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
     experimental::fire::{
-        blow_up, calculate_subcloud_entrained_parcel, plume_heating_analysis, PlumeHeatingAnalysis,
+        blow_up, calculate_subcloud_entrained_parcel, fire_power_thresholds_analysis,
+        PlumeHeatingAnalysisV2,
     },
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
@@ -50,8 +51,8 @@ pub struct Analysis {
     el_blow_up_height_high: Optioned<Meters>,
     lcl_dt_low: Optioned<CelsiusDiff>,
     lcl_dt_high: Optioned<CelsiusDiff>,
-    plume_heating_low: Option<PlumeHeatingAnalysis>,
-    plume_heating_high: Option<PlumeHeatingAnalysis>,
+    plume_heating_low: Option<PlumeHeatingAnalysisV2>,
+    plume_heating_high: Option<PlumeHeatingAnalysisV2>,
 
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
@@ -287,12 +288,12 @@ impl Analysis {
     }
 
     /// Get the plumes analysis
-    pub fn plume_heating_low(&self) -> &Option<PlumeHeatingAnalysis> {
+    pub fn plume_heating_low(&self) -> &Option<PlumeHeatingAnalysisV2> {
         &self.plume_heating_low
     }
 
     /// Get the plumes analysis
-    pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysis> {
+    pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysisV2> {
         &self.plume_heating_high
     }
 
@@ -548,7 +549,12 @@ impl Analysis {
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_low.is_none()
         {
-            let blow_up_anal = blow_up(self.sounding(), Some(8.0), calculate_subcloud_entrained_parcel).ok();
+            let blow_up_anal = blow_up(
+                self.sounding(),
+                Some(8.0),
+                calculate_subcloud_entrained_parcel,
+            )
+            .ok();
             let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
@@ -571,7 +577,12 @@ impl Analysis {
             || self.blow_up_anal_start_parcel.is_none()
             || self.lcl_dt_high.is_none()
         {
-            let blow_up_anal = blow_up(self.sounding(), Some(15.0), calculate_subcloud_entrained_parcel).ok();
+            let blow_up_anal = blow_up(
+                self.sounding(),
+                Some(15.0),
+                calculate_subcloud_entrained_parcel,
+            )
+            .ok();
             let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
                 .map(|bu_anal| {
                     (
@@ -590,13 +601,12 @@ impl Analysis {
         }
 
         if self.plume_heating_low.is_none() {
-            self.plume_heating_low =
-                plume_heating_analysis(self.sounding(), Some(8.0), calculate_subcloud_entrained_parcel).ok()
+            self.plume_heating_low = fire_power_thresholds_analysis(self.sounding(), Some(8.0)).ok()
         }
 
         if self.plume_heating_high.is_none() {
             self.plume_heating_high =
-                plume_heating_analysis(self.sounding(), Some(15.0), calculate_subcloud_entrained_parcel).ok()
+                fire_power_thresholds_analysis(self.sounding(), Some(15.0)).ok()
         }
     }
 }

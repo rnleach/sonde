@@ -1,7 +1,7 @@
 use crate::{
     app::{
         config::{self, Rgba},
-        sample::{create_sample_plume, create_sample_sounding, Sample},
+        sample::{create_sample_sounding, Sample},
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{
@@ -578,18 +578,8 @@ impl Drawable for SkewTContext {
                         .unwrap_or(Sample::None)
                 } else {
                     // We are below the lowest level in the sounding, so lets generate a plume
-                    // parcel!
-                    ac.get_sounding_for_display()
-                        .and_then(|anal| {
-                            let anal = anal.borrow();
-
-                            anal.starting_parcel_for_blow_up_anal()
-                                .filter(|pcl| pcl.temperature < tp_position.temperature)
-                                .map(|parcel| {
-                                    create_sample_plume(parcel, tp_position.temperature, &anal)
-                                })
-                        })
-                        .unwrap_or(Sample::None)
+                    // parcel! ---er, not anymore. Not so simple since we aren't using delta theta.
+                    Sample::None
                 }
             } else {
                 Sample::None
