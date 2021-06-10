@@ -16,9 +16,6 @@ pub use fire_plume_height::FirePlumeContext;
 mod fire_plume_energy;
 pub use fire_plume_energy::FirePlumeEnergyContext;
 
-mod fire_plume_feedback;
-pub use fire_plume_feedback::FirePlumeFeedbackContext;
-
 fn convert_dt_to_x(dt: CelsiusDiff) -> f64 {
     let min_dt = config::MIN_DELTA_T;
     let max_dt = config::MAX_DELTA_T;
@@ -73,7 +70,7 @@ where
     let font_face = &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
     cr.set_font_face(font_face);
 
-    context.set_font_size(config.label_font_size * 3.0, cr);
+    context.set_font_size(config.label_font_size * 2.0, cr);
 }
 
 fn draw_iso_dts<T>(context: &T, config: &config::Config, cr: &cairo::Context)
