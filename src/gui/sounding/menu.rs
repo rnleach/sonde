@@ -135,6 +135,9 @@ impl SkewTContext {
         make_check_item!(menu, "Show inflow layer", acp, show_inflow_layer);
 
         menu.append(&SeparatorMenuItem::new());
+        make_check_item!(menu, "Show PFT", acp, show_pft);
+
+        menu.append(&SeparatorMenuItem::new());
 
         make_heading!(menu, "Inversions");
         make_check_item!(menu, "Show inv. mix-down", acp, show_inversion_mix_down);

@@ -310,6 +310,18 @@ pub struct Config {
     pub fire_plume_lcl_color: Rgba,
     /// Line color of percent wet cape on fire plume chart.
     pub fire_plume_pct_wet_cape_color: Rgba,
+    /// Show the PFT overlay
+    pub show_pft: bool,
+    /// The width of the lines in the PFT overlay
+    pub pft_line_width: f64,
+    /// PFT SP-Curve color
+    pub pft_sp_curve_color: Rgba,
+    /// PFT mean specific humidity line color
+    pub pft_mean_q_color: Rgba,
+    /// PFT mean potential temperature line color
+    pub pft_mean_theta_color: Rgba,
+    /// PFT cloud parcel line color
+    pub pft_cloud_parcel_color: Rgba,
 
     //
     // Misc configuration.
@@ -482,6 +494,12 @@ impl Default for Config {
             fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
             fire_plume_pct_wet_cape_color: (0.0, 0.0, 0.0, 1.0),
             fire_plume_lcl_color: (0.0, 0.7, 0.8, 1.0),
+            show_pft: false,
+            pft_line_width: 3.0,
+            pft_sp_curve_color: (0.0, 0.2, 1.0, 1.0),
+            pft_mean_q_color: (0.305_882_352, 0.603_921_568, 0.023_529_411, 1.0),
+            pft_mean_theta_color: (0.807_843_137, 0.360_784_313, 0.0, 1.0),
+            pft_cloud_parcel_color: (0.203_921_568, 0.396_078, 0.643_137_254, 1.0),
 
             //
             // Misc configuration.
@@ -1053,76 +1071,42 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
     let dp = HectoPascal((MAXP - MINP).unpack() / f64::from(POINTS_PER_ISENTROP));
 
     while p < MAXP + dp * 1.0001 {
-        match find_root(
-            &|t| Some(metfor::equiv_pot_temperature(t, t, p)? - theta_e_k),
-            Celsius(-80.0),
-            Celsius(50.0),
+        match metfor::find_root(
+            &|t| {
+                Some(
+                    (metfor::equiv_pot_temperature(Celsius(t), Celsius(t), p)? - theta_e_k)
+                        .unpack(),
+                )
+            },
+            Celsius(-80.0).unpack(),
+            Celsius(50.0).unpack(),
         )
         .map(|t| {
             v.push(SkewTContext::convert_tp_to_xy(TPCoords {
-                temperature: t,
+                temperature: Celsius(t),
                 pressure: p,
             }));
         }) {
             Some(_) => p += dp,
             None => {
-                p = find_root(
+                p = metfor::find_root(
                     &|p| {
                         Some(
-                            metfor::equiv_pot_temperature(Celsius(-79.999), Celsius(-79.999), p)?
-                                - theta_e_k,
+                            (metfor::equiv_pot_temperature(
+                                Celsius(-79.999),
+                                Celsius(-79.999),
+                                HectoPascal(p),
+                            )? - theta_e_k)
+                                .unpack(),
                         )
                     },
-                    THETA_E_TOP_P,
-                    MAXP,
+                    THETA_E_TOP_P.unpack(),
+                    MAXP.unpack(),
                 )
+                .map(HectoPascal)
                 .unwrap_or_else(|| p + HectoPascal(1.0))
             }
         }
     }
     v
-}
-
-/// Bisection algorithm for finding the root of an equation given values bracketing a root. Used
-/// when drawing moist adiabats.
-fn find_root<Q1, Q2>(f: &dyn Fn(Q1) -> Option<Q2>, mut low_val: Q1, mut high_val: Q1) -> Option<Q1>
-where
-    Q1: Quantity + PartialOrd + std::ops::Sub,
-    Q2: Quantity,
-    <Q1 as std::ops::Sub>::Output: Quantity,
-{
-    use std::f64;
-    const MAX_IT: usize = 50;
-    const EPS: f64 = 1.0e-10;
-
-    if low_val > high_val {
-        std::mem::swap(&mut low_val, &mut high_val);
-    }
-
-    let mut f_low = f(low_val)?;
-    let f_high = f(high_val)?;
-    if f_high.unpack() * f_low.unpack() > 0.0 {
-        return None;
-    }
-
-    let mut mid_val = Q1::pack((high_val - low_val).unpack() / 2.0 + low_val.unpack());
-    let mut f_mid = f(mid_val)?;
-    for _ in 0..MAX_IT {
-        if f_mid.unpack() * f_low.unpack() > 0.0 {
-            low_val = mid_val;
-            f_low = f_mid;
-        } else {
-            high_val = mid_val;
-            // f_high = f_mid;
-        }
-
-        if (high_val - low_val).unpack().abs() < EPS {
-            break;
-        }
-
-        mid_val = Q1::pack((high_val - low_val).unpack() / 2.0 + low_val.unpack());
-        f_mid = f(mid_val)?;
-    }
-
-    Some(mid_val)
 }

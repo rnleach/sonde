@@ -10,8 +10,9 @@ use crate::{
 };
 use itertools::izip;
 use log::warn;
-use metfor::{Celsius, Fahrenheit, JpKg, Quantity};
+use metfor::{Celsius, Fahrenheit, HectoPascal, JpKg, Quantity};
 use sounding_analysis::{self, Parcel, ParcelAscentAnalysis};
+use std::iter::once;
 
 mod precip_type;
 
@@ -279,6 +280,117 @@ impl SkewTContext {
                     cr.stroke();
                 }
             }
+        }
+
+        if config.show_pft {
+            Self::draw_pft_overlays(args, &anal);
+        }
+    }
+
+    fn draw_pft_overlays(args: DrawingArgs<'_, '_>, sounding_anal: &Analysis) {
+        let (ac, cr) = (args.ac, args.cr);
+        let config = ac.config.borrow();
+
+        let sp_color = config.pft_sp_curve_color;
+        let mean_q_color = config.pft_mean_q_color;
+        let mean_theta_color = config.pft_mean_theta_color;
+        let cloud_parcel_color = config.pft_cloud_parcel_color;
+        let line_width = config.pft_line_width;
+
+        // This plots an SP-curve and the cloud parcel above the LFC.
+        let plot_single_sp_curve_cloud_parcel = |pft_anal: &sounding_analysis::PFTAnalysis| {
+            let sp_curve = pft_anal.sp_curve.iter().map(|(p, t)| {
+                let tp_coords = TPCoords {
+                    temperature: *t,
+                    pressure: *p,
+                };
+                ac.skew_t.convert_tp_to_screen(tp_coords)
+            });
+
+            plot_curve_from_points(cr, line_width, sp_color, sp_curve);
+
+            let theta_e_pnts = (0..100)
+                .map(|i| pft_anal.p_fc - HectoPascal((i * 10) as f64))
+                .take_while(|p| *p > HectoPascal(100.0))
+                .map(|p| {
+                    metfor::find_root(
+                        &|t| {
+                            Some(
+                                (metfor::equiv_pot_temperature(Celsius(t), Celsius(t), p)?
+                                    - pft_anal.theta_e_fc)
+                                    .unpack(),
+                            )
+                        },
+                        Celsius(-80.0).unpack(),
+                        Celsius(50.0).unpack(),
+                    )
+                    .map(Celsius)
+                    .map(|t| (p, t))
+                })
+                .take_while(|opt| opt.is_some())
+                .flatten()
+                .map(|(pressure, temperature)| {
+                    let pt_coords = TPCoords {
+                        temperature,
+                        pressure,
+                    };
+                    ac.skew_t.convert_tp_to_screen(pt_coords)
+                });
+
+            plot_curve_from_points(cr, line_width, cloud_parcel_color, theta_e_pnts);
+        };
+
+        if let Some(pft_anal) = sounding_anal.pft() {
+            plot_single_sp_curve_cloud_parcel(pft_anal);
+
+            let sfc_p = match sounding_anal
+                .sounding()
+                .pressure_profile()
+                .iter()
+                .map(|p| p.into_option())
+                .flatten()
+                .next()
+            {
+                Some(p) => p,
+                None => return,
+            };
+
+            let p_top = match pft_anal.sp_curve.iter().next() {
+                Some((p, _)) => *p,
+                None => return,
+            };
+
+            let q_iter = once(sfc_p)
+                .chain(once(p_top))
+                .filter_map(|p| {
+                    metfor::dew_point_from_p_and_specific_humidity(p, pft_anal.q_ml)
+                        .map(|dp| (dp, p))
+                })
+                .map(|(temperature, pressure)| TPCoords {
+                    temperature,
+                    pressure,
+                })
+                .map(|coords| ac.skew_t.convert_tp_to_screen(coords));
+
+            plot_curve_from_points(cr, line_width, mean_q_color, q_iter);
+
+            let theta_iter = sounding_anal
+                .sounding()
+                .pressure_profile()
+                .iter()
+                .map(|p| p.into_option())
+                .flatten()
+                .take_while(|p| *p > p_top)
+                .chain(once(p_top))
+                .map(|p| (metfor::temperature_from_pot_temp(pft_anal.theta_ml, p), p))
+                .map(|(t, p)| (Celsius::from(t), p))
+                .map(|(temperature, pressure)| TPCoords {
+                    temperature,
+                    pressure,
+                })
+                .map(|coords| ac.skew_t.convert_tp_to_screen(coords));
+
+            plot_curve_from_points(cr, line_width, mean_theta_color, theta_iter);
         }
     }
 

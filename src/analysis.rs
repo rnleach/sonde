@@ -10,8 +10,8 @@ use sounding_analysis::{
     experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
-    sr_helicity, surface_parcel, Layer, Parcel, ParcelAscentAnalysis, ParcelProfile, PrecipType,
-    Sounding,
+    sr_helicity, surface_parcel, Layer, PFTAnalysis, Parcel, ParcelAscentAnalysis, ParcelProfile,
+    PrecipType, Sounding,
 };
 use std::collections::HashMap;
 
@@ -50,6 +50,7 @@ pub struct Analysis {
     lcl_dt_high: Optioned<CelsiusDiff>,
     plume_heating_low: Option<PlumeHeatingAnalysis>,
     plume_heating_high: Option<PlumeHeatingAnalysis>,
+    pft: Option<PFTAnalysis>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -109,6 +110,7 @@ impl Analysis {
             lcl_dt_high: none(),
             plume_heating_low: None,
             plume_heating_high: None,
+            pft: None,
             max_p,
 
             dcape: none(),
@@ -290,6 +292,11 @@ impl Analysis {
     /// Get the plumes analysis
     pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysis> {
         &self.plume_heating_high
+    }
+
+    /// Get the PFT.
+    pub fn pft(&self) -> Option<&PFTAnalysis> {
+        self.pft.as_ref()
     }
 
     /// Get the max pressure (lowest level) in the sounding
@@ -591,6 +598,11 @@ impl Analysis {
 
         if self.plume_heating_high.is_none() {
             self.plume_heating_high = plume_heating_analysis(self.sounding(), Some(15.0)).ok()
+        }
+
+        if self.pft.is_none() {
+            // 15 because that is the ratio used in the paper.
+            self.pft = sounding_analysis::pft_analysis(self.sounding(), 15.0).ok();
         }
     }
 }

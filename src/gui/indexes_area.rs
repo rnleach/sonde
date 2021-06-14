@@ -333,7 +333,15 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
         }
     }
     buffer.push('\n');
+
+    let empty = "  -   \n";
     push_fire_index!(buffer, "HDW           ", anal, hdw, "{:>12.0}\n", empty);
+    buffer.push_str("PFT           ");
+    if let Some(pft_anal) = anal.pft(){
+            buffer.push_str(&format!("{:>10.0}GW\n", pft_anal.pft.unpack()));
+    } else {
+        buffer.push_str(empty);
+    }
 
     let empty = " - \n";
 
