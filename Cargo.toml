@@ -24,7 +24,7 @@ serde_derive = "^1.0"
 serde_yaml = "0.8"
 sounding-analysis = "^0.17.0"
 sounding-bufkit = "^0.16.0"
-sounding-wyoming-text-list = "^0.3.0"
+sounding-wyoming-text-list = "^0.3.1"
 threadpool = "1.7.1"
 
 [dev-dependencies]
