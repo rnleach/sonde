@@ -186,7 +186,7 @@ impl Drawable for RHOmegaContext {
                         let ScreenCoords { x: xmin, y: ymin } = ll;
                         let ScreenCoords { x: xmax, y: ymax } = ur;
                         cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                        cr.fill();
+                        cr.fill().unwrap();
                         draw = false;
                     } else {
                         draw = true;
@@ -257,7 +257,7 @@ impl Drawable for RHOmegaContext {
         for &w in [PaPS(0.0)].iter().chain(config::ISO_OMEGA.iter()) {
             let label = format!("{:.0}", w.unpack());
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 x: mut xpos,
@@ -398,7 +398,7 @@ impl Drawable for RHOmegaContext {
         da.grab_focus();
 
         if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
+            let position: DeviceCoords = event.position().into();
 
             self.set_last_cursor_position(Some(position));
             let wp_position = self.convert_device_to_wp(position);

@@ -247,11 +247,16 @@ impl SkewTContext {
                     lyr.top.pressure.into_option(),
                 ) {
                     // Values from wind barbs, make this to the left of the wind barbs
-                    let (shaft_length, _) = cr.device_to_user_distance(
-                        config.wind_barb_shaft_length,
-                        -config.wind_barb_barb_length,
-                    );
-                    let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+                    let (shaft_length, _) = cr
+                        .device_to_user_distance(
+                            config.wind_barb_shaft_length,
+                            -config.wind_barb_barb_length,
+                        )
+                        .unwrap();
+                    let padding = cr
+                        .device_to_user_distance(config.edge_padding, 0.0)
+                        .unwrap()
+                        .0;
 
                     let screen_bounds = ac.skew_t.get_plot_area();
                     let XYCoords { x: mut xmax, .. } =
@@ -270,14 +275,14 @@ impl SkewTContext {
 
                     let rgba = config.inflow_layer_rgba;
                     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-                    cr.set_line_width(cr.device_to_user_distance(4.0, 0.0).0);
+                    cr.set_line_width(cr.device_to_user_distance(4.0, 0.0).unwrap().0);
                     cr.move_to(yt.x + WIDTH, yt.y);
                     cr.line_to(yt.x - WIDTH, yt.y);
                     cr.move_to(yt.x, yt.y);
                     cr.line_to(yb.x, yb.y);
                     cr.move_to(yb.x + WIDTH, yb.y);
                     cr.line_to(yb.x - WIDTH, yb.y);
-                    cr.stroke();
+                    cr.stroke().unwrap();
                 }
             }
         }

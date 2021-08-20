@@ -17,7 +17,7 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
 
     let ac1 = Rc::clone(acp);
     text_area.connect_key_press_event(move |_ta, event| {
-        let keyval = event.get_keyval();
+        let keyval = event.keyval();
         if keyval == KP_Right || keyval == Right {
             ac1.display_next();
         } else if keyval == KP_Left || keyval == Left {
@@ -26,10 +26,10 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         Inhibit(true)
     });
 
-    if let Some(text_buffer) = text_area.get_buffer() {
+    if let Some(text_buffer) = text_area.buffer() {
         set_up_tags(&text_buffer, acp);
         set_text(&text_buffer, "No data, loaded");
-        text_buffer.create_mark(Some("scroll_mark"), &text_buffer.get_start_iter(), true);
+        text_buffer.create_mark(Some("scroll_mark"), &text_buffer.start_iter(), true);
         Ok(())
     } else {
         Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
@@ -42,7 +42,7 @@ pub fn update_indexes_area(ac: &AppContext) {
         Err(_) => return,
     };
 
-    let text_buffer = match text_area.get_buffer() {
+    let text_buffer = match text_area.buffer() {
         Some(tb) => tb,
         None => return,
     };
@@ -60,7 +60,7 @@ pub fn update_indexes_area(ac: &AppContext) {
     push_fire_indexes(text, anal);
 
     // Get the scroll position before setting the text
-    let old_adj = text_area.get_vadjustment().map(|adj| adj.get_value());
+    let old_adj = text_area.vadjustment().map(|adj| adj.value());
 
     set_text(&text_buffer, &text);
 
@@ -69,12 +69,12 @@ pub fn update_indexes_area(ac: &AppContext) {
     // I don't totally understand this, but after quite a lot of experimentation this works
     // well at keeping the scroll of the text view in the same area as you step through
     // time.
-    if let Some(adj) = text_area.get_vadjustment() {
+    if let Some(adj) = text_area.vadjustment() {
         if let Some(val) = old_adj {
-            let val = if val.round() < (adj.get_upper() - adj.get_page_size()).round() {
+            let val = if val.round() < (adj.upper() - adj.page_size()).round() {
                 val.round()
             } else {
-                (adj.get_upper() - adj.get_page_size() - 1.0).round()
+                (adj.upper() - adj.page_size() - 1.0).round()
             };
             adj.set_value(val);
         }
@@ -82,17 +82,17 @@ pub fn update_indexes_area(ac: &AppContext) {
 }
 
 fn set_up_tags(tb: &TextBuffer, ac: &AppContext) {
-    if let Some(tag_table) = tb.get_tag_table() {
+    if let Some(tag_table) = tb.tag_table() {
         let default_tag = TextTag::new(Some("default"));
 
-        default_tag.set_property_font(Some("courier bold 12"));
+        default_tag.set_font(Some("courier bold 12"));
 
         let success = tag_table.add(&default_tag);
         debug_assert!(success, "Failed to add tag to text tag table");
 
         let rgba = ac.config.borrow().parcel_indexes_highlight;
         let parcel_tag = TextTag::new(Some("parcel"));
-        parcel_tag.set_property_background_rgba(Some(&gdk::RGBA {
+        parcel_tag.set_background_rgba(Some(&gdk::RGBA {
             red: rgba.0,
             green: rgba.1,
             blue: rgba.2,
@@ -106,8 +106,8 @@ fn set_up_tags(tb: &TextBuffer, ac: &AppContext) {
 
 fn set_text(tb: &TextBuffer, txt: &str) {
     tb.set_text(txt);
-    let start = tb.get_start_iter();
-    let end = tb.get_end_iter();
+    let start = tb.start_iter();
+    let end = tb.end_iter();
     tb.apply_tag_by_name("default", &start, &end);
 }
 
@@ -362,12 +362,12 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
         return;
     }
 
-    let tag = match tb.get_tag_table().and_then(|tt| tt.lookup("parcel")) {
+    let tag = match tb.tag_table().and_then(|tt| tt.lookup("parcel")) {
         Some(tag) => tag,
         None => return,
     };
     let rgba = config.parcel_indexes_highlight;
-    tag.set_property_background_rgba(Some(&gdk::RGBA {
+    tag.set_background_rgba(Some(&gdk::RGBA {
         red: rgba.0,
         green: rgba.1,
         blue: rgba.2,
@@ -382,13 +382,13 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
         ParcelType::Convective => "Convective",
     };
 
-    let lines = tb.get_line_count();
+    let lines = tb.line_count();
     for i in 0..lines {
-        let start = tb.get_iter_at_line(i);
+        let start = tb.iter_at_line(i);
         let mut end = start.clone();
         end.forward_line();
 
-        tb.get_text(&start, &end, false)
+        tb.text(&start, &end, false)
             .map(|gstr| gstr.as_str().starts_with(pcl_label))
             .into_iter()
             .filter(|starts_with_parcel| *starts_with_parcel)

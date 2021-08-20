@@ -127,7 +127,7 @@ impl Drawable for HodoContext {
                 }
                 cr.close_path();
                 if do_draw {
-                    cr.fill();
+                    cr.fill().unwrap();
                 }
                 do_draw = !do_draw;
             }
@@ -192,7 +192,7 @@ impl Drawable for HodoContext {
                 for direction in &[240.0] {
                     let label = format!("{:.0}", s.unpack());
 
-                    let extents = cr.text_extents(&label);
+                    let extents = cr.text_extents(&label).unwrap();
 
                     let ScreenCoords {
                         x: mut screen_x,
@@ -281,11 +281,11 @@ impl Drawable for HodoContext {
      **********************************************************************************************/
     fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
-        if event.get_button() == 1 {
-            self.set_last_cursor_position(Some(event.get_position().into()));
+        if event.button() == 1 {
+            self.set_last_cursor_position(Some(event.position().into()));
             self.set_left_button_pressed(true);
             Inhibit(true)
-        } else if event.get_button() == 3 {
+        } else if event.button() == 3 {
             if let Ok(menu) = ac.fetch_widget::<Menu>("hodograph_context_menu") {
                 // waiting for version 3.22...
                 // let ev: &::gdk::Event = evt;
@@ -328,7 +328,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
     show_helicity.set_active(config.show_helicity_overlay);
     let ac = Rc::clone(acp);
     show_helicity.connect_toggled(move |button| {
-        ac.config.borrow_mut().show_helicity_overlay = button.get_active();
+        ac.config.borrow_mut().show_helicity_overlay = button.is_active();
         ac.mark_data_dirty();
         crate::gui::draw_all(&ac);
     });
@@ -349,7 +349,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         htype: HelicityType,
         ac: &AppContextPointer,
     ) {
-        if button.get_active() {
+        if button.is_active() {
             ac.config.borrow_mut().helicity_layer = htype;
             ac.mark_data_dirty();
             crate::gui::draw_all(&ac);
@@ -385,7 +385,7 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         stype: StormMotionType,
         ac: &AppContextPointer,
     ) {
-        if button.get_active() {
+        if button.is_active() {
             ac.config.borrow_mut().helicity_storm_motion = stype;
             ac.mark_data_dirty();
             crate::gui::draw_all(&ac);
@@ -529,7 +529,7 @@ fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
             let lm = WindSpdDir::<Knots>::from(lm);
             let mw = WindSpdDir::<Knots>::from(mw);
 
-            let pnt_size = cr.device_to_user_distance(6.0, 0.0).0;
+            let pnt_size = cr.device_to_user_distance(6.0, 0.0).unwrap().0;
 
             let mut coords_rm = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir: rm });
             let mut coords_lm = ac.hodo.convert_sd_to_screen(SDCoords { spd_dir: lm });
@@ -545,7 +545,7 @@ fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
                 0.0,
                 2.0 * ::std::f64::consts::PI,
             );
-            cr.fill();
+            cr.fill().unwrap();
 
             cr.arc(
                 coords_lm.x,
@@ -554,7 +554,7 @@ fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
                 0.0,
                 2.0 * ::std::f64::consts::PI,
             );
-            cr.fill();
+            cr.fill().unwrap();
 
             coords_rm.x += 0.025;
             coords_lm.x += 0.025;
@@ -570,7 +570,7 @@ fn draw_storm_motion_and_mean_wind(args: DrawingArgs<'_, '_>) {
                 0.0,
                 2.0 * ::std::f64::consts::PI,
             );
-            cr.fill();
+            cr.fill().unwrap();
 
             coords_mw.x += 0.025;
             ac.hodo.draw_tag("MW", coords_mw, mw_rgba, args);

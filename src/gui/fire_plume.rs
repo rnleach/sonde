@@ -67,7 +67,8 @@ where
 {
     let (cr, config) = (args.cr, args.ac.config.borrow());
 
-    let font_face = &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+    let font_face =
+        &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold).unwrap();
     cr.set_font_face(font_face);
 
     context.set_font_size(config.label_font_size * 2.0, cr);

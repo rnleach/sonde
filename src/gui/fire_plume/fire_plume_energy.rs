@@ -162,7 +162,7 @@ impl Drawable for FirePlumeEnergyContext {
         for &dt in config::FIRE_PLUME_DTS.iter().skip(1) {
             let label = format!("{:.0}\u{00B0}C", dt.unpack());
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 x: mut screen_x, ..
@@ -192,7 +192,7 @@ impl Drawable for FirePlumeEnergyContext {
         for &percent in config::FIRE_PLUME_PCTS.iter().skip(1) {
             let label = format!("{:.0}%", percent);
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 y: mut screen_y, ..
@@ -352,7 +352,7 @@ impl Drawable for FirePlumeEnergyContext {
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
+                let new_position = DeviceCoords::from(event.position());
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -371,7 +371,7 @@ impl Drawable for FirePlumeEnergyContext {
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
+            let position: DeviceCoords = event.position().into();
             self.set_last_cursor_position(Some(position));
 
             let sample = ac

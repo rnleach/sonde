@@ -27,7 +27,7 @@ macro_rules! build_config_color_and_check {
         // Create check button callback
         let acp = Rc::clone(&$acp_in);
         check.connect_toggled(move |button| {
-            acp.config.borrow_mut().$show_var = button.get_active();
+            acp.config.borrow_mut().$show_var = button.is_active();
             acp.mark_background_dirty();
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
@@ -35,13 +35,15 @@ macro_rules! build_config_color_and_check {
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
-        gtk::ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
-            let rgba = button.get_rgba();
+        gtk::ColorButton::connect_property_notify_event(&color, move |button, _event| {
+            let rgba = button.rgba();
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.mark_background_dirty();
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
+
+            Inhibit(false)
         });
 
         // Layout
@@ -61,7 +63,7 @@ macro_rules! build_config_check {
         // Create check button callback
         let acp = $acp.clone();
         check.connect_toggled(move |button| {
-            acp.config.borrow_mut().$show_var = button.get_active();
+            acp.config.borrow_mut().$show_var = button.is_active();
             acp.mark_background_dirty();
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
@@ -93,8 +95,8 @@ macro_rules! build_config_color {
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
-        ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
-            let rgba = button.get_rgba();
+        WidgetExt::connect_property_notify_event(&color, move |button, _event| {
+            let rgba = button.rgba();
 
             acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
             acp.mark_background_dirty();
@@ -104,6 +106,8 @@ macro_rules! build_config_color {
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
             crate::gui::indexes_area::update_indexes_area(&acp);
+
+            Inhibit(false)
         });
 
         // Layout

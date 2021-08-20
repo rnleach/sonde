@@ -45,8 +45,11 @@ impl SkewTContext {
 
         self.prepare_to_make_text(args);
 
-        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
-        let text_extents = cr.text_extents("Bourgouin");
+        let padding = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap()
+            .0;
+        let text_extents = cr.text_extents("Bourgouin").unwrap();
         let mut width = PRECIP_BOX_SIZE;
         if width < text_extents.width + 2.0 * padding {
             width = text_extents.width + 2.0 * padding;
@@ -128,16 +131,16 @@ impl SkewTContext {
 
         let rgb = config.label_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.set_line_width(cr.device_to_user_distance(2.0, 0.0).0);
+        cr.set_line_width(cr.device_to_user_distance(2.0, 0.0).unwrap().0);
         cr.move_to(text_home.x, text_home.y);
-        cr.show_text(method_str);
+        cr.show_text(method_str).unwrap();
 
         cr.move_to(
             box_area.lower_left.x,
             box_area.lower_left.y + text_extents.height + 2.0 * padding,
         );
         cr.rel_line_to(width, 0.0);
-        cr.stroke();
+        cr.stroke().unwrap();
     }
 }
 fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
@@ -152,7 +155,7 @@ fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
 
     cr.set_source_rgba(color.0, color.1, color.2, color.3);
 
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
 
     match inten {
         Intensity::Light => {
@@ -203,24 +206,24 @@ fn draw_showers<F: Fn(&cairo::Context, f64)>(
     const HALF_WIDTH_PRIME: f64 = HPRIME / H * HALF_WIDTH;
 
     cr.set_source_rgba(color.0, color.1, color.2, color.3);
-    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).unwrap().0);
 
     // Draw the triangle
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     let y = y + 0.7 * GRID_SIZE;
 
     cr.move_to(x - HALF_WIDTH, y);
     cr.line_to(x + HALF_WIDTH, y);
     cr.line_to(x, y - H);
     cr.close_path();
-    cr.stroke();
+    cr.stroke().unwrap();
 
     match inten {
         Intensity::Light => {}
         Intensity::Moderate | Intensity::Heavy => {
             cr.move_to(x - HALF_WIDTH_PRIME, y - DROP);
             cr.line_to(x + HALF_WIDTH_PRIME, y - DROP);
-            cr.stroke();
+            cr.stroke().unwrap();
         }
     }
 
@@ -246,7 +249,7 @@ fn draw_mixed_rain_snow(cr: &cairo::Context, inten: Intensity) {
     const PNT_SIZE: f64 = GRID_SIZE / 2.0; // divide by 2.0 for radius
     const A: f64 = std::f64::consts::SQRT_2 * GRID_SIZE;
 
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
 
     match inten {
         Intensity::Light => {
@@ -284,7 +287,7 @@ fn draw_freezing_liquid_precip<F: Fn(&cairo::Context, f64)>(
         cr.rel_move_to(0.0, -0.5 * PRECIP_BOX_SIZE / 5.0);
     }
 
-    let (mut x, mut y) = cr.get_current_point();
+    let (mut x, mut y) = cr.current_point().unwrap();
     x -= PRECIP_BOX_SIZE / 5.0;
 
     cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
@@ -293,11 +296,11 @@ fn draw_freezing_liquid_precip<F: Fn(&cairo::Context, f64)>(
 
     // Draw the almost infinity line.
     let radius = PRECIP_BOX_SIZE / 5.0 / 1.2;
-    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).unwrap().0);
     cr.arc_negative(x, y, radius, 5.0 * PI / 4.0, 9.0 * PI / 4.0);
     x += PRECIP_BOX_SIZE / 5.0 * 2.0;
     cr.arc(x, y, radius, 5.0 * PI / 4.0, 9.0 * PI / 4.0);
-    cr.stroke();
+    cr.stroke().unwrap();
 
     if intensity == Intensity::Moderate || intensity == Intensity::Heavy {
         cr.move_to(x, y);
@@ -322,49 +325,49 @@ fn draw_ice_pellets(cr: &cairo::Context) {
     let Y: f64 = (TRIANGLE_WIDTH * TRIANGLE_WIDTH / 4.0 + TRIANGLE_HEIGHT * TRIANGLE_HEIGHT)
         / (2.0 * TRIANGLE_HEIGHT);
 
-    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).unwrap().0);
 
     cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
     cr.rel_move_to(0.0, TRIANGLE_HEIGHT / 2.0 - Y);
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     cr.arc(x, y, PNT_SIZE, 0.0, 2.0 * PI);
-    cr.fill();
+    cr.fill().unwrap();
 
     cr.move_to(x, y);
     cr.rel_move_to(0.0, Y);
     cr.rel_line_to(TRIANGLE_WIDTH / 2.0, -TRIANGLE_HEIGHT);
     cr.rel_line_to(-TRIANGLE_WIDTH, 0.0);
     cr.close_path();
-    cr.stroke();
+    cr.stroke().unwrap();
 }
 
 fn draw_red_x(cr: &cairo::Context) {
     cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
-    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
     cr.rel_move_to(-PRECIP_BOX_SIZE / 2.0, -PRECIP_BOX_SIZE / 2.0);
     cr.rel_line_to(PRECIP_BOX_SIZE, PRECIP_BOX_SIZE);
     cr.rel_move_to(-PRECIP_BOX_SIZE, 0.0);
     cr.rel_line_to(PRECIP_BOX_SIZE, -PRECIP_BOX_SIZE);
-    cr.stroke();
+    cr.stroke().unwrap();
 }
 
 fn draw_rain_dot(cr: &cairo::Context, pnt_size: f64) {
     use std::f64::consts::PI;
 
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     cr.arc(x, y, pnt_size, 0.0, 2.0 * PI);
-    cr.fill();
+    cr.fill().unwrap();
 }
 
 fn draw_drizzle_comma(cr: &cairo::Context, pnt_size: f64) {
     use std::f64::consts::PI;
     let comma_size = 2.0 * pnt_size / 3.0;
 
-    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-    let (x, y) = cr.get_current_point();
+    cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
+    let (x, y) = cr.current_point().unwrap();
     cr.arc(x, y, comma_size, 0.0, 2.0 * PI);
-    cr.fill_preserve();
-    cr.stroke();
+    cr.fill_preserve().unwrap();
+    cr.stroke().unwrap();
 
     cr.arc(
         x - comma_size,
@@ -373,18 +376,18 @@ fn draw_drizzle_comma(cr: &cairo::Context, pnt_size: f64) {
         -PI / 2.5,
         0.0,
     );
-    cr.stroke();
+    cr.stroke().unwrap();
 }
 
 fn draw_snowflake(cr: &cairo::Context, _pnt_size: f64) {
     const ANGLE: f64 = std::f64::consts::PI * 2.0 / 5.0;
     const A: f64 = PRECIP_BOX_SIZE / 5.0 / 2.0;
 
-    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(2.5, 0.0).unwrap().0);
 
-    cr.save();
+    cr.save().unwrap();
 
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     cr.translate(x, y);
 
     cr.rel_line_to(0.0, A);
@@ -394,8 +397,8 @@ fn draw_snowflake(cr: &cairo::Context, _pnt_size: f64) {
         cr.rel_line_to(0.0, A);
     }
 
-    cr.stroke();
-    cr.restore();
+    cr.stroke().unwrap();
+    cr.restore().unwrap();
 }
 
 fn draw_ice_pellet(cr: &cairo::Context, _pnt_size: f64) {
@@ -410,23 +413,23 @@ fn draw_ice_pellet(cr: &cairo::Context, _pnt_size: f64) {
     let Y: f64 = (TRIANGLE_WIDTH * TRIANGLE_WIDTH / 4.0 + TRIANGLE_HEIGHT * TRIANGLE_HEIGHT)
         / (2.0 * TRIANGLE_HEIGHT);
 
-    cr.set_line_width(cr.device_to_user_distance(1.2, 0.0).0);
+    cr.set_line_width(cr.device_to_user_distance(1.2, 0.0).unwrap().0);
 
-    cr.save();
+    cr.save().unwrap();
 
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     cr.translate(x, y);
 
     cr.rel_move_to(0.0, TRIANGLE_HEIGHT / 2.0 - Y);
-    let (x, y) = cr.get_current_point();
+    let (x, y) = cr.current_point().unwrap();
     cr.arc(x, y, PNT_SIZE, 0.0, 2.0 * PI);
-    cr.fill();
+    cr.fill().unwrap();
 
     cr.move_to(x, y);
     cr.rel_move_to(0.0, Y);
     cr.rel_line_to(TRIANGLE_WIDTH / 2.0, -TRIANGLE_HEIGHT);
     cr.rel_line_to(-TRIANGLE_WIDTH, 0.0);
     cr.close_path();
-    cr.stroke();
-    cr.restore();
+    cr.stroke().unwrap();
+    cr.restore().unwrap();
 }

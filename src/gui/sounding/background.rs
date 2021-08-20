@@ -85,6 +85,6 @@ impl SkewTContext {
         }
 
         cr.close_path();
-        cr.fill();
+        cr.fill().unwrap();
     }
 }

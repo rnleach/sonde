@@ -182,7 +182,7 @@ impl Drawable for WindSpeedContext {
                         let ScreenCoords { x: xmin, y: ymin } = ll;
                         let ScreenCoords { x: xmax, y: ymax } = ur;
                         cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-                        cr.fill();
+                        cr.fill().unwrap();
                         draw = false;
                     } else {
                         draw = true;
@@ -234,7 +234,7 @@ impl Drawable for WindSpeedContext {
         for spd in &config::PROFILE_SPEEDS {
             let label = format!("{:.0}", spd.unpack());
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 x: mut xpos,
@@ -318,7 +318,7 @@ impl Drawable for WindSpeedContext {
         da.grab_focus();
 
         if ac.plottable() && self.has_data() {
-            let position: DeviceCoords = event.get_position().into();
+            let position: DeviceCoords = event.position().into();
 
             self.set_last_cursor_position(Some(position));
             let sp_position = self.convert_device_to_sp(position);

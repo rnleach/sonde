@@ -22,11 +22,16 @@ impl WindBarbConfig {
         let config = ac.config.borrow();
 
         let (shaft_length, barb_length) = cr
-            .device_to_user_distance(config.wind_barb_shaft_length, -config.wind_barb_barb_length);
+            .device_to_user_distance(config.wind_barb_shaft_length, -config.wind_barb_barb_length)
+            .unwrap();
 
         let (dot_size, pennant_width) = cr
-            .device_to_user_distance(config.wind_barb_dot_radius, -config.wind_barb_pennant_width);
-        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+            .device_to_user_distance(config.wind_barb_dot_radius, -config.wind_barb_pennant_width)
+            .unwrap();
+        let padding = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap()
+            .0;
 
         let screen_bounds = ac.skew_t.get_plot_area();
         let XYCoords { x: mut xmax, .. } =
@@ -221,11 +226,11 @@ impl WindBarbData {
             0.0,
             2.0 * ::std::f64::consts::PI,
         );
-        cr.fill();
+        cr.fill().unwrap();
 
         cr.move_to(self.center.x, self.center.y);
         cr.line_to(self.shaft_end.x, self.shaft_end.y);
-        cr.stroke();
+        cr.stroke().unwrap();
 
         for (i, &(pnt1, pnt2, pnt3)) in self.pennant_coords.iter().enumerate() {
             if i >= self.num_pennants {
@@ -235,7 +240,7 @@ impl WindBarbData {
             cr.line_to(pnt2.x, pnt2.y);
             cr.line_to(pnt3.x, pnt3.y);
             cr.close_path();
-            cr.fill();
+            cr.fill().unwrap();
         }
 
         for (i, &(pnt1, pnt2)) in self.barb_coords.iter().enumerate() {
@@ -244,7 +249,7 @@ impl WindBarbData {
             }
             cr.move_to(pnt1.x, pnt1.y);
             cr.line_to(pnt2.x, pnt2.y);
-            cr.stroke();
+            cr.stroke().unwrap();
         }
     }
 }
@@ -272,6 +277,7 @@ impl SkewTContext {
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.set_line_width(
                 cr.device_to_user_distance(config.wind_barb_line_width, 0.0)
+                    .unwrap()
                     .0,
             );
 

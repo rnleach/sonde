@@ -108,13 +108,13 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
-    let (width, height) = win.get_size();
+    let (width, height) = win.size();
     config.window_width = width;
     config.window_height = height;
 
     // Save the Paned view slider position.
     if let Ok(pane) = ac.fetch_widget::<Paned>("main_pane_view") {
-        let pos = (pane.get_position() as f32) / (width as f32);
+        let pos = (pane.position() as f32) / (width as f32);
         config.pane_position = pos;
     }
 
@@ -134,7 +134,7 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
 
         let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();
-            for child in nb.get_children() {
+            for child in nb.children() {
                 for (idx, tab) in tabs.iter().enumerate() {
                     if child == *tab {
                         cfg_tabs.push(TABS[idx].0.to_owned());
@@ -146,8 +146,8 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
         save_tabs(&mut config.left_tabs, &lnb);
         save_tabs(&mut config.right_tabs, &rnb);
 
-        config.left_page_selected = lnb.get_property_page();
-        config.right_page_selected = rnb.get_property_page();
+        config.left_page_selected = lnb.page();
+        config.right_page_selected = rnb.page();
     }
 
     gtk::main_quit();
@@ -171,7 +171,7 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
     }
 
     if pane_position > 0.0 {
-        let (width, _) = win.get_size();
+        let (width, _) = win.size();
         let pos = (width as f32 * pane_position).round() as i32;
 
         debug_assert!(pos < width);
@@ -187,8 +187,8 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
                         ac.fetch_widget::<Widget>(TABS[idx].0).ok().map(|widget| {
-                            let tgt_children = tgt_nb.get_children();
-                            let other_children = other_nb.get_children();
+                            let tgt_children = tgt_nb.children();
+                            let other_children = other_nb.children();
 
                             if tgt_children.contains(&widget) {
                                 tgt_nb.remove(&widget);
@@ -208,8 +208,8 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             restore_tabs(&cfg.left_tabs, &lnb, &rnb);
             restore_tabs(&cfg.right_tabs, &rnb, &lnb);
 
-            lnb.set_property_page(cfg.left_page_selected);
-            rnb.set_property_page(cfg.right_page_selected);
+            lnb.set_page(cfg.left_page_selected);
+            rnb.set_page(cfg.right_page_selected);
         }
     }
 

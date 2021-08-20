@@ -21,7 +21,7 @@ macro_rules! make_check_item {
 
         let ac = Rc::clone($acp);
         check_menu_item.connect_toggled(move |button| {
-            ac.config.borrow_mut().$check_val = button.get_active();
+            ac.config.borrow_mut().$check_val = button.is_active();
             ac.mark_data_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::update_text_views(&ac);
@@ -86,7 +86,7 @@ impl SkewTContext {
         }
 
         fn handle_toggle(button: &RadioMenuItem, parcel_type: ParcelType, ac: &AppContextPointer) {
-            if button.get_active() {
+            if button.is_active() {
                 ac.config.borrow_mut().parcel_type = parcel_type;
                 ac.mark_data_dirty();
                 crate::gui::draw_all(&ac);

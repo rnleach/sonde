@@ -5,8 +5,8 @@ use crate::{
     gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable},
 };
 use gtk::{
-    prelude::DialogExtManual, DialogExt, FileChooserAction, FileChooserDialog, FileChooserExt,
-    FileFilter, GtkWindowExt, MessageDialog, ResponseType, Widget, WidgetExt, Window,
+    prelude::*, FileChooserAction, FileChooserDialog, FileFilter, MessageDialog, ResponseType,
+    Widget, Window,
 };
 use std::path::PathBuf;
 
@@ -54,7 +54,7 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
 
     if dialog.run() == ResponseType::Ok {
         let paths: Vec<_> = dialog
-            .get_filenames()
+            .filenames()
             .into_iter()
             .filter(|pb| pb.is_file())
             .collect();
@@ -105,12 +105,12 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
             }
             src_desc.push_str(".png");
 
-            dialog.set_current_name(src_desc);
+            dialog.set_current_name(&src_desc);
         }
     }
 
     if dialog.run() == ResponseType::Ok {
-        if let Some(mut filename) = dialog.get_filename() {
+        if let Some(mut filename) = dialog.filename() {
             filename.set_extension("png");
             if let Err(err) = save_image(&filename, ac) {
                 show_error_dialog(&format!("Error saving image: {}", err), win);
@@ -129,7 +129,7 @@ fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Erro
     let img = cairo::ImageSurface::create(cairo::Format::ARgb32, width as i32, height as i32)
         .map_err(SondeError::from)?;
 
-    let cr = &cairo::Context::new(&img);
+    let cr = &cairo::Context::new(&img).unwrap();
     cr.transform(ac.skew_t.get_matrix());
 
     let args = DrawingArgs::new(ac, cr);
@@ -171,7 +171,7 @@ pub fn save_theme(ac: &AppContextPointer, win: &Window) {
     dialog.add_filter(&filter);
 
     if dialog.run() == ResponseType::Ok {
-        if let Some(mut filename) = dialog.get_filename() {
+        if let Some(mut filename) = dialog.filename() {
             filename.set_extension("yml");
             if let Err(err) = crate::save_config_with_file_name(ac, &filename) {
                 show_error_dialog(&format!("Error saving theme: {}", err), win);
@@ -206,7 +206,7 @@ pub fn load_theme(ac: &AppContextPointer, win: &Window) {
     dialog.add_filter(&filter);
 
     if dialog.run() == ResponseType::Ok {
-        let path: Option<_> = dialog.get_filename().into_iter().find(|pb| pb.is_file());
+        let path: Option<_> = dialog.filename().into_iter().find(|pb| pb.is_file());
 
         if let Some(ref f0) = path {
             match crate::load_config_from_file(ac, f0) {

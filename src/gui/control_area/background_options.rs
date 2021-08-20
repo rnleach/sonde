@@ -139,12 +139,14 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
 
     // Create color button callback
     let ac = Rc::clone(acp);
-    ColorButtonExt::connect_property_rgba_notify(&color, move |button| {
-        let rgba = button.get_rgba();
+    WidgetExt::connect_property_notify_event(&color, move |button, _event| {
+        let rgba = button.rgba();
 
         ac.config.borrow_mut().background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
         crate::gui::draw_all(&ac);
         crate::gui::text_area::update_text_highlight(&ac);
+
+        Inhibit(false)
     });
 
     // Layout

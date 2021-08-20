@@ -10,7 +10,11 @@ where
     I: Iterator<Item = ScreenCoords>,
 {
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
+    cr.set_line_width(
+        cr.device_to_user_distance(line_width_pixels, 0.0)
+            .unwrap()
+            .0,
+    );
 
     let mut points = points;
     if let Some(start) = points.by_ref().next() {
@@ -19,7 +23,7 @@ where
             cr.line_to(end.x, end.y);
         }
 
-        cr.stroke();
+        cr.stroke().unwrap();
     }
 }
 
@@ -50,7 +54,7 @@ where
 
         cr.close_path();
 
-        cr.fill();
+        cr.fill().unwrap();
     }
 }
 
@@ -61,7 +65,11 @@ where
 {
     cr.push_group();
     cr.set_operator(cairo::Operator::Source);
-    cr.set_line_width(cr.device_to_user_distance(line_width_pixels, 0.0).0);
+    cr.set_line_width(
+        cr.device_to_user_distance(line_width_pixels, 0.0)
+            .unwrap()
+            .0,
+    );
     cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
 
     let mut profile = profile;
@@ -113,12 +121,12 @@ where
         }
 
         cr.rectangle(XMIN, ymin, xmax, ymax - ymin);
-        cr.fill_preserve();
-        cr.stroke();
+        cr.fill_preserve().unwrap();
+        cr.stroke().unwrap();
     }
 
-    cr.pop_group_to_source();
-    cr.paint();
+    cr.pop_group_to_source().unwrap();
+    cr.paint().unwrap();
 }
 
 pub fn check_overlap_then_add(
@@ -130,6 +138,7 @@ pub fn check_overlap_then_add(
 ) {
     let padding = cr
         .device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+        .unwrap()
         .0;
     let padded_rect = label_pair.1.add_padding(padding);
 

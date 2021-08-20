@@ -9,10 +9,10 @@ const TEXT_AREA_ID: &str = "provider_data_text";
 
 macro_rules! make_default_tag {
     ($tb:ident) => {
-        if let Some(tag_table) = $tb.get_tag_table() {
+        if let Some(tag_table) = $tb.tag_table() {
             let tag = TextTag::new(Some("default"));
 
-            tag.set_property_font(Some("courier bold 12"));
+            tag.set_font(Some("courier bold 12"));
 
             let success = tag_table.add(&tag);
             debug_assert!(success, "Failed to add tag to text tag table");
@@ -23,8 +23,8 @@ macro_rules! make_default_tag {
 macro_rules! set_text {
     ($tb:ident, $txt:expr) => {
         $tb.set_text($txt);
-        let start = $tb.get_start_iter();
-        let end = $tb.get_end_iter();
+        let start = $tb.start_iter();
+        let end = $tb.end_iter();
         $tb.apply_tag_by_name("default", &start, &end);
     };
 }
@@ -36,7 +36,7 @@ pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeErr
 
     let ac1 = Rc::clone(acp);
     text_area.connect_key_press_event(move |_ta, event| {
-        let keyval = event.get_keyval();
+        let keyval = event.keyval();
         if keyval == KP_Right || keyval == Right {
             ac1.display_next();
         } else if keyval == KP_Left || keyval == Left {
@@ -45,7 +45,7 @@ pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeErr
         Inhibit(true)
     });
 
-    if let Some(tb) = text_area.get_buffer() {
+    if let Some(tb) = text_area.buffer() {
         make_default_tag!(tb);
         set_text!(tb, "No data loaded");
 
@@ -62,7 +62,7 @@ pub fn update_text_area(ac: &AppContext) {
         return;
     };
 
-    if let (Some(tb), Some(anal)) = (text_area.get_buffer(), ac.get_sounding_for_display()) {
+    if let (Some(tb), Some(anal)) = (text_area.buffer(), ac.get_sounding_for_display()) {
         let anal = anal.borrow();
         let mut text = String::with_capacity(4096);
 

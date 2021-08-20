@@ -86,9 +86,9 @@ trait Drawable: PlotContext + PlotContextExt {
     fn init_matrix(&self, args: DrawingArgs<'_, '_>) {
         let cr = args.cr;
 
-        cr.save();
+        cr.save().unwrap();
 
-        let (x1, y1, x2, y2) = cr.clip_extents();
+        let (x1, y1, x2, y2) = cr.clip_extents().unwrap();
         let width = f64::abs(x2 - x1);
         let height = f64::abs(y2 - y1);
 
@@ -114,8 +114,8 @@ trait Drawable: PlotContext + PlotContextExt {
             y0: device_rect.height / scale_factor,
         });
 
-        self.set_matrix(cr.get_matrix());
-        cr.restore();
+        self.set_matrix(cr.matrix());
+        cr.restore().unwrap();
     }
 
     /// Not recommended to override.
@@ -123,7 +123,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         let font_face =
-            &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold);
+            &FontFace::toy_create(&config.font_name, FontSlant::Normal, FontWeight::Bold).unwrap();
         cr.set_font_face(font_face);
 
         self.set_font_size(config.label_font_size, cr);
@@ -149,7 +149,10 @@ trait Drawable: PlotContext + PlotContextExt {
 
         if config.show_labels {
             let labels = self.collect_labels(args);
-            let padding = cr.device_to_user_distance(config.label_padding, 0.0).0;
+            let padding = cr
+                .device_to_user_distance(config.label_padding, 0.0)
+                .unwrap()
+                .0;
 
             for (label, rect) in labels {
                 let ScreenRect { lower_left, .. } = rect;
@@ -162,13 +165,13 @@ trait Drawable: PlotContext + PlotContextExt {
                     rect.width() + 2.0 * padding,
                     rect.height() + 2.0 * padding,
                 );
-                cr.fill();
+                cr.fill().unwrap();
 
                 // Setup label colors
                 rgba = config.label_rgba;
                 cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
                 cr.move_to(lower_left.x, lower_left.y);
-                cr.show_text(&label);
+                cr.show_text(&label).unwrap();
             }
         }
     }
@@ -217,7 +220,10 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
 
-        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).0;
+        let padding = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap()
+            .0;
         upper_left.x += padding;
         upper_left.y -= padding;
 
@@ -233,7 +239,7 @@ trait Drawable: PlotContext + PlotContextExt {
             upper_left.x = xmin + edge_offset;
         }
 
-        let font_extents = cr.font_extents();
+        let font_extents = cr.font_extents().unwrap();
 
         let legend_text = Self::build_legend_strings(ac);
 
@@ -268,7 +274,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let mut box_height: f64 = 0.0;
 
         for &(ref line, _) in legend_text {
-            let extents = cr.text_extents(line);
+            let extents = cr.text_extents(line).unwrap();
             if extents.width > box_width {
                 box_width = extents.width;
             }
@@ -276,8 +282,9 @@ trait Drawable: PlotContext + PlotContextExt {
         }
 
         // Add padding last
-        let (padding_x, padding_y) =
-            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let (padding_x, padding_y) = cr
+            .device_to_user_distance(config.edge_padding, -config.edge_padding)
+            .unwrap();
         let padding_x = f64::max(padding_x, font_extents.max_x_advance);
 
         // Add room for the last line's descent and padding
@@ -304,11 +311,11 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let rgb = config.label_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke_preserve();
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
+        cr.stroke_preserve().unwrap();
         let rgba = config.background_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     /// Not recommended to override.
@@ -320,8 +327,9 @@ trait Drawable: PlotContext + PlotContextExt {
     ) {
         let (config, cr) = (args.ac.config.borrow(), args.cr);
 
-        let (padding_x, padding_y) =
-            cr.device_to_user_distance(config.edge_padding, -config.edge_padding);
+        let (padding_x, padding_y) = cr
+            .device_to_user_distance(config.edge_padding, -config.edge_padding)
+            .unwrap();
         let padding_x = f64::max(padding_x, font_extents.max_x_advance);
 
         // Remember how many lines we have drawn so far for setting position of the next line.
@@ -338,7 +346,7 @@ trait Drawable: PlotContext + PlotContextExt {
                     - f64::from(line_num - 1) * font_extents.height,
             );
 
-            cr.show_text(line);
+            cr.show_text(line).unwrap();
             line_num += 1;
         }
     }
@@ -350,7 +358,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let (cr, config) = (args.cr, args.ac.config.borrow());
 
         self.prepare_to_make_text(args);
-        cr.save();
+        cr.save().unwrap();
 
         let ScreenRect {
             lower_left: ScreenCoords { x: xmin, y: ymin },
@@ -359,18 +367,18 @@ trait Drawable: PlotContext + PlotContextExt {
 
         // Scale the font to fill the view.
         let width = xmax - xmin;
-        let text_width = cr.text_extents(MESSAGE).width;
+        let text_width = cr.text_extents(MESSAGE).unwrap().width;
         let ratio = 0.75 * width / text_width;
         self.set_font_size(config.label_font_size * ratio, cr);
 
         // Calculate the starting position
-        let text_extents = cr.text_extents(MESSAGE);
+        let text_extents = cr.text_extents(MESSAGE).unwrap();
         let height = ymax - ymin;
         let start_y = ymin + (height - text_extents.height) / 2.0;
         let start_x = xmin + (width - text_extents.width) / 2.0;
 
         // Make a rectangle behind it.
-        let font_extents = cr.font_extents();
+        let font_extents = cr.font_extents().unwrap();
         let mut rgb = config.background_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
         cr.rectangle(
@@ -379,17 +387,17 @@ trait Drawable: PlotContext + PlotContextExt {
             1.1 * text_extents.width,
             font_extents.height,
         );
-        cr.fill_preserve();
+        cr.fill_preserve().unwrap();
         rgb = config.label_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke();
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
+        cr.stroke().unwrap();
 
         // Draw the text.
         cr.move_to(start_x, start_y);
-        cr.show_text(MESSAGE);
+        cr.show_text(MESSAGE).unwrap();
 
-        cr.restore();
+        cr.restore().unwrap();
     }
 
     /***********************************************************************************************
@@ -462,13 +470,14 @@ trait Drawable: PlotContext + PlotContextExt {
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.set_line_width(
             cr.device_to_user_distance(config.active_readout_line_width, 0.0)
+                .unwrap()
                 .0,
         );
         let start = self.convert_xy_to_screen(XYCoords { x: left, y });
         let end = self.convert_xy_to_screen(XYCoords { x: right, y });
         cr.move_to(start.x, start.y);
         cr.line_to(end.x, end.y);
-        cr.stroke();
+        cr.stroke().unwrap();
     }
 
     /// Not recommended to override.
@@ -484,7 +493,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let mut width: f64 = 0.0;
         let mut height: f64 = 0.0;
 
-        let font_extents = cr.font_extents();
+        let font_extents = cr.font_extents().unwrap();
 
         let mut line = String::with_capacity(100);
         for &(ref val, _) in strings.iter() {
@@ -493,7 +502,7 @@ trait Drawable: PlotContext + PlotContextExt {
             if !val.ends_with('\n') {
                 continue;
             } else {
-                let line_extents = cr.text_extents(line.trim());
+                let line_extents = cr.text_extents(line.trim()).unwrap();
                 if line_extents.width > width {
                     width = line_extents.width;
                 }
@@ -503,7 +512,9 @@ trait Drawable: PlotContext + PlotContextExt {
             }
         }
 
-        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+        let (padding, _) = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap();
 
         width += 2.0 * padding;
         height += 2.0 * padding;
@@ -582,15 +593,17 @@ trait Drawable: PlotContext + PlotContextExt {
         let rgba = config.background_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
         cr.rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
-        cr.fill_preserve();
+        cr.fill_preserve().unwrap();
         let rgba = config.label_rgba;
         cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke();
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
+        cr.stroke().unwrap();
 
-        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+        let (padding, _) = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap();
 
-        let font_extents = cr.font_extents();
+        let font_extents = cr.font_extents().unwrap();
 
         let mut lines_drawn = 0.0;
         let mut start_x = xmin + padding;
@@ -602,14 +615,14 @@ trait Drawable: PlotContext + PlotContextExt {
                 val
             };
 
-            let text_extents = cr.text_extents(show_val);
+            let text_extents = cr.text_extents(show_val).unwrap();
 
             cr.move_to(
                 start_x,
                 ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
             );
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
-            cr.show_text(show_val);
+            cr.show_text(show_val).unwrap();
             if val.ends_with('\n') {
                 lines_drawn += 1.0;
                 start_x = xmin + padding;
@@ -626,7 +639,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let height = self.get_device_rect().height();
 
         let mut font_size = size_in_pct / 100.0 * height;
-        font_size = cr.device_to_user_distance(font_size, 0.0).0;
+        font_size = cr.device_to_user_distance(font_size, 0.0).unwrap().0;
 
         // Flip the y-coordinate so it displays the font right side up
         cr.set_font_matrix(Matrix {
@@ -652,8 +665,10 @@ trait Drawable: PlotContext + PlotContextExt {
         let config = args.ac.config.borrow();
 
         // Calculate the box
-        let text_extents = cr.text_extents(text);
-        let (padding, _) = cr.device_to_user_distance(config.edge_padding, 0.0);
+        let text_extents = cr.text_extents(text).unwrap();
+        let (padding, _) = cr
+            .device_to_user_distance(config.edge_padding, 0.0)
+            .unwrap();
 
         let width: f64 = text_extents.width + 2.0 * padding;
         let height: f64 = text_extents.height + 2.0 * padding;
@@ -684,20 +699,20 @@ trait Drawable: PlotContext + PlotContextExt {
         let fg_rgba = color;
         let bg_rgba = config.background_rgba;
         cr.set_source_rgba(bg_rgba.0, bg_rgba.1, bg_rgba.2, fg_rgba.3);
-        cr.fill_preserve();
+        cr.fill_preserve().unwrap();
         cr.set_source_rgba(fg_rgba.0, fg_rgba.1, fg_rgba.2, fg_rgba.3);
-        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).0);
-        cr.stroke();
+        cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
+        cr.stroke().unwrap();
 
         // Fill with text
         cr.move_to(home_x, home_y);
-        cr.show_text(text);
+        cr.show_text(text).unwrap();
     }
 
     fn draw_point(location: ScreenCoords, color: Rgba, args: DrawingArgs<'_, '_>) {
         let cr = args.cr;
 
-        let pnt_size = cr.device_to_user_distance(5.0, 0.0).0;
+        let pnt_size = cr.device_to_user_distance(5.0, 0.0).unwrap().0;
 
         cr.set_source_rgba(color.0, color.1, color.2, color.3);
         cr.arc(
@@ -707,7 +722,7 @@ trait Drawable: PlotContext + PlotContextExt {
             0.0,
             2.0 * ::std::f64::consts::PI,
         );
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     /***********************************************************************************************
@@ -717,8 +732,8 @@ trait Drawable: PlotContext + PlotContextExt {
     fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
 
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.get_position()));
-        let dir = event.get_direction();
+        let pos = self.convert_device_to_xy(DeviceCoords::from(event.position()));
+        let dir = event.direction();
 
         let old_zoom = self.get_zoom_factor();
         let mut new_zoom = old_zoom;
@@ -749,8 +764,8 @@ trait Drawable: PlotContext + PlotContextExt {
 
     fn button_press_event(&self, event: &EventButton, _ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
-        if event.get_button() == 1 {
-            self.set_last_cursor_position(Some(event.get_position().into()));
+        if event.button() == 1 {
+            self.set_last_cursor_position(Some(event.position().into()));
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else {
@@ -759,7 +774,7 @@ trait Drawable: PlotContext + PlotContextExt {
     }
 
     fn button_release_event(&self, event: &EventButton) -> Inhibit {
-        if event.get_button() == 1 {
+        if event.button() == 1 {
             self.set_last_cursor_position(None);
             self.set_left_button_pressed(false);
             Inhibit(true)
@@ -793,7 +808,7 @@ trait Drawable: PlotContext + PlotContextExt {
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(ev.get_position());
+                let new_position = DeviceCoords::from(ev.position());
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -818,7 +833,7 @@ trait Drawable: PlotContext + PlotContextExt {
     fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
         use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
 
-        let keyval = event.get_keyval();
+        let keyval = event.keyval();
         if keyval == KP_Right || keyval == Right {
             ac.display_next();
             Inhibit(true)
@@ -836,7 +851,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     fn configure_event(&self, event: &EventConfigure, ac: &AppContextPointer) -> bool {
         let rect = self.get_device_rect();
-        let (width, height) = event.get_size();
+        let (width, height) = event.size();
         if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
             || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
         {
@@ -852,15 +867,15 @@ trait Drawable: PlotContext + PlotContextExt {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         if self.is_background_dirty() {
-            let tmp_cr = Context::new(&self.get_background_layer());
+            let tmp_cr = Context::new(&self.get_background_layer()).unwrap();
 
             // Clear the previous drawing from the cache
-            tmp_cr.save();
+            tmp_cr.save().unwrap();
             let rgba = config.background_rgba;
             tmp_cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
+            tmp_cr.paint().unwrap();
+            tmp_cr.restore().unwrap();
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
@@ -873,22 +888,23 @@ trait Drawable: PlotContext + PlotContextExt {
             self.clear_background_dirty();
         }
 
-        cr.set_source_surface(&self.get_background_layer(), 0.0, 0.0);
-        cr.paint();
+        cr.set_source_surface(&self.get_background_layer(), 0.0, 0.0)
+            .unwrap();
+        cr.paint().unwrap();
     }
 
     fn draw_data_cached(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr) = (args.ac, args.cr);
 
         if self.is_data_dirty() {
-            let tmp_cr = Context::new(&self.get_data_layer());
+            let tmp_cr = Context::new(&self.get_data_layer()).unwrap();
 
             // Clear the previous drawing from the cache
-            tmp_cr.save();
+            tmp_cr.save().unwrap();
             tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
             tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
+            tmp_cr.paint().unwrap();
+            tmp_cr.restore().unwrap();
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
@@ -899,22 +915,23 @@ trait Drawable: PlotContext + PlotContextExt {
             self.clear_data_dirty();
         }
 
-        cr.set_source_surface(&self.get_data_layer(), 0.0, 0.0);
-        cr.paint();
+        cr.set_source_surface(&self.get_data_layer(), 0.0, 0.0)
+            .unwrap();
+        cr.paint().unwrap();
     }
 
     fn draw_active_readout_cached(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr) = (args.ac, args.cr);
 
         if self.is_overlay_dirty() {
-            let tmp_cr = Context::new(&self.get_overlay_layer());
+            let tmp_cr = Context::new(&self.get_overlay_layer()).unwrap();
 
             // Clear the previous drawing from the cache
-            tmp_cr.save();
+            tmp_cr.save().unwrap();
             tmp_cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
             tmp_cr.set_operator(Operator::Source);
-            tmp_cr.paint();
-            tmp_cr.restore();
+            tmp_cr.paint().unwrap();
+            tmp_cr.restore().unwrap();
             tmp_cr.transform(self.get_matrix());
             let tmp_args = DrawingArgs { cr: &tmp_cr, ac };
 
@@ -925,8 +942,9 @@ trait Drawable: PlotContext + PlotContextExt {
             self.clear_overlay_dirty();
         }
 
-        cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0);
-        cr.paint();
+        cr.set_source_surface(&self.get_overlay_layer(), 0.0, 0.0)
+            .unwrap();
+        cr.paint().unwrap();
     }
 
     fn clip(&self, cr: &Context) {
@@ -1140,7 +1158,7 @@ trait SlaveProfileDrawable: Drawable {
             }
 
             cr.close_path();
-            cr.fill();
+            cr.fill().unwrap();
         }
     }
 

@@ -159,7 +159,7 @@ impl Drawable for FirePlumeContext {
         for &dt in config::FIRE_PLUME_DTS.iter().skip(1) {
             let label = format!("{:.0}\u{00B0}C", dt.unpack());
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 x: mut screen_x, ..
@@ -192,7 +192,7 @@ impl Drawable for FirePlumeContext {
         for &h in config::FIRE_PLUME_HEIGHTS.iter().skip(1) {
             let label = format!("{:.0}", h.unpack() / 1_000.0);
 
-            let extents = cr.text_extents(&label);
+            let extents = cr.text_extents(&label).unwrap();
 
             let ScreenCoords {
                 y: mut screen_y, ..
@@ -427,7 +427,7 @@ impl Drawable for FirePlumeContext {
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
+                let new_position = DeviceCoords::from(event.position());
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -446,7 +446,7 @@ impl Drawable for FirePlumeContext {
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
+            let position: DeviceCoords = event.position().into();
             self.set_last_cursor_position(Some(position));
 
             let sample = ac

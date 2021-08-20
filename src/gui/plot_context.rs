@@ -77,7 +77,7 @@ pub trait PlotContextExt: PlotContext {
         self.mark_background_dirty(); // Marks everything
 
         // Get the size
-        let (width, height) = (da.get_allocation().width, da.get_allocation().height);
+        let (width, height) = (da.allocation().width, da.allocation().height);
 
         self.set_device_rect(DeviceRect {
             upper_left: DeviceCoords { row: 0.0, col: 0.0 },
@@ -185,6 +185,7 @@ pub trait PlotContextExt: PlotContext {
         // Add some padding to keep away from the window edge
         let padding = cr
             .device_to_user_distance(ac.config.borrow().label_padding, 0.0)
+            .unwrap()
             .0;
         screen_x_max -= padding;
         screen_y_max -= padding;

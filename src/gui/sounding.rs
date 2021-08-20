@@ -258,7 +258,7 @@ impl Drawable for SkewTContext {
             for &p in &config::ISOBARS {
                 let label = format!("{:.0}", p.unpack());
 
-                let extents = cr.text_extents(&label);
+                let extents = cr.text_extents(&label).unwrap();
 
                 let ScreenCoords { y: screen_y, .. } = self.convert_tp_to_screen(TPCoords {
                     temperature: Celsius(0.0),
@@ -295,7 +295,7 @@ impl Drawable for SkewTContext {
             for &t in &config::ISOTHERMS {
                 let label = format!("{:.0}", t.unpack());
 
-                let extents = cr.text_extents(&label);
+                let extents = cr.text_extents(&label).unwrap();
 
                 let ScreenCoords {
                     x: mut xpos,
@@ -507,11 +507,11 @@ impl Drawable for SkewTContext {
 
     fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
-        if event.get_button() == 1 {
-            self.set_last_cursor_position(Some(event.get_position().into()));
+        if event.button() == 1 {
+            self.set_last_cursor_position(Some(event.position().into()));
             self.set_left_button_pressed(true);
             Inhibit(true)
-        } else if event.get_button() == 3 {
+        } else if event.button() == 3 {
             if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
                 // waiting for version 3.22...
                 // let ev: &::gdk::Event = evt;
@@ -535,7 +535,7 @@ impl Drawable for SkewTContext {
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.get_position());
+                let new_position = DeviceCoords::from(event.position());
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -555,7 +555,7 @@ impl Drawable for SkewTContext {
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.get_position().into();
+            let position: DeviceCoords = event.position().into();
 
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
