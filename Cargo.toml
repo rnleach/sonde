@@ -6,7 +6,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
-bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.5"}
+bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.6"}
 cairo-rs = { version = "^0.15.10", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "^0.5"
