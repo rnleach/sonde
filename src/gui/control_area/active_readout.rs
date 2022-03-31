@@ -39,7 +39,7 @@ pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
     // Layout boxes in the frame
     f.add(&v_box);
     v_box.pack_start(&sample_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
+    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
     sw.add(&f);
 
     sw

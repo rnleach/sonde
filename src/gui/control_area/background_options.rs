@@ -30,7 +30,7 @@ pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     v_box.pack_start(&lines_frame, true, true, PADDING);
     v_box.pack_start(&fills_frame, true, true, PADDING);
     v_box.pack_start(&font_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
+    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
     sw.add(&f);
 
     sw
@@ -130,19 +130,15 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
     let color = ColorButton::new();
 
     let rgba = acp.config.borrow().background_rgba;
-    color.set_rgba(&RGBA {
-        red: rgba.0,
-        green: rgba.1,
-        blue: rgba.2,
-        alpha: rgba.3,
-    });
+    color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
 
     // Create color button callback
     let ac = Rc::clone(acp);
     WidgetExt::connect_property_notify_event(&color, move |button, _event| {
         let rgba = button.rgba();
 
-        ac.config.borrow_mut().background_rgba = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+        ac.config.borrow_mut().background_rgba =
+            (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
         crate::gui::draw_all(&ac);
         crate::gui::text_area::update_text_highlight(&ac);
 

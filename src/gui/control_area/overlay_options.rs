@@ -64,7 +64,7 @@ pub fn make_overlay_frame(ac: &AppContextPointer) -> ScrolledWindow {
     f.add(&v_box);
     v_box.pack_start(&skewt_frame, true, true, PADDING);
     v_box.pack_start(&hodo_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
+    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
     sw.add(&f);
 
     sw

@@ -92,12 +92,7 @@ fn set_up_tags(tb: &TextBuffer, ac: &AppContext) {
 
         let rgba = ac.config.borrow().parcel_indexes_highlight;
         let parcel_tag = TextTag::new(Some("parcel"));
-        parcel_tag.set_background_rgba(Some(&gdk::RGBA {
-            red: rgba.0,
-            green: rgba.1,
-            blue: rgba.2,
-            alpha: rgba.3,
-        }));
+        parcel_tag.set_background_rgba(Some(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3)));
 
         let success = tag_table.add(&parcel_tag);
         debug_assert!(success, "Failed to add tag to text tag table");
@@ -367,12 +362,7 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
         None => return,
     };
     let rgba = config.parcel_indexes_highlight;
-    tag.set_background_rgba(Some(&gdk::RGBA {
-        red: rgba.0,
-        green: rgba.1,
-        blue: rgba.2,
-        alpha: rgba.3,
-    }));
+    tag.set_background_rgba(Some(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3)));
 
     let pcl_label: &'static str = match config.parcel_type {
         ParcelType::Surface => "Surface",

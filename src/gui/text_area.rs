@@ -238,18 +238,8 @@ pub fn update_text_highlight(ac: &AppContext) {
                     let range = below_val - above_val;
                     let alpha_below = (tp - above_val) / range;
                     let alpha_above = 1.0 - alpha_below;
-                    let rgba_below = ::gdk::RGBA {
-                        red: rgba.0,
-                        green: rgba.1,
-                        blue: rgba.2,
-                        alpha: alpha_below,
-                    };
-                    let rgba_above = ::gdk::RGBA {
-                        red: rgba.0,
-                        green: rgba.1,
-                        blue: rgba.2,
-                        alpha: alpha_above,
-                    };
+                    let rgba_below = ::gdk::RGBA::new(rgba.0, rgba.1, rgba.2, alpha_below);
+                    let rgba_above = ::gdk::RGBA::new(rgba.0, rgba.1, rgba.2, alpha_above);
                     if let Some(below_tag) = tt.lookup("highlight_below") {
                         below_tag.set_background_rgba(Some(&rgba_below));
                         end_below.forward_line();

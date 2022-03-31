@@ -1,5 +1,5 @@
 use crate::{
-    coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords, XYRect},
+    coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords},
     gui::AppContext,
 };
 use cairo::{Context, Format, ImageSurface, Matrix};
@@ -77,7 +77,7 @@ pub trait PlotContextExt: PlotContext {
         self.mark_background_dirty(); // Marks everything
 
         // Get the size
-        let (width, height) = (da.allocation().width, da.allocation().height);
+        let (width, height) = (da.allocation().width(), da.allocation().height());
 
         self.set_device_rect(DeviceRect {
             upper_left: DeviceCoords { row: 0.0, col: 0.0 },
@@ -328,9 +328,6 @@ pub struct GenericContext {
     // Area to draw in
     device_rect: Cell<DeviceRect>,
 
-    // Rectangle that bounds all the values to be plotted in `XYCoords`.
-    xy_envelope: Cell<XYRect>,
-
     // Standard x-y coords, used for zooming and panning.
     zoom_factor: Cell<f64>, // Multiply by this after translating
     translate: Cell<XYCoords>,
@@ -364,10 +361,6 @@ impl GenericContext {
                 upper_left: DeviceCoords { row: 0.0, col: 0.0 },
                 width: 1.0,
                 height: 1.0,
-            }),
-            xy_envelope: Cell::new(XYRect {
-                lower_left: XYCoords { x: 0.0, y: 0.0 },
-                upper_right: XYCoords { x: 1.0, y: 1.0 },
             }),
 
             // Sounding Area GUI state

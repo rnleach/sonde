@@ -81,7 +81,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     //v_box.pack_start(&hodo_frame, true, true, PADDING);
     v_box.pack_start(&profiles_frame, true, true, PADDING);
     v_box.pack_start(&fire_plumes_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new::<Adjustment, Adjustment>(None, None);
+    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
     sw.add(&f);
 
     sw

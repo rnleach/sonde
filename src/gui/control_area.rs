@@ -16,12 +16,7 @@ macro_rules! build_config_color_and_check {
             check.set_active(config.$show_var);
 
             let rgba = config.$color_var;
-            color.set_rgba(&RGBA {
-                red: rgba.0,
-                green: rgba.1,
-                blue: rgba.2,
-                alpha: rgba.3,
-            });
+            color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
         }
 
         // Create check button callback
@@ -38,7 +33,8 @@ macro_rules! build_config_color_and_check {
         gtk::ColorButton::connect_property_notify_event(&color, move |button, _event| {
             let rgba = button.rgba();
 
-            acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+            acp.config.borrow_mut().$color_var =
+                (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
             acp.mark_background_dirty();
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
@@ -85,12 +81,7 @@ macro_rules! build_config_color {
         {
             let config = $acp_in.config.borrow();
             let rgba = config.$color_var;
-            color.set_rgba(&RGBA {
-                red: rgba.0,
-                green: rgba.1,
-                blue: rgba.2,
-                alpha: rgba.3,
-            });
+            color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
         }
 
         // Create color button callback
@@ -98,7 +89,8 @@ macro_rules! build_config_color {
         WidgetExt::connect_property_notify_event(&color, move |button, _event| {
             let rgba = button.rgba();
 
-            acp.config.borrow_mut().$color_var = (rgba.red, rgba.green, rgba.blue, rgba.alpha);
+            acp.config.borrow_mut().$color_var =
+                (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
             acp.mark_background_dirty();
             acp.mark_data_dirty();
             acp.mark_overlay_dirty();
