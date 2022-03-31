@@ -29,7 +29,7 @@ jobs:
     - name: Check Path
       run: env && echo "${PKG_CONFIG_PATH}"
     - name: Build
-      run: cargo build --verbose
+      run: ls ${HOME}/usr/lib/pkgconfig && cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
   
