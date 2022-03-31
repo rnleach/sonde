@@ -24,6 +24,8 @@ jobs:
     - name: Install GTK dependencies
       run: >
           sudo apt-get update -q && sudo apt-get install --no-install-recommends -y libgtk-3-dev
+    - name: Update pkg-config path
+      run: echo "${HOME}/usr/lib/pkgconfig" >> $PKG_CONFIG_PATH
     - name: Build
       run: cargo build --verbose
     - name: Run tests
