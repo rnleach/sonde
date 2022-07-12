@@ -64,13 +64,13 @@
   <object class="GtkWindow" id="main_window">
     <property name="visible">True</property>
     <property name="can-focus">True</property>
+    <property name="events">GDK_STRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK</property>
     <property name="hexpand">False</property>
     <property name="vexpand">False</property>
     <property name="window-position">center</property>
     <property name="default-width">900</property>
     <property name="default-height">500</property>
     <property name="gravity">center</property>
-    <property name="has-resize-grip">True</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>

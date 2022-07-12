@@ -205,7 +205,7 @@ pub struct Config {
     pub cloud_rgba: Rgba,
 
     //
-    // Labeling
+    // Labeling and text
     //
     /// Whether to show labels
     pub show_labels: bool,
@@ -215,6 +215,8 @@ pub struct Config {
     pub font_name: String,
     /// Font size for labels in points
     pub label_font_size: f64,
+    /// Font size for text windows.
+    pub text_area_font_size_points: f64,
     /// Default padding in text boxes and the plot edge for text. In pixels.
     pub edge_padding: f64,
     ///  Default padding for labels and their background in pixels
@@ -432,12 +434,13 @@ impl Default for Config {
             cloud_rgba: (0.5, 0.5, 0.5, 0.75),
 
             //
-            // Labeling
+            // Labeling and text
             //
             show_labels: true,
             show_legend: true,
             font_name: "Courier New".to_owned(),
             label_font_size: 2.0,
+            text_area_font_size_points: 11.0,
             edge_padding: 5.0,
             label_padding: 3.0,
             label_rgba: (0.862_745_098, 0.388_235_294, 0.156_862_745, 1.0),

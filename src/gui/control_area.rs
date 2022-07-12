@@ -30,16 +30,18 @@ macro_rules! build_config_color_and_check {
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
-        gtk::ColorButton::connect_property_notify_event(&color, move |button, _event| {
+        color.connect_color_set(move |button| {
             let rgba = button.rgba();
 
             acp.config.borrow_mut().$color_var =
                 (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
             acp.mark_background_dirty();
+            acp.mark_data_dirty();
+            acp.mark_overlay_dirty();
+
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
-
-            Inhibit(false)
+            crate::gui::indexes_area::update_indexes_area(&acp);
         });
 
         // Layout
@@ -86,7 +88,7 @@ macro_rules! build_config_color {
 
         // Create color button callback
         let acp = Rc::clone(&$acp_in);
-        WidgetExt::connect_property_notify_event(&color, move |button, _event| {
+        color.connect_color_set(move |button| {
             let rgba = button.rgba();
 
             acp.config.borrow_mut().$color_var =
@@ -98,8 +100,6 @@ macro_rules! build_config_color {
             crate::gui::draw_all(&acp);
             crate::gui::text_area::update_text_highlight(&acp);
             crate::gui::indexes_area::update_indexes_area(&acp);
-
-            Inhibit(false)
         });
 
         // Layout

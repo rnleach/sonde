@@ -7,13 +7,9 @@ publish = false
 
 [dependencies]
 bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.6"}
-cairo-rs = { version = "^0.15.10", features = ["png"] }
 chrono = "^0.4"
 crossbeam-channel = "^0.5"
 dirs = "^4.0.0"
-gdk = "^0.15.4"
-glib = "^0.15.10"
-gtk = { version = "^0.15.4", features = ["v3_20"] }
 itertools = "^0.10"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
@@ -26,6 +22,12 @@ sounding-analysis = "^0.17.0"
 sounding-bufkit = "^0.16.0"
 sounding-wyoming-text-list = "^0.3.1"
 threadpool = "1.7.1"
+
+cairo-rs = { version = "^0.15.10", features = ["png"] }
+gdk = "^0.15.4"
+glib = "^0.15.10"
+gtk = { version = "^0.15.4", features = ["v3_20"] }
+pango = { version = "^0.15.0" }
 
 [dev-dependencies]
 criterion = {version = "0.3", features = ['html_reports']}

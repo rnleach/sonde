@@ -3,6 +3,7 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
+use glib::translate::IntoGlib;
 use gtk::{prelude::*, TextBuffer, TextTag, TextView};
 use metfor::{Fahrenheit, Inches, Quantity};
 use std::{fmt::Write, rc::Rc};
@@ -83,16 +84,23 @@ pub fn update_indexes_area(ac: &AppContext) {
 
 fn set_up_tags(tb: &TextBuffer, ac: &AppContext) {
     if let Some(tag_table) = tb.tag_table() {
-        let default_tag = TextTag::new(Some("default"));
+        let config = ac.config.borrow();
 
-        default_tag.set_font(Some("courier bold 12"));
+        let default_tag = TextTag::builder()
+            .name("default")
+            .family(&config.font_name)
+            .size_points(config.text_area_font_size_points)
+            .weight(pango::Weight::Bold.into_glib())
+            .build();
 
         let success = tag_table.add(&default_tag);
         debug_assert!(success, "Failed to add tag to text tag table");
 
-        let rgba = ac.config.borrow().parcel_indexes_highlight;
-        let parcel_tag = TextTag::new(Some("parcel"));
-        parcel_tag.set_background_rgba(Some(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3)));
+        let rgba = config.parcel_indexes_highlight;
+        let parcel_tag = TextTag::builder()
+            .name("parcel")
+            .background_rgba(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3))
+            .build();
 
         let success = tag_table.add(&parcel_tag);
         debug_assert!(success, "Failed to add tag to text tag table");

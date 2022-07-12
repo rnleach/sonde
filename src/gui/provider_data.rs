@@ -2,17 +2,25 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
+use glib::translate::IntoGlib;
 use gtk::{prelude::*, TextTag, TextView};
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "provider_data_text";
 
 macro_rules! make_default_tag {
-    ($tb:ident) => {
+    ($tb:ident, $acp:ident) => {
         if let Some(tag_table) = $tb.tag_table() {
-            let tag = TextTag::new(Some("default"));
+            let config = $acp.config.borrow();
+            let font = &config.font_name;
+            let font_size = config.text_area_font_size_points;
 
-            tag.set_font(Some("courier bold 12"));
+            let tag = TextTag::builder()
+                .name("default")
+                .family(font)
+                .size_points(font_size)
+                .weight(pango::Weight::Bold.into_glib())
+                .build();
 
             let success = tag_table.add(&tag);
             debug_assert!(success, "Failed to add tag to text tag table");
@@ -46,7 +54,7 @@ pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeErr
     });
 
     if let Some(tb) = text_area.buffer() {
-        make_default_tag!(tb);
+        make_default_tag!(tb, acp);
         set_text!(tb, "No data loaded");
 
         Ok(())
