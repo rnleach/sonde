@@ -17,7 +17,7 @@ metfor = { version = "^0.9.0", features = ["use_optional", "use_serde"]}
 optional = "^0.5.0"
 serde = "^1.0"
 serde_derive = "^1.0"
-serde_yaml = "0.8"
+serde_yaml = "0.9.4"
 sounding-analysis = "^0.17.0"
 sounding-bufkit = "^0.16.0"
 sounding-wyoming-text-list = "^0.3.1"
