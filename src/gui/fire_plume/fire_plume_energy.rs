@@ -167,15 +167,15 @@ impl Drawable for FirePlumeEnergyContext {
             let ScreenCoords {
                 x: mut screen_x, ..
             } = self.convert_dtp_to_screen(DtPCoords { dt, percent: 0.0 });
-            screen_x -= extents.width / 2.0;
+            screen_x -= extents.width() / 2.0;
 
             let label_lower_left = ScreenCoords {
                 x: screen_x,
                 y: lower_left.y,
             };
             let label_upper_right = ScreenCoords {
-                x: screen_x + extents.width,
-                y: lower_left.y + extents.height,
+                x: screen_x + extents.width(),
+                y: lower_left.y + extents.height(),
             };
 
             let pair = (
@@ -200,15 +200,15 @@ impl Drawable for FirePlumeEnergyContext {
                 dt: CelsiusDiff(0.0),
                 percent,
             });
-            screen_y -= extents.height / 2.0;
+            screen_y -= extents.height() / 2.0;
 
             let label_lower_left = ScreenCoords {
                 x: lower_left.x,
                 y: screen_y,
             };
             let label_upper_right = ScreenCoords {
-                x: lower_left.x + extents.width,
-                y: screen_y + extents.height,
+                x: lower_left.x + extents.width(),
+                y: screen_y + extents.height(),
             };
 
             let pair = (

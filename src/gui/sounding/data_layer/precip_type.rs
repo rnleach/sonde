@@ -51,10 +51,10 @@ impl SkewTContext {
             .0;
         let text_extents = cr.text_extents("Bourgouin").unwrap();
         let mut width = PRECIP_BOX_SIZE;
-        if width < text_extents.width + 2.0 * padding {
-            width = text_extents.width + 2.0 * padding;
+        if width < text_extents.width() + 2.0 * padding {
+            width = text_extents.width() + 2.0 * padding;
         }
-        let height = PRECIP_BOX_SIZE + 2.0 * padding + text_extents.height;
+        let height = PRECIP_BOX_SIZE + 2.0 * padding + text_extents.height();
 
         let mut box_area = self.get_plot_area();
         box_area.lower_left.x += PRECIP_BOX_SIZE;
@@ -66,7 +66,10 @@ impl SkewTContext {
 
         let box_center = ScreenCoords {
             x: box_area.lower_left.x + width / 2.0,
-            y: box_area.lower_left.y + PRECIP_BOX_SIZE / 2.0 + text_extents.height + 2.0 * padding,
+            y: box_area.lower_left.y
+                + PRECIP_BOX_SIZE / 2.0
+                + text_extents.height()
+                + 2.0 * padding,
         };
 
         cr.move_to(box_center.x, box_center.y);
@@ -124,7 +127,7 @@ impl SkewTContext {
             y: box_area.lower_left.y + padding,
         };
 
-        let slack = width - text_extents.width - 2.0 * padding;
+        let slack = width - text_extents.width() - 2.0 * padding;
         if slack > 0.0 {
             text_home.x += slack / 2.0;
         }
@@ -137,7 +140,7 @@ impl SkewTContext {
 
         cr.move_to(
             box_area.lower_left.x,
-            box_area.lower_left.y + text_extents.height + 2.0 * padding,
+            box_area.lower_left.y + text_extents.height() + 2.0 * padding,
         );
         cr.rel_line_to(width, 0.0);
         cr.stroke().unwrap();

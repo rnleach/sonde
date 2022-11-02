@@ -105,14 +105,14 @@ trait Drawable: PlotContext + PlotContextExt {
         // Set the scale factor
         cr.scale(scale_factor, scale_factor);
         // Set origin at lower left.
-        cr.transform(Matrix {
-            xx: 1.0,
-            yx: 0.0,
-            xy: 0.0,
-            yy: -1.0,
-            x0: 0.0,
-            y0: device_rect.height / scale_factor,
-        });
+        cr.transform(Matrix::new(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            device_rect.height / scale_factor,
+        ));
 
         self.set_matrix(cr.matrix());
         cr.restore().unwrap();
@@ -275,20 +275,20 @@ trait Drawable: PlotContext + PlotContextExt {
 
         for &(ref line, _) in legend_text {
             let extents = cr.text_extents(line).unwrap();
-            if extents.width > box_width {
-                box_width = extents.width;
+            if extents.width() > box_width {
+                box_width = extents.width();
             }
-            box_height += font_extents.height;
+            box_height += font_extents.height();
         }
 
         // Add padding last
         let (padding_x, padding_y) = cr
             .device_to_user_distance(config.edge_padding, -config.edge_padding)
             .unwrap();
-        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance());
 
         // Add room for the last line's descent and padding
-        box_height += f64::max(font_extents.descent, padding_y);
+        box_height += f64::max(font_extents.descent(), padding_y);
         box_height += padding_y;
         box_width += 2.0 * padding_x;
 
@@ -330,7 +330,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let (padding_x, padding_y) = cr
             .device_to_user_distance(config.edge_padding, -config.edge_padding)
             .unwrap();
-        let padding_x = f64::max(padding_x, font_extents.max_x_advance);
+        let padding_x = f64::max(padding_x, font_extents.max_x_advance());
 
         // Remember how many lines we have drawn so far for setting position of the next line.
         let mut line_num = 1;
@@ -342,8 +342,8 @@ trait Drawable: PlotContext + PlotContextExt {
                 upper_left.x + padding_x,
                 upper_left.y
                     - padding_y
-                    - font_extents.ascent
-                    - f64::from(line_num - 1) * font_extents.height,
+                    - font_extents.ascent()
+                    - f64::from(line_num - 1) * font_extents.height(),
             );
 
             cr.show_text(line).unwrap();
@@ -367,25 +367,25 @@ trait Drawable: PlotContext + PlotContextExt {
 
         // Scale the font to fill the view.
         let width = xmax - xmin;
-        let text_width = cr.text_extents(MESSAGE).unwrap().width;
+        let text_width = cr.text_extents(MESSAGE).unwrap().width();
         let ratio = 0.75 * width / text_width;
         self.set_font_size(config.label_font_size * ratio, cr);
 
         // Calculate the starting position
         let text_extents = cr.text_extents(MESSAGE).unwrap();
         let height = ymax - ymin;
-        let start_y = ymin + (height - text_extents.height) / 2.0;
-        let start_x = xmin + (width - text_extents.width) / 2.0;
+        let start_y = ymin + (height - text_extents.height()) / 2.0;
+        let start_x = xmin + (width - text_extents.width()) / 2.0;
 
         // Make a rectangle behind it.
         let font_extents = cr.font_extents().unwrap();
         let mut rgb = config.background_rgba;
         cr.set_source_rgba(rgb.0, rgb.1, rgb.2, rgb.3);
         cr.rectangle(
-            start_x - 0.05 * text_extents.width,
-            start_y - font_extents.descent,
-            1.1 * text_extents.width,
-            font_extents.height,
+            start_x - 0.05 * text_extents.width(),
+            start_y - font_extents.descent(),
+            1.1 * text_extents.width(),
+            font_extents.height(),
         );
         cr.fill_preserve().unwrap();
         rgb = config.label_rgba;
@@ -503,10 +503,10 @@ trait Drawable: PlotContext + PlotContextExt {
                 continue;
             } else {
                 let line_extents = cr.text_extents(line.trim()).unwrap();
-                if line_extents.width > width {
-                    width = line_extents.width;
+                if line_extents.width() > width {
+                    width = line_extents.width();
                 }
-                height += font_extents.height;
+                height += font_extents.height();
 
                 line.clear();
             }
@@ -619,7 +619,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
             cr.move_to(
                 start_x,
-                ymax - padding - font_extents.ascent - font_extents.height * lines_drawn,
+                ymax - padding - font_extents.ascent() - font_extents.height() * lines_drawn,
             );
             cr.set_source_rgba(rgba.0, rgba.1, rgba.2, rgba.3);
             cr.show_text(show_val).unwrap();
@@ -627,7 +627,7 @@ trait Drawable: PlotContext + PlotContextExt {
                 lines_drawn += 1.0;
                 start_x = xmin + padding;
             } else {
-                start_x += text_extents.x_advance;
+                start_x += text_extents.x_advance();
             }
         }
     }
@@ -642,14 +642,14 @@ trait Drawable: PlotContext + PlotContextExt {
         font_size = cr.device_to_user_distance(font_size, 0.0).unwrap().0;
 
         // Flip the y-coordinate so it displays the font right side up
-        cr.set_font_matrix(Matrix {
-            xx: 1.0 * font_size,
-            yx: 0.0,
-            xy: 0.0,
-            yy: -1.0 * font_size, // Reflect it to be right side up!
-            x0: 0.0,
-            y0: 0.0,
-        });
+        cr.set_font_matrix(Matrix::new(
+            1.0 * font_size,
+            0.0,
+            0.0,
+            -1.0 * font_size, // Reflect it to be right side up!
+            0.0,
+            0.0,
+        ));
     }
 
     fn draw_tag(
@@ -670,11 +670,11 @@ trait Drawable: PlotContext + PlotContextExt {
             .device_to_user_distance(config.edge_padding, 0.0)
             .unwrap();
 
-        let width: f64 = text_extents.width + 2.0 * padding;
-        let height: f64 = text_extents.height + 2.0 * padding;
+        let width: f64 = text_extents.width() + 2.0 * padding;
+        let height: f64 = text_extents.height() + 2.0 * padding;
         let leader = height * 2.0 / 3.0;
         let mut home_x = location.x + leader + padding;
-        let mut home_y = location.y - text_extents.height / 2.0;
+        let mut home_y = location.y - text_extents.height() / 2.0;
 
         // Make adjustments to keep it on screen
         let overflow = location.x + width + leader - 1.0;

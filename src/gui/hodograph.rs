@@ -203,16 +203,16 @@ impl Drawable for HodoContext {
                             direction: *direction,
                         },
                     });
-                    screen_y -= extents.height / 2.0;
-                    screen_x -= extents.width / 2.0;
+                    screen_y -= extents.height() / 2.0;
+                    screen_x -= extents.width() / 2.0;
 
                     let label_lower_left = ScreenCoords {
                         x: screen_x,
                         y: screen_y,
                     };
                     let label_upper_right = ScreenCoords {
-                        x: screen_x + extents.width,
-                        y: screen_y + extents.height,
+                        x: screen_x + extents.width(),
+                        y: screen_y + extents.height(),
                     };
 
                     let pair = (

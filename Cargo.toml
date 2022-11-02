@@ -23,11 +23,11 @@ sounding-bufkit = "^0.16.0"
 sounding-wyoming-text-list = "^0.3.1"
 threadpool = "1.7.1"
 
-cairo-rs = { version = "^0.15.10", features = ["png"] }
-gdk = "^0.15.4"
-glib = "^0.15.10"
-gtk = { version = "^0.15.4", features = ["v3_20"] }
-pango = { version = "^0.15.0" }
+cairo-rs = { version = "^0.16", features = ["png"] }
+gdk = "^0.16.0"
+glib = "^0.16.0"
+gtk = { version = "^0.16.0" }
+pango = { version = "^0.16.0" }
 
 [dev-dependencies]
 criterion = {version = "0.4", features = ['html_reports']}

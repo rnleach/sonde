@@ -243,23 +243,23 @@ impl Drawable for WindSpeedContext {
                 spd: *spd,
                 press: screen_max_p,
             });
-            xpos -= extents.width / 2.0; // Center
-            ypos -= extents.height / 2.0; // Center
-            ypos += extents.height; // Move up off bottom axis.
+            xpos -= extents.width() / 2.0; // Center
+            ypos -= extents.height() / 2.0; // Center
+            ypos += extents.height(); // Move up off bottom axis.
 
             let ScreenRect {
                 lower_left: ScreenCoords { x: xmin, .. },
                 upper_right: ScreenCoords { x: xmax, .. },
             } = screen_edges;
 
-            if xpos < xmin || xpos + extents.width > xmax {
+            if xpos < xmin || xpos + extents.width() > xmax {
                 continue;
             }
 
             let label_lower_left = ScreenCoords { x: xpos, y: ypos };
             let label_upper_right = ScreenCoords {
-                x: xpos + extents.width,
-                y: ypos + extents.height,
+                x: xpos + extents.width(),
+                y: ypos + extents.height(),
             };
 
             let pair = (

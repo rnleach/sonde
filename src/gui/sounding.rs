@@ -264,15 +264,15 @@ impl Drawable for SkewTContext {
                     temperature: Celsius(0.0),
                     pressure: p,
                 });
-                let screen_y = screen_y - extents.height / 2.0;
+                let screen_y = screen_y - extents.height() / 2.0;
 
                 let label_lower_left = ScreenCoords {
                     x: lower_left.x,
                     y: screen_y,
                 };
                 let label_upper_right = ScreenCoords {
-                    x: lower_left.x + extents.width,
-                    y: screen_y + extents.height,
+                    x: lower_left.x + extents.width(),
+                    y: screen_y + extents.height(),
                 };
 
                 let pair = (
@@ -304,15 +304,15 @@ impl Drawable for SkewTContext {
                     temperature: t,
                     pressure: screen_max_p,
                 });
-                xpos -= extents.width / 2.0; // Center
-                ypos -= extents.height / 2.0; // Center
-                ypos += extents.height; // Move up off bottom axis.
-                xpos += extents.height; // Move right for 45 degree angle from move up
+                xpos -= extents.width() / 2.0; // Center
+                ypos -= extents.height() / 2.0; // Center
+                ypos += extents.height(); // Move up off bottom axis.
+                xpos += extents.height(); // Move right for 45 degree angle from move up
 
                 let label_lower_left = ScreenCoords { x: xpos, y: ypos };
                 let label_upper_right = ScreenCoords {
-                    x: xpos + extents.width,
-                    y: ypos + extents.height,
+                    x: xpos + extents.width(),
+                    y: ypos + extents.height(),
                 };
 
                 let pair = (
