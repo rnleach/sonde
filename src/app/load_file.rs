@@ -209,7 +209,7 @@ fn bufr_to_sounding(msg: Message, file_name: String) -> Result<Analysis, Box<dyn
         .and_then(|y| month.map(|m| (y as i32, m as u32)))
         .and_then(|(y, m)| day.map(|d| (y, m, d as u32)))
         .and_then(|(y, m, d)| hour.map(|h| (y, m, d, h as u32)))
-        .map(|(y, m, d, h)| NaiveDate::from_ymd(y, m, d).and_hms(h, 0, 0));
+        .and_then(|(y, m, d, h)| NaiveDate::from_ymd_opt(y, m, d)?.and_hms_opt(h, 0, 0));
 
     let snd = Sounding::new()
         .with_source_description(file_name)

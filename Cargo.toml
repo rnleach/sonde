@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.6"}
-chrono = "^0.4"
+chrono = "^0.4.23"
 crossbeam-channel = "^0.5"
 dirs = "^4.0.0"
 itertools = "^0.10"
