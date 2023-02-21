@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
-use gtk::{Builder, Application, prelude::*};
+use gtk::prelude::*;
 
 // Module for aggregating analysis information
 mod analysis;
@@ -36,10 +36,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     {
         let app = app.clone();
         gtk_app.connect_activate(move |gtk_app| {
-
             //let ui_src = include_str!("./sonde.ui");
-            //let gui = Builder::from_string(ui_src);
-            let gui = Builder::from_file("src/sonde.ui");
+            //let gui = gtk::Builder::from_string(ui_src);
+            let gui = gtk::Builder::from_file("src/sonde.ui");
 
             let window: gtk::Window = gui.object("main_window").unwrap();
             window.set_application(Some(gtk_app));
@@ -59,18 +58,6 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-/*
-fn build_ui(app: &Application) {
-    //let builder: Builder = Builder::from_string(include_str!("sonde.ui"));
-    let builder: Builder = Builder::from_file("src/sonde.ui");
-
-    let window: Window = builder.object("window").unwrap();
-    window.set_application(Some(app));
-
-    window.show();
-}
-*/
 
 const CONFIG_FILE_NAME: &str = "sonde_config.yml";
 

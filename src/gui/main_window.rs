@@ -4,9 +4,9 @@ use crate::{
 };
 use gtk::{
     self,
-    gdk::Event,
+    //gdk::Event,
     prelude::*,
-    Button,
+    //Button,
     Inhibit,
     //    Menu, MenuItem,
     Notebook,
@@ -170,10 +170,11 @@ fn on_delete(win: &Window, ac: &AppContext) -> Inhibit {
 fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
     let cfg = ac.config.borrow();
 
-//    let pane: Paned = ac.fetch_widget("main_pane_view")?;
+    //    FIXME
+    //    let pane: Paned = ac.fetch_widget("main_pane_view")?;
 
-//    let (width, height, pane_position) =
-//        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
+    //    let (width, height, pane_position) =
+    //        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
 
     //    if width > 0 || height > 0 {
     //        win.resize(width, height);

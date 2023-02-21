@@ -7,9 +7,12 @@ use crate::{
     },
     errors::SondeError,
 };
-//use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-//use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
-//use gtk::{prelude::*, DrawingArea};
+use gtk::{
+    cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
+    gdk::{ButtonEvent, /*EventConfigure,*/ KeyEvent, MotionEvent, ScrollDirection, ScrollEvent,},
+    prelude::*,
+    DrawingArea, Inhibit,
+};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
     self, freezing_levels, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft,
@@ -21,23 +24,23 @@ use sounding_analysis::{
 //mod hodograph;
 //mod indexes_area;
 mod main_window;
-//mod plot_context;
+mod plot_context;
 //pub mod profiles;
 //mod provider_data;
-//mod sounding;
+mod sounding;
 //mod text_area;
 mod utility;
 
 //pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
 //pub use self::hodograph::HodoContext;
-//pub use self::plot_context::{PlotContext, PlotContextExt};
-//pub use self::sounding::SkewTContext;
+pub use self::plot_context::{PlotContext, PlotContextExt};
+pub use self::sounding::SkewTContext;
 //pub use self::text_area::update_text_highlight;
 
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
-    //sounding::SkewTContext::set_up_drawing_area(&app)?;
+    sounding::SkewTContext::set_up_drawing_area(&app)?;
     //hodograph::HodoContext::set_up_drawing_area(&app)?;
     //fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
     //fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
@@ -52,6 +55,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
+    const DRAWING_AREAS: [&str; 1] = ["skew_t"];
     //    const DRAWING_AREAS: [&str; 4] = [
     //        "skew_t",
     //        "hodograph_area",
@@ -59,12 +63,12 @@ pub fn draw_all(app: &AppContext) {
     //        "fire_plume_energy_area",
     //    ];
     //
-    //    for &da in &DRAWING_AREAS {
-    //        if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
-    //            da.queue_draw();
-    //        }
-    //    }
-    //
+    for &da in &DRAWING_AREAS {
+        if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
+            da.queue_draw();
+        }
+    }
+
     //    profiles::draw_profiles(&app);
 }
 
@@ -75,7 +79,6 @@ pub fn update_text_views(app: &AppContext) {
     //    self::provider_data::update_text_area(app);
 }
 
-/*
 trait Drawable: PlotContext + PlotContextExt {
     /***********************************************************************************************
      * Initialization
@@ -730,10 +733,11 @@ trait Drawable: PlotContext + PlotContextExt {
      * Events
      **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+    fn scroll_event(&self, event: &ScrollEvent, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
 
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.position()));
+        let pos =
+            self.convert_device_to_xy(DeviceCoords::from(event.position().unwrap_or((0.0, 0.0))));
         let dir = event.direction();
 
         let old_zoom = self.get_zoom_factor();
@@ -758,15 +762,15 @@ trait Drawable: PlotContext + PlotContextExt {
         self.zoom(translate, new_zoom);
 
         draw_all(ac);
-        text_area::update_text_highlight(ac);
+        //        text_area::update_text_highlight(ac);
 
         Inhibit(true)
     }
 
-    fn button_press_event(&self, event: &EventButton, _ac: &AppContextPointer) -> Inhibit {
+    fn button_press_event(&self, event: &ButtonEvent, _ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
         if event.button() == 1 {
-            self.set_last_cursor_position(Some(event.position().into()));
+            self.set_last_cursor_position(event.position().map(|coords| coords.into()));
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else {
@@ -774,7 +778,7 @@ trait Drawable: PlotContext + PlotContextExt {
         }
     }
 
-    fn button_release_event(&self, event: &EventButton) -> Inhibit {
+    fn button_release_event(&self, event: &ButtonEvent) -> Inhibit {
         if event.button() == 1 {
             self.set_last_cursor_position(None);
             self.set_left_button_pressed(false);
@@ -793,7 +797,7 @@ trait Drawable: PlotContext + PlotContextExt {
         ac.set_sample(Sample::None);
 
         draw_all(ac);
-        text_area::update_text_highlight(ac);
+        //        text_area::update_text_highlight(ac);
 
         Inhibit(false)
     }
@@ -801,15 +805,17 @@ trait Drawable: PlotContext + PlotContextExt {
     fn mouse_motion_event(
         &self,
         da: &DrawingArea,
-        ev: &EventMotion,
+        ev: &MotionEvent,
         ac: &AppContextPointer,
     ) -> Inhibit {
         da.grab_focus();
 
         if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
+            if let (Some(new_position), Some(last_position)) =
+                (ev.position(), self.get_last_cursor_position())
+            {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(ev.position());
+                let new_position = DeviceCoords::from(new_position);
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -825,20 +831,20 @@ trait Drawable: PlotContext + PlotContextExt {
                 self.mark_background_dirty();
 
                 draw_all(ac);
-                text_area::update_text_highlight(ac);
+                //                text_area::update_text_highlight(ac);
             }
         }
         Inhibit(false)
     }
 
-    fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
-        use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+    fn key_press_event(event: &KeyEvent, ac: &AppContextPointer) -> Inhibit {
+        use gtk::gdk::Key;
 
         let keyval = event.keyval();
-        if keyval == KP_Right || keyval == Right {
+        if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();
             Inhibit(true)
-        } else if keyval == KP_Left || keyval == Left {
+        } else if keyval == Key::KP_Left || keyval == Key::Left {
             ac.display_previous();
             Inhibit(true)
         } else {
@@ -850,9 +856,8 @@ trait Drawable: PlotContext + PlotContextExt {
         self.update_cache_allocations(da);
     }
 
-    fn configure_event(&self, event: &EventConfigure, ac: &AppContextPointer) -> bool {
+    fn resize_event(&self, width: i32, height: i32, ac: &AppContextPointer) -> bool {
         let rect = self.get_device_rect();
-        let (width, height) = event.size();
         if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
             || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
         {
@@ -1208,4 +1213,3 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 }
-*/

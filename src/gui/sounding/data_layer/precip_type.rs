@@ -146,8 +146,8 @@ impl SkewTContext {
         cr.stroke().unwrap();
     }
 }
-fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
-    cr: &cairo::Context,
+fn draw_point_symbol<F: Fn(&gtk::cairo::Context, f64)>(
+    cr: &gtk::cairo::Context,
     inten: Intensity,
     color: Rgba,
     draw_func: F,
@@ -192,8 +192,8 @@ fn draw_point_symbol<F: Fn(&cairo::Context, f64)>(
     }
 }
 
-fn draw_showers<F: Fn(&cairo::Context, f64)>(
-    cr: &cairo::Context,
+fn draw_showers<F: Fn(&gtk::cairo::Context, f64)>(
+    cr: &gtk::cairo::Context,
     inten: Intensity,
     color: Rgba,
     draw_func: F,
@@ -247,7 +247,7 @@ fn draw_showers<F: Fn(&cairo::Context, f64)>(
     }
 }
 
-fn draw_mixed_rain_snow(cr: &cairo::Context, inten: Intensity) {
+fn draw_mixed_rain_snow(cr: &gtk::cairo::Context, inten: Intensity) {
     const GRID_SIZE: f64 = PRECIP_BOX_SIZE / 5.0;
     const PNT_SIZE: f64 = GRID_SIZE / 2.0; // divide by 2.0 for radius
     const A: f64 = std::f64::consts::SQRT_2 * GRID_SIZE;
@@ -277,8 +277,8 @@ fn draw_mixed_rain_snow(cr: &cairo::Context, inten: Intensity) {
     }
 }
 
-fn draw_freezing_liquid_precip<F: Fn(&cairo::Context, f64)>(
-    cr: &cairo::Context,
+fn draw_freezing_liquid_precip<F: Fn(&gtk::cairo::Context, f64)>(
+    cr: &gtk::cairo::Context,
     intensity: Intensity,
     draw_func: F,
 ) {
@@ -318,7 +318,7 @@ fn draw_freezing_liquid_precip<F: Fn(&cairo::Context, f64)>(
     }
 }
 
-fn draw_ice_pellets(cr: &cairo::Context) {
+fn draw_ice_pellets(cr: &gtk::cairo::Context) {
     use std::f64::consts::PI;
     const PNT_SIZE: f64 = PRECIP_BOX_SIZE / 7.0 / 2.0; // divide by 2.0 for radius
     #[allow(non_snake_case)]
@@ -344,7 +344,7 @@ fn draw_ice_pellets(cr: &cairo::Context) {
     cr.stroke().unwrap();
 }
 
-fn draw_red_x(cr: &cairo::Context) {
+fn draw_red_x(cr: &gtk::cairo::Context) {
     cr.set_source_rgba(1.0, 0.0, 0.0, 1.0);
     cr.set_line_width(cr.device_to_user_distance(3.0, 0.0).unwrap().0);
     cr.rel_move_to(-PRECIP_BOX_SIZE / 2.0, -PRECIP_BOX_SIZE / 2.0);
@@ -354,7 +354,7 @@ fn draw_red_x(cr: &cairo::Context) {
     cr.stroke().unwrap();
 }
 
-fn draw_rain_dot(cr: &cairo::Context, pnt_size: f64) {
+fn draw_rain_dot(cr: &gtk::cairo::Context, pnt_size: f64) {
     use std::f64::consts::PI;
 
     let (x, y) = cr.current_point().unwrap();
@@ -362,7 +362,7 @@ fn draw_rain_dot(cr: &cairo::Context, pnt_size: f64) {
     cr.fill().unwrap();
 }
 
-fn draw_drizzle_comma(cr: &cairo::Context, pnt_size: f64) {
+fn draw_drizzle_comma(cr: &gtk::cairo::Context, pnt_size: f64) {
     use std::f64::consts::PI;
     let comma_size = 2.0 * pnt_size / 3.0;
 
@@ -382,7 +382,7 @@ fn draw_drizzle_comma(cr: &cairo::Context, pnt_size: f64) {
     cr.stroke().unwrap();
 }
 
-fn draw_snowflake(cr: &cairo::Context, _pnt_size: f64) {
+fn draw_snowflake(cr: &gtk::cairo::Context, _pnt_size: f64) {
     const ANGLE: f64 = std::f64::consts::PI * 2.0 / 5.0;
     const A: f64 = PRECIP_BOX_SIZE / 5.0 / 2.0;
 
@@ -404,7 +404,7 @@ fn draw_snowflake(cr: &cairo::Context, _pnt_size: f64) {
     cr.restore().unwrap();
 }
 
-fn draw_ice_pellet(cr: &cairo::Context, _pnt_size: f64) {
+fn draw_ice_pellet(cr: &gtk::cairo::Context, _pnt_size: f64) {
     use std::f64::consts::PI;
     const GRID_SIZE: f64 = PRECIP_BOX_SIZE / 5.0;
     const PNT_SIZE: f64 = GRID_SIZE / 2.0 / 2.0; // divide by 2.0 for radius, and 2 again for small

@@ -1,13 +1,30 @@
 //! Keep configuration data in this module.
 
 use crate::coords::{
-    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+    DtHCoords,
+    DtPCoords,
+    PPCoords,
+    //SDCoords,
+    SPCoords,
+    TPCoords,
+    WPCoords,
+    XYCoords,
 };
 //use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-//use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
+//use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext};
+use crate::gui::SkewTContext;
+
 use lazy_static::lazy_static;
 use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
+    Celsius,
+    CelsiusDiff,
+    HectoPascal,
+    Kelvin,
+    Knots,
+    Meters,
+    PaPS,
+    Quantity,
+    // WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -799,10 +816,8 @@ lazy_static! {
         })
         .map(|tp| {
             [
-//                SkewTContext::convert_tp_to_xy(tp[0]),
-//                SkewTContext::convert_tp_to_xy(tp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
             ]
         })
         .collect()
@@ -820,10 +835,8 @@ lazy_static! {
         })
         .map(|tp| {
             [
-//                SkewTContext::convert_tp_to_xy(tp[0]),
-//                SkewTContext::convert_tp_to_xy(tp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
             ]
         })
         .collect()
@@ -859,10 +872,8 @@ lazy_static! {
         })
         .map(|tp| {
             [
-//                SkewTContext::convert_tp_to_xy(tp[0]),
-//                SkewTContext::convert_tp_to_xy(tp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                SkewTContext::convert_tp_to_xy(tp[0]),
+                SkewTContext::convert_tp_to_xy(tp[1])
             ]
         })
         .collect()
@@ -1070,19 +1081,18 @@ fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
         let t: Celsius = temperature_from_pot_temp(theta, p).into();
-        //        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-        //            temperature: t,
-        //            pressure: p,
-        //        }));
-        result.push(XYCoords { x: 1.0, y: 1.0 });
+                result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+                    temperature: t,
+                    pressure: p,
+                }));
         p += HectoPascal((ISENTROPS_TOP_P - MAXP).unpack() / f64::from(POINTS_PER_ISENTROP));
     }
     let t: Celsius = temperature_from_pot_temp(theta, ISENTROPS_TOP_P).into();
 
-    //    result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-    //        temperature: t,
-    //        pressure: ISENTROPS_TOP_P,
-    //    }));
+        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+            temperature: t,
+            pressure: ISENTROPS_TOP_P,
+        }));
 
     result
 }
@@ -1090,7 +1100,6 @@ fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
 /// Generate an isopleth for equivalent potential temperatures.
 fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
     let mut v = vec![];
-    /*
     let mut p = THETA_E_TOP_P;
     let dp = HectoPascal((MAXP - MINP).unpack() / f64::from(POINTS_PER_ISENTROP));
 
@@ -1132,6 +1141,5 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
             }
         }
     }
-    */
     v
 }

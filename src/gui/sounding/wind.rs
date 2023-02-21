@@ -4,7 +4,7 @@ use crate::{
     coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords},
     gui::{DrawingArgs, PlotContextExt},
 };
-use cairo::Context;
+use gtk::cairo::Context;
 use itertools::izip;
 use metfor::{Celsius, HectoPascal, Knots, WindSpdDir};
 

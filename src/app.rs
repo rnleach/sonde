@@ -6,8 +6,10 @@ use crate::{
     gui::{
         self,
         //        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        //        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
-        //        SkewTContext,
+        //        FirePlumeContext, FirePlumeEnergyContext, HodoContext,
+        //PlotContext,
+        //PlotContextExt,
+        SkewTContext,
     },
 };
 use crossbeam_channel::TryRecvError;
@@ -18,7 +20,7 @@ use gtk::{
 };
 use sounding_analysis::{self};
 use std::{
-    borrow::BorrowMut,
+    //borrow::BorrowMut,
     cell::{Cell, Ref, RefCell},
     rc::Rc,
 };
@@ -56,9 +58,9 @@ pub struct AppContext {
 
     // Handles to the GUI and Gtk4 Application object.
     gui: RefCell<Option<Builder>>,
-    // Handle to skew-t context
-    //    pub skew_t: SkewTContext,
 
+    // Handle to skew-t context
+    pub skew_t: SkewTContext,
     // Handle to Hodograph context
     //    pub hodo: HodoContext,
 
@@ -97,7 +99,7 @@ impl AppContext {
             load_calls: Cell::new(0),
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
             gui: RefCell::new(None),
-            //            skew_t: SkewTContext::new(),
+            skew_t: SkewTContext::new(),
             //            rh_omega: RHOmegaContext::new(),
             //            cloud: CloudContext::new(),
             //            hodo: HodoContext::new(),

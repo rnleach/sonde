@@ -44,8 +44,13 @@
                                 <property name="vexpand">True</property>
 
                                 <child>
-                                    <object id="skew-t-content-area" class="GtkLabel">
-                                        <property name="label">SKEW-T</property>
+                                    <object id="skew_t" class="GtkDrawingArea">
+                                        <property name="hexpand">True</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="can-target">True</property>
+                                        <property name="focus-on-click">True</property>
+                                        <property name="focusable">True</property>
                                     </object>
                                 </child>
                                 <child type="tab">

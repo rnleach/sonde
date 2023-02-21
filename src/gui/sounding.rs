@@ -15,8 +15,13 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable, PlotContext, PlotContextExt,
     },
 };
-use gdk::{EventButton, EventMotion};
-use gtk::{prelude::*, DrawingArea, Menu};
+use gtk::{
+    //Menu,
+    gdk::{ButtonEvent, MotionEvent},
+    prelude::*,
+    DrawingArea,
+    Inhibit,
+};
 use itertools::izip;
 use metfor::{Celsius, Feet, Quantity};
 use sounding_analysis::{self, Parcel, ParcelProfile};
@@ -88,39 +93,50 @@ impl Drawable for SkewTContext {
         let da: DrawingArea = acp.fetch_widget("skew_t")?;
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.skew_t.draw_callback(cr, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| {
-            ac.mark_background_dirty();
-            ac.skew_t.scroll_event(ev, &ac)
+        da.set_draw_func(move |_da, cr, _width, _height| {
+            ac.skew_t.draw_callback(cr, &ac);
         });
 
-        let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev, &ac));
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_scroll_event(move |_da, ev| {
+            //ac.mark_background_dirty();
+            //ac.skew_t.scroll_event(ev, &ac)
+        //});
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev, &ac));
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_button_release_event(move |_da, ev| ac.skew_t.button_release_event(ev));
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_enter_notify_event(move |_da, _ev| ac.skew_t.enter_event(&ac));
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_leave_notify_event(move |_da, _ev| ac.skew_t.leave_event(&ac));
+
+        // FIXME
+        //let ac = Rc::clone(acp);
+        //da.connect_key_press_event(move |_da, ev| SkewTContext::key_press_event(ev, &ac));
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| ac.skew_t.button_release_event(ev));
+        da.connect_resize(move |da, width, height| {
+            // TODO merge below methods into one.
+            ac.skew_t.size_allocate_event(da);
+            ac.skew_t.resize_event(width, height, &ac);
+        });
 
-        let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_enter_notify_event(move |_da, _ev| ac.skew_t.enter_event(&ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.skew_t.leave_event(&ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| SkewTContext::key_press_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.skew_t.configure_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.skew_t.size_allocate_event(da));
-
-        Self::build_sounding_area_context_menu(acp)?;
+        // FIXME
+        // Self::build_sounding_area_context_menu(acp)?;
 
         Ok(())
     }
@@ -505,19 +521,20 @@ impl Drawable for SkewTContext {
         Inhibit(false)
     }
 
-    fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
+    fn button_press_event(&self, event: &ButtonEvent, _ac: &AppContextPointer) -> Inhibit {
         // Left mouse button
         if event.button() == 1 {
-            self.set_last_cursor_position(Some(event.position().into()));
+            self.set_last_cursor_position(event.position().map(|coords| coords.into()));
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else if event.button() == 3 {
-            if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
-                // waiting for version 3.22...
-                // let ev: &::gdk::Event = evt;
-                // menu.popup_at_pointer(ev);
-                menu.popup_easy(3, 0)
-            }
+            // FIXME: Get menu working.
+            //            if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
+            //                // waiting for version 3.22...
+            //                // let ev: &::gdk::Event = evt;
+            //                // menu.popup_at_pointer(ev);
+            //                menu.popup_easy(3, 0)
+            //            }
             Inhibit(false)
         } else {
             Inhibit(false)
@@ -527,15 +544,17 @@ impl Drawable for SkewTContext {
     fn mouse_motion_event(
         &self,
         da: &DrawingArea,
-        event: &EventMotion,
+        event: &MotionEvent,
         ac: &AppContextPointer,
     ) -> Inhibit {
         da.grab_focus();
 
         if self.get_left_button_pressed() {
-            if let Some(last_position) = self.get_last_cursor_position() {
+            if let (Some(last_position), Some(new_position)) =
+                (self.get_last_cursor_position(), event.position())
+            {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.position());
+                let new_position = DeviceCoords::from(new_position);
                 self.set_last_cursor_position(Some(new_position));
 
                 let new_position = self.convert_device_to_xy(new_position);
@@ -550,12 +569,13 @@ impl Drawable for SkewTContext {
                 self.bound_view();
                 ac.mark_background_dirty();
                 crate::gui::draw_all(&ac);
-                crate::gui::text_area::update_text_highlight(&ac);
+                // FIXME
+                // crate::gui::text_area::update_text_highlight(&ac);
 
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.position().into();
+            let position: DeviceCoords = event.position().unwrap_or((0.0, 0.0)).into();
 
             self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
@@ -598,7 +618,8 @@ impl Drawable for SkewTContext {
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
-            crate::gui::text_area::update_text_highlight(&ac);
+            // FIXME:
+            // crate::gui::text_area::update_text_highlight(&ac);
         }
         Inhibit(false)
     }
@@ -609,7 +630,8 @@ impl MasterDrawable for SkewTContext {}
 mod active_readout;
 mod background;
 mod data_layer;
-mod menu;
+// FIXME
+//mod menu;
 mod wind;
 
 impl SkewTContext {
