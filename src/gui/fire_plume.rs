@@ -4,10 +4,11 @@ use crate::{
     gui::{
         plot_context::{PlotContext, PlotContextExt},
         utility::plot_curve_from_points,
-        Drawable, DrawingArgs,
+//        Drawable, 
+        DrawingArgs,
     },
 };
-use cairo::{FontFace, FontSlant, FontWeight};
+use gtk::cairo::{FontFace, FontSlant, FontWeight};
 use metfor::{CelsiusDiff, Quantity};
 
 mod fire_plume_height;
@@ -74,7 +75,7 @@ where
     context.set_font_size(config.label_font_size * 2.0, cr);
 }
 
-fn draw_iso_dts<T>(context: &T, config: &config::Config, cr: &cairo::Context)
+fn draw_iso_dts<T>(context: &T, config: &config::Config, cr: &gtk::cairo::Context)
 where
     T: PlotContextExt,
 {

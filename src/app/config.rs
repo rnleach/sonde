@@ -3,8 +3,8 @@
 use crate::coords::{
     DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
 };
-use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
+//use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
+//use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
 use lazy_static::lazy_static;
 use metfor::{
     Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
@@ -799,8 +799,10 @@ lazy_static! {
         })
         .map(|tp| {
             [
-                SkewTContext::convert_tp_to_xy(tp[0]),
-                SkewTContext::convert_tp_to_xy(tp[1])
+//                SkewTContext::convert_tp_to_xy(tp[0]),
+//                SkewTContext::convert_tp_to_xy(tp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
         .collect()
@@ -818,8 +820,10 @@ lazy_static! {
         })
         .map(|tp| {
             [
-                SkewTContext::convert_tp_to_xy(tp[0]),
-                SkewTContext::convert_tp_to_xy(tp[1])
+//                SkewTContext::convert_tp_to_xy(tp[0]),
+//                SkewTContext::convert_tp_to_xy(tp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
         .collect()
@@ -855,8 +859,10 @@ lazy_static! {
         })
         .map(|tp| {
             [
-                SkewTContext::convert_tp_to_xy(tp[0]),
-                SkewTContext::convert_tp_to_xy(tp[1])
+//                SkewTContext::convert_tp_to_xy(tp[0]),
+//                SkewTContext::convert_tp_to_xy(tp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
         .collect()
@@ -891,8 +897,10 @@ lazy_static! {
             })
         .map(|tp| {
             [
-                RHOmegaContext::convert_wp_to_xy(tp[0]),
-                RHOmegaContext::convert_wp_to_xy(tp[1])
+//                RHOmegaContext::convert_wp_to_xy(tp[0]),
+//                RHOmegaContext::convert_wp_to_xy(tp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
         .collect()
@@ -906,8 +914,9 @@ lazy_static! {
             let mut v = vec![];
             let mut dir = 0.0;
             while dir <= 361.0 {
-                v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
-                dir += 1.0;
+//                v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
+//                dir += 1.0;
+                v.push(XYCoords{x:0.0, y:0.0});
             }
             v
         })
@@ -932,8 +941,10 @@ lazy_static! {
             })
         .map(|pp| {
             [
-                CloudContext::convert_pp_to_xy(pp[0]),
-                CloudContext::convert_pp_to_xy(pp[1])
+//                CloudContext::convert_pp_to_xy(pp[0]),
+//                CloudContext::convert_pp_to_xy(pp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
             .collect()
@@ -957,8 +968,10 @@ lazy_static! {
             })
         .map(|sp| {
             [
-                WindSpeedContext::convert_sp_to_xy(sp[0]),
-                WindSpeedContext::convert_sp_to_xy(sp[1])
+//                WindSpeedContext::convert_sp_to_xy(sp[0]),
+//                WindSpeedContext::convert_sp_to_xy(sp[1])
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
             ]
         })
             .collect()
@@ -982,8 +995,10 @@ lazy_static! {
                })
                .map(|dt| {
                    [
-                       FirePlumeContext::convert_dth_to_xy(dt[0]),
-                       FirePlumeContext::convert_dth_to_xy(dt[1]),
+//                       FirePlumeContext::convert_dth_to_xy(dt[0]),
+//                       FirePlumeContext::convert_dth_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
                    ]
                })
            .collect()
@@ -1007,8 +1022,10 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                   FirePlumeContext::convert_dth_to_xy(dt[0]),
-                   FirePlumeContext::convert_dth_to_xy(dt[1]),
+ //                  FirePlumeContext::convert_dth_to_xy(dt[0]),
+ //                  FirePlumeContext::convert_dth_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
                ]
            })
            .collect()
@@ -1032,8 +1049,10 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+//                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
+//                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},
+                XYCoords{x:1.0, y:1.0}
                ]
            })
            .collect()
@@ -1051,18 +1070,19 @@ fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
         let t: Celsius = temperature_from_pot_temp(theta, p).into();
-        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-            temperature: t,
-            pressure: p,
-        }));
+        //        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+        //            temperature: t,
+        //            pressure: p,
+        //        }));
+        result.push(XYCoords { x: 1.0, y: 1.0 });
         p += HectoPascal((ISENTROPS_TOP_P - MAXP).unpack() / f64::from(POINTS_PER_ISENTROP));
     }
     let t: Celsius = temperature_from_pot_temp(theta, ISENTROPS_TOP_P).into();
 
-    result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-        temperature: t,
-        pressure: ISENTROPS_TOP_P,
-    }));
+    //    result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+    //        temperature: t,
+    //        pressure: ISENTROPS_TOP_P,
+    //    }));
 
     result
 }
@@ -1070,6 +1090,7 @@ fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
 /// Generate an isopleth for equivalent potential temperatures.
 fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
     let mut v = vec![];
+    /*
     let mut p = THETA_E_TOP_P;
     let dp = HectoPascal((MAXP - MINP).unpack() / f64::from(POINTS_PER_ISENTROP));
 
@@ -1111,5 +1132,6 @@ fn generate_theta_e_isopleth(theta_e_k: Kelvin) -> Vec<XYCoords> {
             }
         }
     }
+    */
     v
 }

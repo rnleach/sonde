@@ -1,3 +1,4 @@
+/*
 use crate::{
     app::AppContextPointer,
     coords::DeviceRect,
@@ -229,3 +230,4 @@ pub fn load_default_theme(ac: &AppContextPointer, _win: &Window) {
     ac.mark_data_dirty();
     ac.mark_data_dirty();
 }
+*/

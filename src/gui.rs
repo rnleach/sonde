@@ -7,74 +7,75 @@ use crate::{
     },
     errors::SondeError,
 };
-use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
-use gtk::{prelude::*, DrawingArea};
+//use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
+//use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
+//use gtk::{prelude::*, DrawingArea};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
     self, freezing_levels, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft,
     wet_bulb_zero_levels, DataRow, Layer,
 };
 
-mod control_area;
-mod fire_plume;
-mod hodograph;
-mod indexes_area;
+//mod control_area;
+//mod fire_plume;
+//mod hodograph;
+//mod indexes_area;
 mod main_window;
-mod plot_context;
-pub mod profiles;
-mod provider_data;
-mod sounding;
-mod text_area;
+//mod plot_context;
+//pub mod profiles;
+//mod provider_data;
+//mod sounding;
+//mod text_area;
 mod utility;
 
-pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
-pub use self::hodograph::HodoContext;
-pub use self::plot_context::{PlotContext, PlotContextExt};
-pub use self::sounding::SkewTContext;
-pub use self::text_area::update_text_highlight;
+//pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
+//pub use self::hodograph::HodoContext;
+//pub use self::plot_context::{PlotContext, PlotContextExt};
+//pub use self::sounding::SkewTContext;
+//pub use self::text_area::update_text_highlight;
 
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
-    sounding::SkewTContext::set_up_drawing_area(&app)?;
-    hodograph::HodoContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
-    control_area::set_up_control_area(&app)?;
-    text_area::set_up_text_area(&app)?;
-    profiles::initialize_profiles(&app)?;
+    //sounding::SkewTContext::set_up_drawing_area(&app)?;
+    //hodograph::HodoContext::set_up_drawing_area(&app)?;
+    //fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
+    //fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
+    //control_area::set_up_control_area(&app)?;
+    //text_area::set_up_text_area(&app)?;
+    //profiles::initialize_profiles(&app)?;
+    //indexes_area::set_up_indexes_area(&app)?;
+    //provider_data::set_up_provider_text_area(&app)?;
     main_window::set_up_main_window(&app)?;
-    indexes_area::set_up_indexes_area(&app)?;
-    provider_data::set_up_provider_text_area(&app)?;
 
     Ok(())
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&str; 4] = [
-        "skew_t",
-        "hodograph_area",
-        "fire_plume_height_area",
-        "fire_plume_energy_area",
-    ];
-
-    for &da in &DRAWING_AREAS {
-        if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
-            da.queue_draw();
-        }
-    }
-
-    profiles::draw_profiles(&app);
+    //    const DRAWING_AREAS: [&str; 4] = [
+    //        "skew_t",
+    //        "hodograph_area",
+    //        "fire_plume_height_area",
+    //        "fire_plume_energy_area",
+    //    ];
+    //
+    //    for &da in &DRAWING_AREAS {
+    //        if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
+    //            da.queue_draw();
+    //        }
+    //    }
+    //
+    //    profiles::draw_profiles(&app);
 }
 
 pub fn update_text_views(app: &AppContext) {
-    self::text_area::update_text_area(app);
-    self::text_area::update_text_highlight(app);
-    self::indexes_area::update_indexes_area(app);
-    self::provider_data::update_text_area(app);
+    //    self::text_area::update_text_area(app);
+    //    self::text_area::update_text_highlight(app);
+    //    self::indexes_area::update_indexes_area(app);
+    //    self::provider_data::update_text_area(app);
 }
 
+/*
 trait Drawable: PlotContext + PlotContextExt {
     /***********************************************************************************************
      * Initialization
@@ -1207,3 +1208,4 @@ trait SlaveProfileDrawable: Drawable {
         }
     }
 }
+*/

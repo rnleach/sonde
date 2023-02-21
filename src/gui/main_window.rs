@@ -2,9 +2,18 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gdk::Event;
 use gtk::{
-    self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, SeparatorMenuItem, Widget, Window,
+    self,
+    gdk::Event,
+    prelude::*,
+    Button,
+    Inhibit,
+    //    Menu, MenuItem,
+    Notebook,
+    Paned,
+    //    SeparatorMenuItem,
+    Widget,
+    Window,
 };
 use std::rc::Rc;
 
@@ -22,12 +31,13 @@ const TABS: [(&str, &str); 8] = [
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
-    connect_header_bar(ac)?;
+    //    connect_header_bar(ac)?;
     configure_main_window(ac)?;
 
     Ok(())
 }
 
+/*
 macro_rules! set_up_button {
     ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
         let button: Button = $ac.fetch_widget($id)?;
@@ -90,6 +100,7 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     Ok(())
 }
+*/
 
 fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     let window: Window = ac.fetch_widget("main_window")?;
@@ -97,9 +108,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     layout_tabs_window(&window, ac)?;
 
     let ac1 = Rc::clone(ac);
-    window.connect_delete_event(move |win, ev| on_delete(win, ev, &ac1));
-
-    window.show_all();
+    window.connect_close_request(move |win| on_delete(win, &ac1));
 
     Ok(())
 }
@@ -108,7 +117,7 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
-    let (width, height) = win.size();
+    let (width, height) = (win.width(), win.height());
     config.window_width = width;
     config.window_height = height;
 
@@ -132,28 +141,28 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
             })
             .collect();
 
-        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
-            cfg_tabs.clear();
-            for child in nb.children() {
-                for (idx, tab) in tabs.iter().enumerate() {
-                    if child == *tab {
-                        cfg_tabs.push(TABS[idx].0.to_owned());
-                    }
-                }
-            }
-        };
+        //        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
+        //            cfg_tabs.clear();
+        //            for child in nb.children() {
+        //                for (idx, tab) in tabs.iter().enumerate() {
+        //                    if child == *tab {
+        //                        cfg_tabs.push(TABS[idx].0.to_owned());
+        //                    }
+        //                }
+        //            }
+        //        };
 
-        save_tabs(&mut config.left_tabs, &lnb);
-        save_tabs(&mut config.right_tabs, &rnb);
+        //        save_tabs(&mut config.left_tabs, &lnb);
+        //        save_tabs(&mut config.right_tabs, &rnb);
 
-        config.left_page_selected = lnb.page();
-        config.right_page_selected = rnb.page();
+        //        config.left_page_selected = lnb.page();
+        //        config.right_page_selected = rnb.page();
     }
 
-    gtk::main_quit();
+    win.property::<gtk::Application>("application").quit();
 }
 
-fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
+fn on_delete(win: &Window, ac: &AppContext) -> Inhibit {
     update_window_config_and_exit(ac, win);
     Inhibit(false)
 }
@@ -161,23 +170,24 @@ fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
 fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
     let cfg = ac.config.borrow();
 
-    let pane: Paned = ac.fetch_widget("main_pane_view")?;
+//    let pane: Paned = ac.fetch_widget("main_pane_view")?;
 
-    let (width, height, pane_position) =
-        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
+//    let (width, height, pane_position) =
+//        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
 
-    if width > 0 || height > 0 {
-        win.resize(width, height);
-    }
+    //    if width > 0 || height > 0 {
+    //        win.resize(width, height);
+    //    }
 
-    if pane_position > 0.0 {
-        let (width, _) = win.size();
-        let pos = (width as f32 * pane_position).round() as i32;
+    //    if pane_position > 0.0 {
+    //        let (width, _) = win.size();
+    //        let pos = (width as f32 * pane_position).round() as i32;
+    //
+    //        debug_assert!(pos < width);
+    //        pane.set_position(pos);
+    //    }
 
-        debug_assert!(pos < width);
-        pane.set_position(pos);
-    }
-
+    /*
     if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
         if let (Ok(lnb), Ok(rnb)) = (
             ac.fetch_widget::<Notebook>("left_notebook"),
@@ -212,6 +222,7 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             rnb.set_page(cfg.right_page_selected);
         }
     }
+    */
 
     Ok(())
 }

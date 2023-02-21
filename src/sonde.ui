@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+
+    <object id="headerbar" class="GtkHeaderBar">
+        <property name="title-widget">
+            <object id="window-title" class="GtkLabel">
+                <property name="label">Sonde</property>
+                <property name="single-line-mode">True</property>
+                <property name="ellipsize">end</property>
+                <property name="width-chars">5</property>
+            </object>
+        </property>
+    </object>
+
+    <object class="GtkWindow" id="main_window">
+        <property name="decorated">True</property>
+        <property name="title">Sonde</property>
+        <property name="default-height">600</property>
+        <property name="default-width">800</property>
+        <property name="resizable">True</property>
+        <property name="titlebar">headerbar</property>
+        <child>
+            <object class="GtkBox">
+                <property name="orientation">vertical</property>
+
+                <!-- ****************************  Content Area  ****************************** -->
+                <child>
+                    <object class="GtkPaned">
+                        <property name="orientation">horizontal</property>
+                        <property name="resize-start-child">True</property>
+                        <property name="resize-end-child">True</property>
+                        <property name="wide-handle">True</property>
+
+                        <!-- ***********************  Left Notebook  ************************** -->
+                        <child>
+                            <object id="left-notebook" class="GtkNotebook">
+                                <property name="enable-popup">False</property>
+                                <property name="group-name">all-notebook-tabs</property>
+                                <property name="scrollable">True</property>
+                                <property name="show-border">True</property>
+                                <property name="show-tabs">True</property>
+                                <property name="tab-pos">GTK_POS_TOP</property>
+                                <property name="hexpand">True</property>
+                                <property name="vexpand">True</property>
+
+                                <child>
+                                    <object id="skew-t-content-area" class="GtkLabel">
+                                        <property name="label">SKEW-T</property>
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Sounding</property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+
+                        <!-- ***********************  Right Notebook  ************************* -->
+                        <child>
+                            <object id="right-notebook" class="GtkNotebook">
+                                <property name="enable-popup">False</property>
+                                <property name="group-name">all-notebook-tabs</property>
+                                <property name="scrollable">True</property>
+                                <property name="show-border">True</property>
+                                <property name="show-tabs">True</property>
+                                <property name="tab-pos">GTK_POS_TOP</property>
+                                <property name="hexpand">True</property>
+                                <property name="vexpand">True</property>
+
+                                <child>
+                                    <object id="other-content-area" class="GtkLabel">
+                                        <property name="label">Other Content</property>
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Other</property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </object>
+</interface>

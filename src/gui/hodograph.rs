@@ -12,8 +12,8 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use gdk::EventButton;
 use gtk::{
+    gdk::EventButton,
     prelude::*, CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem,
 };
 use itertools::izip;
