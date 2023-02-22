@@ -16,6 +16,7 @@ use crate::{
     },
 };
 use gtk::{
+    //FIXME
     //Menu,
     gdk::{ButtonEvent, MotionEvent},
     prelude::*,
@@ -100,8 +101,8 @@ impl Drawable for SkewTContext {
         // FIXME
         //let ac = Rc::clone(acp);
         //da.connect_scroll_event(move |_da, ev| {
-            //ac.mark_background_dirty();
-            //ac.skew_t.scroll_event(ev, &ac)
+        //ac.mark_background_dirty();
+        //ac.skew_t.scroll_event(ev, &ac)
         //});
 
         // FIXME
@@ -528,13 +529,13 @@ impl Drawable for SkewTContext {
             self.set_left_button_pressed(true);
             Inhibit(true)
         } else if event.button() == 3 {
-            // FIXME: Get menu working.
-            //            if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
-            //                // waiting for version 3.22...
-            //                // let ev: &::gdk::Event = evt;
-            //                // menu.popup_at_pointer(ev);
-            //                menu.popup_easy(3, 0)
-            //            }
+            //FIXME: Get menu working.
+            //if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
+            //    // waiting for version 3.22...
+            //    // let ev: &::gdk::Event = evt;
+            //    // menu.popup_at_pointer(ev);
+            //    menu.popup_easy(3, 0)
+            //}
             Inhibit(false)
         } else {
             Inhibit(false)

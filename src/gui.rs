@@ -19,35 +19,53 @@ use sounding_analysis::{
     wet_bulb_zero_levels, DataRow, Layer,
 };
 
+//FIXME
 //mod control_area;
+//FIXME
 //mod fire_plume;
+//FIXME
 //mod hodograph;
+//FIXME
 //mod indexes_area;
 mod main_window;
 mod plot_context;
+//FIXME
 //pub mod profiles;
+//FIXME
 //mod provider_data;
 mod sounding;
+//FIXME
 //mod text_area;
 mod utility;
 
+//FIXME
 //pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
+//FIXME
 //pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
+//FIXME
 //pub use self::text_area::update_text_highlight;
 
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
+    //FIXME
     //hodograph::HodoContext::set_up_drawing_area(&app)?;
+    //FIXME
     //fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
+    //FIXME
     //fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
+    //FIXME
     //control_area::set_up_control_area(&app)?;
+    //FIXME
     //text_area::set_up_text_area(&app)?;
+    //FIXME
     //profiles::initialize_profiles(&app)?;
+    //FIXME
     //indexes_area::set_up_indexes_area(&app)?;
+    //FIXME
     //provider_data::set_up_provider_text_area(&app)?;
     main_window::set_up_main_window(&app)?;
 
@@ -56,6 +74,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 
 pub fn draw_all(app: &AppContext) {
     const DRAWING_AREAS: [&str; 1] = ["skew_t"];
+    //    FIXME
     //    const DRAWING_AREAS: [&str; 4] = [
     //        "skew_t",
     //        "hodograph_area",
@@ -63,6 +82,8 @@ pub fn draw_all(app: &AppContext) {
     //        "fire_plume_energy_area",
     //    ];
     //
+
+    // FIXME
     for &da in &DRAWING_AREAS {
         if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
             da.queue_draw();
@@ -73,9 +94,13 @@ pub fn draw_all(app: &AppContext) {
 }
 
 pub fn update_text_views(app: &AppContext) {
+    //    FIXME
     //    self::text_area::update_text_area(app);
+    //    FIXME
     //    self::text_area::update_text_highlight(app);
+    //    FIXME
     //    self::indexes_area::update_indexes_area(app);
+    //    FIXME
     //    self::provider_data::update_text_area(app);
 }
 
@@ -762,7 +787,8 @@ trait Drawable: PlotContext + PlotContextExt {
         self.zoom(translate, new_zoom);
 
         draw_all(ac);
-        //        text_area::update_text_highlight(ac);
+        //FIXME
+        //text_area::update_text_highlight(ac);
 
         Inhibit(true)
     }
@@ -797,7 +823,8 @@ trait Drawable: PlotContext + PlotContextExt {
         ac.set_sample(Sample::None);
 
         draw_all(ac);
-        //        text_area::update_text_highlight(ac);
+        //FIXME
+        //text_area::update_text_highlight(ac);
 
         Inhibit(false)
     }
@@ -831,7 +858,8 @@ trait Drawable: PlotContext + PlotContextExt {
                 self.mark_background_dirty();
 
                 draw_all(ac);
-                //                text_area::update_text_highlight(ac);
+                //FIXME
+                //text_area::update_text_highlight(ac);
             }
         }
         Inhibit(false)

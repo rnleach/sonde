@@ -5,8 +5,9 @@ use crate::{
     errors::SondeError,
     gui::{
         self,
-        //        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        //        FirePlumeContext, FirePlumeEnergyContext, HodoContext,
+        // FIXME
+        //profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
+        //FirePlumeContext, FirePlumeEnergyContext, HodoContext,
         //PlotContext,
         //PlotContextExt,
         SkewTContext,
@@ -20,6 +21,7 @@ use gtk::{
 };
 use sounding_analysis::{self};
 use std::{
+    //FIXME
     //borrow::BorrowMut,
     cell::{Cell, Ref, RefCell},
     rc::Rc,
@@ -62,22 +64,28 @@ pub struct AppContext {
     // Handle to skew-t context
     pub skew_t: SkewTContext,
     // Handle to Hodograph context
-    //    pub hodo: HodoContext,
+    //FIXME
+    //pub hodo: HodoContext,
 
     // Handle to FirePlume context
-    //    pub fire_plume: FirePlumeContext,
+    //FIXME
+    //pub fire_plume: FirePlumeContext,
 
     // Handle to FirePlumeEnergy context
-    //    pub fire_plume_energy: FirePlumeEnergyContext,
+    //FIXME
+    //pub fire_plume_energy: FirePlumeEnergyContext,
 
     // Handle to RH Omega Context
-    //    pub rh_omega: RHOmegaContext,
+    //FIXME
+    //pub rh_omega: RHOmegaContext,
 
     // Handle to Cloud profile context
-    //    pub cloud: CloudContext,
+    //FIXME
+    //pub cloud: CloudContext,
 
     // Handle to wind speed profile context
-    //    pub wind_speed: WindSpeedContext,
+    //FIXME
+    //pub wind_speed: WindSpeedContext,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -100,12 +108,13 @@ impl AppContext {
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
             gui: RefCell::new(None),
             skew_t: SkewTContext::new(),
-            //            rh_omega: RHOmegaContext::new(),
-            //            cloud: CloudContext::new(),
-            //            hodo: HodoContext::new(),
-            //            fire_plume: FirePlumeContext::new(),
-            //            fire_plume_energy: FirePlumeEnergyContext::new(),
-            //            wind_speed: WindSpeedContext::new(),
+            //FIXME
+            //rh_omega: RHOmegaContext::new(),
+            //cloud: CloudContext::new(),
+            //hodo: HodoContext::new(),
+            //fire_plume: FirePlumeContext::new(),
+            //fire_plume_energy: FirePlumeEnergyContext::new(),
+            //wind_speed: WindSpeedContext::new(),
         })
     }
 
@@ -292,60 +301,67 @@ impl AppContext {
     }
 
     pub fn zoom_in(&self) {
+        //FIXME
         //use ZoomableDrawingAreas::*;
 
-        //        match self.last_focus.get() {
-        //            SkewT => self.skew_t.zoom_in(),
-        //            Hodo => self.hodo.zoom_in(),
-        //            FirePlume => self.fire_plume.zoom_in(),
-        //            FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
-        //        }
+        //FIXME
+        //match self.last_focus.get() {
+        //    SkewT => self.skew_t.zoom_in(),
+        //    Hodo => self.hodo.zoom_in(),
+        //    FirePlume => self.fire_plume.zoom_in(),
+        //    FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
+        //}
 
         self.mark_background_dirty();
         gui::draw_all(self);
     }
 
     pub fn zoom_out(&self) {
+        //FIXME
         //use ZoomableDrawingAreas::*;
 
-        //        match self.last_focus.get() {
-        //            SkewT => self.skew_t.zoom_out(),
-        //            Hodo => self.hodo.zoom_out(),
-        //            FirePlume => self.fire_plume.zoom_out(),
-        //            FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
-        //        }
+        //FIXME
+        //match self.last_focus.get() {
+        //    SkewT => self.skew_t.zoom_out(),
+        //    Hodo => self.hodo.zoom_out(),
+        //    FirePlume => self.fire_plume.zoom_out(),
+        //    FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
+        //}
 
         self.mark_background_dirty();
         gui::draw_all(self);
     }
 
     pub fn mark_data_dirty(&self) {
-        //        self.hodo.mark_data_dirty();
-        //        self.fire_plume.mark_data_dirty();
-        //        self.fire_plume_energy.mark_data_dirty();
-        //        self.skew_t.mark_data_dirty();
-        //        self.rh_omega.mark_data_dirty();
-        //        self.cloud.mark_data_dirty();
-        //        self.wind_speed.mark_data_dirty();
+        //FIXME
+        //self.hodo.mark_data_dirty();
+        //self.fire_plume.mark_data_dirty();
+        //self.fire_plume_energy.mark_data_dirty();
+        //self.skew_t.mark_data_dirty();
+        //self.rh_omega.mark_data_dirty();
+        //self.cloud.mark_data_dirty();
+        //self.wind_speed.mark_data_dirty();
     }
 
     pub fn mark_overlay_dirty(&self) {
-        //        self.hodo.mark_overlay_dirty();
-        //        self.fire_plume.mark_overlay_dirty();
-        //        self.fire_plume_energy.mark_overlay_dirty();
-        //        self.skew_t.mark_overlay_dirty();
-        //        self.rh_omega.mark_overlay_dirty();
-        //        self.cloud.mark_overlay_dirty();
-        //        self.wind_speed.mark_overlay_dirty();
+        //FIXME
+        //self.hodo.mark_overlay_dirty();
+        //self.fire_plume.mark_overlay_dirty();
+        //self.fire_plume_energy.mark_overlay_dirty();
+        //self.skew_t.mark_overlay_dirty();
+        //self.rh_omega.mark_overlay_dirty();
+        //self.cloud.mark_overlay_dirty();
+        //self.wind_speed.mark_overlay_dirty();
     }
 
     pub fn mark_background_dirty(&self) {
-        //        self.hodo.mark_background_dirty();
-        //        self.fire_plume.mark_background_dirty();
-        //        self.fire_plume_energy.mark_background_dirty();
-        //        self.skew_t.mark_background_dirty();
-        //        self.rh_omega.mark_background_dirty();
-        //        self.cloud.mark_background_dirty();
-        //        self.wind_speed.mark_background_dirty();
+        //FIXME
+        //self.hodo.mark_background_dirty();
+        //self.fire_plume.mark_background_dirty();
+        //self.fire_plume_energy.mark_background_dirty();
+        //self.skew_t.mark_background_dirty();
+        //self.rh_omega.mark_background_dirty();
+        //self.cloud.mark_background_dirty();
+        //self.wind_speed.mark_background_dirty();
     }
 }

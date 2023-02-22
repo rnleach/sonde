@@ -908,10 +908,11 @@ lazy_static! {
             })
         .map(|tp| {
             [
-//                RHOmegaContext::convert_wp_to_xy(tp[0]),
-//                RHOmegaContext::convert_wp_to_xy(tp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //OmegaContext::convert_wp_to_xy(tp[0]),
+                //OmegaContext::convert_wp_to_xy(tp[1])
+                XYCoords{x:0.0, y:0.0}, // FIXME
+                XYCoords{x:1.0, y:1.0}  // FIXME
             ]
         })
         .collect()
@@ -925,9 +926,10 @@ lazy_static! {
             let mut v = vec![];
             let mut dir = 0.0;
             while dir <= 361.0 {
-//                v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
-//                dir += 1.0;
-                v.push(XYCoords{x:0.0, y:0.0});
+                //FIXME
+                //v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
+                //dir += 1.0;
+                v.push(XYCoords{x:0.0, y:0.0}); // FIXME 
             }
             v
         })
@@ -952,10 +954,11 @@ lazy_static! {
             })
         .map(|pp| {
             [
-//                CloudContext::convert_pp_to_xy(pp[0]),
-//                CloudContext::convert_pp_to_xy(pp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //CloudContext::convert_pp_to_xy(pp[0]),
+                //CloudContext::convert_pp_to_xy(pp[1])
+                XYCoords{x:0.0, y:0.0},//FIXME
+                XYCoords{x:1.0, y:1.0}//FIXME
             ]
         })
             .collect()
@@ -979,10 +982,11 @@ lazy_static! {
             })
         .map(|sp| {
             [
-//                WindSpeedContext::convert_sp_to_xy(sp[0]),
-//                WindSpeedContext::convert_sp_to_xy(sp[1])
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //WindSpeedContext::convert_sp_to_xy(sp[0]),
+                //WindSpeedContext::convert_sp_to_xy(sp[1])
+                XYCoords{x:0.0, y:0.0},//FIXME
+                XYCoords{x:1.0, y:1.0}//FIXME
             ]
         })
             .collect()
@@ -1006,10 +1010,11 @@ lazy_static! {
                })
                .map(|dt| {
                    [
-//                       FirePlumeContext::convert_dth_to_xy(dt[0]),
-//                       FirePlumeContext::convert_dth_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //FirePlumeContext::convert_dth_to_xy(dt[0]),
+                //FirePlumeContext::convert_dth_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},//FIXME
+                XYCoords{x:1.0, y:1.0}//FIXME
                    ]
                })
            .collect()
@@ -1033,10 +1038,11 @@ lazy_static! {
                })
            .map(|dt| {
                [
- //                  FirePlumeContext::convert_dth_to_xy(dt[0]),
- //                  FirePlumeContext::convert_dth_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //FirePlumeContext::convert_dth_to_xy(dt[0]),
+                //FirePlumeContext::convert_dth_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},//FIXME
+                XYCoords{x:1.0, y:1.0}//FIXME
                ]
            })
            .collect()
@@ -1060,10 +1066,11 @@ lazy_static! {
                })
            .map(|dt| {
                [
-//                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-//                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},
-                XYCoords{x:1.0, y:1.0}
+                //FIXME
+                //FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
+                //FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+                XYCoords{x:0.0, y:0.0},//FIXME
+                XYCoords{x:1.0, y:1.0}//FIXME
                ]
            })
            .collect()
@@ -1081,18 +1088,18 @@ fn generate_isentrop(theta: Kelvin) -> Vec<XYCoords> {
     let mut p = MAXP;
     while p >= ISENTROPS_TOP_P {
         let t: Celsius = temperature_from_pot_temp(theta, p).into();
-                result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-                    temperature: t,
-                    pressure: p,
-                }));
+        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+            temperature: t,
+            pressure: p,
+        }));
         p += HectoPascal((ISENTROPS_TOP_P - MAXP).unpack() / f64::from(POINTS_PER_ISENTROP));
     }
     let t: Celsius = temperature_from_pot_temp(theta, ISENTROPS_TOP_P).into();
 
-        result.push(SkewTContext::convert_tp_to_xy(TPCoords {
-            temperature: t,
-            pressure: ISENTROPS_TOP_P,
-        }));
+    result.push(SkewTContext::convert_tp_to_xy(TPCoords {
+        temperature: t,
+        pressure: ISENTROPS_TOP_P,
+    }));
 
     result
 }
