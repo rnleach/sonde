@@ -853,10 +853,9 @@ trait Drawable: PlotContext + PlotContextExt {
         }
     }
 
-    fn key_press_event(event: &KeyEvent, ac: &AppContextPointer) -> Inhibit {
+    fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {
         use gtk::gdk::Key;
 
-        let keyval = event.keyval();
         if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();
             Inhibit(true)
@@ -868,6 +867,7 @@ trait Drawable: PlotContext + PlotContextExt {
         }
     }
 
+    // FIXME: REMOVE?
     fn size_allocate_event(&self, da: &DrawingArea) {
         self.update_cache_allocations(da);
     }

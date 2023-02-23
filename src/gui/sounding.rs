@@ -16,10 +16,11 @@ use crate::{
     },
 };
 use gtk::{
-    //FIXME
-    //Menu,
     prelude::*,
     DrawingArea,
+    EventControllerKey,
+    //FIXME
+    //Menu,
     EventControllerMotion,
     EventControllerScroll,
     EventControllerScrollFlags,
@@ -148,9 +149,12 @@ impl Drawable for SkewTContext {
 
         da.add_controller(mouse_motion);
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_key_press_event(move |_da, ev| SkewTContext::key_press_event(ev, &ac));
+        // Set up the key presses.
+        let key_press = EventControllerKey::new();
+        let ac = Rc::clone(acp);
+        key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+            SkewTContext::key_press_event(key, &ac)
+        });
 
         let ac = Rc::clone(acp);
         da.connect_resize(move |da, width, height| {
