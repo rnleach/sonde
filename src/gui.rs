@@ -9,9 +9,9 @@ use crate::{
 };
 use gtk::{
     cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
-    gdk::{ButtonEvent, /*EventConfigure,*/ KeyEvent, MotionEvent, ScrollDirection, ScrollEvent,},
+    gdk::KeyEvent,
     prelude::*,
-    DrawingArea, Inhibit,
+    DrawingArea, EventControllerMotion, Inhibit,
 };
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -758,76 +758,78 @@ trait Drawable: PlotContext + PlotContextExt {
      * Events
      **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, pos: (f64, f64), dy: f64, ac: &AppContextPointer) -> Inhibit {
+    fn scroll_event(&self, dy: f64, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
 
-        let pos = self.convert_device_to_xy(DeviceCoords::from(pos));
+        if let Some(pos) = self.get_last_cursor_position() {
+            let pos = self.convert_device_to_xy(pos);
 
-        let old_zoom = self.get_zoom_factor();
-        let mut new_zoom = old_zoom;
+            let old_zoom = self.get_zoom_factor();
+            let mut new_zoom = old_zoom;
 
-        if dy > 0.0 {
-            new_zoom *= DELTA_SCALE;
-        } else if dy < 0.0 {
-            new_zoom /= DELTA_SCALE;
+            if dy > 0.0 {
+                new_zoom /= DELTA_SCALE;
+            } else if dy < 0.0 {
+                new_zoom *= DELTA_SCALE;
+            }
+
+            let mut translate = self.get_translate();
+            translate = XYCoords {
+                x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+                y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+            };
+
+            self.zoom(translate, new_zoom);
+
+            draw_all(ac);
+            //FIXME
+            //text_area::update_text_highlight(ac);
+
+            Inhibit(true)
+        } else {
+            dbg!("Still no position!");
+            Inhibit(false)
         }
-
-        let mut translate = self.get_translate();
-        translate = XYCoords {
-            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
-            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
-        };
-
-        self.zoom(translate, new_zoom);
-
-        draw_all(ac);
-        //FIXME
-        //text_area::update_text_highlight(ac);
-
-        Inhibit(true)
     }
 
-    fn left_button_press_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
+    fn left_button_press_event(&self, position: (f64, f64), _ac: &AppContextPointer) {
         self.set_last_cursor_position(Some(position.into()));
         self.set_left_button_pressed(true);
     }
 
-    fn right_button_release_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
+    fn right_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
         // For showing optional context menu
     }
 
-    fn left_button_release_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
-            self.set_last_cursor_position(None);
-            self.set_left_button_pressed(false);
+    fn left_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
+        self.set_last_cursor_position(None);
+        self.set_left_button_pressed(false);
     }
 
-    fn enter_event(&self, _ac: &AppContextPointer) -> Inhibit {
-        Inhibit(false)
-    }
+    fn enter_event(&self, _ac: &AppContextPointer) {}
 
-    fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
+    fn leave_event(&self, ac: &AppContextPointer) {
         self.set_last_cursor_position(None);
         ac.set_sample(Sample::None);
 
         draw_all(ac);
         //FIXME
         //text_area::update_text_highlight(ac);
-
-        Inhibit(false)
     }
 
     fn mouse_motion_event(
         &self,
-        da: &DrawingArea,
-        ev: &MotionEvent,
+        controller: &EventControllerMotion,
+        new_position: (f64, f64),
         ac: &AppContextPointer,
-    ) -> Inhibit {
+    ) {
+        let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
 
+        dbg!("CALL ME?");
+
         if self.get_left_button_pressed() {
-            if let (Some(new_position), Some(last_position)) =
-                (ev.position(), self.get_last_cursor_position())
-            {
+            if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
                 let new_position = DeviceCoords::from(new_position);
                 self.set_last_cursor_position(Some(new_position));
@@ -849,7 +851,6 @@ trait Drawable: PlotContext + PlotContextExt {
                 //text_area::update_text_highlight(ac);
             }
         }
-        Inhibit(false)
     }
 
     fn key_press_event(event: &KeyEvent, ac: &AppContextPointer) -> Inhibit {

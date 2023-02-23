@@ -18,9 +18,9 @@ use crate::{
 use gtk::{
     //FIXME
     //Menu,
-    gdk::{ButtonEvent, MotionEvent},
     prelude::*,
     DrawingArea,
+    EventControllerMotion,
     EventControllerScroll,
     EventControllerScrollFlags,
     GestureClick,
@@ -96,61 +96,57 @@ impl Drawable for SkewTContext {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("skew_t")?;
 
+        // Set up the drawing function.
         let ac = Rc::clone(acp);
         da.set_draw_func(move |_da, cr, _width, _height| {
-            dbg!("DRAW");
             ac.skew_t.draw_callback(cr, &ac);
         });
 
-        // FIXME - position is none!
-        /*
+        // Set up the scroll (or zoom in/out) callbacks.
         let ac = Rc::clone(acp);
         let scroll_control = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
-        scroll_control.connect_scroll(move |scroll_control, _dx, dy| {
-            dbg!("SCROLL", dy);
+        scroll_control.connect_scroll(move |_scroll_control, _dx, dy| {
+            ac.mark_background_dirty();
+            ac.skew_t.scroll_event(dy, &ac);
 
-            if let Some(pos) = scroll_control.current_event().and_then(|ev| ev.position()) {
-                dbg!(pos);
-                ac.mark_background_dirty();
-                ac.skew_t.scroll_event(pos, dy, &ac)
-            } else {
-                dbg!("NO POS");
-                Inhibit(false)
-            }
-
+            Inhibit(true)
         });
         da.add_controller(scroll_control);
-        */
 
-        // Set up the botton clicks.
-        let ac = Rc::clone(acp);
+        // Set up the button clicks.
         let left_mouse_button = GestureClick::builder().build();
-        left_mouse_button.connect_pressed(move|mouse_button, _n_pressed, x, y| {
-            dbg!("LEFT BUTTON PRESSED", mouse_button.button());
-            ac.skew_t.left_button_press_event((x,y), &ac);
-            dbg!(x, y, ac.skew_t.get_last_cursor_position());
+
+        let ac = Rc::clone(acp);
+        left_mouse_button.connect_pressed(move |_mouse_button, _n_pressed, x, y| {
+            ac.skew_t.left_button_press_event((x, y), &ac);
         });
 
         let ac = Rc::clone(acp);
-        left_mouse_button.connect_released(move|mouse_button, _n_press, x, y| {
-            dbg!("LEFT BUTTON RELEASED", mouse_button.button());
-            ac.skew_t.left_button_release_event((x,y), &ac);
-            dbg!(x, y, ac.skew_t.get_last_cursor_position());
+        left_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.skew_t.left_button_release_event((x, y), &ac);
         });
-        
+
         da.add_controller(left_mouse_button);
 
-        // FIXME - then here! #3
-        //let ac = Rc::clone(acp);
-        //da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
+        // Set up the mouse motion events
+        let mouse_motion = EventControllerMotion::new();
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_enter_notify_event(move |_da, _ev| ac.skew_t.enter_event(&ac));
+        let ac = Rc::clone(acp);
+        mouse_motion.connect_motion(move |mouse_motion, x, y| {
+            ac.skew_t.mouse_motion_event(mouse_motion, (x, y), &ac);
+        });
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_leave_notify_event(move |_da, _ev| ac.skew_t.leave_event(&ac));
+        let ac = Rc::clone(acp);
+        mouse_motion.connect_enter(move |_mouse_motion, _x, _y| {
+            ac.skew_t.enter_event(&ac);
+        });
+
+        let ac = Rc::clone(acp);
+        mouse_motion.connect_leave(move |_mouse_motion| {
+            ac.skew_t.leave_event(&ac);
+        });
+
+        da.add_controller(mouse_motion);
 
         // FIXME
         //let ac = Rc::clone(acp);
@@ -546,38 +542,36 @@ impl Drawable for SkewTContext {
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
-    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+    fn enter_event(&self, ac: &AppContextPointer) {
         ac.set_last_focus(ZoomableDrawingAreas::SkewT);
-        Inhibit(false)
     }
 
-    fn right_button_release_event(&self, position: (f64,f64), _ac: &AppContextPointer) {
-            //FIXME: Get menu working.
-            //if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
-            //    // waiting for version 3.22...
-            //    // let ev: &::gdk::Event = evt;
-            //    // menu.popup_at_pointer(ev);
-            //    menu.popup_easy(3, 0)
-            //}
+    fn right_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
+        //FIXME: Get menu working.
+        //if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
+        //    // waiting for version 3.22...
+        //    // let ev: &::gdk::Event = evt;
+        //    // menu.popup_at_pointer(ev);
+        //    menu.popup_easy(3, 0)
+        //}
     }
 
     fn mouse_motion_event(
         &self,
-        da: &DrawingArea,
-        event: &MotionEvent,
+        controller: &EventControllerMotion,
+        new_position: (f64, f64),
         ac: &AppContextPointer,
-    ) -> Inhibit {
+    ) {
+        let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
 
-        if self.get_left_button_pressed() {
-            if let (Some(last_position), Some(new_position)) =
-                (self.get_last_cursor_position(), event.position())
-            {
-                let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(new_position);
-                self.set_last_cursor_position(Some(new_position));
+        let position = DeviceCoords::from(new_position);
 
-                let new_position = self.convert_device_to_xy(new_position);
+        if self.get_left_button_pressed() {
+            if let Some(last_position) = self.get_last_cursor_position() {
+                let old_position = self.convert_device_to_xy(last_position);
+
+                let new_position = self.convert_device_to_xy(position);
                 let delta = (
                     new_position.x - old_position.x,
                     new_position.y - old_position.y,
@@ -595,9 +589,6 @@ impl Drawable for SkewTContext {
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.position().unwrap_or((0.0, 0.0)).into();
-
-            self.set_last_cursor_position(Some(position));
             let tp_position = self.convert_device_to_tp(position);
 
             let sample = if let Some(max_p) = ac
@@ -641,7 +632,7 @@ impl Drawable for SkewTContext {
             // FIXME:
             // crate::gui::text_area::update_text_highlight(&ac);
         }
-        Inhibit(false)
+        self.set_last_cursor_position(Some(position));
     }
 }
 
