@@ -929,7 +929,7 @@ lazy_static! {
                 //FIXME
                 //v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
                 //dir += 1.0;
-                v.push(XYCoords{x:0.0, y:0.0}); // FIXME 
+                v.push(XYCoords{x:0.0, y:0.0}); // FIXME
             }
             v
         })

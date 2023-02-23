@@ -21,6 +21,9 @@ use gtk::{
     gdk::{ButtonEvent, MotionEvent},
     prelude::*,
     DrawingArea,
+    EventControllerScroll,
+    EventControllerScrollFlags,
+    GestureClick,
     Inhibit,
 };
 use itertools::izip;
@@ -95,25 +98,49 @@ impl Drawable for SkewTContext {
 
         let ac = Rc::clone(acp);
         da.set_draw_func(move |_da, cr, _width, _height| {
+            dbg!("DRAW");
             ac.skew_t.draw_callback(cr, &ac);
         });
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_scroll_event(move |_da, ev| {
-        //ac.mark_background_dirty();
-        //ac.skew_t.scroll_event(ev, &ac)
-        //});
+        // FIXME - position is none!
+        /*
+        let ac = Rc::clone(acp);
+        let scroll_control = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
+        scroll_control.connect_scroll(move |scroll_control, _dx, dy| {
+            dbg!("SCROLL", dy);
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_button_press_event(move |_da, ev| ac.skew_t.button_press_event(ev, &ac));
+            if let Some(pos) = scroll_control.current_event().and_then(|ev| ev.position()) {
+                dbg!(pos);
+                ac.mark_background_dirty();
+                ac.skew_t.scroll_event(pos, dy, &ac)
+            } else {
+                dbg!("NO POS");
+                Inhibit(false)
+            }
 
-        // FIXME
-        //let ac = Rc::clone(acp);
-        //da.connect_button_release_event(move |_da, ev| ac.skew_t.button_release_event(ev));
+        });
+        da.add_controller(scroll_control);
+        */
 
-        // FIXME
+        // Set up the botton clicks.
+        let ac = Rc::clone(acp);
+        let left_mouse_button = GestureClick::builder().build();
+        left_mouse_button.connect_pressed(move|mouse_button, _n_pressed, x, y| {
+            dbg!("LEFT BUTTON PRESSED", mouse_button.button());
+            ac.skew_t.left_button_press_event((x,y), &ac);
+            dbg!(x, y, ac.skew_t.get_last_cursor_position());
+        });
+
+        let ac = Rc::clone(acp);
+        left_mouse_button.connect_released(move|mouse_button, _n_press, x, y| {
+            dbg!("LEFT BUTTON RELEASED", mouse_button.button());
+            ac.skew_t.left_button_release_event((x,y), &ac);
+            dbg!(x, y, ac.skew_t.get_last_cursor_position());
+        });
+        
+        da.add_controller(left_mouse_button);
+
+        // FIXME - then here! #3
         //let ac = Rc::clone(acp);
         //da.connect_motion_notify_event(move |da, ev| ac.skew_t.mouse_motion_event(da, ev, &ac));
 
@@ -131,6 +158,8 @@ impl Drawable for SkewTContext {
 
         let ac = Rc::clone(acp);
         da.connect_resize(move |da, width, height| {
+            dbg!("RESIZE");
+
             // TODO merge below methods into one.
             ac.skew_t.size_allocate_event(da);
             ac.skew_t.resize_event(width, height, &ac);
@@ -522,13 +551,7 @@ impl Drawable for SkewTContext {
         Inhibit(false)
     }
 
-    fn button_press_event(&self, event: &ButtonEvent, _ac: &AppContextPointer) -> Inhibit {
-        // Left mouse button
-        if event.button() == 1 {
-            self.set_last_cursor_position(event.position().map(|coords| coords.into()));
-            self.set_left_button_pressed(true);
-            Inhibit(true)
-        } else if event.button() == 3 {
+    fn right_button_release_event(&self, position: (f64,f64), _ac: &AppContextPointer) {
             //FIXME: Get menu working.
             //if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
             //    // waiting for version 3.22...
@@ -536,10 +559,6 @@ impl Drawable for SkewTContext {
             //    // menu.popup_at_pointer(ev);
             //    menu.popup_easy(3, 0)
             //}
-            Inhibit(false)
-        } else {
-            Inhibit(false)
-        }
     }
 
     fn mouse_motion_event(

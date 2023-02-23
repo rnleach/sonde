@@ -758,24 +758,18 @@ trait Drawable: PlotContext + PlotContextExt {
      * Events
      **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &ScrollEvent, ac: &AppContextPointer) -> Inhibit {
+    fn scroll_event(&self, pos: (f64, f64), dy: f64, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
 
-        let pos =
-            self.convert_device_to_xy(DeviceCoords::from(event.position().unwrap_or((0.0, 0.0))));
-        let dir = event.direction();
+        let pos = self.convert_device_to_xy(DeviceCoords::from(pos));
 
         let old_zoom = self.get_zoom_factor();
         let mut new_zoom = old_zoom;
 
-        match dir {
-            ScrollDirection::Up => {
-                new_zoom *= DELTA_SCALE;
-            }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
+        if dy > 0.0 {
+            new_zoom *= DELTA_SCALE;
+        } else if dy < 0.0 {
+            new_zoom /= DELTA_SCALE;
         }
 
         let mut translate = self.get_translate();
@@ -793,25 +787,18 @@ trait Drawable: PlotContext + PlotContextExt {
         Inhibit(true)
     }
 
-    fn button_press_event(&self, event: &ButtonEvent, _ac: &AppContextPointer) -> Inhibit {
-        // Left mouse button
-        if event.button() == 1 {
-            self.set_last_cursor_position(event.position().map(|coords| coords.into()));
-            self.set_left_button_pressed(true);
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
+    fn left_button_press_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
+        self.set_last_cursor_position(Some(position.into()));
+        self.set_left_button_pressed(true);
     }
 
-    fn button_release_event(&self, event: &ButtonEvent) -> Inhibit {
-        if event.button() == 1 {
+    fn right_button_release_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
+        // For showing optional context menu
+    }
+
+    fn left_button_release_event(&self, position:(f64,f64), _ac: &AppContextPointer) {
             self.set_last_cursor_position(None);
             self.set_left_button_pressed(false);
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
     }
 
     fn enter_event(&self, _ac: &AppContextPointer) -> Inhibit {

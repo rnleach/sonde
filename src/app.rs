@@ -8,8 +8,8 @@ use crate::{
         // FIXME
         //profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
         //FirePlumeContext, FirePlumeEnergyContext, HodoContext,
-        //PlotContext,
-        //PlotContextExt,
+        PlotContext,
+        PlotContextExt,
         SkewTContext,
     },
 };
@@ -301,32 +301,28 @@ impl AppContext {
     }
 
     pub fn zoom_in(&self) {
-        //FIXME
-        //use ZoomableDrawingAreas::*;
+        use ZoomableDrawingAreas::*;
 
-        //FIXME
-        //match self.last_focus.get() {
-        //    SkewT => self.skew_t.zoom_in(),
-        //    Hodo => self.hodo.zoom_in(),
-        //    FirePlume => self.fire_plume.zoom_in(),
-        //    FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
-        //}
+        match self.last_focus.get() {
+            SkewT => self.skew_t.zoom_in(),
+            Hodo => {}            // FIXME self.hodo.zoom_in(),
+            FirePlume => {}       // FIXME self.fire_plume.zoom_in(),
+            FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_in(),
+        }
 
         self.mark_background_dirty();
         gui::draw_all(self);
     }
 
     pub fn zoom_out(&self) {
-        //FIXME
-        //use ZoomableDrawingAreas::*;
+        use ZoomableDrawingAreas::*;
 
-        //FIXME
-        //match self.last_focus.get() {
-        //    SkewT => self.skew_t.zoom_out(),
-        //    Hodo => self.hodo.zoom_out(),
-        //    FirePlume => self.fire_plume.zoom_out(),
-        //    FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
-        //}
+        match self.last_focus.get() {
+            SkewT => self.skew_t.zoom_out(),
+            Hodo => {}            // FIXME self.hodo.zoom_out(),
+            FirePlume => {}       // FIXME self.fire_plume.zoom_out(),
+            FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_out(),
+        }
 
         self.mark_background_dirty();
         gui::draw_all(self);
@@ -337,7 +333,7 @@ impl AppContext {
         //self.hodo.mark_data_dirty();
         //self.fire_plume.mark_data_dirty();
         //self.fire_plume_energy.mark_data_dirty();
-        //self.skew_t.mark_data_dirty();
+        self.skew_t.mark_data_dirty();
         //self.rh_omega.mark_data_dirty();
         //self.cloud.mark_data_dirty();
         //self.wind_speed.mark_data_dirty();
@@ -348,7 +344,7 @@ impl AppContext {
         //self.hodo.mark_overlay_dirty();
         //self.fire_plume.mark_overlay_dirty();
         //self.fire_plume_energy.mark_overlay_dirty();
-        //self.skew_t.mark_overlay_dirty();
+        self.skew_t.mark_overlay_dirty();
         //self.rh_omega.mark_overlay_dirty();
         //self.cloud.mark_overlay_dirty();
         //self.wind_speed.mark_overlay_dirty();
@@ -359,7 +355,7 @@ impl AppContext {
         //self.hodo.mark_background_dirty();
         //self.fire_plume.mark_background_dirty();
         //self.fire_plume_energy.mark_background_dirty();
-        //self.skew_t.mark_background_dirty();
+        self.skew_t.mark_background_dirty();
         //self.rh_omega.mark_background_dirty();
         //self.cloud.mark_background_dirty();
         //self.wind_speed.mark_background_dirty();
