@@ -168,24 +168,24 @@ fn on_delete(win: &Window, ac: &AppContext) -> Inhibit {
 fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
     let cfg = ac.config.borrow();
 
+    let pane: Paned = ac.fetch_widget("main_pane_view")?;
+
+    let (width, height, pane_position) =
+        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
+
+    if width > 0 || height > 0 {
+        win.set_default_size(width, height);
+    }
+
+    if pane_position > 0.0 {
+        let (width, _) = win.default_size();
+        let pos = (width as f32 * pane_position).round() as i32;
+
+        debug_assert!(pos < width);
+        pane.set_position(pos);
+    }
+
     //    FIXME
-    //    let pane: Paned = ac.fetch_widget("main_pane_view")?;
-
-    //    let (width, height, pane_position) =
-    //        { (cfg.window_width, cfg.window_height, cfg.pane_position) };
-
-    //    if width > 0 || height > 0 {
-    //        win.resize(width, height);
-    //    }
-
-    //    if pane_position > 0.0 {
-    //        let (width, _) = win.size();
-    //        let pos = (width as f32 * pane_position).round() as i32;
-    //
-    //        debug_assert!(pos < width);
-    //        pane.set_position(pos);
-    //    }
-
     /*
     if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
         if let (Ok(lnb), Ok(rnb)) = (

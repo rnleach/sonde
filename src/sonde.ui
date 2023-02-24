@@ -261,7 +261,7 @@
 
                 <!-- ****************************  Content Area  ****************************** -->
                 <child>
-                    <object class="GtkPaned">
+                    <object class="GtkPaned" id="main_pane_view">
                         <property name="orientation">horizontal</property>
                         <property name="resize-start-child">True</property>
                         <property name="resize-end-child">True</property>
