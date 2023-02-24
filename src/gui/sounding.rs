@@ -19,8 +19,6 @@ use gtk::{
     prelude::*,
     DrawingArea,
     EventControllerKey,
-    //FIXME
-    //Menu,
     EventControllerMotion,
     EventControllerScroll,
     EventControllerScrollFlags,
@@ -129,6 +127,13 @@ impl Drawable for SkewTContext {
 
         da.add_controller(left_mouse_button);
 
+        let right_mouse_button = GestureClick::builder().button(3).build();
+        let ac = Rc::clone(acp);
+        right_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.skew_t.right_button_release_event((x, y), &ac);
+        });
+        da.add_controller(right_mouse_button);
+
         // Set up the mouse motion events
         let mouse_motion = EventControllerMotion::new();
 
@@ -164,8 +169,7 @@ impl Drawable for SkewTContext {
             ac.skew_t.resize_event(width, height, &ac);
         });
 
-        // FIXME
-        // Self::build_sounding_area_context_menu(acp)?;
+        Self::build_sounding_area_context_menu(acp)?;
 
         Ok(())
     }
@@ -549,14 +553,16 @@ impl Drawable for SkewTContext {
         ac.set_last_focus(ZoomableDrawingAreas::SkewT);
     }
 
-    fn right_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
-        //FIXME: Get menu working.
-        //if let Ok(menu) = ac.fetch_widget::<Menu>("sounding_context_menu") {
-        //    // waiting for version 3.22...
-        //    // let ev: &::gdk::Event = evt;
-        //    // menu.popup_at_pointer(ev);
-        //    menu.popup_easy(3, 0)
-        //}
+    fn right_button_release_event(&self, _position: (f64, f64), ac: &AppContextPointer) {
+        if let Ok(popover) = ac.fetch_widget::<gtk::PopoverMenu>("skew_t_popover") {
+            if let Some(pos) = self.get_last_cursor_position() {
+                let llx: i32 = pos.col as i32;
+                let lly: i32 = pos.row as i32;
+                let rect = gtk::gdk::Rectangle::new(llx, lly, 1, 1);
+                popover.set_pointing_to(Some(&rect));
+                popover.popup();
+            }
+        }
     }
 
     fn mouse_motion_event(
@@ -644,8 +650,7 @@ impl MasterDrawable for SkewTContext {}
 mod active_readout;
 mod background;
 mod data_layer;
-// FIXME
-//mod menu;
+mod menu;
 mod wind;
 
 impl SkewTContext {

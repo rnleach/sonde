@@ -9,9 +9,12 @@ use crate::{
 };
 use gtk::{
     cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
-    gdk::KeyEvent,
+    // FIXME DELETE
+    //gdk::KeyEvent,
     prelude::*,
-    DrawingArea, EventControllerMotion, Inhibit,
+    DrawingArea,
+    EventControllerMotion,
+    Inhibit,
 };
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -787,7 +790,6 @@ trait Drawable: PlotContext + PlotContextExt {
 
             Inhibit(true)
         } else {
-            dbg!("Still no position!");
             Inhibit(false)
         }
     }
@@ -826,8 +828,6 @@ trait Drawable: PlotContext + PlotContextExt {
         let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
 
-        dbg!("CALL ME?");
-
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
@@ -855,7 +855,6 @@ trait Drawable: PlotContext + PlotContextExt {
 
     fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {
         use gtk::gdk::Key;
-        dbg!(keyval);
 
         if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();

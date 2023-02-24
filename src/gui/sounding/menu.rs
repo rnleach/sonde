@@ -1,3 +1,35 @@
+use gtk::{
+    gio::{SimpleAction, SimpleActionGroup},
+    prelude::*,
+    Window,
+};
+
+use super::SkewTContext;
+
+use crate::{app::AppContextPointer, errors::SondeError};
+impl SkewTContext {
+    pub fn build_sounding_area_context_menu(acp: &AppContextPointer) -> Result<(), SondeError> {
+        let window: Window = acp.fetch_widget("main_window")?;
+
+        let active_readout_group = SimpleActionGroup::new();
+        window.insert_action_group("skew-t", Some(&active_readout_group));
+
+        let ac = acp.clone();
+        let show_active_readout_action = SimpleAction::new("show_active_readout", None);
+        show_active_readout_action.connect_activate(move |_action, _variant| {
+            let mut config = ac.config.borrow_mut();
+            config.show_active_readout = !config.show_active_readout;
+            ac.mark_data_dirty();
+            crate::gui::draw_all(&ac);
+            crate::gui::update_text_views(&ac);
+        });
+        active_readout_group.add_action(&show_active_readout_action);
+
+        Ok(())
+    }
+}
+
+/*
 use super::SkewTContext;
 use crate::{
     app::{config::ParcelType, AppContextPointer},
@@ -151,3 +183,4 @@ impl SkewTContext {
         make_check_item!(menu, "Wind", acp, show_wind_profile);
     }
 }
+*/

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
 
+    <!-- *******************************  Header Bar  ***************************************** -->
     <object id="headerbar" class="GtkHeaderBar">
         <property name="show-title-buttons">False</property>
 
@@ -31,6 +32,18 @@
 
     </object>
 
+    <!-- ***************************  Sounding Popup Menu  ************************************ -->
+    <menu id="sounding_context_menu">
+        <section>
+            <attribute name="label">Active Readout</attribute>
+            <item>
+                <attribute name="label">Show active readout</attribute>
+                <attribute name="action">skew-t.show_active_readout</attribute>
+            </item>
+        </section>
+    </menu>
+
+    <!-- ******************************  Main Window  ***************************************** -->
     <object class="GtkWindow" id="main_window">
         <property name="decorated">True</property>
         <property name="title">Sonde</property>
@@ -70,6 +83,13 @@
                                         <property name="can-target">True</property>
                                         <property name="focus-on-click">True</property>
                                         <property name="focusable">True</property>
+                                        
+                                        <child>
+                                            <object id="skew_t_popover" class="GtkPopoverMenu">
+                                                <property name="menu-model">sounding_context_menu</property>
+                                            </object>
+                                        </child>
+
                                     </object>
                                 </child>
                                 <child type="tab">

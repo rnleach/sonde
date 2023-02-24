@@ -1,9 +1,4 @@
-use crate::{
-    app::AppContextPointer,
-    coords::DeviceRect,
-    errors::*,
-    gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable},
-};
+use crate::app::AppContextPointer;
 use gtk::{
     gio, prelude::*, FileChooserAction, FileChooserDialog, FileFilter, MessageDialog, ResponseType,
     Widget, Window,
