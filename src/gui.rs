@@ -855,6 +855,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
     fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {
         use gtk::gdk::Key;
+        dbg!(keyval);
 
         if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();

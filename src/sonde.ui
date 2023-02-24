@@ -2,6 +2,16 @@
 <interface>
 
     <object id="headerbar" class="GtkHeaderBar">
+        <property name="show-title-buttons">False</property>
+
+        <child type="start">
+            <object id="file-open-button" class="GtkButton">
+                <property name="icon-name">document-open</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_LEFT</property>
+            </object>
+        </child>
+
         <property name="title-widget">
             <object id="window-title" class="GtkLabel">
                 <property name="label">Sonde</property>
@@ -10,6 +20,15 @@
                 <property name="width-chars">5</property>
             </object>
         </property>
+
+        <child type="end">
+            <object id="quit-button" class="GtkButton">
+                <property name="icon-name">window-close</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_RIGHT</property>
+            </object>
+        </child>
+
     </object>
 
     <object class="GtkWindow" id="main_window">

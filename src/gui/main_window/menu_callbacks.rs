@@ -1,4 +1,3 @@
-/*
 use crate::{
     app::AppContextPointer,
     coords::DeviceRect,
@@ -6,7 +5,7 @@ use crate::{
     gui::{plot_context::PlotContext, utility::DrawingArgs, Drawable},
 };
 use gtk::{
-    prelude::*, FileChooserAction, FileChooserDialog, FileFilter, MessageDialog, ResponseType,
+    gio, prelude::*, FileChooserAction, FileChooserDialog, FileFilter, MessageDialog, ResponseType,
     Widget, Window,
 };
 use std::path::PathBuf;
@@ -16,13 +15,18 @@ pub fn open_toolbar_callback(ac: &AppContextPointer, win: &Window) {
 }
 
 fn open_files(ac: &AppContextPointer, win: &Window) {
-    let dialog = FileChooserDialog::new(Some("Open File"), Some(win), FileChooserAction::Open);
+    let dialog = FileChooserDialog::new(
+        Some("Open File"),
+        Some(win),
+        FileChooserAction::Open,
+        &[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
+    );
 
-    dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
     dialog.set_select_multiple(true);
+    dialog.set_modal(true);
 
     if let Some(ref fname) = ac.config.borrow().last_open_file {
-        dialog.set_filename(fname);
+        dialog.set_file(&gio::File::for_path(fname)).ok();
     }
 
     let filter_data = [
@@ -53,33 +57,45 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
     filter.set_name(Some("All Files"));
     dialog.add_filter(&filter);
 
-    if dialog.run() == ResponseType::Ok {
-        let paths: Vec<_> = dialog
-            .filenames()
-            .into_iter()
-            .filter(|pb| pb.is_file())
-            .collect();
+    let ac = ac.clone();
+    let win = win.clone();
+    dialog.connect_response(move |dialog, response| {
+        if response == ResponseType::Ok {
+            let paths: Vec<_> = dialog
+                .files()
+                .into_iter()
+                .filter_map(|pb| pb.ok())
+                .filter_map(|pb| pb.downcast::<gio::File>().ok())
+                .filter_map(|pb| pb.path())
+                .filter(|pb| pb.is_file())
+                .collect();
 
-        // Remember the last opened file in the config.
-        if let Some(ref f0) = paths.get(0) {
-            ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
+            // Remember the last opened file in the config.
+            if let Some(ref f0) = paths.get(0) {
+                ac.config.borrow_mut().last_open_file = Some(PathBuf::from(f0));
+            }
+
+            if let Err(ref err) = crate::app::load_file::load_multiple(&paths, &ac) {
+                show_error_dialog(&format!("Error loading file: {}", err), &win);
+            } else {
+                let da: Widget = ac.fetch_widget("skew_t").unwrap();
+                da.grab_focus();
+            }
         }
 
-        if let Err(ref err) = crate::app::load_file::load_multiple(&paths, ac) {
-            show_error_dialog(&format!("Error loading file: {}", err), win);
-        } else {
-            let da: Widget = ac.fetch_widget("skew_t").unwrap();
-            da.grab_focus();
+        match response {
+            ResponseType::DeleteEvent => {}
+            x => dialog.close(),
         }
-    }
+    });
 
-    dialog.close();
+    dialog.show();
 }
 
+// FIXME
+/*
 pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
-    let dialog = FileChooserDialog::new(Some("Save Image"), Some(win), FileChooserAction::Save);
-
-    dialog.add_buttons(&[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
+    let dialog = FileChooserDialog::new(Some("Save Image"), Some(win), FileChooserAction::Save, &[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
 
     let filter = FileFilter::new();
     filter.add_pattern("*.png");
@@ -127,10 +143,11 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
 fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
     let DeviceRect { width, height, .. } = ac.skew_t.get_device_rect();
 
-    let img = cairo::ImageSurface::create(cairo::Format::ARgb32, width as i32, height as i32)
-        .map_err(SondeError::from)?;
+    let img =
+        gtk::cairo::ImageSurface::create(gtk::cairo::Format::ARgb32, width as i32, height as i32)
+            .map_err(SondeError::from)?;
 
-    let cr = &cairo::Context::new(&img).unwrap();
+    let cr = &gtk::cairo::Context::new(&img).unwrap();
     cr.transform(ac.skew_t.get_matrix());
 
     let args = DrawingArgs::new(ac, cr);
@@ -143,6 +160,7 @@ fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Erro
 
     Ok(())
 }
+*/
 
 fn show_error_dialog(message: &str, win: &Window) {
     use gtk::{ButtonsType, DialogFlags, MessageType};
@@ -153,10 +171,14 @@ fn show_error_dialog(message: &str, win: &Window) {
         ButtonsType::Ok,
         message,
     );
-    dialog.run();
-    dialog.close();
+
+    dialog.connect_response(|dialog, _response| dialog.close());
+
+    dialog.show();
 }
 
+// FIXME
+/*
 pub fn save_theme(ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(
         Some("Save Current Them"),

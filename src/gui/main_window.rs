@@ -4,13 +4,16 @@ use crate::{
 };
 use gtk::{
     self,
+    //FIXME
     //gdk::Event,
     prelude::*,
-    //Button,
+    Button,
     Inhibit,
+    //    FIXME
     //    Menu, MenuItem,
     Notebook,
     Paned,
+    //    FIXME
     //    SeparatorMenuItem,
     Widget,
     Window,
@@ -31,13 +34,25 @@ const TABS: [(&str, &str); 8] = [
 ];
 
 pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
-    //    connect_header_bar(ac)?;
+    connect_header_bar(ac)?;
     configure_main_window(ac)?;
 
     Ok(())
 }
 
+// FIXME DELETE
 /*
+macro_rules! set_up_hamburger_menu_item {
+    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
+        let menu_item: MenuItem = MenuItem::with_label($text);
+        let ac1 = Rc::clone($ac);
+        let win1 = $win.clone();
+        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
+        $parent_menu.append(&menu_item);
+    };
+}
+*/
+
 macro_rules! set_up_button {
     ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
         let button: Button = $ac.fetch_widget($id)?;
@@ -56,24 +71,18 @@ macro_rules! set_up_button {
     };
 }
 
-macro_rules! set_up_hamburger_menu_item {
-    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
-        let menu_item: MenuItem = MenuItem::with_label($text);
-        let ac1 = Rc::clone($ac);
-        let win1 = $win.clone();
-        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
-        $parent_menu.append(&menu_item);
-    };
-}
-
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
-    use menu_callbacks::{
-        load_default_theme, load_theme, open_toolbar_callback, save_image_callback, save_theme,
-    };
+    // FIXME
+    use menu_callbacks::open_toolbar_callback;
 
     let win: Window = ac.fetch_widget("main_window")?;
 
-    set_up_button!(ac, "open-button", win, open_toolbar_callback);
+    set_up_button!(ac, "file-open-button", win, open_toolbar_callback);
+
+    set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
+
+    // FIXME
+    /*
     set_up_button!(ac, "save-image-button", win, save_image_callback);
 
     set_up_button!(ac, "go-first-button", display_first);
@@ -97,10 +106,10 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     set_up_hamburger_menu_item!("Load Default Theme", ac, win, load_default_theme, menu);
 
     menu.show_all();
+    */
 
     Ok(())
 }
-*/
 
 fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     let window: Window = ac.fetch_widget("main_window")?;
@@ -141,6 +150,7 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
             })
             .collect();
 
+        //        // FIXME
         //        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
         //            cfg_tabs.clear();
         //            for child in nb.children() {
