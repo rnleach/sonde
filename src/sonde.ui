@@ -36,11 +36,124 @@
     <menu id="sounding_context_menu">
         <section>
             <attribute name="label">Active Readout</attribute>
+
             <item>
                 <attribute name="label">Show active readout</attribute>
                 <attribute name="action">skew-t.show_active_readout</attribute>
             </item>
+            <item>
+                <attribute name="label">Show active readout text</attribute>
+                <attribute name="action">skew-t.show_active_readout_text</attribute>
+            </item>
+            <item>
+                <attribute name="label">Show active readout line</attribute>
+                <attribute name="action">skew-t.show_active_readout_line</attribute>
+            </item>
+            <item>
+                <attribute name="label">Draw sample parcel</attribute>
+                <attribute name="action">skew-t.show_sample_parcel_profile</attribute>
+            </item>
+            <item>
+                <attribute name="label">Draw sample mix down</attribute>
+                <attribute name="action">skew-t.show_sample_mix_down</attribute>
+            </item>
+
         </section>
+        <section>
+            <attribute name="label">Parcel Type</attribute>
+
+            <item>
+                <attribute name="label">Surface</attribute>
+                <attribute name="action">skew-t.parcel_type_action</attribute>
+                <attribute name="target">surface</attribute>
+            </item>
+
+            <item>
+                <attribute name="label">Mixed Layer</attribute>
+                <attribute name="action">skew-t.parcel_type_action</attribute>
+                <attribute name="target">mixed</attribute>
+            </item>
+            <item>
+                <attribute name="label">Most Unstable</attribute>
+                <attribute name="action">skew-t.parcel_type_action</attribute>
+                <attribute name="target">unstable</attribute>
+            </item>
+            <item>
+                <attribute name="label">Convective</attribute>
+                <attribute name="action">skew-t.parcel_type_action</attribute>
+                <attribute name="target">convective</attribute>
+            </item>
+            <item>
+                <attribute name="label">Effective</attribute>
+                <attribute name="action">skew-t.parcel_type_action</attribute>
+                <attribute name="target">effective</attribute>
+            </item>
+
+        </section>
+        <section>
+            <attribute name="label">Parcel Options</attribute>
+
+            <item>
+                <attribute name="label">Show profile</attribute>
+                <attribute name="action">skew-t.show_parcel_profile</attribute>
+            </item>
+            <item>
+                <attribute name="label">Fill CAPE/CIN</attribute>
+                <attribute name="action">skew-t.fill_parcel_areas</attribute>
+            </item>
+            <item>
+                <attribute name="label">Show downburst</attribute>
+                <attribute name="action">skew-t.show_downburst</attribute>
+            </item>
+            <item>
+                <attribute name="label">Fill downburst</attribute>
+                <attribute name="action">skew-t.fill_dcape_area</attribute>
+            </item>
+            <item>
+                <attribute name="label">Show inflow layer</attribute>
+                <attribute name="action">skew-t.show_inflow_layer</attribute>
+            </item>
+
+        </section>
+        <section>
+
+            <item>
+                <attribute name="label">Show PFT</attribute>
+                <attribute name="action">skew-t.show_pft</attribute>
+            </item>
+
+        </section>
+        <section>
+            <attribute name="label">Inversions</attribute>
+
+            <item>
+                <attribute name="label">Show inv. mix-down</attribute>
+                <attribute name="action">skew-t.show_inversion_mix_down</attribute>
+            </item>
+
+        </section>
+        <section>
+            <attribute name="label">Profiles</attribute>
+
+            <item>
+                <attribute name="label">Temperature</attribute>
+                <attribute name="action">skew-t.show_temperature</attribute>
+            </item>
+            <item>
+                <attribute name="label">Wet bulb</attribute>
+                <attribute name="action">skew-t.show_wet_bulb</attribute>
+            </item>
+            <item>
+                <attribute name="label">Dew point</attribute>
+                <attribute name="action">skew-t.show_dew_point</attribute>
+            </item>
+            <item>
+                <attribute name="label">Wind</attribute>
+                <attribute name="action">skew-t.show_wind_profile</attribute>
+            </item>
+
+        </section>
+
     </menu>
 
     <!-- ******************************  Main Window  ***************************************** -->

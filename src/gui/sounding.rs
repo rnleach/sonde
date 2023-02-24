@@ -16,14 +16,8 @@ use crate::{
     },
 };
 use gtk::{
-    prelude::*,
-    DrawingArea,
-    EventControllerKey,
-    EventControllerMotion,
-    EventControllerScroll,
-    EventControllerScrollFlags,
-    GestureClick,
-    Inhibit,
+    prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
+    EventControllerScrollFlags, GestureClick, Inhibit,
 };
 use itertools::izip;
 use metfor::{Celsius, Feet, Quantity};
