@@ -9,12 +9,8 @@ use crate::{
 };
 use gtk::{
     cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
-    // FIXME DELETE
-    //gdk::KeyEvent,
     prelude::*,
-    DrawingArea,
-    EventControllerMotion,
-    Inhibit,
+    DrawingArea, EventControllerMotion, Inhibit,
 };
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -86,14 +82,14 @@ pub fn draw_all(app: &AppContext) {
     //    ];
     //
 
-    // FIXME
     for &da in &DRAWING_AREAS {
         if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {
             da.queue_draw();
         }
     }
 
-    //    profiles::draw_profiles(&app);
+    // FIXME
+    //profiles::draw_profiles(&app);
 }
 
 pub fn update_text_views(app: &AppContext) {

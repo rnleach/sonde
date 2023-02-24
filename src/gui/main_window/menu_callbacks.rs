@@ -1,9 +1,14 @@
-use crate::app::AppContextPointer;
+use crate::{
+    app::AppContextPointer,
+    coords::DeviceRect,
+    errors::SondeError,
+    gui::{Drawable, DrawingArgs, PlotContext},
+};
 use gtk::{
     gio, prelude::*, FileChooserAction, FileChooserDialog, FileFilter, MessageDialog, ResponseType,
     Widget, Window,
 };
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 pub fn open_toolbar_callback(ac: &AppContextPointer, win: &Window) {
     open_files(ac, win);
@@ -87,10 +92,13 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
     dialog.show();
 }
 
-// FIXME
-/*
 pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
-    let dialog = FileChooserDialog::new(Some("Save Image"), Some(win), FileChooserAction::Save, &[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
+    let dialog = FileChooserDialog::new(
+        Some("Save Image"),
+        Some(win),
+        FileChooserAction::Save,
+        &[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
+    );
 
     let filter = FileFilter::new();
     filter.add_pattern("*.png");
@@ -121,18 +129,27 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
         }
     }
 
-    if dialog.run() == ResponseType::Ok {
-        if let Some(mut filename) = dialog.filename() {
-            filename.set_extension("png");
-            if let Err(err) = save_image(&filename, ac) {
-                show_error_dialog(&format!("Error saving image: {}", err), win);
+    let ac = ac.clone();
+    let win = win.clone();
+    dialog.connect_response(move |dialog, response| {
+        if response == ResponseType::Ok {
+            if let Some(mut filename) = dialog.file().and_then(|f| f.path()) {
+                filename.set_extension("png");
+                if let Err(err) = save_image(&filename, &ac) {
+                    show_error_dialog(&format!("Error saving image: {}", err), &win);
+                }
+            } else {
+                show_error_dialog("Could not retrieve file name from dialog.", &win);
             }
-        } else {
-            show_error_dialog("Could not retrieve file name from dialog.", win);
         }
-    }
 
-    dialog.close();
+        match response {
+            ResponseType::DeleteEvent => {}
+            x => dialog.close(),
+        }
+    });
+
+    dialog.show();
 }
 
 fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
@@ -155,7 +172,6 @@ fn save_image(path: &PathBuf, ac: &AppContextPointer) -> Result<(), Box<dyn Erro
 
     Ok(())
 }
-*/
 
 fn show_error_dialog(message: &str, win: &Window) {
     use gtk::{ButtonsType, DialogFlags, MessageType};

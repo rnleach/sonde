@@ -2,22 +2,7 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gtk::{
-    self,
-    //FIXME
-    //gdk::Event,
-    prelude::*,
-    Button,
-    Inhibit,
-    //    FIXME
-    //    Menu, MenuItem,
-    Notebook,
-    Paned,
-    //    FIXME
-    //    SeparatorMenuItem,
-    Widget,
-    Window,
-};
+use gtk::{self, prelude::*, Button, Inhibit, Notebook, Paned, Widget, Window};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -72,18 +57,17 @@ macro_rules! set_up_button {
 }
 
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
-    // FIXME
-    use menu_callbacks::open_toolbar_callback;
+    use menu_callbacks::{open_toolbar_callback, save_image_callback};
 
     let win: Window = ac.fetch_widget("main_window")?;
 
     set_up_button!(ac, "file-open-button", win, open_toolbar_callback);
+    set_up_button!(ac, "save-image-button", win, save_image_callback);
 
     set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
     // FIXME
     /*
-    set_up_button!(ac, "save-image-button", win, save_image_callback);
 
     set_up_button!(ac, "go-first-button", display_first);
     set_up_button!(ac, "go-previous-button", display_previous);

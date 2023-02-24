@@ -9,7 +9,15 @@
             <object id="file-open-button" class="GtkButton">
                 <property name="icon-name">document-open</property>
                 <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_LEFT</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="save-image-button" class="GtkButton">
+                <property name="icon-name">insert-image</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
             </object>
         </child>
 
@@ -26,7 +34,7 @@
             <object id="quit-button" class="GtkButton">
                 <property name="icon-name">window-close</property>
                 <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_RIGHT</property>
+                <property name="halign">GTK_ALIGN_END</property>
             </object>
         </child>
 
