@@ -85,7 +85,7 @@ fn open_files(ac: &AppContextPointer, win: &Window) {
 
         match response {
             ResponseType::DeleteEvent => {}
-            x => dialog.close(),
+            _x => dialog.close(),
         }
     });
 
@@ -145,7 +145,7 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
 
         match response {
             ResponseType::DeleteEvent => {}
-            x => dialog.close(),
+            _x => dialog.close(),
         }
     });
 
@@ -188,40 +188,49 @@ fn show_error_dialog(message: &str, win: &Window) {
     dialog.show();
 }
 
-// FIXME
-/*
 pub fn save_theme(ac: &AppContextPointer, win: &Window) {
     let dialog = FileChooserDialog::new(
         Some("Save Current Them"),
         Some(win),
         FileChooserAction::Save,
+        &[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
     );
-
-    dialog.add_buttons(&[("Save", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
 
     let filter = FileFilter::new();
     filter.add_pattern("*.yml");
     filter.set_name(Some("Yaml config files(*.yml)"));
     dialog.add_filter(&filter);
 
-    if dialog.run() == ResponseType::Ok {
-        if let Some(mut filename) = dialog.filename() {
-            filename.set_extension("yml");
-            if let Err(err) = crate::save_config_with_file_name(ac, &filename) {
-                show_error_dialog(&format!("Error saving theme: {}", err), win);
+    let ac = ac.clone();
+    let win = win.clone();
+    dialog.connect_response(move |dialog, response| {
+        if response == ResponseType::Ok {
+            if let Some(mut filename) = dialog.file().and_then(|f| f.path()) {
+                filename.set_extension("yml");
+                if let Err(err) = crate::save_config_with_file_name(&ac, &filename) {
+                    show_error_dialog(&format!("Error saving theme: {}", err), &win);
+                }
+            } else {
+                show_error_dialog("Could not retrieve file name from dialog.", &win);
             }
-        } else {
-            show_error_dialog("Could not retrieve file name from dialog.", win);
         }
-    }
 
-    dialog.close();
+        match response {
+            ResponseType::DeleteEvent => {}
+            _x => dialog.close(),
+        }
+    });
+
+    dialog.show();
 }
 
 pub fn load_theme(ac: &AppContextPointer, win: &Window) {
-    let dialog = FileChooserDialog::new(Some("Load Theme"), Some(win), FileChooserAction::Open);
-
-    dialog.add_buttons(&[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)]);
+    let dialog = FileChooserDialog::new(
+        Some("Load Theme"),
+        Some(win),
+        FileChooserAction::Open,
+        &[("Open", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
+    );
 
     let filter_data = [("*.yml", "Yaml files(*.yml)")];
 
@@ -239,28 +248,40 @@ pub fn load_theme(ac: &AppContextPointer, win: &Window) {
     filter.set_name(Some("All Files"));
     dialog.add_filter(&filter);
 
-    if dialog.run() == ResponseType::Ok {
-        let path: Option<_> = dialog.filename().into_iter().find(|pb| pb.is_file());
-
-        if let Some(ref f0) = path {
-            match crate::load_config_from_file(ac, f0) {
-                Ok(()) => {}
-                Err(err) => show_error_dialog(
-                    &format!("Error loading theme {}: {}", f0.to_string_lossy(), err),
-                    win,
-                ),
+    let ac = ac.clone();
+    let win = win.clone();
+    dialog.connect_response(move |dialog, response| {
+        if response == ResponseType::Ok {
+            if let Some(filename) = dialog.file().and_then(|f| f.path()) {
+                match crate::load_config_from_file(&ac, &filename) {
+                    Ok(()) => {}
+                    Err(err) => show_error_dialog(
+                        &format!(
+                            "Error loading theme {}: {}",
+                            filename.to_string_lossy(),
+                            err
+                        ),
+                        &win,
+                    ),
+                }
+            } else {
+                show_error_dialog("Could not retrieve file name from dialog.", &win);
             }
         }
-    }
 
-    dialog.close();
+        match response {
+            ResponseType::DeleteEvent => {}
+            _x => dialog.close(),
+        }
+    });
+
+    dialog.show();
 }
 
-pub fn load_default_theme(ac: &AppContextPointer, _win: &Window) {
+pub fn load_default_theme(ac: &AppContextPointer) {
     *ac.config.borrow_mut() = crate::app::config::Config::default();
 
     ac.mark_background_dirty();
     ac.mark_data_dirty();
     ac.mark_data_dirty();
 }
-*/

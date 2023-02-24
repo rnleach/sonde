@@ -2,7 +2,12 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gtk::{self, prelude::*, Button, Inhibit, Notebook, Paned, Widget, Window};
+use gtk::{
+    self,
+    gio::{SimpleAction, SimpleActionGroup},
+    prelude::*,
+    Button, Inhibit, Notebook, Paned, Widget, Window,
+};
 use std::rc::Rc;
 
 mod menu_callbacks;
@@ -25,19 +30,6 @@ pub fn set_up_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     Ok(())
 }
 
-// FIXME DELETE
-/*
-macro_rules! set_up_hamburger_menu_item {
-    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
-        let menu_item: MenuItem = MenuItem::with_label($text);
-        let ac1 = Rc::clone($ac);
-        let win1 = $win.clone();
-        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
-        $parent_menu.append(&menu_item);
-    };
-}
-*/
-
 macro_rules! set_up_button {
     ($ac:ident, $id:expr, $win:ident, $fn:expr) => {
         let button: Button = $ac.fetch_widget($id)?;
@@ -57,17 +49,14 @@ macro_rules! set_up_button {
 }
 
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
-    use menu_callbacks::{open_toolbar_callback, save_image_callback};
+    use menu_callbacks::{
+        load_default_theme, load_theme, open_toolbar_callback, save_image_callback, save_theme,
+    };
 
     let win: Window = ac.fetch_widget("main_window")?;
 
     set_up_button!(ac, "file-open-button", win, open_toolbar_callback);
     set_up_button!(ac, "save-image-button", win, save_image_callback);
-
-    set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
-
-    // FIXME
-    /*
 
     set_up_button!(ac, "go-first-button", display_first);
     set_up_button!(ac, "go-previous-button", display_previous);
@@ -79,18 +68,33 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
-    // Set up the hamburger menu
-    let menu: Menu = ac.fetch_widget("hamburger-menu")?;
+    let window: Window = ac.fetch_widget("main_window")?;
 
-    set_up_hamburger_menu_item!("Save Theme", ac, win, save_theme, menu);
-    set_up_hamburger_menu_item!("Load Theme", ac, win, load_theme, menu);
+    let burger_group = SimpleActionGroup::new();
+    window.insert_action_group("hamburger", Some(&burger_group));
 
-    menu.append(&SeparatorMenuItem::new());
+    let acp = ac.clone();
+    let load_default_action = SimpleAction::new("load_default_theme", None);
+    load_default_action.connect_activate(move |_action, _variant| {
+        load_default_theme(&acp);
+    });
+    burger_group.add_action(&load_default_action);
 
-    set_up_hamburger_menu_item!("Load Default Theme", ac, win, load_default_theme, menu);
+    let acp = ac.clone();
+    let winc = win.clone();
+    let save_theme_action = SimpleAction::new("save_theme", None);
+    save_theme_action.connect_activate(move |_action, _variant| {
+        save_theme(&acp, &winc);
+    });
+    burger_group.add_action(&save_theme_action);
 
-    menu.show_all();
-    */
+    let acp = ac.clone();
+    let winc = win.clone();
+    let load_theme_action = SimpleAction::new("load_theme", None);
+    load_theme_action.connect_activate(move |_action, _variant| {
+        load_theme(&acp, &winc);
+    });
+    burger_group.add_action(&load_theme_action);
 
     Ok(())
 }

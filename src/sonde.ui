@@ -1,45 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
 
-    <!-- *******************************  Header Bar  ***************************************** -->
-    <object id="headerbar" class="GtkHeaderBar">
-        <property name="show-title-buttons">False</property>
-
-        <child type="start">
-            <object id="file-open-button" class="GtkButton">
-                <property name="icon-name">document-open</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
-
-        <child type="start">
-            <object id="save-image-button" class="GtkButton">
-                <property name="icon-name">insert-image</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
-
-        <property name="title-widget">
-            <object id="window-title" class="GtkLabel">
-                <property name="label">Sonde</property>
-                <property name="single-line-mode">True</property>
-                <property name="ellipsize">end</property>
-                <property name="width-chars">5</property>
-            </object>
-        </property>
-
-        <child type="end">
-            <object id="quit-button" class="GtkButton">
-                <property name="icon-name">window-close</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_END</property>
-            </object>
-        </child>
-
-    </object>
-
     <!-- ***************************  Sounding Popup Menu  ************************************ -->
     <menu id="sounding_context_menu">
         <section>
@@ -163,6 +124,128 @@
         </section>
 
     </menu>
+
+    <!-- ****************************  Hamburger Menu  **************************************** -->
+    <menu id="hamburger-menu">
+        <section>
+
+            <item>
+                <attribute name="label">Save Theme</attribute>
+                <attribute name="action">hamburger.save_theme</attribute>
+            </item>
+            <item>
+                <attribute name="label">Load Theme</attribute>
+                <attribute name="action">hamburger.load_theme</attribute>
+            </item>
+
+        </section>
+        <section>
+
+            <item>
+                <attribute name="label">Load Default Theme</attribute>
+                <attribute name="action">hamburger.load_default_theme</attribute>
+            </item>
+
+        </section>
+    </menu>
+
+    <!-- *******************************  Header Bar  ***************************************** -->
+    <object id="headerbar" class="GtkHeaderBar">
+        <property name="show-title-buttons">False</property>
+
+        <child type="start">
+            <object id="file-open-button" class="GtkButton">
+                <property name="icon-name">document-open</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="save-image-button" class="GtkButton">
+                <property name="icon-name">insert-image</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="go-first-button" class="GtkButton">
+                <property name="icon-name">go-first</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+                <property name="margin-start">26</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="go-previous-button" class="GtkButton">
+                <property name="icon-name">go-previous</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="go-next-button" class="GtkButton">
+                <property name="icon-name">go-next</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="go-last-button" class="GtkButton">
+                <property name="icon-name">go-last</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="zoom-in-button" class="GtkButton">
+                <property name="icon-name">zoom-in</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+                <property name="margin-start">26</property>
+            </object>
+        </child>
+
+        <child type="start">
+            <object id="zoom-out-button" class="GtkButton">
+                <property name="icon-name">zoom-out</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_START</property>
+            </object>
+        </child>
+
+        <property name="title-widget">
+            <object id="window-title" class="GtkLabel">
+                <property name="label">Sonde</property>
+                <property name="single-line-mode">True</property>
+                <property name="ellipsize">end</property>
+                <property name="width-chars">5</property>
+            </object>
+        </property>
+
+        <child type="end">
+            <object id="quit-button" class="GtkButton">
+                <property name="icon-name">window-close</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_END</property>
+            </object>
+        </child>
+
+        <child type="end">
+            <object id="hamburger-menu_button" class="GtkMenuButton">
+                <property name="icon-name">open-menu</property>
+                <property name="menu-model">hamburger-menu</property>
+                <property name="hexpand">True</property>
+                <property name="halign">GTK_ALIGN_END</property>
+            </object>
+        </child>
+
+    </object>
 
     <!-- ******************************  Main Window  ***************************************** -->
     <object class="GtkWindow" id="main_window">
