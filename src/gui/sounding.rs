@@ -155,11 +155,10 @@ impl Drawable for SkewTContext {
         key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
             SkewTContext::key_press_event(key, &ac)
         });
+        da.add_controller(key_press);
 
         let ac = Rc::clone(acp);
         da.connect_resize(move |da, width, height| {
-            dbg!("RESIZE");
-
             // TODO merge below methods into one.
             ac.skew_t.size_allocate_event(da);
             ac.skew_t.resize_event(width, height, &ac);
