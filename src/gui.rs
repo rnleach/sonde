@@ -22,8 +22,7 @@ use sounding_analysis::{
 //mod control_area;
 //FIXME
 //mod fire_plume;
-//FIXME
-//mod hodograph;
+mod hodograph;
 //FIXME
 //mod indexes_area;
 mod main_window;
@@ -39,8 +38,7 @@ mod utility;
 
 //FIXME
 //pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
-//FIXME
-//pub use self::hodograph::HodoContext;
+pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
 //FIXME
@@ -50,8 +48,7 @@ use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
-    //FIXME
-    //hodograph::HodoContext::set_up_drawing_area(&app)?;
+    hodograph::HodoContext::set_up_drawing_area(&app)?;
     //FIXME
     //fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
     //FIXME
@@ -72,7 +69,8 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&str; 1] = ["skew_t"];
+    const DRAWING_AREAS: [&str; 2] = ["skew_t", "hodograph_area"];
+
     //    FIXME
     //    const DRAWING_AREAS: [&str; 4] = [
     //        "skew_t",
@@ -824,17 +822,14 @@ trait Drawable: PlotContext + PlotContextExt {
         let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
 
+        let position = DeviceCoords::from(new_position);
+
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(new_position);
-                self.set_last_cursor_position(Some(new_position));
 
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
+                let position = self.convert_device_to_xy(position);
+                let delta = (position.x - old_position.x, position.y - old_position.y);
                 let mut translate = self.get_translate();
                 translate.x -= delta.0;
                 translate.y -= delta.1;
@@ -847,6 +842,8 @@ trait Drawable: PlotContext + PlotContextExt {
                 //text_area::update_text_highlight(ac);
             }
         }
+
+        self.set_last_cursor_position(Some(position));
     }
 
     fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {

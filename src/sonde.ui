@@ -125,6 +125,52 @@
 
     </menu>
 
+    <!-- ***************************  Hodograph Popup Menu  *********************************** -->
+    <menu id="hodo_context_menu">
+        <section>
+            <attribute name="label">Helicity</attribute>
+
+            <item>
+                <attribute name="label">Show/Hide helicity</attribute>
+                <attribute name="action">hodo.show_helicity_overlay</attribute>
+            </item>
+
+        </section>
+        <section>
+            <attribute name="label">Helicity Type</attribute>
+
+            <item>
+                <attribute name="label">Surface to 3km</attribute>
+                <attribute name="action">hodo.helicity_layer_action</attribute>
+                <attribute name="target">sfc_to_3km</attribute>
+            </item>
+
+            <item>
+                <attribute name="label">Effective Layer</attribute>
+                <attribute name="action">hodo.helicity_layer_action</attribute>
+                <attribute name="target">effective</attribute>
+            </item>
+
+        </section>
+        <section>
+            <attribute name="label">Helicity Storm</attribute>
+
+            <item>
+                <attribute name="label">Right Mover</attribute>
+                <attribute name="action">hodo.helicity_type</attribute>
+                <attribute name="target">right</attribute>
+            </item>
+
+            <item>
+                <attribute name="label">Left Mover</attribute>
+                <attribute name="action">hodo.helicity_type</attribute>
+                <attribute name="target">left</attribute>
+            </item>
+
+        </section>
+
+    </menu>
+
     <!-- ****************************  Hamburger Menu  **************************************** -->
     <menu id="hamburger-menu">
         <section>
@@ -317,15 +363,28 @@
                                 <property name="vexpand">True</property>
 
                                 <child>
-                                    <object id="other-content-area" class="GtkLabel">
-                                        <property name="label">Other Content</property>
+                                    <object id="hodograph_area" class="GtkDrawingArea">
+                                        <property name="hexpand">True</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="can-target">True</property>
+                                        <property name="focus-on-click">True</property>
+                                        <property name="focusable">True</property>
+                                        
+                                        <child>
+                                            <object id="hodo_popover" class="GtkPopoverMenu">
+                                                <property name="menu-model">hodo_context_menu</property>
+                                            </object>
+                                        </child>
+
                                     </object>
                                 </child>
                                 <child type="tab">
                                     <object class="GtkLabel">
-                                        <property name="label">Other</property>
+                                        <property name="label">Hodograph</property>
                                     </object>
                                 </child>
+
                             </object>
                         </child>
                     </object>

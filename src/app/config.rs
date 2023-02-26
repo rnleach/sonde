@@ -1,30 +1,16 @@
 //! Keep configuration data in this module.
 
 use crate::coords::{
-    DtHCoords,
-    DtPCoords,
-    PPCoords,
-    //SDCoords,
-    SPCoords,
-    TPCoords,
-    WPCoords,
-    XYCoords,
+    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
 };
 //use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-//use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext};
+use crate::gui::HodoContext;
+
 use crate::gui::SkewTContext;
 
 use lazy_static::lazy_static;
 use metfor::{
-    Celsius,
-    CelsiusDiff,
-    HectoPascal,
-    Kelvin,
-    Knots,
-    Meters,
-    PaPS,
-    Quantity,
-    // WindSpdDir,
+    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -926,10 +912,8 @@ lazy_static! {
             let mut v = vec![];
             let mut dir = 0.0;
             while dir <= 361.0 {
-                //FIXME
-                //v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
-                //dir += 1.0;
-                v.push(XYCoords{x:0.0, y:0.0}); // FIXME
+                v.push(HodoContext::convert_sd_to_xy(SDCoords{spd_dir:WindSpdDir{speed, direction: dir}}));
+                dir += 1.0;
             }
             v
         })

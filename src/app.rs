@@ -7,7 +7,8 @@ use crate::{
         self,
         // FIXME
         //profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        //FirePlumeContext, FirePlumeEnergyContext, HodoContext,
+        //FirePlumeContext, FirePlumeEnergyContext,
+        HodoContext,
         PlotContext,
         PlotContextExt,
         SkewTContext,
@@ -63,10 +64,9 @@ pub struct AppContext {
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
-    // Handle to Hodograph context
-    //FIXME
-    //pub hodo: HodoContext,
 
+    // Handle to Hodograph context
+    pub hodo: HodoContext,
     // Handle to FirePlume context
     //FIXME
     //pub fire_plume: FirePlumeContext,
@@ -111,7 +111,7 @@ impl AppContext {
             //FIXME
             //rh_omega: RHOmegaContext::new(),
             //cloud: CloudContext::new(),
-            //hodo: HodoContext::new(),
+            hodo: HodoContext::new(),
             //fire_plume: FirePlumeContext::new(),
             //fire_plume_energy: FirePlumeEnergyContext::new(),
             //wind_speed: WindSpeedContext::new(),
@@ -305,7 +305,7 @@ impl AppContext {
 
         match self.last_focus.get() {
             SkewT => self.skew_t.zoom_in(),
-            Hodo => {}            // FIXME self.hodo.zoom_in(),
+            Hodo => self.hodo.zoom_in(),
             FirePlume => {}       // FIXME self.fire_plume.zoom_in(),
             FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_in(),
         }
@@ -319,7 +319,7 @@ impl AppContext {
 
         match self.last_focus.get() {
             SkewT => self.skew_t.zoom_out(),
-            Hodo => {}            // FIXME self.hodo.zoom_out(),
+            Hodo => self.hodo.zoom_out(),
             FirePlume => {}       // FIXME self.fire_plume.zoom_out(),
             FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_out(),
         }
@@ -329,8 +329,8 @@ impl AppContext {
     }
 
     pub fn mark_data_dirty(&self) {
+        self.hodo.mark_data_dirty();
         //FIXME
-        //self.hodo.mark_data_dirty();
         //self.fire_plume.mark_data_dirty();
         //self.fire_plume_energy.mark_data_dirty();
         self.skew_t.mark_data_dirty();
@@ -340,8 +340,8 @@ impl AppContext {
     }
 
     pub fn mark_overlay_dirty(&self) {
+        self.hodo.mark_overlay_dirty();
         //FIXME
-        //self.hodo.mark_overlay_dirty();
         //self.fire_plume.mark_overlay_dirty();
         //self.fire_plume_energy.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
@@ -351,8 +351,8 @@ impl AppContext {
     }
 
     pub fn mark_background_dirty(&self) {
+        self.hodo.mark_background_dirty();
         //FIXME
-        //self.hodo.mark_background_dirty();
         //self.fire_plume.mark_background_dirty();
         //self.fire_plume_energy.mark_background_dirty();
         self.skew_t.mark_background_dirty();
