@@ -7,7 +7,8 @@ use crate::{
         self,
         // FIXME
         //profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        //FirePlumeContext, FirePlumeEnergyContext,
+        FirePlumeContext,
+        FirePlumeEnergyContext,
         HodoContext,
         PlotContext,
         PlotContextExt,
@@ -17,7 +18,8 @@ use crate::{
 use crossbeam_channel::TryRecvError;
 use gtk::{
     glib::{self, IsA, Object},
-    prelude::*,
+    //FIXME
+    //prelude::*,
     Builder,
 };
 use sounding_analysis::{self};
@@ -67,14 +69,12 @@ pub struct AppContext {
 
     // Handle to Hodograph context
     pub hodo: HodoContext,
+
     // Handle to FirePlume context
-    //FIXME
-    //pub fire_plume: FirePlumeContext,
+    pub fire_plume: FirePlumeContext,
 
     // Handle to FirePlumeEnergy context
-    //FIXME
-    //pub fire_plume_energy: FirePlumeEnergyContext,
-
+    pub fire_plume_energy: FirePlumeEnergyContext,
     // Handle to RH Omega Context
     //FIXME
     //pub rh_omega: RHOmegaContext,
@@ -108,12 +108,12 @@ impl AppContext {
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
             gui: RefCell::new(None),
             skew_t: SkewTContext::new(),
+            hodo: HodoContext::new(),
+            fire_plume: FirePlumeContext::new(),
+            fire_plume_energy: FirePlumeEnergyContext::new(),
             //FIXME
             //rh_omega: RHOmegaContext::new(),
             //cloud: CloudContext::new(),
-            hodo: HodoContext::new(),
-            //fire_plume: FirePlumeContext::new(),
-            //fire_plume_energy: FirePlumeEnergyContext::new(),
             //wind_speed: WindSpeedContext::new(),
         })
     }
@@ -292,7 +292,8 @@ impl AppContext {
 
     pub fn set_sample(&self, sample: Sample) {
         *self.last_sample.borrow_mut() = sample;
-        //        gui::update_text_highlight(&self);
+        //FIXME
+        //gui::update_text_highlight(&self);
         self.mark_overlay_dirty();
     }
 
@@ -306,8 +307,8 @@ impl AppContext {
         match self.last_focus.get() {
             SkewT => self.skew_t.zoom_in(),
             Hodo => self.hodo.zoom_in(),
-            FirePlume => {}       // FIXME self.fire_plume.zoom_in(),
-            FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_in(),
+            FirePlume => self.fire_plume.zoom_in(),
+            FirePlumeEnergy => self.fire_plume_energy.zoom_in(),
         }
 
         self.mark_background_dirty();
@@ -320,8 +321,8 @@ impl AppContext {
         match self.last_focus.get() {
             SkewT => self.skew_t.zoom_out(),
             Hodo => self.hodo.zoom_out(),
-            FirePlume => {}       // FIXME self.fire_plume.zoom_out(),
-            FirePlumeEnergy => {} // FIXME self.fire_plume_energy.zoom_out(),
+            FirePlume => self.fire_plume.zoom_out(),
+            FirePlumeEnergy => self.fire_plume_energy.zoom_out(),
         }
 
         self.mark_background_dirty();
@@ -330,10 +331,10 @@ impl AppContext {
 
     pub fn mark_data_dirty(&self) {
         self.hodo.mark_data_dirty();
-        //FIXME
-        //self.fire_plume.mark_data_dirty();
-        //self.fire_plume_energy.mark_data_dirty();
+        self.fire_plume.mark_data_dirty();
+        self.fire_plume_energy.mark_data_dirty();
         self.skew_t.mark_data_dirty();
+        //FIXME
         //self.rh_omega.mark_data_dirty();
         //self.cloud.mark_data_dirty();
         //self.wind_speed.mark_data_dirty();
@@ -341,10 +342,10 @@ impl AppContext {
 
     pub fn mark_overlay_dirty(&self) {
         self.hodo.mark_overlay_dirty();
-        //FIXME
-        //self.fire_plume.mark_overlay_dirty();
-        //self.fire_plume_energy.mark_overlay_dirty();
+        self.fire_plume.mark_overlay_dirty();
+        self.fire_plume_energy.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
+        //FIXME
         //self.rh_omega.mark_overlay_dirty();
         //self.cloud.mark_overlay_dirty();
         //self.wind_speed.mark_overlay_dirty();
@@ -352,10 +353,10 @@ impl AppContext {
 
     pub fn mark_background_dirty(&self) {
         self.hodo.mark_background_dirty();
-        //FIXME
-        //self.fire_plume.mark_background_dirty();
-        //self.fire_plume_energy.mark_background_dirty();
+        self.fire_plume.mark_background_dirty();
+        self.fire_plume_energy.mark_background_dirty();
         self.skew_t.mark_background_dirty();
+        //FIXME
         //self.rh_omega.mark_background_dirty();
         //self.cloud.mark_background_dirty();
         //self.wind_speed.mark_background_dirty();

@@ -20,8 +20,7 @@ use sounding_analysis::{
 
 //FIXME
 //mod control_area;
-//FIXME
-//mod fire_plume;
+mod fire_plume;
 mod hodograph;
 //FIXME
 //mod indexes_area;
@@ -36,8 +35,7 @@ mod sounding;
 //mod text_area;
 mod utility;
 
-//FIXME
-//pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
+pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
 pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
@@ -49,10 +47,8 @@ use self::utility::{plot_curve_from_points, DrawingArgs};
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(&app)?;
     hodograph::HodoContext::set_up_drawing_area(&app)?;
-    //FIXME
-    //fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
-    //FIXME
-    //fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
+    fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
+    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
     //FIXME
     //control_area::set_up_control_area(&app)?;
     //FIXME
@@ -69,16 +65,12 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
 }
 
 pub fn draw_all(app: &AppContext) {
-    const DRAWING_AREAS: [&str; 2] = ["skew_t", "hodograph_area"];
-
-    //    FIXME
-    //    const DRAWING_AREAS: [&str; 4] = [
-    //        "skew_t",
-    //        "hodograph_area",
-    //        "fire_plume_height_area",
-    //        "fire_plume_energy_area",
-    //    ];
-    //
+    const DRAWING_AREAS: [&str; 4] = [
+        "skew_t",
+        "hodograph_area",
+        "fire_plume_height_area",
+        "fire_plume_energy_area",
+    ];
 
     for &da in &DRAWING_AREAS {
         if let Ok(da) = app.fetch_widget::<DrawingArea>(da) {

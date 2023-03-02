@@ -1,12 +1,9 @@
 //! Keep configuration data in this module.
 
-use crate::coords::{
-    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+use crate::{
+    coords::{DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords},
+    gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext},
 };
-//use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::HodoContext;
-
-use crate::gui::SkewTContext;
 
 use lazy_static::lazy_static;
 use metfor::{
@@ -994,11 +991,8 @@ lazy_static! {
                })
                .map(|dt| {
                    [
-                //FIXME
-                //FirePlumeContext::convert_dth_to_xy(dt[0]),
-                //FirePlumeContext::convert_dth_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},//FIXME
-                XYCoords{x:1.0, y:1.0}//FIXME
+                FirePlumeContext::convert_dth_to_xy(dt[0]),
+                FirePlumeContext::convert_dth_to_xy(dt[1]),
                    ]
                })
            .collect()
@@ -1022,11 +1016,8 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                //FIXME
-                //FirePlumeContext::convert_dth_to_xy(dt[0]),
-                //FirePlumeContext::convert_dth_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},//FIXME
-                XYCoords{x:1.0, y:1.0}//FIXME
+                FirePlumeContext::convert_dth_to_xy(dt[0]),
+                FirePlumeContext::convert_dth_to_xy(dt[1]),
                ]
            })
            .collect()
@@ -1050,11 +1041,8 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                //FIXME
-                //FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-                //FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
-                XYCoords{x:0.0, y:0.0},//FIXME
-                XYCoords{x:1.0, y:1.0}//FIXME
+                FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
+                FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
                ]
            })
            .collect()

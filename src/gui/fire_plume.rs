@@ -4,8 +4,7 @@ use crate::{
     gui::{
         plot_context::{PlotContext, PlotContextExt},
         utility::plot_curve_from_points,
-//        Drawable, 
-        DrawingArgs,
+        Drawable, DrawingArgs,
     },
 };
 use gtk::cairo::{FontFace, FontSlant, FontWeight};
