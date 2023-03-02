@@ -185,13 +185,13 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
         pane.set_position(pos);
     }
 
-    //    FIXME
-    /*
-    if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
-        if let (Ok(lnb), Ok(rnb)) = (
-            ac.fetch_widget::<Notebook>("left_notebook"),
-            ac.fetch_widget::<Notebook>("right_notebook"),
-        ) {
+    if let (Ok(lnb), Ok(rnb)) = (
+        ac.fetch_widget::<Notebook>("left-notebook"),
+        ac.fetch_widget::<Notebook>("right-notebook"),
+    ) {
+        if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
+            //    FIXME
+            /*
             let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
@@ -219,9 +219,27 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
 
             lnb.set_page(cfg.left_page_selected);
             rnb.set_page(cfg.right_page_selected);
+            */
+        }
+
+        // Set the pages as detachable.
+        for page in lnb
+            .pages()
+            .into_iter()
+            .filter_map(|page_res| page_res.ok())
+            .filter_map(|page| page.downcast::<gtk::NotebookPage>().ok())
+        {
+            page.set_detachable(true);
+        }
+
+        for page in rnb
+            .pages()
+            .into_iter()
+            .filter_map(|page_res| page_res.ok())
+            .filter_map(|page| page.downcast::<gtk::NotebookPage>().ok())
+        {
+            page.set_detachable(true);
         }
     }
-    */
-
     Ok(())
 }
