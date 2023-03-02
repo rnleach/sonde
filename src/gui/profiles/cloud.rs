@@ -18,8 +18,7 @@ use crate::{
         Drawable, SlaveProfileDrawable,
     },
 };
-use gdk::{EventMotion, EventScroll};
-use gtk::{prelude::*, DrawingArea};
+use gtk::{prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick};
 use itertools::izip;
 use std::rc::Rc;
 
@@ -130,23 +129,68 @@ impl Drawable for CloudContext {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("cloud_area")?;
 
+        // Set up the drawing function.
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.cloud.draw_callback(cr, &ac));
+        da.set_draw_func(move |_da, cr, _width, _height| {
+            ac.cloud.draw_callback(cr, &ac);
+        });
+
+        // Set up the button clicks.
+        let left_mouse_button = GestureClick::builder().build();
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.cloud.mouse_motion_event(da, ev, &ac));
+        left_mouse_button.connect_pressed(move |_mouse_button, _n_pressed, x, y| {
+            ac.cloud.left_button_press_event((x, y), &ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.cloud.leave_event(&ac));
+        left_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.cloud.left_button_release_event((x, y), &ac);
+        });
+
+        da.add_controller(left_mouse_button);
+
+        let right_mouse_button = GestureClick::builder().button(3).build();
+        let ac = Rc::clone(acp);
+        right_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.cloud.right_button_release_event((x, y), &ac);
+        });
+        da.add_controller(right_mouse_button);
+
+        // Set up the mouse motion events
+        let mouse_motion = EventControllerMotion::new();
 
         let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| CloudContext::key_press_event(ev, &ac));
+        mouse_motion.connect_motion(move |mouse_motion, x, y| {
+            ac.cloud.mouse_motion_event(mouse_motion, (x, y), &ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.cloud.configure_event(ev, &ac));
+        mouse_motion.connect_enter(move |_mouse_motion, _x, _y| {
+            ac.cloud.enter_event(&ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.cloud.size_allocate_event(da));
+        mouse_motion.connect_leave(move |_mouse_motion| {
+            ac.cloud.leave_event(&ac);
+        });
+
+        da.add_controller(mouse_motion);
+
+        // Set up the key presses.
+        let key_press = EventControllerKey::new();
+        let ac = Rc::clone(acp);
+        key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+            CloudContext::key_press_event(key, &ac)
+        });
+        da.add_controller(key_press);
+
+        let ac = Rc::clone(acp);
+        da.connect_resize(move |da, width, height| {
+            // TODO merge below methods into one.
+            ac.cloud.size_allocate_event(da);
+            ac.cloud.resize_event(width, height, &ac);
+        });
 
         Ok(())
     }
@@ -302,22 +346,18 @@ impl Drawable for CloudContext {
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
-    fn scroll_event(&self, _event: &EventScroll, _ac: &AppContextPointer) -> Inhibit {
-        Inhibit(false)
-    }
-
     fn mouse_motion_event(
         &self,
-        da: &DrawingArea,
-        event: &EventMotion,
+        controller: &EventControllerMotion,
+        new_position: (f64, f64),
         ac: &AppContextPointer,
-    ) -> Inhibit {
+    ) {
+        let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
 
-        if ac.plottable() && self.has_data() {
-            let position: DeviceCoords = event.position().into();
+        let position = DeviceCoords::from(new_position);
 
-            self.set_last_cursor_position(Some(position));
+        if ac.plottable() && self.has_data() {
             let pp_position = self.convert_device_to_pp(position);
 
             let sample = ac
@@ -335,9 +375,11 @@ impl Drawable for CloudContext {
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
-            crate::gui::text_area::update_text_highlight(&ac);
+            //FIXME
+            //crate::gui::text_area::update_text_highlight(&ac);
         }
-        Inhibit(false)
+
+        self.set_last_cursor_position(Some(position));
     }
 }
 

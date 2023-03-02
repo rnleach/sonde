@@ -5,27 +5,18 @@ use crate::{
     errors::SondeError,
     gui::{
         self,
-        // FIXME
-        //profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
-        FirePlumeContext,
-        FirePlumeEnergyContext,
-        HodoContext,
-        PlotContext,
-        PlotContextExt,
+        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, PlotContext, PlotContextExt,
         SkewTContext,
     },
 };
 use crossbeam_channel::TryRecvError;
 use gtk::{
     glib::{self, IsA, Object},
-    //FIXME
-    //prelude::*,
     Builder,
 };
 use sounding_analysis::{self};
 use std::{
-    //FIXME
-    //borrow::BorrowMut,
     cell::{Cell, Ref, RefCell},
     rc::Rc,
 };
@@ -75,17 +66,15 @@ pub struct AppContext {
 
     // Handle to FirePlumeEnergy context
     pub fire_plume_energy: FirePlumeEnergyContext,
+
     // Handle to RH Omega Context
-    //FIXME
-    //pub rh_omega: RHOmegaContext,
+    pub rh_omega: RHOmegaContext,
 
     // Handle to Cloud profile context
-    //FIXME
-    //pub cloud: CloudContext,
+    pub cloud: CloudContext,
 
     // Handle to wind speed profile context
-    //FIXME
-    //pub wind_speed: WindSpeedContext,
+    pub wind_speed: WindSpeedContext,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -111,10 +100,9 @@ impl AppContext {
             hodo: HodoContext::new(),
             fire_plume: FirePlumeContext::new(),
             fire_plume_energy: FirePlumeEnergyContext::new(),
-            //FIXME
-            //rh_omega: RHOmegaContext::new(),
-            //cloud: CloudContext::new(),
-            //wind_speed: WindSpeedContext::new(),
+            rh_omega: RHOmegaContext::new(),
+            cloud: CloudContext::new(),
+            wind_speed: WindSpeedContext::new(),
         })
     }
 
@@ -334,10 +322,9 @@ impl AppContext {
         self.fire_plume.mark_data_dirty();
         self.fire_plume_energy.mark_data_dirty();
         self.skew_t.mark_data_dirty();
-        //FIXME
-        //self.rh_omega.mark_data_dirty();
-        //self.cloud.mark_data_dirty();
-        //self.wind_speed.mark_data_dirty();
+        self.rh_omega.mark_data_dirty();
+        self.cloud.mark_data_dirty();
+        self.wind_speed.mark_data_dirty();
     }
 
     pub fn mark_overlay_dirty(&self) {
@@ -345,10 +332,9 @@ impl AppContext {
         self.fire_plume.mark_overlay_dirty();
         self.fire_plume_energy.mark_overlay_dirty();
         self.skew_t.mark_overlay_dirty();
-        //FIXME
-        //self.rh_omega.mark_overlay_dirty();
-        //self.cloud.mark_overlay_dirty();
-        //self.wind_speed.mark_overlay_dirty();
+        self.rh_omega.mark_overlay_dirty();
+        self.cloud.mark_overlay_dirty();
+        self.wind_speed.mark_overlay_dirty();
     }
 
     pub fn mark_background_dirty(&self) {
@@ -356,9 +342,8 @@ impl AppContext {
         self.fire_plume.mark_background_dirty();
         self.fire_plume_energy.mark_background_dirty();
         self.skew_t.mark_background_dirty();
-        //FIXME
-        //self.rh_omega.mark_background_dirty();
-        //self.cloud.mark_background_dirty();
-        //self.wind_speed.mark_background_dirty();
+        self.rh_omega.mark_background_dirty();
+        self.cloud.mark_background_dirty();
+        self.wind_speed.mark_background_dirty();
     }
 }

@@ -2,7 +2,10 @@
 
 use crate::{
     coords::{DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords},
-    gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext},
+    gui::{
+        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext,
+    },
 };
 
 use lazy_static::lazy_static;
@@ -891,11 +894,8 @@ lazy_static! {
             })
         .map(|tp| {
             [
-                //FIXME
-                //OmegaContext::convert_wp_to_xy(tp[0]),
-                //OmegaContext::convert_wp_to_xy(tp[1])
-                XYCoords{x:0.0, y:0.0}, // FIXME
-                XYCoords{x:1.0, y:1.0}  // FIXME
+                RHOmegaContext::convert_wp_to_xy(tp[0]),
+                RHOmegaContext::convert_wp_to_xy(tp[1])
             ]
         })
         .collect()
@@ -935,11 +935,8 @@ lazy_static! {
             })
         .map(|pp| {
             [
-                //FIXME
-                //CloudContext::convert_pp_to_xy(pp[0]),
-                //CloudContext::convert_pp_to_xy(pp[1])
-                XYCoords{x:0.0, y:0.0},//FIXME
-                XYCoords{x:1.0, y:1.0}//FIXME
+                CloudContext::convert_pp_to_xy(pp[0]),
+                CloudContext::convert_pp_to_xy(pp[1])
             ]
         })
             .collect()
@@ -963,11 +960,8 @@ lazy_static! {
             })
         .map(|sp| {
             [
-                //FIXME
-                //WindSpeedContext::convert_sp_to_xy(sp[0]),
-                //WindSpeedContext::convert_sp_to_xy(sp[1])
-                XYCoords{x:0.0, y:0.0},//FIXME
-                XYCoords{x:1.0, y:1.0}//FIXME
+                WindSpeedContext::convert_sp_to_xy(sp[0]),
+                WindSpeedContext::convert_sp_to_xy(sp[1])
             ]
         })
             .collect()

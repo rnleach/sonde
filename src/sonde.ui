@@ -387,6 +387,69 @@
 
                                 <child>
                                     <object class="GtkBox">
+                                    <property name="orientation">horizontal</property>
+
+                                        <child>
+                                            <object id="rh_omega_area" class="GtkDrawingArea">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focus-on-click">True</property>
+                                                <property name="focusable">True</property>
+
+                                                <property name="margin-top">0</property>
+                                                <property name="margin-bottom">0</property>
+                                                <property name="margin-start">0</property>
+                                                <property name="margin-end">4</property>
+
+                                            </object>
+                                        </child>
+
+                                        <child>
+                                            <object id="cloud_area" class="GtkDrawingArea">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focus-on-click">True</property>
+                                                <property name="focusable">True</property>
+
+                                                <property name="margin-top">0</property>
+                                                <property name="margin-bottom">0</property>
+                                                <property name="margin-start">2</property>
+                                                <property name="margin-end">2</property>
+
+                                            </object>
+                                        </child>
+
+                                        <child>
+                                            <object id="wind_speed_area" class="GtkDrawingArea">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focus-on-click">True</property>
+                                                <property name="focusable">True</property>
+
+                                                <property name="margin-top">0</property>
+                                                <property name="margin-bottom">0</property>
+                                                <property name="margin-start">4</property>
+                                                <property name="margin-end">0</property>
+
+                                            </object>
+                                        </child>
+
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Profiles</property>
+                                    </object>
+                                </child>
+
+                                <child>
+                                    <object class="GtkBox">
                                     <property name="orientation">vertical</property>
 
                                         <child>

@@ -26,8 +26,7 @@ mod hodograph;
 //mod indexes_area;
 mod main_window;
 mod plot_context;
-//FIXME
-//pub mod profiles;
+pub mod profiles;
 //FIXME
 //mod provider_data;
 mod sounding;
@@ -53,8 +52,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     //control_area::set_up_control_area(&app)?;
     //FIXME
     //text_area::set_up_text_area(&app)?;
-    //FIXME
-    //profiles::initialize_profiles(&app)?;
+    profiles::initialize_profiles(&app)?;
     //FIXME
     //indexes_area::set_up_indexes_area(&app)?;
     //FIXME
@@ -78,8 +76,7 @@ pub fn draw_all(app: &AppContext) {
         }
     }
 
-    // FIXME
-    //profiles::draw_profiles(&app);
+    profiles::draw_profiles(&app);
 }
 
 pub fn update_text_views(app: &AppContext) {
