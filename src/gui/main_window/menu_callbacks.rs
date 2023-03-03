@@ -113,9 +113,9 @@ pub fn save_image_callback(ac: &AppContextPointer, win: &Window) {
             .map(|desc| desc.to_owned())
         {
             src_desc.retain(|c| {
-                c == '.' || c.is_alphabetic() || c.is_digit(10) || c == '_' || c == ' '
+                c == '.' || c.is_alphabetic() || c.is_ascii_digit() || c == '_' || c == ' '
             });
-            let src_desc = src_desc.replace(" ", "_");
+            let src_desc = src_desc.replace(' ', "_");
             let mut src_desc = src_desc.trim_end_matches(".buf").to_string();
             src_desc.push_str("_skewt");
             if let Some(anal) = ac.get_sounding_for_display() {

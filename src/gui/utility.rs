@@ -149,7 +149,7 @@ pub fn check_overlap_then_add(
     }
 
     // Check for overlap
-    for &(_, ref rect) in vector.iter() {
+    for (_, rect) in vector.iter() {
         if padded_rect.overlaps(rect) {
             return;
         }

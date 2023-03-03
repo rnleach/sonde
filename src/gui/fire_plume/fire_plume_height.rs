@@ -274,22 +274,20 @@ impl Drawable for FirePlumeContext {
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
         let config = ac.config.borrow();
 
-        let mut lines = Vec::with_capacity(3);
-
-        lines.push((
-            "Level of Max Int. Buoyancy (km)".to_owned(),
-            config.fire_plume_lmib_color,
-        ));
-        lines.push((
-            "Lifting Condensation Level (km)".to_owned(),
-            config.fire_plume_lcl_color,
-        ));
-        lines.push((
-            "Max Plume Height (km)".to_owned(),
-            config.fire_plume_maxh_color,
-        ));
-
-        lines
+        vec![
+            (
+                "Level of Max Int. Buoyancy (km)".to_owned(),
+                config.fire_plume_lmib_color,
+            ),
+            (
+                "Lifting Condensation Level (km)".to_owned(),
+                config.fire_plume_lcl_color,
+            ),
+            (
+                "Max Plume Height (km)".to_owned(),
+                config.fire_plume_maxh_color,
+            ),
+        ]
     }
 
     /***********************************************************************************************
@@ -507,7 +505,7 @@ impl Drawable for FirePlumeContext {
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
-            crate::gui::draw_all(&ac);
+            crate::gui::draw_all(ac);
         }
         self.set_last_cursor_position(Some(position));
     }

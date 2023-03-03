@@ -39,16 +39,16 @@ pub use self::text_area::update_text_highlight;
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
-    sounding::SkewTContext::set_up_drawing_area(&app)?;
-    hodograph::HodoContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
-    control_area::set_up_control_area(&app)?;
-    text_area::set_up_text_area(&app)?;
-    profiles::initialize_profiles(&app)?;
-    indexes_area::set_up_indexes_area(&app)?;
-    provider_data::set_up_provider_text_area(&app)?;
-    main_window::set_up_main_window(&app)?;
+    sounding::SkewTContext::set_up_drawing_area(app)?;
+    hodograph::HodoContext::set_up_drawing_area(app)?;
+    fire_plume::FirePlumeContext::set_up_drawing_area(app)?;
+    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(app)?;
+    control_area::set_up_control_area(app)?;
+    text_area::set_up_text_area(app)?;
+    profiles::initialize_profiles(app)?;
+    indexes_area::set_up_indexes_area(app)?;
+    provider_data::set_up_provider_text_area(app)?;
+    main_window::set_up_main_window(app)?;
 
     Ok(())
 }
@@ -67,7 +67,7 @@ pub fn draw_all(app: &AppContext) {
         }
     }
 
-    profiles::draw_profiles(&app);
+    profiles::draw_profiles(app);
 }
 
 pub fn update_text_views(app: &AppContext) {
@@ -275,7 +275,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let mut box_width: f64 = 0.0;
         let mut box_height: f64 = 0.0;
 
-        for &(ref line, _) in legend_text {
+        for (line, _) in legend_text {
             let extents = cr.text_extents(line).unwrap();
             if extents.width() > box_width {
                 box_width = extents.width();
@@ -498,7 +498,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let font_extents = cr.font_extents().unwrap();
 
         let mut line = String::with_capacity(100);
-        for &(ref val, _) in strings.iter() {
+        for (val, _) in strings.iter() {
             line.push_str(val);
 
             if !val.ends_with('\n') {

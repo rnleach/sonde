@@ -248,8 +248,8 @@ impl SkewTContext {
 
         draw_filled_polygon(cr, polygon_rgba, polygon);
         // Draw lines
-        Self::draw_plume_parcel_profile(args, &profile_low, color);
-        Self::draw_plume_parcel_profile(args, &profile_high, color);
+        Self::draw_plume_parcel_profile(args, profile_low, color);
+        Self::draw_plume_parcel_profile(args, profile_high, color);
 
         // Draw a sample point
         if config.show_active_readout_line {
@@ -302,7 +302,7 @@ impl SkewTContext {
             // build the parcel profile
             let profile = parcel_analysis.profile();
             let color = config.sample_parcel_profile_color;
-            Self::draw_parcel_profile(args, &profile, color);
+            Self::draw_parcel_profile(args, profile, color);
         }
     }
 

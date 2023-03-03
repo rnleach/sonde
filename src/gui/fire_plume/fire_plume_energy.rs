@@ -427,7 +427,7 @@ impl Drawable for FirePlumeEnergyContext {
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
-            crate::gui::draw_all(&ac);
+            crate::gui::draw_all(ac);
         }
         self.set_last_cursor_position(Some(position));
     }

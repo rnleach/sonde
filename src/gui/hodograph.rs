@@ -530,7 +530,7 @@ fn draw_helicity_fill(args: DrawingArgs<'_, '_>) {
         };
 
         let rgba = config.helicity_rgba;
-        draw_filled_polygon(&cr, rgba, pnts);
+        draw_filled_polygon(cr, rgba, pnts);
     }
 }
 

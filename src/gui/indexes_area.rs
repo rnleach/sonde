@@ -60,7 +60,7 @@ pub fn update_indexes_area(ac: &AppContext) {
     // Get the scroll position before setting the text
     let old_adj = text_area.vadjustment().map(|adj| adj.value());
 
-    set_text(&text_buffer, &text);
+    set_text(&text_buffer, text);
 
     highlight_parcel(&text_buffer, ac);
 
@@ -389,7 +389,7 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
     let lines = tb.line_count();
     for i in 0..lines {
         if let Some(start) = tb.iter_at_line(i) {
-            let mut end = start.clone();
+            let mut end = start;
             end.forward_line();
 
             if tb.text(&start, &end, false).as_str().starts_with(pcl_label) {

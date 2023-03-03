@@ -488,10 +488,10 @@ impl Drawable for SkewTContext {
                 plume_anal_high,
                 ..
             } => Self::create_active_readout_text_plume(
-                &parcel_low,
+                parcel_low,
                 &anal,
-                &plume_anal_low,
-                &plume_anal_high,
+                plume_anal_low,
+                plume_anal_high,
                 &config,
                 &mut results,
             ),
@@ -516,7 +516,7 @@ impl Drawable for SkewTContext {
                     }
 
                     if config.show_sample_parcel_profile {
-                        Self::draw_sample_parcel_profile(args, &pcl_anal);
+                        Self::draw_sample_parcel_profile(args, pcl_anal);
                     }
                 }
 
@@ -585,8 +585,8 @@ impl Drawable for SkewTContext {
                 self.set_translate(translate);
                 self.bound_view();
                 ac.mark_background_dirty();
-                crate::gui::draw_all(&ac);
-                crate::gui::text_area::update_text_highlight(&ac);
+                crate::gui::draw_all(ac);
+                crate::gui::text_area::update_text_highlight(ac);
 
                 ac.set_sample(Sample::None);
             }
@@ -630,8 +630,8 @@ impl Drawable for SkewTContext {
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
-            crate::gui::draw_all(&ac);
-            crate::gui::text_area::update_text_highlight(&ac);
+            crate::gui::draw_all(ac);
+            crate::gui::text_area::update_text_highlight(ac);
         }
         self.set_last_cursor_position(Some(position));
     }

@@ -509,16 +509,16 @@ impl Analysis {
                 self.left_mover.into_option(),
             ) {
                 self.sr_helicity_3k_rm =
-                    Optioned::from(sr_helicity(layer, sm, &self.sounding()).ok());
+                    Optioned::from(sr_helicity(layer, sm, self.sounding()).ok());
 
                 self.sr_helicity_3k_lm =
-                    Optioned::from(sr_helicity(layer, lm, &self.sounding()).ok());
+                    Optioned::from(sr_helicity(layer, lm, self.sounding()).ok());
             }
         }
 
         // Fill in the effective inflow layer
         if self.effective_inflow_layer.is_none() {
-            self.effective_inflow_layer = effective_inflow_layer(&self.sounding());
+            self.effective_inflow_layer = effective_inflow_layer(self.sounding());
         }
 
         // Fill in the effective storm relative helicity
@@ -529,10 +529,10 @@ impl Analysis {
                 self.left_mover.into_option(),
             ) {
                 self.sr_helicity_eff_rm =
-                    Optioned::from(sr_helicity(layer, sm, &self.sounding()).ok());
+                    Optioned::from(sr_helicity(layer, sm, self.sounding()).ok());
 
                 self.sr_helicity_eff_lm =
-                    Optioned::from(sr_helicity(layer, lm, &self.sounding()).ok());
+                    Optioned::from(sr_helicity(layer, lm, self.sounding()).ok());
             }
         }
 

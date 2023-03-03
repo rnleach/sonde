@@ -162,12 +162,12 @@ impl AppContext {
                     if loaded_on == acp.load_calls.get() {
                         // Nest scope to force borrows to end - otherwise it panics!
                         {
-                            let a: &RefCell<Analysis> = &*acp.list.borrow_mut()[i];
+                            let a: &RefCell<Analysis> = &acp.list.borrow_mut()[i];
                             let a: &mut Analysis = &mut RefCell::borrow_mut(a);
                             *a = anal;
                         }
 
-                        if (*acp).currently_displayed_index.get() == i {
+                        if acp.currently_displayed_index.get() == i {
                             acp.mark_data_dirty();
                             acp.update_all_gui();
                         }
@@ -265,8 +265,8 @@ impl AppContext {
 
     // Update all the gui elements
     fn update_all_gui(&self) {
-        gui::draw_all(&self);
-        gui::update_text_views(&self);
+        gui::draw_all(self);
+        gui::update_text_views(self);
     }
 
     /// Get the analysis for drawing, etc.
@@ -283,7 +283,7 @@ impl AppContext {
 
     pub fn set_sample(&self, sample: Sample) {
         *self.last_sample.borrow_mut() = sample;
-        gui::update_text_highlight(&self);
+        gui::update_text_highlight(self);
         self.mark_overlay_dirty();
     }
 

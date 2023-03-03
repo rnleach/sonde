@@ -203,14 +203,14 @@ pub fn update_text_highlight(ac: &AppContext) {
     for i in 0..(lines - 1) {
         if let (Some(start_above), Some(start_below)) = (tb.iter_at_line(i), tb.iter_at_line(i + 1))
         {
-            let mut end_above = start_above.clone();
+            let mut end_above = start_above;
             end_above.forward_chars(5);
             let above_val: HectoPascal =
                 f64::from_str(tb.text(&start_above, &end_above, false).trim())
                     .map(HectoPascal)
                     .unwrap_or(HectoPascal(0.0));
 
-            let mut end_below = start_below.clone();
+            let mut end_below = start_below;
             end_below.forward_chars(5);
             let below_val: HectoPascal =
                 f64::from_str(tb.text(&start_below, &end_below, false).trim())

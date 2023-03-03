@@ -89,10 +89,9 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     burger_group.add_action(&save_theme_action);
 
     let acp = ac.clone();
-    let winc = win.clone();
     let load_theme_action = SimpleAction::new("load_theme", None);
     load_theme_action.connect_activate(move |_action, _variant| {
-        load_theme(&acp, &winc);
+        load_theme(&acp, &win);
     });
     burger_group.add_action(&load_theme_action);
 
