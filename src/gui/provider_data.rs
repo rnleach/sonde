@@ -2,29 +2,27 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use glib::translate::IntoGlib;
-use gtk::{prelude::*, TextTag, TextView};
+use gtk::{glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextTag, TextView};
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "provider_data_text";
 
 macro_rules! make_default_tag {
     ($tb:ident, $acp:ident) => {
-        if let Some(tag_table) = $tb.tag_table() {
-            let config = $acp.config.borrow();
-            let font = &config.font_name;
-            let font_size = config.text_area_font_size_points;
+        let tag_table = $tb.tag_table();
+        let config = $acp.config.borrow();
+        let font = &config.font_name;
+        let font_size = config.text_area_font_size_points;
 
-            let tag = TextTag::builder()
-                .name("default")
-                .family(font)
-                .size_points(font_size)
-                .weight(pango::Weight::Bold.into_glib())
-                .build();
+        let tag = TextTag::builder()
+            .name("default")
+            .family(font)
+            .size_points(font_size)
+            .weight(gtk::pango::Weight::Bold.into_glib())
+            .build();
 
-            let success = tag_table.add(&tag);
-            debug_assert!(success, "Failed to add tag to text tag table");
-        }
+        let success = tag_table.add(&tag);
+        debug_assert!(success, "Failed to add tag to text tag table");
     };
 }
 
@@ -38,29 +36,27 @@ macro_rules! set_text {
 }
 
 pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
-    use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+    use gtk::gdk::Key;
 
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
 
-    let ac1 = Rc::clone(acp);
-    text_area.connect_key_press_event(move |_ta, event| {
-        let keyval = event.keyval();
-        if keyval == KP_Right || keyval == Right {
-            ac1.display_next();
-        } else if keyval == KP_Left || keyval == Left {
-            ac1.display_previous();
+    let key_press = EventControllerKey::new();
+    let ac = Rc::clone(acp);
+    key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+        if key == Key::KP_Right || key == Key::Right {
+            ac.display_next();
+        } else if key == Key::KP_Left || key == Key::Left {
+            ac.display_previous();
         }
         Inhibit(true)
     });
+    text_area.add_controller(key_press);
 
-    if let Some(tb) = text_area.buffer() {
-        make_default_tag!(tb, acp);
-        set_text!(tb, "No data loaded");
+    let tb = text_area.buffer();
+    make_default_tag!(tb, acp);
+    set_text!(tb, "No data loaded");
 
-        Ok(())
-    } else {
-        Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
-    }
+    Ok(())
 }
 
 pub fn update_text_area(ac: &AppContext) {
@@ -70,7 +66,8 @@ pub fn update_text_area(ac: &AppContext) {
         return;
     };
 
-    if let (Some(tb), Some(anal)) = (text_area.buffer(), ac.get_sounding_for_display()) {
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let tb = text_area.buffer();
         let anal = anal.borrow();
         let mut text = String::with_capacity(4096);
 

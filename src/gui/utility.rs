@@ -1,4 +1,4 @@
-use cairo::Context;
+use gtk::cairo::Context;
 
 use crate::app::config::Rgba;
 use crate::app::AppContext;
@@ -64,7 +64,7 @@ where
     I: Iterator<Item = ScreenCoords>,
 {
     cr.push_group();
-    cr.set_operator(cairo::Operator::Source);
+    cr.set_operator(gtk::cairo::Operator::Source);
     cr.set_line_width(
         cr.device_to_user_distance(line_width_pixels, 0.0)
             .unwrap()
@@ -149,7 +149,7 @@ pub fn check_overlap_then_add(
     }
 
     // Check for overlap
-    for &(_, ref rect) in vector.iter() {
+    for (_, rect) in vector.iter() {
         if padded_rect.overlaps(rect) {
             return;
         }

@@ -1,14 +1,10 @@
-use crate::{
-    app::AppContextPointer,
-    gui::control_area::{BOX_SPACING, PADDING},
-};
-use gdk::RGBA;
-use gtk::{self, prelude::*, Adjustment, Frame, ScrolledWindow};
+use crate::{app::AppContextPointer, gui::control_area::BOX_SPACING};
+use gtk::{self, gdk::RGBA, prelude::*, Frame, ScrolledWindow};
 use std::rc::Rc;
 
 pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
-    f.set_shadow_type(gtk::ShadowType::None);
+    //f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
     f.set_vexpand(true);
 
@@ -18,7 +14,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     let skewt_frame = gtk::Frame::new(Some("Skew-T"));
     let skewt_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    skewt_frame.add(&skewt_box);
+    skewt_frame.set_child(Some(&skewt_box));
 
     build_config_color!(skewt_box, "Temperature", ac, temperature_rgba);
     build_config_color!(skewt_box, "Wet Bulb", ac, wet_bulb_rgba);
@@ -33,7 +29,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     let profiles_frame = gtk::Frame::new(Some("Profiles"));
     let profiles_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    profiles_frame.add(&profiles_box);
+    profiles_frame.set_child(Some(&profiles_box));
 
     build_config_color_and_check!(
         profiles_box,
@@ -54,7 +50,7 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     let fire_plumes_frame = gtk::Frame::new(Some("Fire Plume"));
     let fire_plumes_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    fire_plumes_frame.add(&fire_plumes_box);
+    fire_plumes_frame.set_child(Some(&fire_plumes_box));
 
     build_config_color!(
         fire_plumes_box,
@@ -76,13 +72,13 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
         fire_plume_pct_wet_cape_color
     );
 
-    f.add(&v_box);
-    v_box.pack_start(&skewt_frame, true, true, PADDING);
+    f.set_child(Some(&v_box));
+    v_box.append(&skewt_frame);
     //v_box.pack_start(&hodo_frame, true, true, PADDING);
-    v_box.pack_start(&profiles_frame, true, true, PADDING);
-    v_box.pack_start(&fire_plumes_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
-    sw.add(&f);
+    v_box.append(&profiles_frame);
+    v_box.append(&fire_plumes_frame);
+    let sw = ScrolledWindow::new();
+    sw.set_child(Some(&f));
 
     sw
 }

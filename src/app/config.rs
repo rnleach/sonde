@@ -1,10 +1,13 @@
 //! Keep configuration data in this module.
 
-use crate::coords::{
-    DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords,
+use crate::{
+    coords::{DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords},
+    gui::{
+        profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
+        FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext,
+    },
 };
-use crate::gui::profiles::{CloudContext, RHOmegaContext, WindSpeedContext};
-use crate::gui::{FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext};
+
 use lazy_static::lazy_static;
 use metfor::{
     Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
@@ -982,8 +985,8 @@ lazy_static! {
                })
                .map(|dt| {
                    [
-                       FirePlumeContext::convert_dth_to_xy(dt[0]),
-                       FirePlumeContext::convert_dth_to_xy(dt[1]),
+                FirePlumeContext::convert_dth_to_xy(dt[0]),
+                FirePlumeContext::convert_dth_to_xy(dt[1]),
                    ]
                })
            .collect()
@@ -1007,8 +1010,8 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                   FirePlumeContext::convert_dth_to_xy(dt[0]),
-                   FirePlumeContext::convert_dth_to_xy(dt[1]),
+                FirePlumeContext::convert_dth_to_xy(dt[0]),
+                FirePlumeContext::convert_dth_to_xy(dt[1]),
                ]
            })
            .collect()
@@ -1032,8 +1035,8 @@ lazy_static! {
                })
            .map(|dt| {
                [
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-                   FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+                FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
+                FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
                ]
            })
            .collect()

@@ -4,7 +4,7 @@ use crate::{
     coords::{Rect, ScreenCoords, ScreenRect, TPCoords, XYCoords},
     gui::{DrawingArgs, PlotContextExt},
 };
-use cairo::Context;
+use gtk::cairo::Context;
 use itertools::izip;
 use metfor::{Celsius, HectoPascal, Knots, WindSpdDir};
 
@@ -270,7 +270,7 @@ impl SkewTContext {
             let snd = anal.sounding();
 
             let barb_config = WindBarbConfig::init(args);
-            let barb_data = Self::gather_wind_data(&snd, &barb_config, args);
+            let barb_data = Self::gather_wind_data(snd, &barb_config, args);
             let barb_data = Self::filter_wind_data(args, barb_data);
 
             let rgba = config.wind_rgba;

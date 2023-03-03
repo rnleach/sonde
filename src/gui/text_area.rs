@@ -2,29 +2,27 @@ use crate::{
     app::{sample::Sample, AppContext, AppContextPointer},
     errors::SondeError,
 };
-use glib::translate::IntoGlib;
-use gtk::{prelude::*, TextTag, TextView};
+use gtk::{glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextTag, TextView};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::DataRow;
 use std::{fmt::Write, rc::Rc};
 
 macro_rules! make_default_tag {
     ($tb:ident, $acp:ident) => {
-        if let Some(tag_table) = $tb.tag_table() {
-            let config = $acp.config.borrow();
-            let font = &config.font_name;
-            let font_size = config.text_area_font_size_points;
+        let tag_table = $tb.tag_table();
+        let config = $acp.config.borrow();
+        let font = &config.font_name;
+        let font_size = config.text_area_font_size_points;
 
-            let tag = TextTag::builder()
-                .name("default")
-                .family(font)
-                .size_points(font_size)
-                .weight(pango::Weight::Bold.into_glib())
-                .build();
+        let tag = TextTag::builder()
+            .name("default")
+            .family(font)
+            .size_points(font_size)
+            .weight(gtk::pango::Weight::Bold.into_glib())
+            .build();
 
-            let success = tag_table.add(&tag);
-            debug_assert!(success, "Failed to add tag to text tag table");
-        }
+        let success = tag_table.add(&tag);
+        debug_assert!(success, "Failed to add tag to text tag table");
     };
 }
 
@@ -38,44 +36,41 @@ macro_rules! set_text {
 }
 
 pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
-    use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+    use gtk::gdk::Key;
 
     const TEXT_AREA_ID: &str = "text_area";
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
 
-    let ac1 = Rc::clone(acp);
-    text_area.connect_key_press_event(move |_ta, event| {
-        let keyval = event.keyval();
-        if keyval == KP_Right || keyval == Right {
-            ac1.display_next();
-        } else if keyval == KP_Left || keyval == Left {
-            ac1.display_previous();
+    let key_press = EventControllerKey::new();
+    let ac = Rc::clone(acp);
+    key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+        if key == Key::KP_Right || key == Key::Right {
+            ac.display_next();
+        } else if key == Key::KP_Left || key == Key::Left {
+            ac.display_previous();
         }
         Inhibit(true)
     });
+    text_area.add_controller(key_press);
 
     fill_header_text_area(acp)?;
 
-    if let Some(tb) = text_area.buffer() {
-        make_default_tag!(tb, acp);
-        set_text!(tb, "No data loaded");
+    let tb = text_area.buffer();
+    make_default_tag!(tb, acp);
+    set_text!(tb, "No data loaded");
 
-        if let Some(tag_table) = tb.tag_table() {
-            let above_tag = TextTag::new(Some("highlight_above"));
-            let below_tag = TextTag::new(Some("highlight_below"));
+    let tag_table = tb.tag_table();
+    let above_tag = TextTag::new(Some("highlight_above"));
+    let below_tag = TextTag::new(Some("highlight_below"));
 
-            let mut success = tag_table.add(&above_tag);
-            debug_assert!(success, "Failed to add highlight_above tag");
-            success = tag_table.add(&below_tag);
-            debug_assert!(success, "Failed to add highlight_below tag");
-        }
+    let mut success = tag_table.add(&above_tag);
+    debug_assert!(success, "Failed to add highlight_above tag");
+    success = tag_table.add(&below_tag);
+    debug_assert!(success, "Failed to add highlight_below tag");
 
-        tb.create_mark(Some("scroll_mark"), &tb.start_iter(), true);
+    tb.create_mark(Some("scroll_mark"), &tb.start_iter(), true);
 
-        Ok(())
-    } else {
-        Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
-    }
+    Ok(())
 }
 
 pub fn update_text_area(ac: &AppContext) {
@@ -87,7 +82,8 @@ pub fn update_text_area(ac: &AppContext) {
         return;
     };
 
-    if let (Some(tb), Some(anal)) = (text_area.buffer(), ac.get_sounding_for_display()) {
+    if let Some(anal) = ac.get_sounding_for_display() {
+        let tb = text_area.buffer();
         let anal = anal.borrow();
         let mut text = String::with_capacity(4096);
 
@@ -150,34 +146,22 @@ pub fn fill_header_text_area(acp: &AppContextPointer) -> Result<(), SondeError> 
     const HEADER_ID: &str = "text_header";
     let header: TextView = acp.fetch_widget(HEADER_ID)?;
 
-    if let Some(tb) = header.buffer() {
-        let mut text = String::with_capacity(512);
+    let tb = header.buffer();
+    let mut text = String::with_capacity(512);
 
-        text.push_str(&format!(
-            " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}\n",
-            "Pres", "Hgt", "T", "WB", "DP", "Theta E", "DIR", "SPD", "\u{03C9}", "CLD",
-        ));
-        text.push_str(&format!(
-            " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}",
-            "hPa",
-            "m",
-            "\u{00b0}C",
-            "\u{00b0}C",
-            "\u{00b0}C",
-            "\u{00b0}K",
-            "deg",
-            "KT",
-            "Pa/s",
-            "%",
-        ));
+    text.push_str(&format!(
+        " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}\n",
+        "Pres", "Hgt", "T", "WB", "DP", "Theta E", "DIR", "SPD", "\u{03C9}", "CLD",
+    ));
+    text.push_str(&format!(
+        " {:^4} {:^5} {:^5} {:^5} {:^5} {:^7}  {:^3} {:^4} {:^5}  {:^3}",
+        "hPa", "m", "\u{00b0}C", "\u{00b0}C", "\u{00b0}C", "\u{00b0}K", "deg", "KT", "Pa/s", "%",
+    ));
 
-        make_default_tag!(tb, acp);
-        set_text!(tb, &text);
+    make_default_tag!(tb, acp);
+    set_text!(tb, &text);
 
-        Ok(())
-    } else {
-        Err(SondeError::TextBufferLoadError(HEADER_ID))
-    }
+    Ok(())
 }
 
 pub fn update_text_highlight(ac: &AppContext) {
@@ -209,62 +193,68 @@ pub fn update_text_highlight(ac: &AppContext) {
         _ => return,
     };
 
-    if let Some(ref tb) = text_area.buffer() {
-        let start = tb.start_iter();
-        let end = tb.end_iter();
-        tb.remove_tag_by_name("highlight_above", &start, &end);
-        tb.remove_tag_by_name("highlight_below", &start, &end);
+    let tb = text_area.buffer();
+    let start = tb.start_iter();
+    let end = tb.end_iter();
+    tb.remove_tag_by_name("highlight_above", &start, &end);
+    tb.remove_tag_by_name("highlight_below", &start, &end);
 
-        let lines = tb.line_count();
-        for i in 0..(lines - 1) {
-            let start_above = tb.iter_at_line(i);
-            let mut end_above = start_above.clone();
+    let lines = tb.line_count();
+    for i in 0..(lines - 1) {
+        if let (Some(start_above), Some(start_below)) = (tb.iter_at_line(i), tb.iter_at_line(i + 1))
+        {
+            let mut end_above = start_above;
             end_above.forward_chars(5);
-            let above_val: HectoPascal = f64::from_str(
-                tb.text(&start_above, &end_above, false)
-                    .unwrap_or_else(|| glib::GString::from("0.0".to_owned()))
-                    .trim(),
-            )
-            .map(HectoPascal)
-            .unwrap_or(HectoPascal(0.0));
+            let above_val: HectoPascal =
+                f64::from_str(tb.text(&start_above, &end_above, false).trim())
+                    .map(HectoPascal)
+                    .unwrap_or(HectoPascal(0.0));
 
-            let start_below = tb.iter_at_line(i + 1);
-            let mut end_below = start_below.clone();
+            let mut end_below = start_below;
             end_below.forward_chars(5);
-            let below_val: HectoPascal = f64::from_str(
-                tb.text(&start_below, &end_below, false)
-                    .unwrap_or_else(|| glib::GString::from("0.0".to_owned()))
-                    .trim(),
-            )
-            .map(HectoPascal)
-            .unwrap_or(HectoPascal(0.0));
+            let below_val: HectoPascal =
+                f64::from_str(tb.text(&start_below, &end_below, false).trim())
+                    .map(HectoPascal)
+                    .unwrap_or(HectoPascal(0.0));
 
             if tp > above_val && tp <= below_val {
-                if let Some(tt) = tb.tag_table() {
-                    // Set line colors
-                    let rgba = config.active_readout_line_rgba;
-                    let range = below_val - above_val;
-                    let alpha_below = (tp - above_val) / range;
-                    let alpha_above = 1.0 - alpha_below;
-                    let rgba_below = ::gdk::RGBA::new(rgba.0, rgba.1, rgba.2, alpha_below);
-                    let rgba_above = ::gdk::RGBA::new(rgba.0, rgba.1, rgba.2, alpha_above);
-                    if let Some(below_tag) = tt.lookup("highlight_below") {
-                        below_tag.set_background_rgba(Some(&rgba_below));
-                        end_below.forward_line();
-                        tb.apply_tag(&below_tag, &start_below, &end_below);
-                    }
-                    if let Some(above_tag) = tt.lookup("highlight_above") {
-                        above_tag.set_background_rgba(Some(&rgba_above));
-                        end_above.forward_line();
-                        tb.apply_tag(&above_tag, &start_above, &end_above);
-                    }
+                let tt = tb.tag_table();
+                // Set line colors
+                let rgba = config.active_readout_line_rgba;
+                let range = below_val - above_val;
+                let alpha_below = (tp - above_val) / range;
+                let alpha_above = 1.0 - alpha_below;
 
-                    // Scroll the view to this point.
-                    if let Some(ref mark) = tb.mark("scroll_mark") {
-                        tb.move_mark(mark, &end_above);
-                        text_area.scroll_to_mark(mark, 0.2, true, 0.0, 0.5);
-                    }
+                let rgba_below = gtk::gdk::RGBA::new(
+                    rgba.0 as f32,
+                    rgba.1 as f32,
+                    rgba.2 as f32,
+                    alpha_below as f32,
+                );
+                let rgba_above = gtk::gdk::RGBA::new(
+                    rgba.0 as f32,
+                    rgba.1 as f32,
+                    rgba.2 as f32,
+                    alpha_above as f32,
+                );
+
+                if let Some(below_tag) = tt.lookup("highlight_below") {
+                    below_tag.set_background_rgba(Some(&rgba_below));
+                    end_below.forward_line();
+                    tb.apply_tag(&below_tag, &start_below, &end_below);
                 }
+                if let Some(above_tag) = tt.lookup("highlight_above") {
+                    above_tag.set_background_rgba(Some(&rgba_above));
+                    end_above.forward_line();
+                    tb.apply_tag(&above_tag, &start_above, &end_above);
+                }
+
+                // Scroll the view to this point.
+                if let Some(ref mark) = tb.mark("scroll_mark") {
+                    tb.move_mark(mark, &end_above);
+                    text_area.scroll_to_mark(mark, 0.2, true, 0.0, 0.5);
+                }
+
                 break;
             }
         }

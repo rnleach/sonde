@@ -14,6 +14,7 @@ Session.vim
 tags
 flamegraph.*
 perf.*
+run_mac.sh
 
 // OS specific
 .DS_Store

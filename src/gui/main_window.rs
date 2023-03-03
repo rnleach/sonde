@@ -2,16 +2,18 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gdk::Event;
 use gtk::{
-    self, prelude::*, Button, Menu, MenuItem, Notebook, Paned, SeparatorMenuItem, Widget, Window,
+    self,
+    gio::{SimpleAction, SimpleActionGroup},
+    prelude::*,
+    Button, Inhibit, Notebook, Paned, Widget, Window,
 };
 use std::rc::Rc;
 
 mod menu_callbacks;
 
 const TABS: [(&str, &str); 8] = [
-    ("skew_t", "Skew T"),
+    ("skew_t", "Skew-T"),
     ("hodograph_area", "Hodograph"),
     ("fire_plume_container", "Fire Plume"),
     ("text_area_container", "Text"),
@@ -46,16 +48,6 @@ macro_rules! set_up_button {
     };
 }
 
-macro_rules! set_up_hamburger_menu_item {
-    ($text:expr, $ac:ident, $win:ident, $fn:expr, $parent_menu:ident) => {
-        let menu_item: MenuItem = MenuItem::with_label($text);
-        let ac1 = Rc::clone($ac);
-        let win1 = $win.clone();
-        menu_item.connect_activate(move |_| $fn(&ac1, &win1));
-        $parent_menu.append(&menu_item);
-    };
-}
-
 fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
     use menu_callbacks::{
         load_default_theme, load_theme, open_toolbar_callback, save_image_callback, save_theme,
@@ -63,7 +55,7 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     let win: Window = ac.fetch_widget("main_window")?;
 
-    set_up_button!(ac, "open-button", win, open_toolbar_callback);
+    set_up_button!(ac, "file-open-button", win, open_toolbar_callback);
     set_up_button!(ac, "save-image-button", win, save_image_callback);
 
     set_up_button!(ac, "go-first-button", display_first);
@@ -76,17 +68,32 @@ fn connect_header_bar(ac: &AppContextPointer) -> Result<(), SondeError> {
 
     set_up_button!(ac, "quit-button", win, update_window_config_and_exit);
 
-    // Set up the hamburger menu
-    let menu: Menu = ac.fetch_widget("hamburger-menu")?;
+    let window: Window = ac.fetch_widget("main_window")?;
 
-    set_up_hamburger_menu_item!("Save Theme", ac, win, save_theme, menu);
-    set_up_hamburger_menu_item!("Load Theme", ac, win, load_theme, menu);
+    let burger_group = SimpleActionGroup::new();
+    window.insert_action_group("hamburger", Some(&burger_group));
 
-    menu.append(&SeparatorMenuItem::new());
+    let acp = ac.clone();
+    let load_default_action = SimpleAction::new("load_default_theme", None);
+    load_default_action.connect_activate(move |_action, _variant| {
+        load_default_theme(&acp);
+    });
+    burger_group.add_action(&load_default_action);
 
-    set_up_hamburger_menu_item!("Load Default Theme", ac, win, load_default_theme, menu);
+    let acp = ac.clone();
+    let winc = win.clone();
+    let save_theme_action = SimpleAction::new("save_theme", None);
+    save_theme_action.connect_activate(move |_action, _variant| {
+        save_theme(&acp, &winc);
+    });
+    burger_group.add_action(&save_theme_action);
 
-    menu.show_all();
+    let acp = ac.clone();
+    let load_theme_action = SimpleAction::new("load_theme", None);
+    load_theme_action.connect_activate(move |_action, _variant| {
+        load_theme(&acp, &win);
+    });
+    burger_group.add_action(&load_theme_action);
 
     Ok(())
 }
@@ -97,9 +104,7 @@ fn configure_main_window(ac: &AppContextPointer) -> Result<(), SondeError> {
     layout_tabs_window(&window, ac)?;
 
     let ac1 = Rc::clone(ac);
-    window.connect_delete_event(move |win, ev| on_delete(win, ev, &ac1));
-
-    window.show_all();
+    window.connect_close_request(move |win| on_delete(win, &ac1));
 
     Ok(())
 }
@@ -108,7 +113,7 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     let mut config = ac.config.borrow_mut();
 
     // Save the window dimensions
-    let (width, height) = win.size();
+    let (width, height) = (win.width(), win.height());
     config.window_width = width;
     config.window_height = height;
 
@@ -120,8 +125,8 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
 
     // Save the tabs, which notebook they are in, their order, and which ones were selected.
     if let (Ok(lnb), Ok(rnb)) = (
-        ac.fetch_widget::<Notebook>("left_notebook"),
-        ac.fetch_widget::<Notebook>("right_notebook"),
+        ac.fetch_widget::<Notebook>("left-notebook"),
+        ac.fetch_widget::<Notebook>("right-notebook"),
     ) {
         let tabs: Vec<Widget> = TABS
             .iter()
@@ -134,7 +139,12 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
 
         let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
             cfg_tabs.clear();
-            for child in nb.children() {
+            for child in nb
+                .pages()
+                .iter::<gtk::NotebookPage>()
+                .filter_map(|page| page.ok())
+                .map(|page| page.child())
+            {
                 for (idx, tab) in tabs.iter().enumerate() {
                     if child == *tab {
                         cfg_tabs.push(TABS[idx].0.to_owned());
@@ -146,14 +156,14 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
         save_tabs(&mut config.left_tabs, &lnb);
         save_tabs(&mut config.right_tabs, &rnb);
 
-        config.left_page_selected = lnb.page();
-        config.right_page_selected = rnb.page();
+        config.left_page_selected = lnb.current_page().unwrap_or(0) as i32;
+        config.right_page_selected = rnb.current_page().unwrap_or(0) as i32;
     }
 
-    gtk::main_quit();
+    win.property::<gtk::Application>("application").quit();
 }
 
-fn on_delete(win: &Window, _ev: &Event, ac: &AppContext) -> Inhibit {
+fn on_delete(win: &Window, ac: &AppContext) -> Inhibit {
     update_window_config_and_exit(ac, win);
     Inhibit(false)
 }
@@ -167,36 +177,49 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
         { (cfg.window_width, cfg.window_height, cfg.pane_position) };
 
     if width > 0 || height > 0 {
-        win.resize(width, height);
+        win.set_default_size(width, height);
     }
 
     if pane_position > 0.0 {
-        let (width, _) = win.size();
+        let (width, _) = win.default_size();
         let pos = (width as f32 * pane_position).round() as i32;
 
         debug_assert!(pos < width);
         pane.set_position(pos);
     }
 
-    if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
-        if let (Ok(lnb), Ok(rnb)) = (
-            ac.fetch_widget::<Notebook>("left_notebook"),
-            ac.fetch_widget::<Notebook>("right_notebook"),
-        ) {
+    if let (Ok(lnb), Ok(rnb)) = (
+        ac.fetch_widget::<Notebook>("left-notebook"),
+        ac.fetch_widget::<Notebook>("right-notebook"),
+    ) {
+        if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
             let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
                         ac.fetch_widget::<Widget>(TABS[idx].0).ok().map(|widget| {
-                            let tgt_children = tgt_nb.children();
-                            let other_children = other_nb.children();
+                            let tgt_children = tgt_nb
+                                .pages()
+                                .iter::<gtk::NotebookPage>()
+                                .filter_map(|widget| widget.ok())
+                                .map(|page| page.child())
+                                .collect::<Vec<_>>();
+
+                            let other_children = other_nb
+                                .pages()
+                                .iter::<gtk::NotebookPage>()
+                                .filter_map(|widget| widget.ok())
+                                .map(|page| page.child())
+                                .collect::<Vec<_>>();
 
                             if tgt_children.contains(&widget) {
-                                tgt_nb.remove(&widget);
+                                let pg_num = tgt_nb.page_num(&widget);
+                                tgt_nb.remove_page(pg_num);
                             } else if other_children.contains(&widget) {
-                                other_nb.remove(&widget);
+                                let pg_num = other_nb.page_num(&widget);
+                                other_nb.remove_page(pg_num);
                             }
 
-                            tgt_nb.add(&widget);
+                            tgt_nb.append_page(&widget, None::<&Widget>);
                             tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
                             tgt_nb.set_tab_detachable(&widget, true);
                             tgt_nb.set_tab_reorderable(&widget, true);
@@ -211,7 +234,25 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             lnb.set_page(cfg.left_page_selected);
             rnb.set_page(cfg.right_page_selected);
         }
-    }
 
+        // Set the pages as detachable.
+        for page in lnb
+            .pages()
+            .into_iter()
+            .filter_map(|page_res| page_res.ok())
+            .filter_map(|page| page.downcast::<gtk::NotebookPage>().ok())
+        {
+            page.set_detachable(true);
+        }
+
+        for page in rnb
+            .pages()
+            .into_iter()
+            .filter_map(|page_res| page_res.ok())
+            .filter_map(|page| page.downcast::<gtk::NotebookPage>().ok())
+        {
+            page.set_detachable(true);
+        }
+    }
     Ok(())
 }

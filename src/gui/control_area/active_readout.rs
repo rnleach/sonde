@@ -1,14 +1,9 @@
-use crate::{
-    app::AppContextPointer,
-    gui::control_area::{BOX_SPACING, PADDING},
-};
-use gdk::RGBA;
-use gtk::{self, prelude::*, Adjustment, Frame, ScrolledWindow};
+use crate::{app::AppContextPointer, gui::control_area::BOX_SPACING};
+use gtk::{self, gdk::RGBA, prelude::*, Frame, ScrolledWindow};
 use std::rc::Rc;
 
 pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
-    f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
     f.set_vexpand(true);
 
@@ -18,7 +13,7 @@ pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
 
     let sample_frame = gtk::Frame::new(Some("View"));
     let sample_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    sample_frame.add(&sample_box);
+    sample_frame.set_child(Some(&sample_box));
 
     // Active readout
     build_config_color!(sample_box, "Sampling marker", ac, active_readout_line_rgba);
@@ -37,10 +32,10 @@ pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(sample_box, "Fire Plume Profile", ac, fire_plume_line_color);
 
     // Layout boxes in the frame
-    f.add(&v_box);
-    v_box.pack_start(&sample_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
-    sw.add(&f);
+    f.set_child(Some(&v_box));
+    v_box.append(&sample_frame);
+    let sw = ScrolledWindow::new();
+    sw.set_child(Some(&f));
 
     sw
 }

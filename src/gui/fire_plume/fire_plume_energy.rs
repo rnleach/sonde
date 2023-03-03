@@ -12,8 +12,10 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use gdk::EventMotion;
-use gtk::{prelude::*, DrawingArea};
+use gtk::{
+    prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
+    EventControllerScrollFlags, GestureClick, Inhibit,
+};
 use itertools::izip;
 use metfor::{CelsiusDiff, JpKg, Quantity};
 use std::rc::Rc;
@@ -87,42 +89,81 @@ impl Drawable for FirePlumeEnergyContext {
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("fire_plume_energy_area")?;
+        //
+        // Set up the drawing function.
+        let ac = Rc::clone(acp);
+        da.set_draw_func(move |_da, cr, _width, _height| {
+            ac.fire_plume_energy.draw_callback(cr, &ac);
+        });
+
+        // Set up the scroll (or zoom in/out) callbacks.
+        let ac = Rc::clone(acp);
+        let scroll_control = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
+        scroll_control.connect_scroll(move |_scroll_control, _dx, dy| {
+            ac.mark_background_dirty();
+            ac.fire_plume_energy.scroll_event(dy, &ac);
+
+            Inhibit(true)
+        });
+        da.add_controller(scroll_control);
+
+        // Set up the button clicks.
+        let left_mouse_button = GestureClick::builder().build();
 
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.fire_plume_energy.draw_callback(cr, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.fire_plume_energy.scroll_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| {
-            ac.fire_plume_energy.button_press_event(ev, &ac)
+        left_mouse_button.connect_pressed(move |_mouse_button, _n_pressed, x, y| {
+            ac.fire_plume_energy.left_button_press_event((x, y), &ac);
         });
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| {
-            ac.fire_plume_energy.button_release_event(ev)
+        left_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.fire_plume_energy.left_button_release_event((x, y), &ac);
+        });
+
+        da.add_controller(left_mouse_button);
+
+        let right_mouse_button = GestureClick::builder().button(3).build();
+        let ac = Rc::clone(acp);
+        right_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.fire_plume_energy.right_button_release_event((x, y), &ac);
+        });
+        da.add_controller(right_mouse_button);
+
+        // Set up the mouse motion events
+        let mouse_motion = EventControllerMotion::new();
+
+        let ac = Rc::clone(acp);
+        mouse_motion.connect_motion(move |mouse_motion, x, y| {
+            ac.fire_plume_energy
+                .mouse_motion_event(mouse_motion, (x, y), &ac);
         });
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| {
-            ac.fire_plume_energy.mouse_motion_event(da, ev, &ac)
+        mouse_motion.connect_enter(move |_mouse_motion, _x, _y| {
+            ac.fire_plume_energy.enter_event(&ac);
         });
 
         let ac = Rc::clone(acp);
-        da.connect_enter_notify_event(move |_da, _ev| ac.fire_plume_energy.enter_event(&ac));
+        mouse_motion.connect_leave(move |_mouse_motion| {
+            ac.fire_plume_energy.leave_event(&ac);
+        });
+
+        da.add_controller(mouse_motion);
+
+        // Set up the key presses.
+        let key_press = EventControllerKey::new();
+        let ac = Rc::clone(acp);
+        key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+            FirePlumeEnergyContext::key_press_event(key, &ac)
+        });
+        da.add_controller(key_press);
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.fire_plume_energy.leave_event(&ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| FirePlumeEnergyContext::key_press_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.fire_plume_energy.configure_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.fire_plume_energy.size_allocate_event(da));
+        da.connect_resize(move |da, width, height| {
+            // TODO merge below methods into one.
+            ac.fire_plume_energy.size_allocate_event(da);
+            ac.fire_plume_energy.resize_event(width, height, &ac);
+        });
 
         Ok(())
     }
@@ -343,19 +384,20 @@ impl Drawable for FirePlumeEnergyContext {
      **********************************************************************************************/
     fn mouse_motion_event(
         &self,
-        da: &DrawingArea,
-        event: &EventMotion,
+        controller: &EventControllerMotion,
+        new_position: (f64, f64),
         ac: &AppContextPointer,
-    ) -> Inhibit {
+    ) {
+        let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
+
+        let position: DeviceCoords = DeviceCoords::from(new_position);
 
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(event.position());
-                self.set_last_cursor_position(Some(new_position));
 
-                let new_position = self.convert_device_to_xy(new_position);
+                let new_position = self.convert_device_to_xy(position);
                 let delta = (
                     new_position.x - old_position.x,
                     new_position.y - old_position.y,
@@ -371,9 +413,6 @@ impl Drawable for FirePlumeEnergyContext {
                 ac.set_sample(Sample::None);
             }
         } else if ac.plottable() {
-            let position: DeviceCoords = event.position().into();
-            self.set_last_cursor_position(Some(position));
-
             let sample = ac
                 .get_sounding_for_display()
                 .and_then(|anal| {
@@ -388,15 +427,13 @@ impl Drawable for FirePlumeEnergyContext {
 
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
-            crate::gui::draw_all(&ac);
+            crate::gui::draw_all(ac);
         }
-
-        Inhibit(false)
+        self.set_last_cursor_position(Some(position));
     }
 
-    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+    fn enter_event(&self, ac: &AppContextPointer) {
         ac.set_last_focus(ZoomableDrawingAreas::FirePlumeEnergy);
-        Inhibit(false)
     }
 }
 

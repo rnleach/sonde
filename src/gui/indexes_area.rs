@@ -3,8 +3,10 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use glib::translate::IntoGlib;
-use gtk::{prelude::*, TextBuffer, TextTag, TextView};
+use gtk::{
+    glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextBuffer, TextTag,
+    TextView,
+};
 use metfor::{Fahrenheit, Inches, Quantity};
 use std::{fmt::Write, rc::Rc};
 
@@ -12,29 +14,27 @@ const TEXT_AREA_ID: &str = "indexes_text_area";
 const HEADER_LINE: &str = "----------------------------------------------------\n";
 
 pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
-    use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+    use gtk::gdk::Key;
 
     let text_area: TextView = acp.fetch_widget(TEXT_AREA_ID)?;
 
-    let ac1 = Rc::clone(acp);
-    text_area.connect_key_press_event(move |_ta, event| {
-        let keyval = event.keyval();
-        if keyval == KP_Right || keyval == Right {
-            ac1.display_next();
-        } else if keyval == KP_Left || keyval == Left {
-            ac1.display_previous();
+    let key_press = EventControllerKey::new();
+    let ac = Rc::clone(acp);
+    key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+        if key == Key::KP_Right || key == Key::Right {
+            ac.display_next();
+        } else if key == Key::KP_Left || key == Key::Left {
+            ac.display_previous();
         }
         Inhibit(true)
     });
+    text_area.add_controller(key_press);
 
-    if let Some(text_buffer) = text_area.buffer() {
-        set_up_tags(&text_buffer, acp);
-        set_text(&text_buffer, "No data, loaded");
-        text_buffer.create_mark(Some("scroll_mark"), &text_buffer.start_iter(), true);
-        Ok(())
-    } else {
-        Err(SondeError::TextBufferLoadError(TEXT_AREA_ID))
-    }
+    let text_buffer = text_area.buffer();
+    set_up_tags(&text_buffer, acp);
+    set_text(&text_buffer, "No data, loaded");
+    text_buffer.create_mark(Some("scroll_mark"), &text_buffer.start_iter(), true);
+    Ok(())
 }
 
 pub fn update_indexes_area(ac: &AppContext) {
@@ -43,10 +43,7 @@ pub fn update_indexes_area(ac: &AppContext) {
         Err(_) => return,
     };
 
-    let text_buffer = match text_area.buffer() {
-        Some(tb) => tb,
-        None => return,
-    };
+    let text_buffer = text_area.buffer();
 
     let anal = match ac.get_sounding_for_display() {
         Some(anal) => anal,
@@ -63,7 +60,7 @@ pub fn update_indexes_area(ac: &AppContext) {
     // Get the scroll position before setting the text
     let old_adj = text_area.vadjustment().map(|adj| adj.value());
 
-    set_text(&text_buffer, &text);
+    set_text(&text_buffer, text);
 
     highlight_parcel(&text_buffer, ac);
 
@@ -83,28 +80,32 @@ pub fn update_indexes_area(ac: &AppContext) {
 }
 
 fn set_up_tags(tb: &TextBuffer, ac: &AppContext) {
-    if let Some(tag_table) = tb.tag_table() {
-        let config = ac.config.borrow();
+    let tag_table = tb.tag_table();
+    let config = ac.config.borrow();
 
-        let default_tag = TextTag::builder()
-            .name("default")
-            .family(&config.font_name)
-            .size_points(config.text_area_font_size_points)
-            .weight(pango::Weight::Bold.into_glib())
-            .build();
+    let default_tag = TextTag::builder()
+        .name("default")
+        .family(&config.font_name)
+        .size_points(config.text_area_font_size_points)
+        .weight(gtk::pango::Weight::Bold.into_glib())
+        .build();
 
-        let success = tag_table.add(&default_tag);
-        debug_assert!(success, "Failed to add tag to text tag table");
+    let success = tag_table.add(&default_tag);
+    debug_assert!(success, "Failed to add tag to text tag table");
 
-        let rgba = config.parcel_indexes_highlight;
-        let parcel_tag = TextTag::builder()
-            .name("parcel")
-            .background_rgba(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3))
-            .build();
+    let rgba = config.parcel_indexes_highlight;
+    let parcel_tag = TextTag::builder()
+        .name("parcel")
+        .background_rgba(&gtk::gdk::RGBA::new(
+            rgba.0 as f32,
+            rgba.1 as f32,
+            rgba.2 as f32,
+            rgba.3 as f32,
+        ))
+        .build();
 
-        let success = tag_table.add(&parcel_tag);
-        debug_assert!(success, "Failed to add tag to text tag table");
-    }
+    let success = tag_table.add(&parcel_tag);
+    debug_assert!(success, "Failed to add tag to text tag table");
 }
 
 fn set_text(tb: &TextBuffer, txt: &str) {
@@ -365,12 +366,17 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
         return;
     }
 
-    let tag = match tb.tag_table().and_then(|tt| tt.lookup("parcel")) {
+    let tag = match tb.tag_table().lookup("parcel") {
         Some(tag) => tag,
         None => return,
     };
     let rgba = config.parcel_indexes_highlight;
-    tag.set_background_rgba(Some(&gdk::RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3)));
+    tag.set_background_rgba(Some(&gtk::gdk::RGBA::new(
+        rgba.0 as f32,
+        rgba.1 as f32,
+        rgba.2 as f32,
+        rgba.3 as f32,
+    )));
 
     let pcl_label: &'static str = match config.parcel_type {
         ParcelType::Surface => "Surface",
@@ -382,14 +388,13 @@ fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {
 
     let lines = tb.line_count();
     for i in 0..lines {
-        let start = tb.iter_at_line(i);
-        let mut end = start.clone();
-        end.forward_line();
+        if let Some(start) = tb.iter_at_line(i) {
+            let mut end = start;
+            end.forward_line();
 
-        tb.text(&start, &end, false)
-            .map(|gstr| gstr.as_str().starts_with(pcl_label))
-            .into_iter()
-            .filter(|starts_with_parcel| *starts_with_parcel)
-            .for_each(|_| tb.apply_tag(&tag, &start, &end));
+            if tb.text(&start, &end, false).as_str().starts_with(pcl_label) {
+                tb.apply_tag(&tag, &start, &end);
+            }
+        }
     }
 }

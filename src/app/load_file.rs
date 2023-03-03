@@ -10,10 +10,15 @@ use metfor::{Celsius, HectoPascal, Kelvin, Knots, Meters, WindSpdDir};
 use optional::Optioned;
 use sounding_analysis::{Sounding, StationInfo};
 use sounding_bufkit::BufkitFile;
-use std::{error::Error, io::Read, path::PathBuf, rc::Rc};
+use std::{
+    error::Error,
+    io::Read,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Box<dyn Error>> {
-    let datas: Result<Vec<_>, _> = paths.iter().map(load_file).collect();
+    let datas: Result<Vec<_>, _> = paths.iter().map(|pb| load_file(pb)).collect();
     let mut datas: Vec<_> = datas?.into_iter().flatten().collect();
 
     // Sort by valid time ascending, then by lead time ascending
@@ -51,7 +56,7 @@ pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Bo
             }
         })
         // Get rid of the None and only let the
-        .filter_map(|opt| opt);
+        .flatten();
 
     AppContext::load_data(Rc::clone(ac), datas);
 
@@ -59,7 +64,7 @@ pub fn load_multiple(paths: &[PathBuf], ac: &AppContextPointer) -> Result<(), Bo
 }
 
 // Make `pub` so I can use it in benches too.
-pub fn load_file(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+pub fn load_file(path: &Path) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let extension: Option<String> = path
         .extension()
         .map(|ext| ext.to_string_lossy().to_string());
@@ -87,7 +92,7 @@ pub fn load_file(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     Err(Box::new(SondeError::NoMatchingFileType))
 }
 
-fn load_wyoming_html(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+fn load_wyoming_html(path: &Path) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let mut text = String::new();
 
     let mut f = std::fs::File::open(path)?;
@@ -105,7 +110,7 @@ fn load_wyoming_html(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     Ok(data)
 }
 
-fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+fn load_bufkit(path: &Path) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let file = BufkitFile::load(path)?;
     let data = file
         .data()?
@@ -115,7 +120,7 @@ fn load_bufkit(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
     Ok(data)
 }
 
-fn load_bufr(path: &PathBuf) -> Result<Vec<Analysis>, Box<dyn Error>> {
+fn load_bufr(path: &Path) -> Result<Vec<Analysis>, Box<dyn Error>> {
     let file = BufrFile::new(&path.to_string_lossy())?;
     let file_name = path
         .file_name()

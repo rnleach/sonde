@@ -118,10 +118,10 @@ impl SkewTContext {
                 let color = config.parcel_rgba;
                 let p_profile = p_analysis.profile();
 
-                Self::draw_parcel_profile(args, &p_profile, color);
+                Self::draw_parcel_profile(args, p_profile, color);
 
                 if config.fill_parcel_areas {
-                    Self::draw_cape_cin_fill(args, &p_analysis);
+                    Self::draw_cape_cin_fill(args, p_analysis);
                 }
 
                 // Draw overlay tags
@@ -352,15 +352,14 @@ impl SkewTContext {
                 .sounding()
                 .pressure_profile()
                 .iter()
-                .map(|p| p.into_option())
-                .flatten()
+                .flat_map(|p| p.into_option())
                 .next()
             {
                 Some(p) => p,
                 None => return,
             };
 
-            let p_top = match pft_anal.sp_curve.iter().next() {
+            let p_top = match pft_anal.sp_curve.first() {
                 Some((p, _)) => *p,
                 None => return,
             };
@@ -383,8 +382,7 @@ impl SkewTContext {
                 .sounding()
                 .pressure_profile()
                 .iter()
-                .map(|p| p.into_option())
-                .flatten()
+                .flat_map(|p| p.into_option())
                 .take_while(|p| *p > p_top)
                 .chain(once(p_top))
                 .map(|p| (metfor::temperature_from_pot_temp(pft_anal.theta_ml, p), p))
@@ -547,7 +545,7 @@ impl SkewTContext {
     pub fn draw_precip_icons(&self, args: DrawingArgs<'_, '_>) {
         use PrecipTypeAlgorithm::*;
 
-        // FIXME add options for which boxes to show.
+        // TODO add options for which boxes to show.
         self.draw_precip_icon(Model, 0, args);
         self.draw_precip_icon(Bourgouin, 1, args);
         self.draw_precip_icon(NSSL, 2, args);

@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
+use gtk::prelude::*;
+
 // Module for aggregating analysis information
 mod analysis;
 
@@ -18,21 +20,36 @@ use crate::errors::*;
 // GUI module
 mod gui;
 
-pub fn run() -> Result<(), Box<dyn Error>> {
-    // Set up Gtk+
-    gtk::init()?;
+/// Unique Application identifier.
+const APP_ID: &str = "weather.profiles.sonde";
 
+pub fn run() -> Result<(), Box<dyn Error>> {
     // Set up data context
     let app = AppContext::initialize();
 
     // Load the data configuration from last time, if it exists.
     load_last_used_config(&app);
 
-    // Build the GUI
-    gui::initialize(&app)?;
+    // Create the GTKApplication
+    let gtk_app = gtk::Application::builder().application_id(APP_ID).build();
 
-    // Initialize the main loop.
-    gtk::main();
+    {
+        let app = app.clone();
+        gtk_app.connect_activate(move |gtk_app| {
+            let gui = gtk::Builder::from_string(include_str!("./sonde.ui"));
+
+            let window: gtk::Window = gui.object("main_window").unwrap();
+            window.set_application(Some(gtk_app));
+
+            app.set_gui(gui);
+
+            gui::initialize(&app).unwrap();
+
+            window.show();
+        });
+    }
+
+    gtk_app.run();
 
     // Save the configuration on closing.
     save_config(&app)?;

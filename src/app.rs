@@ -11,7 +11,10 @@ use crate::{
     },
 };
 use crossbeam_channel::TryRecvError;
-use gtk::prelude::BuilderExtManual;
+use gtk::{
+    glib::{self, IsA, Object},
+    Builder,
+};
 use sounding_analysis::{self};
 use std::{
     cell::{Cell, Ref, RefCell},
@@ -49,8 +52,8 @@ pub struct AppContext {
     // Last Drawing area to have focus, for use with focus buttons
     last_focus: Cell<ZoomableDrawingAreas>,
 
-    // Handle to the GUI
-    gui: gtk::Builder,
+    // Handles to the GUI and Gtk4 Application object.
+    gui: RefCell<Option<Builder>>,
 
     // Handle to skew-t context
     pub skew_t: SkewTContext,
@@ -84,12 +87,7 @@ pub enum ZoomableDrawingAreas {
 
 impl AppContext {
     /// Create a new instance of AppContext and return a smart pointer to it.
-    ///
-    /// Note: It is important at a later time to call set_gui, otherwise nothing will ever be
-    /// drawn on the GUI.
     pub fn initialize() -> AppContextPointer {
-        let glade_src = include_str!("./sonde.glade");
-
         Rc::new(AppContext {
             config: RefCell::new(Config::default()),
             list: RefCell::new(vec![]),
@@ -97,22 +95,29 @@ impl AppContext {
             last_sample: RefCell::new(Sample::None),
             load_calls: Cell::new(0),
             last_focus: Cell::new(ZoomableDrawingAreas::SkewT),
-            gui: gtk::Builder::from_string(glade_src),
+            gui: RefCell::new(None),
             skew_t: SkewTContext::new(),
-            rh_omega: RHOmegaContext::new(),
-            cloud: CloudContext::new(),
             hodo: HodoContext::new(),
             fire_plume: FirePlumeContext::new(),
             fire_plume_energy: FirePlumeEnergyContext::new(),
+            rh_omega: RHOmegaContext::new(),
+            cloud: CloudContext::new(),
             wind_speed: WindSpeedContext::new(),
         })
     }
 
+    pub fn set_gui(&self, gtk_builder: Builder) {
+        *self.gui.borrow_mut() = Some(gtk_builder);
+    }
+
     pub fn fetch_widget<T>(&self, widget_id: &'static str) -> Result<T, SondeError>
     where
-        T: glib::IsA<glib::Object>,
+        T: IsA<Object>,
     {
         self.gui
+            .borrow()
+            .as_ref()
+            .unwrap()
             .object(widget_id)
             .ok_or(SondeError::WidgetLoadError(widget_id))
     }
@@ -155,9 +160,14 @@ impl AppContext {
             match rx.try_recv() {
                 Ok((loaded_on, i, anal)) => {
                     if loaded_on == acp.load_calls.get() {
-                        *(*acp).list.borrow_mut()[i].borrow_mut() = anal;
+                        // Nest scope to force borrows to end - otherwise it panics!
+                        {
+                            let a: &RefCell<Analysis> = &acp.list.borrow_mut()[i];
+                            let a: &mut Analysis = &mut RefCell::borrow_mut(a);
+                            *a = anal;
+                        }
 
-                        if (*acp).currently_displayed_index.get() == i {
+                        if acp.currently_displayed_index.get() == i {
                             acp.mark_data_dirty();
                             acp.update_all_gui();
                         }
@@ -255,8 +265,8 @@ impl AppContext {
 
     // Update all the gui elements
     fn update_all_gui(&self) {
-        gui::draw_all(&self);
-        gui::update_text_views(&self);
+        gui::draw_all(self);
+        gui::update_text_views(self);
     }
 
     /// Get the analysis for drawing, etc.
@@ -273,7 +283,7 @@ impl AppContext {
 
     pub fn set_sample(&self, sample: Sample) {
         *self.last_sample.borrow_mut() = sample;
-        gui::update_text_highlight(&self);
+        gui::update_text_highlight(self);
         self.mark_overlay_dirty();
     }
 

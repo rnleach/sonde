@@ -12,9 +12,11 @@ use crate::{
         Drawable, DrawingArgs, MasterDrawable,
     },
 };
-use gdk::EventButton;
 use gtk::{
-    prelude::*, CheckMenuItem, DrawingArea, Menu, MenuItem, RadioMenuItem, SeparatorMenuItem,
+    gio::{SimpleAction, SimpleActionGroup},
+    prelude::*,
+    DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
+    EventControllerScrollFlags, GestureClick, Inhibit, Window,
 };
 use itertools::izip;
 use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
@@ -62,35 +64,79 @@ impl Drawable for HodoContext {
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("hodograph_area")?;
 
+        // Set up the drawing function.
         let ac = Rc::clone(acp);
-        da.connect_draw(move |_da, cr| ac.hodo.draw_callback(cr, &ac));
+        da.set_draw_func(move |_da, cr, _width, _height| {
+            ac.hodo.draw_callback(cr, &ac);
+        });
+
+        // Set up the scroll (or zoom in/out) callbacks.
+        let ac = Rc::clone(acp);
+        let scroll_control = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
+        scroll_control.connect_scroll(move |_scroll_control, _dx, dy| {
+            ac.mark_background_dirty();
+            ac.hodo.scroll_event(dy, &ac);
+
+            Inhibit(true)
+        });
+        da.add_controller(scroll_control);
+
+        // Set up the button clicks.
+        let left_mouse_button = GestureClick::builder().build();
 
         let ac = Rc::clone(acp);
-        da.connect_scroll_event(move |_da, ev| ac.hodo.scroll_event(ev, &ac));
+        left_mouse_button.connect_pressed(move |_mouse_button, _n_pressed, x, y| {
+            ac.hodo.left_button_press_event((x, y), &ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_button_press_event(move |_da, ev| ac.hodo.button_press_event(ev, &ac));
+        left_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.hodo.left_button_release_event((x, y), &ac);
+        });
+
+        da.add_controller(left_mouse_button);
+
+        let right_mouse_button = GestureClick::builder().button(3).build();
+        let ac = Rc::clone(acp);
+        right_mouse_button.connect_released(move |_mouse_button, _n_press, x, y| {
+            ac.hodo.right_button_release_event((x, y), &ac);
+        });
+        da.add_controller(right_mouse_button);
+
+        // Set up the mouse motion events
+        let mouse_motion = EventControllerMotion::new();
 
         let ac = Rc::clone(acp);
-        da.connect_button_release_event(move |_da, ev| ac.hodo.button_release_event(ev));
+        mouse_motion.connect_motion(move |mouse_motion, x, y| {
+            ac.hodo.mouse_motion_event(mouse_motion, (x, y), &ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_motion_notify_event(move |da, ev| ac.hodo.mouse_motion_event(da, ev, &ac));
+        mouse_motion.connect_enter(move |_mouse_motion, _x, _y| {
+            ac.hodo.enter_event(&ac);
+        });
 
         let ac = Rc::clone(acp);
-        da.connect_enter_notify_event(move |_da, _ev| ac.hodo.enter_event(&ac));
+        mouse_motion.connect_leave(move |_mouse_motion| {
+            ac.hodo.leave_event(&ac);
+        });
+
+        da.add_controller(mouse_motion);
+
+        // Set up the key presses.
+        let key_press = EventControllerKey::new();
+        let ac = Rc::clone(acp);
+        key_press.connect_key_pressed(move |_key_press, key, _code, _key_modifier| {
+            HodoContext::key_press_event(key, &ac)
+        });
+        da.add_controller(key_press);
 
         let ac = Rc::clone(acp);
-        da.connect_leave_notify_event(move |_da, _ev| ac.hodo.leave_event(&ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_key_press_event(move |_da, ev| HodoContext::key_press_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_configure_event(move |_da, ev| ac.hodo.configure_event(ev, &ac));
-
-        let ac = Rc::clone(acp);
-        da.connect_size_allocate(move |da, _ev| ac.hodo.size_allocate_event(da));
+        da.connect_resize(move |da, width, height| {
+            // TODO merge below methods into one.
+            ac.hodo.size_allocate_event(da);
+            ac.hodo.resize_event(width, height, &ac);
+        });
 
         build_hodograph_area_context_menu(acp)?;
 
@@ -279,28 +325,21 @@ impl Drawable for HodoContext {
     /***********************************************************************************************
      * Events
      **********************************************************************************************/
-    fn button_press_event(&self, event: &EventButton, ac: &AppContextPointer) -> Inhibit {
-        // Left mouse button
-        if event.button() == 1 {
-            self.set_last_cursor_position(Some(event.position().into()));
-            self.set_left_button_pressed(true);
-            Inhibit(true)
-        } else if event.button() == 3 {
-            if let Ok(menu) = ac.fetch_widget::<Menu>("hodograph_context_menu") {
-                // waiting for version 3.22...
-                // let ev: &::gdk::Event = evt;
-                // menu.popup_at_pointer(ev);
-                menu.popup_easy(3, 0)
+
+    fn right_button_release_event(&self, _position: (f64, f64), ac: &AppContextPointer) {
+        if let Ok(popover) = ac.fetch_widget::<gtk::PopoverMenu>("hodo_popover") {
+            if let Some(pos) = self.get_last_cursor_position() {
+                let llx: i32 = pos.col as i32;
+                let lly: i32 = pos.row as i32;
+                let rect = gtk::gdk::Rectangle::new(llx, lly, 1, 1);
+                popover.set_pointing_to(Some(&rect));
+                popover.popup();
             }
-            Inhibit(false)
-        } else {
-            Inhibit(false)
         }
     }
 
-    fn enter_event(&self, ac: &AppContextPointer) -> Inhibit {
+    fn enter_event(&self, ac: &AppContextPointer) {
         ac.set_last_focus(ZoomableDrawingAreas::Hodo);
-        Inhibit(false)
     }
 }
 
@@ -309,103 +348,84 @@ impl MasterDrawable for HodoContext {}
 /**************************************************************************************************
  *                                   DrawingArea set up
  **************************************************************************************************/
-macro_rules! make_heading {
-    ($menu:ident, $label:expr) => {
-        let heading = MenuItem::with_label($label);
-        heading.set_sensitive(false);
-        $menu.append(&heading);
-    };
-}
-
 fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), SondeError> {
-    let menu: Menu = acp.fetch_widget("hodograph_context_menu")?;
+    let window: Window = acp.fetch_widget("main_window")?;
     let config = acp.config.borrow();
 
-    menu.append(&SeparatorMenuItem::new());
+    let hodo_group = SimpleActionGroup::new();
+    window.insert_action_group("hodo", Some(&hodo_group));
 
-    make_heading!(menu, "Helicity");
-    let show_helicity = CheckMenuItem::with_label("Show Helicity");
-    show_helicity.set_active(config.show_helicity_overlay);
+    // Configure the layer to use for helicity calculations
+    let current_helicity_layer = match config.helicity_layer {
+        HelicityType::SurfaceTo3km => "sfc_to_3km",
+        HelicityType::Effective => "effective",
+    };
+
+    let helicity_layer_action = SimpleAction::new_stateful(
+        "helicity_layer_action",
+        Some(gtk::glib::VariantTy::STRING),
+        current_helicity_layer.into(),
+    );
+
     let ac = Rc::clone(acp);
-    show_helicity.connect_toggled(move |button| {
-        ac.config.borrow_mut().show_helicity_overlay = button.is_active();
+    helicity_layer_action.connect_activate(move |action, variant| {
+        let val: &str = variant.unwrap().str().unwrap();
+        action.set_state(val.into());
+
+        let layer = match val {
+            "sfc_to_3km" => HelicityType::SurfaceTo3km,
+            "effective" => HelicityType::Effective,
+            _ => unreachable!(),
+        };
+
+        ac.config.borrow_mut().helicity_layer = layer;
         ac.mark_data_dirty();
         crate::gui::draw_all(&ac);
+        crate::gui::update_text_views(&ac);
     });
-    menu.append(&show_helicity);
+    hodo_group.add_action(&helicity_layer_action);
 
-    menu.append(&SeparatorMenuItem::new());
+    // Show/hide the helicity overlay (fill the helicity area).
+    let ac = acp.clone();
+    let show_action = SimpleAction::new("show_helicity_overlay", None);
+    show_action.connect_activate(move |_action, _variant| {
+        let mut config = ac.config.borrow_mut();
+        config.show_helicity_overlay = !config.show_helicity_overlay;
+        ac.mark_data_dirty();
+        crate::gui::draw_all(&ac);
+        crate::gui::update_text_views(&ac);
+    });
+    hodo_group.add_action(&show_action);
 
-    let sfc_to_3km = RadioMenuItem::with_label("Surface to 3km");
-    let effective = RadioMenuItem::with_label_from_widget(&sfc_to_3km, Some("Effective Inflow"));
+    // Configure the helicity storm type (left move or right mover)
+    let current_helicity_type = match config.helicity_storm_motion {
+        StormMotionType::RightMover => "right",
+        StormMotionType::LeftMover => "left",
+    };
 
-    match config.helicity_layer {
-        HelicityType::SurfaceTo3km => sfc_to_3km.set_active(true),
-        HelicityType::Effective => effective.set_active(true),
-    }
-
-    fn handle_helicity_type_toggle(
-        button: &RadioMenuItem,
-        htype: HelicityType,
-        ac: &AppContextPointer,
-    ) {
-        if button.is_active() {
-            ac.config.borrow_mut().helicity_layer = htype;
-            ac.mark_data_dirty();
-            crate::gui::draw_all(&ac);
-        }
-    }
+    let helicity_type_action = SimpleAction::new_stateful(
+        "helicity_type",
+        Some(gtk::glib::VariantTy::STRING),
+        current_helicity_type.into(),
+    );
 
     let ac = Rc::clone(acp);
-    sfc_to_3km.connect_toggled(move |button| {
-        handle_helicity_type_toggle(button, HelicityType::SurfaceTo3km, &ac);
+    helicity_type_action.connect_activate(move |action, variant| {
+        let val: &str = variant.unwrap().str().unwrap();
+        action.set_state(val.into());
+
+        let direction = match val {
+            "right" => StormMotionType::RightMover,
+            "left" => StormMotionType::LeftMover,
+            _ => unreachable!(),
+        };
+
+        ac.config.borrow_mut().helicity_storm_motion = direction;
+        ac.mark_data_dirty();
+        crate::gui::draw_all(&ac);
+        crate::gui::update_text_views(&ac);
     });
-
-    let ac = Rc::clone(acp);
-    effective.connect_toggled(move |button| {
-        handle_helicity_type_toggle(button, HelicityType::Effective, &ac);
-    });
-
-    menu.append(&sfc_to_3km);
-    menu.append(&effective);
-
-    menu.append(&SeparatorMenuItem::new());
-
-    make_heading!(menu, "Helicity Storm");
-    let right_mover = RadioMenuItem::with_label("Right Mover");
-    let left_mover = RadioMenuItem::with_label_from_widget(&right_mover, Some("Left Mover"));
-
-    match config.helicity_storm_motion {
-        StormMotionType::RightMover => right_mover.set_active(true),
-        StormMotionType::LeftMover => left_mover.set_active(true),
-    }
-
-    fn handle_storm_motion_toggle(
-        button: &RadioMenuItem,
-        stype: StormMotionType,
-        ac: &AppContextPointer,
-    ) {
-        if button.is_active() {
-            ac.config.borrow_mut().helicity_storm_motion = stype;
-            ac.mark_data_dirty();
-            crate::gui::draw_all(&ac);
-        }
-    }
-
-    let ac = Rc::clone(acp);
-    right_mover.connect_toggled(move |button| {
-        handle_storm_motion_toggle(button, StormMotionType::RightMover, &ac);
-    });
-
-    let ac = Rc::clone(acp);
-    left_mover.connect_toggled(move |button| {
-        handle_storm_motion_toggle(button, StormMotionType::LeftMover, &ac);
-    });
-
-    menu.append(&right_mover);
-    menu.append(&left_mover);
-
-    menu.show_all();
+    hodo_group.add_action(&helicity_type_action);
 
     Ok(())
 }
@@ -510,7 +530,7 @@ fn draw_helicity_fill(args: DrawingArgs<'_, '_>) {
         };
 
         let rgba = config.helicity_rgba;
-        draw_filled_polygon(&cr, rgba, pnts);
+        draw_filled_polygon(cr, rgba, pnts);
     }
 }
 

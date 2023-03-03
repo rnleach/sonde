@@ -7,9 +7,11 @@ use crate::{
     },
     errors::SondeError,
 };
-use cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator};
-use gdk::{EventButton, EventConfigure, EventKey, EventMotion, EventScroll, ScrollDirection};
-use gtk::{prelude::*, DrawingArea};
+use gtk::{
+    cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
+    prelude::*,
+    DrawingArea, EventControllerMotion, Inhibit,
+};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
     self, freezing_levels, warm_temperature_layer_aloft, warm_wet_bulb_layer_aloft,
@@ -37,16 +39,16 @@ pub use self::text_area::update_text_highlight;
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
-    sounding::SkewTContext::set_up_drawing_area(&app)?;
-    hodograph::HodoContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
-    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
-    control_area::set_up_control_area(&app)?;
-    text_area::set_up_text_area(&app)?;
-    profiles::initialize_profiles(&app)?;
-    main_window::set_up_main_window(&app)?;
-    indexes_area::set_up_indexes_area(&app)?;
-    provider_data::set_up_provider_text_area(&app)?;
+    sounding::SkewTContext::set_up_drawing_area(app)?;
+    hodograph::HodoContext::set_up_drawing_area(app)?;
+    fire_plume::FirePlumeContext::set_up_drawing_area(app)?;
+    fire_plume::FirePlumeEnergyContext::set_up_drawing_area(app)?;
+    control_area::set_up_control_area(app)?;
+    text_area::set_up_text_area(app)?;
+    profiles::initialize_profiles(app)?;
+    indexes_area::set_up_indexes_area(app)?;
+    provider_data::set_up_provider_text_area(app)?;
+    main_window::set_up_main_window(app)?;
 
     Ok(())
 }
@@ -65,7 +67,7 @@ pub fn draw_all(app: &AppContext) {
         }
     }
 
-    profiles::draw_profiles(&app);
+    profiles::draw_profiles(app);
 }
 
 pub fn update_text_views(app: &AppContext) {
@@ -273,7 +275,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let mut box_width: f64 = 0.0;
         let mut box_height: f64 = 0.0;
 
-        for &(ref line, _) in legend_text {
+        for (line, _) in legend_text {
             let extents = cr.text_extents(line).unwrap();
             if extents.width() > box_width {
                 box_width = extents.width();
@@ -496,7 +498,7 @@ trait Drawable: PlotContext + PlotContextExt {
         let font_extents = cr.font_extents().unwrap();
 
         let mut line = String::with_capacity(100);
-        for &(ref val, _) in strings.iter() {
+        for (val, _) in strings.iter() {
             line.push_str(val);
 
             if !val.ends_with('\n') {
@@ -729,93 +731,79 @@ trait Drawable: PlotContext + PlotContextExt {
      * Events
      **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, event: &EventScroll, ac: &AppContextPointer) -> Inhibit {
+    fn scroll_event(&self, dy: f64, ac: &AppContextPointer) -> Inhibit {
         const DELTA_SCALE: f64 = 1.05;
 
-        let pos = self.convert_device_to_xy(DeviceCoords::from(event.position()));
-        let dir = event.direction();
+        if let Some(pos) = self.get_last_cursor_position() {
+            let pos = self.convert_device_to_xy(pos);
 
-        let old_zoom = self.get_zoom_factor();
-        let mut new_zoom = old_zoom;
+            let old_zoom = self.get_zoom_factor();
+            let mut new_zoom = old_zoom;
 
-        match dir {
-            ScrollDirection::Up => {
+            if dy > 0.0 {
+                new_zoom /= DELTA_SCALE;
+            } else if dy < 0.0 {
                 new_zoom *= DELTA_SCALE;
             }
-            ScrollDirection::Down => {
-                new_zoom /= DELTA_SCALE;
-            }
-            _ => {}
-        }
 
-        let mut translate = self.get_translate();
-        translate = XYCoords {
-            x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
-            y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
-        };
+            let mut translate = self.get_translate();
+            translate = XYCoords {
+                x: pos.x - old_zoom / new_zoom * (pos.x - translate.x),
+                y: pos.y - old_zoom / new_zoom * (pos.y - translate.y),
+            };
 
-        self.zoom(translate, new_zoom);
+            self.zoom(translate, new_zoom);
 
-        draw_all(ac);
-        text_area::update_text_highlight(ac);
+            draw_all(ac);
+            text_area::update_text_highlight(ac);
 
-        Inhibit(true)
-    }
-
-    fn button_press_event(&self, event: &EventButton, _ac: &AppContextPointer) -> Inhibit {
-        // Left mouse button
-        if event.button() == 1 {
-            self.set_last_cursor_position(Some(event.position().into()));
-            self.set_left_button_pressed(true);
             Inhibit(true)
         } else {
             Inhibit(false)
         }
     }
 
-    fn button_release_event(&self, event: &EventButton) -> Inhibit {
-        if event.button() == 1 {
-            self.set_last_cursor_position(None);
-            self.set_left_button_pressed(false);
-            Inhibit(true)
-        } else {
-            Inhibit(false)
-        }
+    fn left_button_press_event(&self, position: (f64, f64), _ac: &AppContextPointer) {
+        self.set_last_cursor_position(Some(position.into()));
+        self.set_left_button_pressed(true);
     }
 
-    fn enter_event(&self, _ac: &AppContextPointer) -> Inhibit {
-        Inhibit(false)
+    fn right_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
+        // For showing optional context menu
     }
 
-    fn leave_event(&self, ac: &AppContextPointer) -> Inhibit {
+    fn left_button_release_event(&self, _position: (f64, f64), _ac: &AppContextPointer) {
+        self.set_last_cursor_position(None);
+        self.set_left_button_pressed(false);
+    }
+
+    fn enter_event(&self, _ac: &AppContextPointer) {}
+
+    fn leave_event(&self, ac: &AppContextPointer) {
         self.set_last_cursor_position(None);
         ac.set_sample(Sample::None);
 
         draw_all(ac);
         text_area::update_text_highlight(ac);
-
-        Inhibit(false)
     }
 
     fn mouse_motion_event(
         &self,
-        da: &DrawingArea,
-        ev: &EventMotion,
+        controller: &EventControllerMotion,
+        new_position: (f64, f64),
         ac: &AppContextPointer,
-    ) -> Inhibit {
+    ) {
+        let da: DrawingArea = controller.widget().downcast().unwrap();
         da.grab_focus();
+
+        let position = DeviceCoords::from(new_position);
 
         if self.get_left_button_pressed() {
             if let Some(last_position) = self.get_last_cursor_position() {
                 let old_position = self.convert_device_to_xy(last_position);
-                let new_position = DeviceCoords::from(ev.position());
-                self.set_last_cursor_position(Some(new_position));
 
-                let new_position = self.convert_device_to_xy(new_position);
-                let delta = (
-                    new_position.x - old_position.x,
-                    new_position.y - old_position.y,
-                );
+                let position = self.convert_device_to_xy(position);
+                let delta = (position.x - old_position.x, position.y - old_position.y);
                 let mut translate = self.get_translate();
                 translate.x -= delta.0;
                 translate.y -= delta.1;
@@ -827,17 +815,17 @@ trait Drawable: PlotContext + PlotContextExt {
                 text_area::update_text_highlight(ac);
             }
         }
-        Inhibit(false)
+
+        self.set_last_cursor_position(Some(position));
     }
 
-    fn key_press_event(event: &EventKey, ac: &AppContextPointer) -> Inhibit {
-        use gdk::keys::constants::{KP_Left, KP_Right, Left, Right};
+    fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {
+        use gtk::gdk::Key;
 
-        let keyval = event.keyval();
-        if keyval == KP_Right || keyval == Right {
+        if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();
             Inhibit(true)
-        } else if keyval == KP_Left || keyval == Left {
+        } else if keyval == Key::KP_Left || keyval == Key::Left {
             ac.display_previous();
             Inhibit(true)
         } else {
@@ -849,9 +837,8 @@ trait Drawable: PlotContext + PlotContextExt {
         self.update_cache_allocations(da);
     }
 
-    fn configure_event(&self, event: &EventConfigure, ac: &AppContextPointer) -> bool {
+    fn resize_event(&self, width: i32, height: i32, ac: &AppContextPointer) -> bool {
         let rect = self.get_device_rect();
-        let (width, height) = event.size();
         if (rect.width - f64::from(width)).abs() < ::std::f64::EPSILON
             || (rect.height - f64::from(height)).abs() < ::std::f64::EPSILON
         {

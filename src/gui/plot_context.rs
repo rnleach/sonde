@@ -2,8 +2,11 @@ use crate::{
     coords::{DeviceCoords, DeviceRect, Rect, ScreenCoords, ScreenRect, XYCoords},
     gui::AppContext,
 };
-use cairo::{Context, Format, ImageSurface, Matrix};
-use gtk::{prelude::*, DrawingArea};
+use gtk::{
+    cairo::{Context, Format, ImageSurface, Matrix},
+    prelude::*,
+    DrawingArea,
+};
 use std::cell::{Cell, RefCell};
 
 pub trait PlotContext: Sized {

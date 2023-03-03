@@ -1,14 +1,9 @@
-use crate::{
-    app::AppContextPointer,
-    gui::control_area::{BOX_SPACING, PADDING},
-};
-use gdk::RGBA;
-use gtk::{self, prelude::*, Adjustment, ColorButton, Frame, ScrolledWindow};
+use crate::{app::AppContextPointer, gui::control_area::BOX_SPACING};
+use gtk::{self, gdk::RGBA, prelude::*, ColorButton, Frame, ScrolledWindow};
 use std::rc::Rc;
 
 pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
-    f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
     f.set_vexpand(true);
 
@@ -26,12 +21,12 @@ pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
     let font_frame = build_font_frame(acp);
 
     // Layout boxes in the frame
-    f.add(&v_box);
-    v_box.pack_start(&lines_frame, true, true, PADDING);
-    v_box.pack_start(&fills_frame, true, true, PADDING);
-    v_box.pack_start(&font_frame, true, true, PADDING);
-    let sw = ScrolledWindow::new(Adjustment::NONE, Adjustment::NONE);
-    sw.add(&f);
+    f.set_child(Some(&v_box));
+    v_box.append(&lines_frame);
+    v_box.append(&fills_frame);
+    v_box.append(&font_frame);
+    let sw = ScrolledWindow::new();
+    sw.set_child(Some(&f));
 
     sw
 }
@@ -39,7 +34,7 @@ pub fn make_background_frame(acp: &AppContextPointer) -> ScrolledWindow {
 fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
     let lines_frame = gtk::Frame::new(Some("Lines"));
     let lines_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    lines_frame.add(&lines_box);
+    lines_frame.set_child(Some(&lines_box));
 
     // Lines buttons
     build_config_color_and_check!(
@@ -94,7 +89,7 @@ fn build_lines_frame(acp: &AppContextPointer) -> gtk::Frame {
 fn build_fills_frame(acp: &AppContextPointer) -> gtk::Frame {
     let fills_frame = gtk::Frame::new(Some("Shading"));
     let fills_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    fills_frame.add(&fills_box);
+    fills_frame.set_child(Some(&fills_box));
 
     // Fills buttons
     build_config_color_and_check!(
@@ -128,34 +123,44 @@ fn add_background_color_button(target_box: &gtk::Box, acp: &AppContextPointer) {
     // Background color
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
     let color = ColorButton::new();
+    color.set_halign(gtk::Align::End);
+    color.set_hexpand(true);
 
     let rgba = acp.config.borrow().background_rgba;
-    color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
+    color.set_rgba(&RGBA::new(
+        rgba.0 as f32,
+        rgba.1 as f32,
+        rgba.2 as f32,
+        rgba.3 as f32,
+    ));
 
     // Create color button callback
     let ac = Rc::clone(acp);
-    WidgetExt::connect_property_notify_event(&color, move |button, _event| {
+    color.connect_color_set(move |button| {
         let rgba = button.rgba();
 
-        ac.config.borrow_mut().background_rgba =
-            (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
+        ac.config.borrow_mut().background_rgba = (
+            rgba.red() as f64,
+            rgba.green() as f64,
+            rgba.blue() as f64,
+            rgba.alpha() as f64,
+        );
+        ac.mark_background_dirty();
         crate::gui::draw_all(&ac);
         crate::gui::text_area::update_text_highlight(&ac);
-
-        Inhibit(false)
     });
 
     // Layout
-    hbox.pack_end(&color, false, true, PADDING);
-    hbox.pack_start(&gtk::Label::new(Some("Background")), false, true, PADDING);
+    hbox.append(&gtk::Label::new(Some("Background")));
+    hbox.append(&color);
 
-    target_box.pack_start(&hbox, false, true, PADDING);
+    target_box.append(&hbox);
 }
 
 fn build_font_frame(acp: &AppContextPointer) -> gtk::Frame {
     let font_frame = gtk::Frame::new(Some("Labels"));
     let font_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    font_frame.add(&font_box);
+    font_frame.set_child(Some(&font_box));
 
     build_config_color_and_check!(font_box, "Labels", acp, show_labels, label_rgba);
     build_config_check!(font_box, "Show Legend", acp, show_legend);
