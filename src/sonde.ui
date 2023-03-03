@@ -625,12 +625,35 @@
                                         <property name="label">Indexes</property>
                                     </object>
                                 </child>
-                            </object>
-                        </child>
 
-                    </object>
+                                <!-- ********************  Control Area  ********************** -->
+                                <child>
+                                    <object id="control_area" class="GtkNotebook">
+                                        <property name="hexpand">True</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="can-target">True</property>
+                                        <property name="focus-on-click">True</property>
+                                        <property name="focusable">True</property>
+
+                                        <property name="margin-top">6</property>
+                                        <property name="margin-bottom">6</property>
+                                        <property name="margin-start">6</property>
+                                        <property name="margin-end">6</property>
+
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Config</property>
+                                    </object>
+                                </child>
+
+                            </object> <!-- GtkNotebook - righ-notebook -->
+                        </child> 
+                    </object> <!-- GtkPaned -->
                 </child>
-            </object>
+            </object> <!-- GtkBox -->
         </child>
-    </object>
+    </object> <!-- GtkWindow - main_window -->
 </interface>

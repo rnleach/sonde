@@ -18,8 +18,7 @@ use sounding_analysis::{
     wet_bulb_zero_levels, DataRow, Layer,
 };
 
-//FIXME
-//mod control_area;
+mod control_area;
 mod fire_plume;
 mod hodograph;
 mod indexes_area;
@@ -44,8 +43,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     hodograph::HodoContext::set_up_drawing_area(&app)?;
     fire_plume::FirePlumeContext::set_up_drawing_area(&app)?;
     fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
-    //FIXME
-    //control_area::set_up_control_area(&app)?;
+    control_area::set_up_control_area(&app)?;
     text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
     indexes_area::set_up_indexes_area(&app)?;

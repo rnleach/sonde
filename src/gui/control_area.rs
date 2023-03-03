@@ -7,8 +7,12 @@ macro_rules! build_config_color_and_check {
     ($v_box:ident, $label:expr, $acp_in:expr, $show_var:ident, $color_var:ident) => {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let check = gtk::CheckButton::with_label($label);
+        check.set_hexpand(true);
+
         let color = gtk::ColorButton::new();
         color.set_use_alpha(true);
+        color.set_halign(gtk::Align::End);
+        color.set_hexpand(true);
 
         // Inner scope to borrow acp
         {
@@ -16,7 +20,12 @@ macro_rules! build_config_color_and_check {
             check.set_active(config.$show_var);
 
             let rgba = config.$color_var;
-            color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
+            color.set_rgba(&RGBA::new(
+                rgba.0 as f32,
+                rgba.1 as f32,
+                rgba.2 as f32,
+                rgba.3 as f32,
+            ));
         }
 
         // Create check button callback
@@ -33,8 +42,12 @@ macro_rules! build_config_color_and_check {
         color.connect_color_set(move |button| {
             let rgba = button.rgba();
 
-            acp.config.borrow_mut().$color_var =
-                (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
+            acp.config.borrow_mut().$color_var = (
+                rgba.red() as f64,
+                rgba.green() as f64,
+                rgba.blue() as f64,
+                rgba.alpha() as f64,
+            );
             acp.mark_background_dirty();
             acp.mark_data_dirty();
             acp.mark_overlay_dirty();
@@ -45,9 +58,9 @@ macro_rules! build_config_color_and_check {
         });
 
         // Layout
-        hbox.pack_end(&color, false, true, PADDING);
-        hbox.pack_start(&check, false, true, PADDING);
-        $v_box.pack_start(&hbox, false, true, PADDING);
+        hbox.append(&check);
+        hbox.append(&color);
+        $v_box.append(&hbox);
     };
 }
 
@@ -57,6 +70,7 @@ macro_rules! build_config_check {
         let check = gtk::CheckButton::with_label($label);
 
         check.set_active($acp.config.borrow().$show_var);
+        check.set_hexpand(true);
 
         // Create check button callback
         let acp = $acp.clone();
@@ -68,8 +82,8 @@ macro_rules! build_config_check {
         });
 
         // Layout
-        hbox.pack_start(&check, false, true, PADDING);
-        $v_box.pack_start(&hbox, false, true, PADDING);
+        hbox.append(&check);
+        $v_box.append(&hbox);
     };
 }
 
@@ -78,12 +92,19 @@ macro_rules! build_config_color {
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, BOX_SPACING);
         let color = gtk::ColorButton::new();
         color.set_use_alpha(true);
+        color.set_halign(gtk::Align::End);
+        color.set_hexpand(true);
 
         // Inner scope to borrow acp
         {
             let config = $acp_in.config.borrow();
             let rgba = config.$color_var;
-            color.set_rgba(&RGBA::new(rgba.0, rgba.1, rgba.2, rgba.3));
+            color.set_rgba(&RGBA::new(
+                rgba.0 as f32,
+                rgba.1 as f32,
+                rgba.2 as f32,
+                rgba.3 as f32,
+            ));
         }
 
         // Create color button callback
@@ -91,8 +112,12 @@ macro_rules! build_config_color {
         color.connect_color_set(move |button| {
             let rgba = button.rgba();
 
-            acp.config.borrow_mut().$color_var =
-                (rgba.red(), rgba.green(), rgba.blue(), rgba.alpha());
+            acp.config.borrow_mut().$color_var = (
+                rgba.red() as f64,
+                rgba.green() as f64,
+                rgba.blue() as f64,
+                rgba.alpha() as f64,
+            );
             acp.mark_background_dirty();
             acp.mark_data_dirty();
             acp.mark_overlay_dirty();
@@ -103,9 +128,9 @@ macro_rules! build_config_color {
         });
 
         // Layout
-        hbox.pack_end(&color, false, true, PADDING);
-        hbox.pack_start(&gtk::Label::new(Some($label)), false, true, PADDING);
-        $v_box.pack_start(&hbox, false, true, PADDING);
+        hbox.append(&gtk::Label::new(Some($label)));
+        hbox.append(&color);
+        $v_box.append(&hbox);
     };
 }
 
@@ -114,7 +139,6 @@ mod background_options;
 mod data_options;
 mod overlay_options;
 
-const PADDING: u32 = 2;
 const BOX_SPACING: i32 = 5;
 
 pub fn set_up_control_area(acp: &AppContextPointer) -> Result<(), SondeError> {
@@ -124,19 +148,19 @@ pub fn set_up_control_area(acp: &AppContextPointer) -> Result<(), SondeError> {
     control_area.set_scrollable(true);
 
     let data_options = data_options::make_data_option_frame(acp);
-    control_area.add(&data_options);
+    control_area.append_page(&data_options, None::<&gtk::Widget>);
     control_area.set_tab_label_text(&data_options, "Data");
 
     let background_options = background_options::make_background_frame(acp);
-    control_area.add(&background_options);
+    control_area.append_page(&background_options, None::<&gtk::Widget>);
     control_area.set_tab_label_text(&background_options, "Background");
 
     let active_readout_options = active_readout::make_active_readout_frame(acp);
-    control_area.add(&active_readout_options);
+    control_area.append_page(&active_readout_options, None::<&gtk::Widget>);
     control_area.set_tab_label_text(&active_readout_options, "Active Readout");
 
     let overlay_options = overlay_options::make_overlay_frame(acp);
-    control_area.add(&overlay_options);
+    control_area.append_page(&overlay_options, None::<&gtk::Widget>);
     control_area.set_tab_label_text(&overlay_options, "Overlays");
 
     Ok(())
