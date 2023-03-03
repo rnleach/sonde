@@ -4,8 +4,6 @@ use std::rc::Rc;
 
 pub fn make_active_readout_frame(ac: &AppContextPointer) -> ScrolledWindow {
     let f = Frame::new(None);
-    //FIXME
-    //f.set_shadow_type(gtk::ShadowType::None);
     f.set_hexpand(true);
     f.set_vexpand(true);
 

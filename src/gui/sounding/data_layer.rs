@@ -547,7 +547,7 @@ impl SkewTContext {
     pub fn draw_precip_icons(&self, args: DrawingArgs<'_, '_>) {
         use PrecipTypeAlgorithm::*;
 
-        // FIXME add options for which boxes to show.
+        // TODO add options for which boxes to show.
         self.draw_precip_icon(Model, 0, args);
         self.draw_precip_icon(Bourgouin, 1, args);
         self.draw_precip_icon(NSSL, 2, args);

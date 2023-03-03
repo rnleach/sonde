@@ -36,11 +36,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     {
         let app = app.clone();
         gtk_app.connect_activate(move |gtk_app| {
-            // FIXME - don't load from file, but include string in binary. keep loading it from
-            // file while in development, but before release, fix this to use embedded string.
-            //
-            //let gui = gtk::Builder::from_string(include_str!(".sonde.ui");
-            let gui = gtk::Builder::from_file("src/sonde.ui");
+            let gui = gtk::Builder::from_string(include_str!("./sonde.ui"));
 
             let window: gtk::Window = gui.object("main_window").unwrap();
             window.set_application(Some(gtk_app));
