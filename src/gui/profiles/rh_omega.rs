@@ -464,8 +464,7 @@ impl Drawable for RHOmegaContext {
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
-            //FIXME
-            //crate::gui::text_area::update_text_highlight(&ac);
+            crate::gui::text_area::update_text_highlight(&ac);
         }
 
         self.set_last_cursor_position(Some(position));

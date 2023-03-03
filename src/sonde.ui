@@ -325,6 +325,7 @@
                                 <property name="hexpand">True</property>
                                 <property name="vexpand">True</property>
 
+                                <!-- *********************  Skew-T Area  ********************** -->
                                 <child>
                                     <object id="skew_t" class="GtkDrawingArea">
                                         <property name="hexpand">True</property>
@@ -362,6 +363,7 @@
                                 <property name="hexpand">True</property>
                                 <property name="vexpand">True</property>
 
+                                <!-- *******************  Hodograph Area  ********************* -->
                                 <child>
                                     <object id="hodograph_area" class="GtkDrawingArea">
                                         <property name="hexpand">True</property>
@@ -385,6 +387,7 @@
                                     </object>
                                 </child>
 
+                                <!-- *******************  Profiles Area  ********************** -->
                                 <child>
                                     <object class="GtkBox">
                                     <property name="orientation">horizontal</property>
@@ -448,9 +451,10 @@
                                     </object>
                                 </child>
 
+                                <!-- *********************  Fire Area  ************************ -->
                                 <child>
                                     <object class="GtkBox">
-                                    <property name="orientation">vertical</property>
+                                        <property name="orientation">vertical</property>
 
                                         <child>
                                             <object id="fire_plume_height_area" class="GtkDrawingArea">
@@ -491,6 +495,67 @@
                                 <child type="tab">
                                     <object class="GtkLabel">
                                         <property name="label">Fire</property>
+                                    </object>
+                                </child>
+
+                                <!-- *********************  Text Area  ************************ -->
+                                <child>
+                                    <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+
+                                        <child>
+                                            <object id="text_header" class="GtkTextView">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">False</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focus-on-click">True</property>
+                                                <property name="focusable">True</property>
+
+                                                <property name="margin-top">6</property>
+                                                <property name="margin-bottom">6</property>
+                                                <property name="margin-start">6</property>
+                                                <property name="margin-end">6</property>
+
+                                                <property name="cursor-visible">False</property>
+                                                <property name="editable">False</property>
+                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                <property name="monospace">True</property>
+                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
+
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkScrolledWindow">
+                                                <child>
+                                                    <object id="text_area" class="GtkTextView">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-focus">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focus-on-click">True</property>
+                                                        <property name="focusable">True</property>
+
+                                                        <property name="margin-top">6</property>
+                                                        <property name="margin-bottom">6</property>
+                                                        <property name="margin-start">6</property>
+                                                        <property name="margin-end">6</property>
+
+                                                        <property name="cursor-visible">False</property>
+                                                        <property name="editable">False</property>
+                                                        <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                        <property name="monospace">True</property>
+                                                        <property name="wrap-mode">GTK_WRAP_NONE</property>
+
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Text</property>
                                     </object>
                                 </child>
 

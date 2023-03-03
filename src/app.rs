@@ -160,9 +160,12 @@ impl AppContext {
             match rx.try_recv() {
                 Ok((loaded_on, i, anal)) => {
                     if loaded_on == acp.load_calls.get() {
-                        let a: &RefCell<Analysis> = &*acp.list.borrow_mut()[i];
-                        let a: &mut Analysis = &mut RefCell::borrow_mut(a);
-                        *a = anal;
+                        // Nest scope to force borrows to end - otherwise it panics!
+                        {
+                            let a: &RefCell<Analysis> = &*acp.list.borrow_mut()[i];
+                            let a: &mut Analysis = &mut RefCell::borrow_mut(a);
+                            *a = anal;
+                        }
 
                         if (*acp).currently_displayed_index.get() == i {
                             acp.mark_data_dirty();
@@ -280,8 +283,7 @@ impl AppContext {
 
     pub fn set_sample(&self, sample: Sample) {
         *self.last_sample.borrow_mut() = sample;
-        //FIXME
-        //gui::update_text_highlight(&self);
+        gui::update_text_highlight(&self);
         self.mark_overlay_dirty();
     }
 

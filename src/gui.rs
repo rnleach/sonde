@@ -30,16 +30,14 @@ pub mod profiles;
 //FIXME
 //mod provider_data;
 mod sounding;
-//FIXME
-//mod text_area;
+mod text_area;
 mod utility;
 
 pub use self::fire_plume::{FirePlumeContext, FirePlumeEnergyContext};
 pub use self::hodograph::HodoContext;
 pub use self::plot_context::{PlotContext, PlotContextExt};
 pub use self::sounding::SkewTContext;
-//FIXME
-//pub use self::text_area::update_text_highlight;
+pub use self::text_area::update_text_highlight;
 
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
@@ -50,8 +48,7 @@ pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     fire_plume::FirePlumeEnergyContext::set_up_drawing_area(&app)?;
     //FIXME
     //control_area::set_up_control_area(&app)?;
-    //FIXME
-    //text_area::set_up_text_area(&app)?;
+    text_area::set_up_text_area(&app)?;
     profiles::initialize_profiles(&app)?;
     //FIXME
     //indexes_area::set_up_indexes_area(&app)?;
@@ -80,10 +77,8 @@ pub fn draw_all(app: &AppContext) {
 }
 
 pub fn update_text_views(app: &AppContext) {
-    //    FIXME
-    //    self::text_area::update_text_area(app);
-    //    FIXME
-    //    self::text_area::update_text_highlight(app);
+    self::text_area::update_text_area(app);
+    self::text_area::update_text_highlight(app);
     //    FIXME
     //    self::indexes_area::update_indexes_area(app);
     //    FIXME
@@ -768,8 +763,7 @@ trait Drawable: PlotContext + PlotContextExt {
             self.zoom(translate, new_zoom);
 
             draw_all(ac);
-            //FIXME
-            //text_area::update_text_highlight(ac);
+            text_area::update_text_highlight(ac);
 
             Inhibit(true)
         } else {
@@ -798,8 +792,7 @@ trait Drawable: PlotContext + PlotContextExt {
         ac.set_sample(Sample::None);
 
         draw_all(ac);
-        //FIXME
-        //text_area::update_text_highlight(ac);
+        text_area::update_text_highlight(ac);
     }
 
     fn mouse_motion_event(
@@ -827,8 +820,7 @@ trait Drawable: PlotContext + PlotContextExt {
                 self.mark_background_dirty();
 
                 draw_all(ac);
-                //FIXME
-                //text_area::update_text_highlight(ac);
+                text_area::update_text_highlight(ac);
             }
         }
 

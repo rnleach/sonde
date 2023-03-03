@@ -586,8 +586,7 @@ impl Drawable for SkewTContext {
                 self.bound_view();
                 ac.mark_background_dirty();
                 crate::gui::draw_all(&ac);
-                // FIXME
-                // crate::gui::text_area::update_text_highlight(&ac);
+                crate::gui::text_area::update_text_highlight(&ac);
 
                 ac.set_sample(Sample::None);
             }
@@ -632,8 +631,7 @@ impl Drawable for SkewTContext {
             ac.set_sample(sample);
             ac.mark_overlay_dirty();
             crate::gui::draw_all(&ac);
-            // FIXME:
-            // crate::gui::text_area::update_text_highlight(&ac);
+            crate::gui::text_area::update_text_highlight(&ac);
         }
         self.set_last_cursor_position(Some(position));
     }
