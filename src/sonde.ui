@@ -593,8 +593,41 @@
                                     </object>
                                 </child>
 
+                                <!-- ********************  Indexes Area  ********************** -->
+                                <child>
+                                    <object class="GtkScrolledWindow">
+                                        <child>
+                                            <object id="indexes_text_area" class="GtkTextView">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focus-on-click">True</property>
+                                                <property name="focusable">True</property>
+
+                                                <property name="margin-top">6</property>
+                                                <property name="margin-bottom">6</property>
+                                                <property name="margin-start">6</property>
+                                                <property name="margin-end">6</property>
+
+                                                <property name="cursor-visible">False</property>
+                                                <property name="editable">False</property>
+                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                <property name="monospace">True</property>
+                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
+
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child type="tab">
+                                    <object class="GtkLabel">
+                                        <property name="label">Indexes</property>
+                                    </object>
+                                </child>
                             </object>
                         </child>
+
                     </object>
                 </child>
             </object>
