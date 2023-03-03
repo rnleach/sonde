@@ -16,10 +16,7 @@ use crate::{
         Drawable, DrawingArgs, SlaveProfileDrawable,
     },
 };
-use gtk::{
-    prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
-    EventControllerScrollFlags, GestureClick, Inhibit,
-};
+use gtk::{prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick};
 use itertools::izip;
 use metfor::{PaPS, Quantity};
 use sounding_analysis::{relative_humidity, relative_humidity_ice};
