@@ -10,7 +10,7 @@ There are already a few good tools out there for looking at atmospheric sounding
 [Bufkit][bufkit] and [SHARPpy][sharppy]. I'm doing this because I enjoy meteorology and coding and 
 this is a good way to explore both in depth.
 
-I used [GKT+][gtk] via [Gtk-rs][gtkrs] and [Rust][rust] to implement it.
+I used [GKT4][gtk] via [Gtk4-rs][gtkrs] and [Rust][rust] to implement it.
 
 Probably the most frequently thought of use case for sounding analysis is thunderstorms and 
 convection. However, they are also used heavily in forecasting winds and precipitation type during 
