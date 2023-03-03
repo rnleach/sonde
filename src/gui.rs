@@ -833,7 +833,6 @@ trait Drawable: PlotContext + PlotContextExt {
         }
     }
 
-    // FIXME: REMOVE?
     fn size_allocate_event(&self, da: &DrawingArea) {
         self.update_cache_allocations(da);
     }

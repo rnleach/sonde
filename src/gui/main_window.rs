@@ -13,7 +13,7 @@ use std::rc::Rc;
 mod menu_callbacks;
 
 const TABS: [(&str, &str); 8] = [
-    ("skew_t", "Skew T"),
+    ("skew_t", "Skew-T"),
     ("hodograph_area", "Hodograph"),
     ("fire_plume_container", "Fire Plume"),
     ("text_area_container", "Text"),
@@ -126,8 +126,8 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
 
     // Save the tabs, which notebook they are in, their order, and which ones were selected.
     if let (Ok(lnb), Ok(rnb)) = (
-        ac.fetch_widget::<Notebook>("left_notebook"),
-        ac.fetch_widget::<Notebook>("right_notebook"),
+        ac.fetch_widget::<Notebook>("left-notebook"),
+        ac.fetch_widget::<Notebook>("right-notebook"),
     ) {
         let tabs: Vec<Widget> = TABS
             .iter()
@@ -138,23 +138,27 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
             })
             .collect();
 
-        //        // FIXME
-        //        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
-        //            cfg_tabs.clear();
-        //            for child in nb.children() {
-        //                for (idx, tab) in tabs.iter().enumerate() {
-        //                    if child == *tab {
-        //                        cfg_tabs.push(TABS[idx].0.to_owned());
-        //                    }
-        //                }
-        //            }
-        //        };
+        let save_tabs = |cfg_tabs: &mut Vec<String>, nb: &Notebook| {
+            cfg_tabs.clear();
+            for child in nb
+                .pages()
+                .iter::<gtk::NotebookPage>()
+                .filter_map(|page| page.ok())
+                .map(|page| page.child())
+            {
+                for (idx, tab) in tabs.iter().enumerate() {
+                    if child == *tab {
+                        cfg_tabs.push(TABS[idx].0.to_owned());
+                    }
+                }
+            }
+        };
 
-        //        save_tabs(&mut config.left_tabs, &lnb);
-        //        save_tabs(&mut config.right_tabs, &rnb);
+        save_tabs(&mut config.left_tabs, &lnb);
+        save_tabs(&mut config.right_tabs, &rnb);
 
-        //        config.left_page_selected = lnb.page();
-        //        config.right_page_selected = rnb.page();
+        config.left_page_selected = lnb.current_page().unwrap_or(0) as i32;
+        config.right_page_selected = rnb.current_page().unwrap_or(0) as i32;
     }
 
     win.property::<gtk::Application>("application").quit();
@@ -190,22 +194,33 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
         ac.fetch_widget::<Notebook>("right-notebook"),
     ) {
         if !(cfg.left_tabs.is_empty() && cfg.right_tabs.is_empty()) {
-            //    FIXME
-            /*
             let restore_tabs = |cfg_tabs: &Vec<String>, tgt_nb: &Notebook, other_nb: &Notebook| {
                 for tab_id in cfg_tabs {
                     TABS.iter().position(|&s| s.0 == tab_id).and_then(|idx| {
                         ac.fetch_widget::<Widget>(TABS[idx].0).ok().map(|widget| {
-                            let tgt_children = tgt_nb.children();
-                            let other_children = other_nb.children();
+                            let tgt_children = tgt_nb
+                                .pages()
+                                .iter::<gtk::NotebookPage>()
+                                .filter_map(|widget| widget.ok())
+                                .map(|page| page.child())
+                                .collect::<Vec<_>>();
+
+                            let other_children = other_nb
+                                .pages()
+                                .iter::<gtk::NotebookPage>()
+                                .filter_map(|widget| widget.ok())
+                                .map(|page| page.child())
+                                .collect::<Vec<_>>();
 
                             if tgt_children.contains(&widget) {
-                                tgt_nb.remove(&widget);
+                                let pg_num = tgt_nb.page_num(&widget);
+                                tgt_nb.remove_page(pg_num);
                             } else if other_children.contains(&widget) {
-                                other_nb.remove(&widget);
+                                let pg_num = other_nb.page_num(&widget);
+                                other_nb.remove_page(pg_num);
                             }
 
-                            tgt_nb.add(&widget);
+                            tgt_nb.append_page(&widget, None::<&Widget>);
                             tgt_nb.set_tab_label_text(&widget, TABS[idx].1);
                             tgt_nb.set_tab_detachable(&widget, true);
                             tgt_nb.set_tab_reorderable(&widget, true);
@@ -219,7 +234,6 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
 
             lnb.set_page(cfg.left_page_selected);
             rnb.set_page(cfg.right_page_selected);
-            */
         }
 
         // Set the pages as detachable.
