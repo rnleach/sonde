@@ -16,8 +16,11 @@ macro_rules! make_check_item {
         let ac = $acp.clone();
         let action = SimpleAction::new($action, None);
         action.connect_activate(move |_action, _variant| {
-            let mut config = ac.config.borrow_mut();
-            config.$check_val = !config.$check_val;
+            // Nested scope for borrows.
+            {
+                let mut config = ac.config.borrow_mut();
+                config.$check_val = !config.$check_val;
+            }
             ac.mark_data_dirty();
             crate::gui::draw_all(&ac);
             crate::gui::update_text_views(&ac);
