@@ -4,8 +4,9 @@ use crate::{
     errors::SondeError,
 };
 use gtk::{
-    glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextBuffer, TextTag,
-    TextView,
+    glib::{translate::IntoGlib, Propagation},
+    prelude::*,
+    EventControllerKey, TextBuffer, TextTag, TextView,
 };
 use metfor::{Fahrenheit, Inches, Quantity};
 use std::{fmt::Write, rc::Rc};
@@ -26,7 +27,7 @@ pub fn set_up_indexes_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         } else if key == Key::KP_Left || key == Key::Left {
             ac.display_previous();
         }
-        Inhibit(true)
+        Propagation::Stop
     });
     text_area.add_controller(key_press);
 

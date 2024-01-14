@@ -14,9 +14,10 @@ use crate::{
 };
 use gtk::{
     gio::{SimpleAction, SimpleActionGroup},
+    glib::Propagation,
     prelude::*,
     DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
-    EventControllerScrollFlags, GestureClick, Inhibit, Window,
+    EventControllerScrollFlags, GestureClick, Window,
 };
 use itertools::izip;
 use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
@@ -77,7 +78,7 @@ impl Drawable for HodoContext {
             ac.mark_background_dirty();
             ac.hodo.scroll_event(dy, &ac);
 
-            Inhibit(true)
+            Propagation::Stop
         });
         da.add_controller(scroll_control);
 
@@ -361,16 +362,23 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         HelicityType::Effective => "effective",
     };
 
+    let hl_variant = unsafe {
+        &gtk::glib::Variant::from_data_with_type_trusted(
+            current_helicity_layer,
+            gtk::glib::VariantTy::STRING,
+        )
+    };
     let helicity_layer_action = SimpleAction::new_stateful(
         "helicity_layer_action",
         Some(gtk::glib::VariantTy::STRING),
-        current_helicity_layer.into(),
+        hl_variant,
     );
 
     let ac = Rc::clone(acp);
     helicity_layer_action.connect_activate(move |action, variant| {
-        let val: &str = variant.unwrap().str().unwrap();
-        action.set_state(val.into());
+        let var = variant.unwrap();
+        let val: &str = var.str().unwrap();
+        action.set_state(var);
 
         let layer = match val {
             "sfc_to_3km" => HelicityType::SurfaceTo3km,
@@ -403,16 +411,23 @@ fn build_hodograph_area_context_menu(acp: &AppContextPointer) -> Result<(), Sond
         StormMotionType::LeftMover => "left",
     };
 
+    let hl_variant = unsafe {
+        &gtk::glib::Variant::from_data_with_type_trusted(
+            current_helicity_type,
+            gtk::glib::VariantTy::STRING,
+        )
+    };
     let helicity_type_action = SimpleAction::new_stateful(
         "helicity_type",
         Some(gtk::glib::VariantTy::STRING),
-        current_helicity_type.into(),
+        hl_variant,
     );
 
     let ac = Rc::clone(acp);
     helicity_type_action.connect_activate(move |action, variant| {
-        let val: &str = variant.unwrap().str().unwrap();
-        action.set_state(val.into());
+        let var = variant.unwrap();
+        let val: &str = var.str().unwrap();
+        action.set_state(var);
 
         let direction = match val {
             "right" => StormMotionType::RightMover,

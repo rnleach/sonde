@@ -2,7 +2,11 @@ use crate::{
     app::{sample::Sample, AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gtk::{glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextTag, TextView};
+use gtk::{
+    glib::{translate::IntoGlib, Propagation},
+    prelude::*,
+    EventControllerKey, TextTag, TextView,
+};
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::DataRow;
 use std::{fmt::Write, rc::Rc};
@@ -49,7 +53,7 @@ pub fn set_up_text_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         } else if key == Key::KP_Left || key == Key::Left {
             ac.display_previous();
         }
-        Inhibit(true)
+        Propagation::Stop
     });
     text_area.add_controller(key_press);
 

@@ -9,8 +9,9 @@ use crate::{
 };
 use gtk::{
     cairo::{Context, FontExtents, FontFace, FontSlant, FontWeight, Matrix, Operator},
+    glib::Propagation,
     prelude::*,
-    DrawingArea, EventControllerMotion, Inhibit,
+    DrawingArea, EventControllerMotion,
 };
 use metfor::{HectoPascal, Quantity};
 use sounding_analysis::{
@@ -731,7 +732,7 @@ trait Drawable: PlotContext + PlotContextExt {
      * Events
      **********************************************************************************************/
     /// Handles zooming from the mouse wheel. Connected to the scroll-event signal.
-    fn scroll_event(&self, dy: f64, ac: &AppContextPointer) -> Inhibit {
+    fn scroll_event(&self, dy: f64, ac: &AppContextPointer) -> Propagation {
         const DELTA_SCALE: f64 = 1.05;
 
         if let Some(pos) = self.get_last_cursor_position() {
@@ -757,9 +758,9 @@ trait Drawable: PlotContext + PlotContextExt {
             draw_all(ac);
             text_area::update_text_highlight(ac);
 
-            Inhibit(true)
+            Propagation::Stop
         } else {
-            Inhibit(false)
+            Propagation::Proceed
         }
     }
 
@@ -819,17 +820,17 @@ trait Drawable: PlotContext + PlotContextExt {
         self.set_last_cursor_position(Some(position));
     }
 
-    fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Inhibit {
+    fn key_press_event(keyval: gtk::gdk::Key, ac: &AppContextPointer) -> Propagation {
         use gtk::gdk::Key;
 
         if keyval == Key::KP_Right || keyval == Key::Right {
             ac.display_next();
-            Inhibit(true)
+            Propagation::Stop
         } else if keyval == Key::KP_Left || keyval == Key::Left {
             ac.display_previous();
-            Inhibit(true)
+            Propagation::Stop
         } else {
-            Inhibit(false)
+            Propagation::Proceed
         }
     }
 
@@ -947,7 +948,7 @@ trait Drawable: PlotContext + PlotContextExt {
 }
 
 trait MasterDrawable: Drawable {
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Propagation {
         let args = DrawingArgs::new(acp, cr);
         self.init_matrix(args);
 
@@ -955,7 +956,7 @@ trait MasterDrawable: Drawable {
         self.draw_data_cached(args);
         self.draw_active_readout_cached(args);
 
-        Inhibit(false)
+        Propagation::Proceed
     }
 }
 
@@ -963,7 +964,7 @@ trait SlaveProfileDrawable: Drawable {
     fn get_master_zoom(&self, acp: &AppContextPointer) -> f64;
     fn set_translate_y(&self, new_translate: XYCoords);
 
-    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Inhibit {
+    fn draw_callback(&self, cr: &Context, acp: &AppContextPointer) -> Propagation {
         let args = DrawingArgs::new(acp, cr);
 
         let device_height = self.get_device_rect().height;
@@ -979,7 +980,7 @@ trait SlaveProfileDrawable: Drawable {
         self.draw_data_cached(args);
         self.draw_active_readout_cached(args);
 
-        Inhibit(false)
+        Propagation::Proceed
     }
 
     fn draw_dendritic_snow_growth_zone(&self, args: DrawingArgs<'_, '_>) {

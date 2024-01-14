@@ -13,8 +13,8 @@ use crate::{
     },
 };
 use gtk::{
-    prelude::*, DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
-    EventControllerScrollFlags, GestureClick, Inhibit,
+    glib::Propagation, prelude::*, DrawingArea, EventControllerKey, EventControllerMotion,
+    EventControllerScroll, EventControllerScrollFlags, GestureClick,
 };
 use itertools::izip;
 use metfor::{CelsiusDiff, Meters, Quantity};
@@ -106,7 +106,7 @@ impl Drawable for FirePlumeContext {
             ac.mark_background_dirty();
             ac.fire_plume.scroll_event(dy, &ac);
 
-            Inhibit(true)
+            Propagation::Stop
         });
         da.add_controller(scroll_control);
 

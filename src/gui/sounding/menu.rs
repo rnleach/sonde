@@ -78,15 +78,22 @@ impl SkewTContext {
         };
 
         let ac = acp.clone();
+        let hl_variant = unsafe {
+            &gtk::glib::Variant::from_data_with_type_trusted(
+                current_parcel,
+                gtk::glib::VariantTy::STRING,
+            )
+        };
         let parcel_action = SimpleAction::new_stateful(
             "parcel_type_action",
             Some(gtk::glib::VariantTy::STRING),
-            current_parcel.into(),
+            hl_variant,
         );
 
         parcel_action.connect_activate(move |action, variant| {
-            let val: &str = variant.unwrap().str().unwrap();
-            action.set_state(val.into());
+            let var = variant.unwrap();
+            let val: &str = var.str().unwrap();
+            action.set_state(var);
 
             let parcel_type = match val {
                 "surface" => ParcelType::Surface,

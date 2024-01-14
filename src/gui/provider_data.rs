@@ -2,7 +2,11 @@ use crate::{
     app::{AppContext, AppContextPointer},
     errors::SondeError,
 };
-use gtk::{glib::translate::IntoGlib, prelude::*, EventControllerKey, Inhibit, TextTag, TextView};
+use gtk::{
+    glib::{translate::IntoGlib, Propagation},
+    prelude::*,
+    EventControllerKey, TextTag, TextView,
+};
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "provider_data_text";
@@ -48,7 +52,7 @@ pub fn set_up_provider_text_area(acp: &AppContextPointer) -> Result<(), SondeErr
         } else if key == Key::KP_Left || key == Key::Left {
             ac.display_previous();
         }
-        Inhibit(true)
+        Propagation::Stop
     });
     text_area.add_controller(key_press);
 

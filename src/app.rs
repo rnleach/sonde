@@ -173,8 +173,8 @@ impl AppContext {
                         }
                     }
                 }
-                Err(TryRecvError::Empty) => return glib::Continue(true),
-                Err(TryRecvError::Disconnected) => return glib::Continue(false),
+                Err(TryRecvError::Empty) => return glib::ControlFlow::Continue,
+                Err(TryRecvError::Disconnected) => return glib::ControlFlow::Break,
             }
         });
     }

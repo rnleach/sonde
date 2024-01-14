@@ -5,8 +5,9 @@ use crate::{
 use gtk::{
     self,
     gio::{SimpleAction, SimpleActionGroup},
+    glib::Propagation,
     prelude::*,
-    Button, Inhibit, Notebook, Paned, Widget, Window,
+    Button, Notebook, Paned, Widget, Window,
 };
 use std::rc::Rc;
 
@@ -163,9 +164,9 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
     win.property::<gtk::Application>("application").quit();
 }
 
-fn on_delete(win: &Window, ac: &AppContext) -> Inhibit {
+fn on_delete(win: &Window, ac: &AppContext) -> Propagation {
     update_window_config_and_exit(ac, win);
-    Inhibit(false)
+    Propagation::Proceed
 }
 
 fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
