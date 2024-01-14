@@ -10,7 +10,7 @@ bufr-read = {git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.6"}
 chrono = "^0.4.23"
 crossbeam-channel = "^0.5"
 dirs = "^5.0.0"
-itertools = "^0.10"
+itertools = "^0.12"
 lazy_static = "^1"
 log = {version = "^0.4.2", features = ["std", "max_level_trace", "release_max_level_info"]}
 metfor = { version = "^0.9.0", features = ["use_optional", "use_serde"]}
