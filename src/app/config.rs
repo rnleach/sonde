@@ -63,9 +63,9 @@ pub struct Config {
     /// Tabs on the right
     pub right_tabs: Vec<String>,
     /// Selected tab on left notebook
-    pub left_page_selected: i32,
+    pub left_page_selected: u32,
     /// Selected tab on right notebook
-    pub right_page_selected: i32,
+    pub right_page_selected: u32,
     /// The last file opened.
     pub last_open_file: Option<PathBuf>,
 

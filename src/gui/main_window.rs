@@ -157,8 +157,8 @@ fn update_window_config_and_exit(ac: &AppContext, win: &Window) {
         save_tabs(&mut config.left_tabs, &lnb);
         save_tabs(&mut config.right_tabs, &rnb);
 
-        config.left_page_selected = lnb.current_page().unwrap_or(0) as i32;
-        config.right_page_selected = rnb.current_page().unwrap_or(0) as i32;
+        config.left_page_selected = lnb.current_page().unwrap_or(0) as u32;
+        config.right_page_selected = rnb.current_page().unwrap_or(0) as u32;
     }
 
     win.property::<gtk::Application>("application").quit();
@@ -232,8 +232,8 @@ fn layout_tabs_window(win: &Window, ac: &AppContext) -> Result<(), SondeError> {
             restore_tabs(&cfg.left_tabs, &lnb, &rnb);
             restore_tabs(&cfg.right_tabs, &rnb, &lnb);
 
-            lnb.set_page(cfg.left_page_selected);
-            rnb.set_page(cfg.right_page_selected);
+            lnb.set_current_page(Some(cfg.left_page_selected));
+            rnb.set_current_page(Some(cfg.right_page_selected));
         }
 
         // Set the pages as detachable.

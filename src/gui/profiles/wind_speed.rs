@@ -355,7 +355,7 @@ impl Drawable for WindSpeedContext {
         new_position: (f64, f64),
         ac: &AppContextPointer,
     ) {
-        let da: DrawingArea = controller.widget().downcast().unwrap();
+        let da: DrawingArea = controller.widget().unwrap().downcast().unwrap();
         da.grab_focus();
 
         let position = DeviceCoords::from(new_position);
