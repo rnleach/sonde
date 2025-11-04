@@ -166,6 +166,7 @@ impl XYCoords {
     }
 }
 
+/* - Commented out because it's not currently used.
 #[derive(Clone, Copy, Debug)]
 pub struct XYRect {
     pub lower_left: XYCoords,
@@ -189,6 +190,7 @@ impl Rect for XYRect {
         self.upper_right.y
     }
 }
+*/
 
 /***************************************************************************************************
  *                   Screen Coords - the coordinate system to actually draw in.

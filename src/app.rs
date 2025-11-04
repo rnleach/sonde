@@ -277,7 +277,7 @@ impl AppContext {
             .map(Rc::clone)
     }
 
-    pub fn get_sample(&self) -> Ref<Sample> {
+    pub fn get_sample(&self) -> Ref<'_, Sample> {
         self.last_sample.borrow()
     }
 
