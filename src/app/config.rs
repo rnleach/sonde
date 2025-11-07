@@ -325,6 +325,8 @@ pub struct Config {
     pub pft_mean_q_color: Rgba,
     /// PFT mean potential temperature line color
     pub pft_mean_theta_color: Rgba,
+    /// PFT free convecting parcel potential temperature line color
+    pub pft_fc_theta_color: Rgba,
     /// PFT cloud parcel line color
     pub pft_cloud_parcel_color: Rgba,
 
@@ -503,9 +505,10 @@ impl Default for Config {
             show_pft: false,
             pft_line_width: 3.0,
             pft_sp_curve_color: (0.0, 0.2, 1.0, 1.0),
-            pft_mean_q_color: (0.305_882_352, 0.603_921_568, 0.023_529_411, 1.0),
-            pft_mean_theta_color: (0.807_843_137, 0.360_784_313, 0.0, 1.0),
-            pft_cloud_parcel_color: (0.203_921_568, 0.396_078, 0.643_137_254, 1.0),
+            pft_mean_q_color: (0.568_627_476_692_199_7, 0.254_901_975_393_295_3, 0.674_509_823_322_296_1, 1.0),
+            pft_mean_theta_color: (0.752_941_191_196_441_7, 0.109_803_922_474_384_31, 0.156_862_750_649_452_2, 1.0),
+            pft_fc_theta_color: (0.752_941_191_196_441_7, 0.109_803_922_474_384_31, 0.156_862_750_649_452_2, 1.0),
+            pft_cloud_parcel_color: (0.972_549_021_244_049_1, 0.894_117_653_369_903_6, 0.360_784_322_023_391_7, 1.0),
 
             //
             // Misc configuration.

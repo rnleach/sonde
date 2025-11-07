@@ -299,6 +299,7 @@ impl SkewTContext {
         let sp_color = config.pft_sp_curve_color;
         let mean_q_color = config.pft_mean_q_color;
         let mean_theta_color = config.pft_mean_theta_color;
+        let fc_theta_color = config.pft_fc_theta_color;
         let cloud_parcel_color = config.pft_cloud_parcel_color;
         let line_width = config.pft_line_width;
 
@@ -394,6 +395,15 @@ impl SkewTContext {
                 .map(|coords| ac.skew_t.convert_tp_to_screen(coords));
 
             plot_curve_from_points(cr, line_width, mean_theta_color, theta_iter);
+
+            let theta_fc_iter = pft_anal.theta_curve.iter()
+                .map(|(p, t)| TPCoords {
+                    temperature: *t,
+                    pressure: *p,
+                })
+                .map(|coords| ac.skew_t.convert_tp_to_screen(coords));
+
+            plot_curve_from_points(cr, line_width, fc_theta_color, theta_fc_iter);
         }
     }
 

@@ -8,7 +8,7 @@ use gtk::{
     prelude::*,
     EventControllerKey, TextBuffer, TextTag, TextView,
 };
-use metfor::{Fahrenheit, Inches, Quantity};
+use metfor::{Fahrenheit, Inches, Quantity, Feet, Knots};
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "indexes_text_area";
@@ -344,6 +344,8 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     buffer.push_str("PFT           ");
     if let Some(pft_anal) = anal.pft(){
             buffer.push_str(&format!("{:>10.0}GW\n", pft_anal.pft.unpack()));
+            buffer.push_str(&format!("           [Spd = {:>2.0}kts Zfc = {:5.0}ft ∆θ = {:5.2}K]\n",
+                    Knots::from(pft_anal.u_ml).unpack(), Feet::from(pft_anal.z_fc).unpack(), pft_anal.d_theta.unpack()));
     } else {
         buffer.push_str(empty);
     }
