@@ -1,7 +1,7 @@
 //! Keep configuration data in this module.
 
 use crate::{
-    coords::{DtHCoords, DtPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords},
+    coords::{GwHCoords, GwPCoords, PPCoords, SDCoords, SPCoords, TPCoords, WPCoords, XYCoords},
     gui::{
         profiles::{CloudContext, RHOmegaContext, WindSpeedContext},
         FirePlumeContext, FirePlumeEnergyContext, HodoContext, SkewTContext,
@@ -10,7 +10,7 @@ use crate::{
 
 use lazy_static::lazy_static;
 use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
+    Celsius, GigaWatts, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
 };
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -505,10 +505,30 @@ impl Default for Config {
             show_pft: false,
             pft_line_width: 3.0,
             pft_sp_curve_color: (0.0, 0.2, 1.0, 1.0),
-            pft_mean_q_color: (0.568_627_476_692_199_7, 0.254_901_975_393_295_3, 0.674_509_823_322_296_1, 1.0),
-            pft_mean_theta_color: (0.752_941_191_196_441_7, 0.109_803_922_474_384_31, 0.156_862_750_649_452_2, 1.0),
-            pft_fc_theta_color: (0.752_941_191_196_441_7, 0.109_803_922_474_384_31, 0.156_862_750_649_452_2, 1.0),
-            pft_cloud_parcel_color: (0.972_549_021_244_049_1, 0.894_117_653_369_903_6, 0.360_784_322_023_391_7, 1.0),
+            pft_mean_q_color: (
+                0.568_627_476_692_199_7,
+                0.254_901_975_393_295_3,
+                0.674_509_823_322_296_1,
+                1.0,
+            ),
+            pft_mean_theta_color: (
+                0.752_941_191_196_441_7,
+                0.109_803_922_474_384_31,
+                0.156_862_750_649_452_2,
+                1.0,
+            ),
+            pft_fc_theta_color: (
+                0.752_941_191_196_441_7,
+                0.109_803_922_474_384_31,
+                0.156_862_750_649_452_2,
+                1.0,
+            ),
+            pft_cloud_parcel_color: (
+                0.972_549_021_244_049_1,
+                0.894_117_653_369_903_6,
+                0.360_784_322_023_391_7,
+                1.0,
+            ),
 
             //
             // Misc configuration.
@@ -543,10 +563,10 @@ pub const MAX_SPEED: Knots = Knots(200.0);
 /// Maximum wind speed on the wind speed profile in Knots
 pub const MAX_PROFILE_SPEED: Knots = MAX_SPEED;
 
-/// Maximum DeltaT in fire plume plot
-pub const MAX_DELTA_T: CelsiusDiff = CelsiusDiff(22.0);
-/// Minimum DeltaT in fire plume plot
-pub const MIN_DELTA_T: CelsiusDiff = CelsiusDiff(-2.0);
+/// Maximum Giggawatts in Briggs fire plume plot
+pub const MAX_GIGAWATTS: GigaWatts = GigaWatts(1650.0);
+/// Minimum Giggawats in Briggs fire plume plot
+pub const MIN_GIGAWATTS: GigaWatts = GigaWatts(-150.0);
 /// Maximum height for fire plume plot
 pub const MAX_FIRE_PLUME_HEIGHT: Meters = Meters(15_000.0);
 /// Minimum height for fire plume plot
@@ -757,18 +777,23 @@ pub const PROFILE_SPEEDS: [Knots; 20] = [
     Knots(200.0),
 ];
 
-pub const FIRE_PLUME_DTS: [CelsiusDiff; 11] = [
-    CelsiusDiff(0.0),
-    CelsiusDiff(2.0),
-    CelsiusDiff(4.0),
-    CelsiusDiff(6.0),
-    CelsiusDiff(8.0),
-    CelsiusDiff(10.0),
-    CelsiusDiff(12.0),
-    CelsiusDiff(14.0),
-    CelsiusDiff(16.0),
-    CelsiusDiff(18.0),
-    CelsiusDiff(20.0),
+pub const FIRE_PLUME_GW: [GigaWatts; 16] = [
+    GigaWatts(0.0),
+    GigaWatts(200.0),
+    GigaWatts(300.0),
+    GigaWatts(400.0),
+    GigaWatts(500.0),
+    GigaWatts(600.0),
+    GigaWatts(700.0),
+    GigaWatts(800.0),
+    GigaWatts(900.0),
+    GigaWatts(1000.0),
+    GigaWatts(1100.0),
+    GigaWatts(1200.0),
+    GigaWatts(1300.0),
+    GigaWatts(1400.0),
+    GigaWatts(1500.0),
+    GigaWatts(1600.0),
 ];
 
 pub const FIRE_PLUME_HEIGHTS: [Meters; 8] = [
@@ -970,76 +995,76 @@ lazy_static! {
             .collect()
     };
 
-    /// Compute points for background △T in fire plume charts
-    pub static ref FIRE_PLUME_DT_PNTS: Vec<[XYCoords; 2]> = {
-       FIRE_PLUME_DTS
+    /// Compute points for background fire power in fire plume charts
+    pub static ref FIRE_PLUME_GW_PNTS: Vec<[XYCoords; 2]> = {
+       FIRE_PLUME_GW
            .iter()
-           .map(|dt| {
+           .map(|fp| {
                [
-                   DtHCoords {
-                   dt: *dt,
+                   GwHCoords {
+                   fp: *fp,
                    height: MAX_FIRE_PLUME_HEIGHT,
                },
-                   DtHCoords {
-                       dt: *dt,
+                   GwHCoords {
+                       fp: *fp,
                        height: MIN_FIRE_PLUME_HEIGHT,
                    },
                ]
                })
-               .map(|dt| {
+               .map(|fp| {
                    [
-                FirePlumeContext::convert_dth_to_xy(dt[0]),
-                FirePlumeContext::convert_dth_to_xy(dt[1]),
+                FirePlumeContext::convert_fph_to_xy(fp[0]),
+                FirePlumeContext::convert_fph_to_xy(fp[1]),
                    ]
                })
            .collect()
     };
 
     /// Compute points for background height in fire plume charts
-    pub static ref FIRE_PLUME_HEIGHT_PNTS: Vec<[XYCoords; 2]> = {
+    pub static ref FIRE_PLUME_GW_HEIGHT_PNTS: Vec<[XYCoords; 2]> = {
        FIRE_PLUME_HEIGHTS
            .iter()
            .map(|height| {
                [
-                   DtHCoords {
-                   dt: MIN_DELTA_T,
+                   GwHCoords {
+                   fp: MIN_GIGAWATTS,
                    height: *height,
                },
-                   DtHCoords {
-                       dt: MAX_DELTA_T,
+                   GwHCoords {
+                       fp: MAX_GIGAWATTS,
                        height: *height,
                    },
                ]
                })
-           .map(|dt| {
+           .map(|fp| {
                [
-                FirePlumeContext::convert_dth_to_xy(dt[0]),
-                FirePlumeContext::convert_dth_to_xy(dt[1]),
+                FirePlumeContext::convert_fph_to_xy(fp[0]),
+                FirePlumeContext::convert_fph_to_xy(fp[1]),
                ]
            })
            .collect()
     };
 
     /// Compute points for background height in fire plume charts
-    pub static ref FIRE_PLUME_PCTS_PNTS: Vec<[XYCoords; 2]> = {
+    pub static ref FIRE_PLUME_GW_PCTS_PNTS: Vec<[XYCoords; 2]> = {
        FIRE_PLUME_PCTS
            .iter()
            .map(|percent| {
                [
-                   DtPCoords {
-                       dt: MIN_DELTA_T,
+                   GwPCoords {
+                       fp: MIN_GIGAWATTS,
                        percent: *percent,
                    },
-                   DtPCoords {
-                       dt: MAX_DELTA_T,
+                   GwPCoords {
+                       fp: MAX_GIGAWATTS,
                        percent: *percent,
                    },
                ]
                })
-           .map(|dt| {
+           .map(|fp| {
                [
-                FirePlumeEnergyContext::convert_dtp_to_xy(dt[0]),
-                FirePlumeEnergyContext::convert_dtp_to_xy(dt[1]),
+                FirePlumeEnergyContext::convert_fpp_to_xy(fp[0]),
+                FirePlumeEnergyContext::convert_fpp_to_xy(fp[1]),
                ]
            })
            .collect()

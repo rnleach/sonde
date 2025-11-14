@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use gtk::cairo::{FontFace, FontSlant, FontWeight};
-use metfor::{CelsiusDiff, Quantity};
+use metfor::{GigaWatts, Quantity};
 
 mod fire_plume_height;
 pub use fire_plume_height::FirePlumeContext;
@@ -16,18 +16,18 @@ pub use fire_plume_height::FirePlumeContext;
 mod fire_plume_energy;
 pub use fire_plume_energy::FirePlumeEnergyContext;
 
-fn convert_dt_to_x(dt: CelsiusDiff) -> f64 {
-    let min_dt = config::MIN_DELTA_T;
-    let max_dt = config::MAX_DELTA_T;
+fn convert_fp_to_x(fp: GigaWatts) -> f64 {
+    let min_fp = config::MIN_GIGAWATTS;
+    let max_fp = config::MAX_GIGAWATTS;
 
-    (dt - min_dt) / (max_dt - min_dt)
+    (fp - min_fp) / (max_fp - min_fp)
 }
 
-pub fn convert_x_to_dt(x: f64) -> CelsiusDiff {
-    let min_dt = config::MIN_DELTA_T.unpack();
-    let max_dt = config::MAX_DELTA_T.unpack();
+pub fn convert_x_to_fp(x: f64) -> GigaWatts {
+    let min_fp = config::MIN_GIGAWATTS.unpack();
+    let max_fp = config::MAX_GIGAWATTS.unpack();
 
-    CelsiusDiff(x * (max_dt - min_dt) + min_dt)
+    GigaWatts(x * (max_fp - min_fp) + min_fp)
 }
 
 fn convert_xy_to_screen<T>(context: &T, coords: XYCoords) -> ScreenCoords
@@ -74,11 +74,11 @@ where
     context.set_font_size(config.label_font_size * 2.0, cr);
 }
 
-fn draw_iso_dts<T>(context: &T, config: &config::Config, cr: &gtk::cairo::Context)
+fn draw_iso_fps<T>(context: &T, config: &config::Config, cr: &gtk::cairo::Context)
 where
     T: PlotContextExt,
 {
-    for pnts in config::FIRE_PLUME_DT_PNTS.iter() {
+    for pnts in config::FIRE_PLUME_GW_PNTS.iter() {
         let pnts = pnts
             .iter()
             .map(|xy_coords| context.convert_xy_to_screen(*xy_coords));

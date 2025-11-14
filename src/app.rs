@@ -12,8 +12,8 @@ use crate::{
 };
 use crossbeam_channel::TryRecvError;
 use gtk::{
-    prelude::IsA,
     glib::{self, Object},
+    prelude::IsA,
     Builder,
 };
 use sounding_analysis::{self};

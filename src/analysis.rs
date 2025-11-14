@@ -8,6 +8,7 @@ use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
     experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
+    experimental::fire_briggs::{briggs_plume_heating_analysis, BriggsPlumeHeatingAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
     sr_helicity, surface_parcel, Layer, PFTAnalysis, Parcel, ParcelAscentAnalysis, ParcelProfile,
@@ -51,6 +52,8 @@ pub struct Analysis {
     plume_heating_low: Option<PlumeHeatingAnalysis>,
     plume_heating_high: Option<PlumeHeatingAnalysis>,
     pft: Option<PFTAnalysis>,
+    briggs_plume_heating_low: Option<BriggsPlumeHeatingAnalysis>,
+    briggs_plume_heating_high: Option<BriggsPlumeHeatingAnalysis>,
     max_p: HectoPascal, // Keep track of the lowest level in the sounding.
 
     // Downburst
@@ -111,6 +114,8 @@ impl Analysis {
             plume_heating_low: None,
             plume_heating_high: None,
             pft: None,
+            briggs_plume_heating_low: None,
+            briggs_plume_heating_high: None,
             max_p,
 
             dcape: none(),
@@ -297,6 +302,16 @@ impl Analysis {
     /// Get the PFT.
     pub fn pft(&self) -> Option<&PFTAnalysis> {
         self.pft.as_ref()
+    }
+
+    /// Get the plumes analysis
+    pub fn briggs_plume_heating_low(&self) -> &Option<BriggsPlumeHeatingAnalysis> {
+        &self.briggs_plume_heating_low
+    }
+
+    /// Get the plumes analysis
+    pub fn briggs_plume_heating_high(&self) -> &Option<BriggsPlumeHeatingAnalysis> {
+        &self.briggs_plume_heating_high
     }
 
     /// Get the max pressure (lowest level) in the sounding
@@ -603,6 +618,16 @@ impl Analysis {
         if self.pft.is_none() {
             // 15 because that is the ratio used in the paper.
             self.pft = sounding_analysis::pft_analysis(self.sounding(), 15.0).ok();
+        }
+
+        if self.briggs_plume_heating_low.is_none() {
+            self.briggs_plume_heating_low =
+                briggs_plume_heating_analysis(self.sounding(), Some(8.0)).ok()
+        }
+
+        if self.briggs_plume_heating_high.is_none() {
+            self.briggs_plume_heating_high =
+                briggs_plume_heating_analysis(self.sounding(), Some(15.0)).ok()
         }
     }
 }

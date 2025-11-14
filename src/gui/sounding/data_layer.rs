@@ -396,7 +396,9 @@ impl SkewTContext {
 
             plot_curve_from_points(cr, line_width, mean_theta_color, theta_iter);
 
-            let theta_fc_iter = pft_anal.theta_curve.iter()
+            let theta_fc_iter = pft_anal
+                .theta_curve
+                .iter()
                 .map(|(p, t)| TPCoords {
                     temperature: *t,
                     pressure: *p,

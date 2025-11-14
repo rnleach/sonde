@@ -1,7 +1,7 @@
 use crate::{
     app::{
         config::{self, Rgba},
-        sample::{create_sample_plume, create_sample_sounding, Sample},
+        sample::{create_sample_sounding, Sample},
         AppContext, AppContextPointer, ZoomableDrawingAreas,
     },
     coords::{
@@ -483,19 +483,20 @@ impl Drawable for SkewTContext {
                 );
             }
             Sample::FirePlume {
-                parcel_low,
-                plume_anal_low,
-                plume_anal_high,
+                ref plume_anal_low,
+                ref plume_anal_high,
+                fire_power,
                 ..
             } => Self::create_active_readout_text_plume(
-                parcel_low,
-                &anal,
+                *fire_power,
                 plume_anal_low,
                 plume_anal_high,
                 &config,
                 &mut results,
             ),
-            Sample::None => {}
+            Sample::None => {},
+            _ => {},
+
         }
 
         results
@@ -519,23 +520,20 @@ impl Drawable for SkewTContext {
                         Self::draw_sample_parcel_profile(args, pcl_anal);
                     }
                 }
-
                 Sample::FirePlume {
-                    parcel_low,
-                    ref profile_low,
-                    ref profile_high,
+                    ref plume_anal_low,
+                    ref plume_anal_high,
                     ..
                 } => {
                     if config.show_sample_parcel_profile {
                         Self::draw_plume_parcel_profiles(
                             args,
-                            parcel_low,
-                            profile_low,
-                            profile_high,
+                            plume_anal_low,
+                            plume_anal_high,
                         );
                     }
                 }
-                Sample::None => {}
+                Sample::None => {},
             }
         }
     }
@@ -593,36 +591,17 @@ impl Drawable for SkewTContext {
         } else if ac.plottable() {
             let tp_position = self.convert_device_to_tp(position);
 
-            let sample = if let Some(max_p) = ac
-                .get_sounding_for_display()
-                .map(|anal| anal.borrow().max_pressure())
-            {
-                if tp_position.pressure <= max_p {
-                    // This is a sample from some level in the sounding.
-                    ac.get_sounding_for_display()
-                        .and_then(|anal| {
-                            sounding_analysis::linear_interpolate_sounding(
-                                anal.borrow().sounding(),
-                                tp_position.pressure,
-                            )
-                            .ok()
-                            .map(|data| create_sample_sounding(data, &anal.borrow()))
-                        })
-                        .unwrap_or(Sample::None)
+            let sample = if let Some(anal) = ac.get_sounding_for_display() {
+                if tp_position.pressure <= anal.borrow().max_pressure() {
+                    sounding_analysis::linear_interpolate_sounding(
+                        anal.borrow().sounding(),
+                        tp_position.pressure,
+                    )
+                    .ok()
+                    .map(|data| create_sample_sounding(data, &anal.borrow()))
+                    .unwrap_or(Sample::None)
                 } else {
-                    // We are below the lowest level in the sounding, so lets generate a plume
-                    // parcel!
-                    ac.get_sounding_for_display()
-                        .and_then(|anal| {
-                            let anal = anal.borrow();
-
-                            anal.starting_parcel_for_blow_up_anal()
-                                .filter(|pcl| pcl.temperature < tp_position.temperature)
-                                .map(|parcel| {
-                                    create_sample_plume(parcel, tp_position.temperature, &anal)
-                                })
-                        })
-                        .unwrap_or(Sample::None)
+                    Sample::None
                 }
             } else {
                 Sample::None

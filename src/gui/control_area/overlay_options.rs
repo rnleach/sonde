@@ -35,9 +35,24 @@ pub fn make_overlay_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(skewt_box, "DCAPE", ac, dcape_area_color);
     build_config_color!(skewt_box, "Effective Inflow Layer", ac, inflow_layer_rgba);
     build_config_color!(skewt_box, "PFT - SP Curve", ac, pft_sp_curve_color);
-    build_config_color!(skewt_box, "PFT - Mean Specific Humidity", ac, pft_mean_q_color);
-    build_config_color!(skewt_box, "PFT - Mean Potential Temperature", ac, pft_mean_theta_color);
-    build_config_color!(skewt_box, "PFT - Parcel (fc) Potential Temperature", ac, pft_fc_theta_color);
+    build_config_color!(
+        skewt_box,
+        "PFT - Mean Specific Humidity",
+        ac,
+        pft_mean_q_color
+    );
+    build_config_color!(
+        skewt_box,
+        "PFT - Mean Potential Temperature",
+        ac,
+        pft_mean_theta_color
+    );
+    build_config_color!(
+        skewt_box,
+        "PFT - Parcel (fc) Potential Temperature",
+        ac,
+        pft_fc_theta_color
+    );
     build_config_color!(skewt_box, "PFT - Cloud Parcel", ac, pft_cloud_parcel_color);
 
     let hodo_frame = gtk::Frame::new(Some("Hodograph"));

@@ -8,7 +8,7 @@ use gtk::{
     prelude::*,
     EventControllerKey, TextBuffer, TextTag, TextView,
 };
-use metfor::{Fahrenheit, Inches, Quantity, Feet, Knots};
+use metfor::{Fahrenheit, Feet, Inches, Knots, Quantity};
 use std::{fmt::Write, rc::Rc};
 
 const TEXT_AREA_ID: &str = "indexes_text_area";

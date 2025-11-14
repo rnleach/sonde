@@ -433,7 +433,7 @@ trait Drawable: PlotContext + PlotContextExt {
 
         let sample_p = if let Some(sample_p) = match *vals {
             Sample::Sounding { data, .. } => data.pressure.into_option(),
-            Sample::FirePlume { parcel_low, .. } => Some(parcel_low.pressure),
+            Sample::FirePlume {ref plume_anal_low, ..} => plume_anal_low.p_profile.get(0).map(|&p| p), 
             Sample::None => None,
         } {
             sample_p

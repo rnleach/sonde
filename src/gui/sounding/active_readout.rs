@@ -9,9 +9,9 @@ use crate::{
     },
 };
 use itertools::izip;
-use metfor::{rh, Fahrenheit, Feet, Quantity};
+use metfor::{rh, Celsius, Fahrenheit, Feet, GigaWatts, HectoPascal, Quantity};
 use sounding_analysis::{
-    self, experimental::fire::PlumeAscentAnalysis, DataRow, Parcel, ParcelAscentAnalysis,
+    self, experimental::fire_briggs::PlumeAscentAnalysis, DataRow, Parcel, ParcelAscentAnalysis,
     ParcelProfile,
 };
 
@@ -152,8 +152,7 @@ impl SkewTContext {
     }
 
     pub fn create_active_readout_text_plume(
-        parcel_low: &Parcel,
-        anal: &Analysis,
+        fire_power: GigaWatts,
         plume_anal_low: &PlumeAscentAnalysis,
         plume_anal_high: &PlumeAscentAnalysis,
         config: &Config,
@@ -161,17 +160,9 @@ impl SkewTContext {
     ) {
         let default_color = config.label_rgba;
 
-        let t_c = parcel_low.temperature;
-        let starting_t_c = anal
-            .starting_parcel_for_blow_up_anal()
-            .map(|pcl| pcl.temperature);
-        let delta_t_c = starting_t_c.map(|stc| t_c - stc);
-
-        if let Some(delta_t) = delta_t_c {
-            let mut line = String::with_capacity(10);
-            line.push_str(&format!("∆T {:.1}\u{00B0}C\n", delta_t.unpack()));
-            results.push((line, default_color));
-        }
+        let mut line = String::with_capacity(10);
+        line.push_str(&format!("Fire Power {:.0}GW\n", fire_power.unpack()));
+        results.push((line, default_color));
 
         if config.show_sample_parcel_profile {
             let mut line = String::with_capacity(32);
@@ -218,18 +209,17 @@ impl SkewTContext {
 
     pub fn draw_plume_parcel_profiles(
         args: DrawingArgs<'_, '_>,
-        parcel_low: Parcel,
-        profile_low: &ParcelProfile,
-        profile_high: &ParcelProfile,
+        plume_anal_low: &PlumeAscentAnalysis,
+        plume_anal_high: &PlumeAscentAnalysis,
     ) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
 
         let color = config.fire_plume_line_color;
 
-        let pres_up = &profile_low.pressure;
-        let temp_up = &profile_low.parcel_t;
-        let pres_down = &profile_high.pressure;
-        let temp_down = &profile_high.parcel_t;
+        let pres_up = &plume_anal_low.p_profile;
+        let temp_up = &plume_anal_low.t_profile;
+        let pres_down = &plume_anal_high.p_profile;
+        let temp_down = &plume_anal_high.t_profile;
 
         let upside = izip!(pres_up, temp_up);
         let downside = izip!(pres_down, temp_down).rev();
@@ -248,14 +238,14 @@ impl SkewTContext {
 
         draw_filled_polygon(cr, polygon_rgba, polygon);
         // Draw lines
-        Self::draw_plume_parcel_profile(args, profile_low, color);
-        Self::draw_plume_parcel_profile(args, profile_high, color);
+        Self::draw_plume_parcel_profile(args, pres_up, temp_up, color);
+        Self::draw_plume_parcel_profile(args, pres_down, temp_down, color);
 
         // Draw a sample point
         if config.show_active_readout_line {
             let point = TPCoords {
-                temperature: parcel_low.temperature,
-                pressure: parcel_low.pressure,
+                temperature: temp_up[0],
+                pressure: pres_up[0],
             };
             let point = ac.skew_t.convert_tp_to_screen(point);
             let rgba = config.active_readout_line_rgba;
@@ -266,14 +256,12 @@ impl SkewTContext {
 
     fn draw_plume_parcel_profile(
         args: DrawingArgs<'_, '_>,
-        profile: &ParcelProfile,
+        pres_data: &[HectoPascal],
+        temp_data: &[Celsius],
         line_rgba: Rgba,
     ) {
         let (ac, cr) = (args.ac, args.cr);
         let config = ac.config.borrow();
-
-        let pres_data = &profile.pressure;
-        let temp_data = &profile.parcel_t;
 
         let line_width = config.profile_line_width;
 

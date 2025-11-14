@@ -2,6 +2,7 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+.gdb_history
 
 // Dev tools (editor, IDE, Glade, etc)
 *.sublime*
