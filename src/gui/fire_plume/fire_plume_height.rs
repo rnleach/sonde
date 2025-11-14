@@ -17,8 +17,7 @@ use gtk::{
     EventControllerScroll, EventControllerScrollFlags, GestureClick,
 };
 use itertools::izip;
-use metfor::{CelsiusDiff, GigaWatts, Meters, Quantity};
-use sounding_analysis::Parcel;
+use metfor::{GigaWatts, Meters, Quantity};
 use std::rc::Rc;
 
 pub struct FirePlumeContext {
@@ -306,14 +305,24 @@ impl Drawable for FirePlumeContext {
         let anal = anal.borrow();
 
         // Plot the PFT on the graph.
-        if let Some(pft_anal) = anal.pft()
-        {
+        if let Some(pft_anal) = anal.pft() {
             let line_width = 2.0 * config.profile_line_width;
             let pft_rgba = config.pft_sp_curve_color;
 
             let pft = pft_anal.pft;
-            let pnts = [GwHCoords{ fp: pft, height: Meters(0.0)}, GwHCoords{ fp: pft, height: MAX_FIRE_PLUME_HEIGHT}];
-            let pnts = pnts.iter().map(|&fph_coord| ac.fire_plume.convert_fph_to_screen(fph_coord));
+            let pnts = [
+                GwHCoords {
+                    fp: pft,
+                    height: Meters(0.0),
+                },
+                GwHCoords {
+                    fp: pft,
+                    height: MAX_FIRE_PLUME_HEIGHT,
+                },
+            ];
+            let pnts = pnts
+                .iter()
+                .map(|&fph_coord| ac.fire_plume.convert_fph_to_screen(fph_coord));
 
             plot_curve_from_points(cr, line_width, pft_rgba, pnts);
         }

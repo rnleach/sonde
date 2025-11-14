@@ -17,8 +17,7 @@ use gtk::{
     EventControllerScroll, EventControllerScrollFlags, GestureClick,
 };
 use itertools::izip;
-use metfor::{CelsiusDiff, GigaWatts, JpKg, Quantity};
-use sounding_analysis::Parcel;
+use metfor::{GigaWatts, JpKg, Quantity};
 use std::rc::Rc;
 
 pub struct FirePlumeEnergyContext {
@@ -295,14 +294,24 @@ impl Drawable for FirePlumeEnergyContext {
         let anal = anal.borrow();
 
         // Plot the PFT on the graph.
-        if let Some(pft_anal) = anal.pft()
-        {
+        if let Some(pft_anal) = anal.pft() {
             let line_width = 2.0 * config.profile_line_width;
             let pft_rgba = config.pft_sp_curve_color;
 
             let pft = pft_anal.pft;
-            let pnts = [GwPCoords{ fp: pft, percent: 0.0}, GwPCoords{ fp: pft, percent: 100.0}];
-            let pnts = pnts.iter().map(|&fpp_coord| ac.fire_plume_energy.convert_fpp_to_screen(fpp_coord));
+            let pnts = [
+                GwPCoords {
+                    fp: pft,
+                    percent: 0.0,
+                },
+                GwPCoords {
+                    fp: pft,
+                    percent: 100.0,
+                },
+            ];
+            let pnts = pnts
+                .iter()
+                .map(|&fpp_coord| ac.fire_plume_energy.convert_fpp_to_screen(fpp_coord));
 
             plot_curve_from_points(cr, line_width, pft_rgba, pnts);
         }

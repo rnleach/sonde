@@ -9,9 +9,7 @@ use crate::{
 };
 
 use lazy_static::lazy_static;
-use metfor::{
-    Celsius, GigaWatts, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir,
-};
+use metfor::{Celsius, GigaWatts, HectoPascal, Kelvin, Knots, Meters, PaPS, Quantity, WindSpdDir};
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 

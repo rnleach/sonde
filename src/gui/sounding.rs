@@ -494,9 +494,7 @@ impl Drawable for SkewTContext {
                 &config,
                 &mut results,
             ),
-            Sample::None => {},
-            _ => {},
-
+            Sample::None => {}
         }
 
         results
@@ -526,14 +524,10 @@ impl Drawable for SkewTContext {
                     ..
                 } => {
                     if config.show_sample_parcel_profile {
-                        Self::draw_plume_parcel_profiles(
-                            args,
-                            plume_anal_low,
-                            plume_anal_high,
-                        );
+                        Self::draw_plume_parcel_profiles(args, plume_anal_low, plume_anal_high);
                     }
                 }
-                Sample::None => {},
+                Sample::None => {}
             }
         }
     }

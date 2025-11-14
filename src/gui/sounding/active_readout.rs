@@ -12,7 +12,6 @@ use itertools::izip;
 use metfor::{rh, Celsius, Fahrenheit, Feet, GigaWatts, HectoPascal, Quantity};
 use sounding_analysis::{
     self, experimental::fire_briggs::PlumeAscentAnalysis, DataRow, Parcel, ParcelAscentAnalysis,
-    ParcelProfile,
 };
 
 impl SkewTContext {
