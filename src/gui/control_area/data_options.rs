@@ -21,60 +21,32 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(skewt_box, "Dew Point", ac, dew_point_rgba);
     build_config_color!(skewt_box, "Wind", ac, wind_rgba);
 
-    /*
     let hodo_frame = gtk::Frame::new(Some("Hodograph"));
     let hodo_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
-    hodo_frame.add(&hodo_box);
-    */
+    hodo_frame.set_child(Some(&hodo_box));
+
+    // TODO: Add Hodo configuration items - then uncomment to add it below.
 
     let profiles_frame = gtk::Frame::new(Some("Profiles"));
     let profiles_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     profiles_frame.set_child(Some(&profiles_box));
 
-    build_config_color_and_check!(
-        profiles_box,
-        "Vertical Velocity (\u{03C9})",
-        ac,
-        show_omega,
-        omega_rgba
-    );
+    build_config_color_and_check!(profiles_box, "Vertical Velocity (\u{03C9})", ac, show_omega, omega_rgba);
     build_config_color_and_check!(profiles_box, "Relative Humidity", ac, show_rh, rh_rgba);
-    build_config_color_and_check!(
-        profiles_box,
-        "Relative Humidity (ice)",
-        ac,
-        show_rh_ice,
-        rh_ice_rgba
-    );
+    build_config_color_and_check!(profiles_box, "Relative Humidity (ice)", ac, show_rh_ice, rh_ice_rgba);
     build_config_color!(profiles_box, "Cloud Coverage", ac, cloud_rgba);
 
     let fire_plumes_frame = gtk::Frame::new(Some("Fire Plume"));
     let fire_plumes_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     fire_plumes_frame.set_child(Some(&fire_plumes_box));
 
-    build_config_color!(
-        fire_plumes_box,
-        "Lifting Condensation Level",
-        ac,
-        fire_plume_lcl_color
-    );
-    build_config_color!(
-        fire_plumes_box,
-        "Level of Max Ingetgrated Buoyancy",
-        ac,
-        fire_plume_lmib_color
-    );
-    build_config_color!(fire_plumes_box, "Maximum Height", ac, fire_plume_maxh_color);
-    build_config_color!(
-        fire_plumes_box,
-        "Percent Wet Integrated Bouyancy",
-        ac,
-        fire_plume_pct_wet_cape_color
-    );
+    build_config_color!(fire_plumes_box, "Lifting Condensation Level", ac, fire_plume_lcl_color);
+    build_config_color!(fire_plumes_box, "Level of Max Ingetgrated Buoyancy", ac, fire_plume_lmib_color);
+    build_config_color!(fire_plumes_box, "Percent Wet Integrated Bouyancy", ac, fire_plume_pct_wet_cape_color);
 
     f.set_child(Some(&v_box));
     v_box.append(&skewt_frame);
-    //v_box.pack_start(&hodo_frame, true, true, PADDING);
+    //v_box.append(&hodo_frame);
     v_box.append(&profiles_frame);
     v_box.append(&fire_plumes_frame);
     let sw = ScrolledWindow::new();

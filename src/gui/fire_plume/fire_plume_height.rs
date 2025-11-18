@@ -284,8 +284,8 @@ impl Drawable for FirePlumeContext {
                 config.fire_plume_lcl_color,
             ),
             (
-                "Max Plume Height (km)".to_owned(),
-                config.fire_plume_maxh_color,
+                "PFT (GW)".to_owned(),
+                config.pft_sp_curve_color,
             ),
         ]
     }
@@ -337,10 +337,6 @@ impl Drawable for FirePlumeContext {
             let mut lmib_polygon_color = lmib_rgba;
             lmib_polygon_color.3 /= 2.0;
 
-            let max_hgt_rgba = config.fire_plume_maxh_color;
-            let mut max_hgt_polygon_color = max_hgt_rgba;
-            max_hgt_polygon_color.3 /= 2.0;
-
             let lcl_rgba = config.fire_plume_lcl_color;
             let mut lcl_polygon_color = lcl_rgba;
             lcl_polygon_color.3 /= 2.0;
@@ -376,22 +372,6 @@ impl Drawable for FirePlumeContext {
 
             plot_curve_from_points(cr, line_width, lcl_rgba, lcls_low);
             plot_curve_from_points(cr, line_width, lcl_rgba, lcls_high);
-
-            let maxhs_low = izip!(&vals_low.fire_power, &vals_low.max_heights)
-                .filter_map(|(&fp, height)| height.map(|h| (fp, h)))
-                .map(|(fp, height)| GwHCoords { fp, height })
-                .map(|fph_coord| ac.fire_plume.convert_fph_to_screen(fph_coord));
-
-            let maxhs_high = izip!(&vals_high.fire_power, &vals_high.max_heights)
-                .filter_map(|(&fp, height)| height.map(|h| (fp, h)))
-                .map(|(fp, height)| GwHCoords { fp, height })
-                .map(|fph_coord| ac.fire_plume.convert_fph_to_screen(fph_coord));
-
-            let polygon = maxhs_low.clone().chain(maxhs_high.clone().rev());
-            draw_filled_polygon(cr, max_hgt_polygon_color, polygon);
-
-            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_low);
-            plot_curve_from_points(cr, line_width, max_hgt_rgba, maxhs_high);
         }
     }
 
@@ -430,24 +410,6 @@ impl Drawable for FirePlumeContext {
                 };
                 let screen_coords_el = ac.fire_plume.convert_fph_to_screen(lmib_pnt);
                 Self::draw_point(screen_coords_el, pnt_color, args);
-            }
-
-            if let Some(maxh) = plume_anal_low.max_height.into_option() {
-                let maxh_pnt = GwHCoords {
-                    fp: fire_power,
-                    height: maxh,
-                };
-                let screen_coords_maxh = ac.fire_plume.convert_fph_to_screen(maxh_pnt);
-                Self::draw_point(screen_coords_maxh, pnt_color, args);
-            }
-
-            if let Some(maxh) = plume_anal_high.max_height.into_option() {
-                let maxh_pnt = GwHCoords {
-                    fp: fire_power,
-                    height: maxh,
-                };
-                let screen_coords_maxh = ac.fire_plume.convert_fph_to_screen(maxh_pnt);
-                Self::draw_point(screen_coords_maxh, pnt_color, args);
             }
 
             if let Some(lcl) = plume_anal_low.lcl_height.into_option() {

@@ -305,10 +305,8 @@ pub struct Config {
     // Fire plume related settings.
     //
     pub fire_plume_line_color: Rgba,
-    /// Line color of level of max integrated buoyancy on fire plume chart.
+    /// Line color of level of max integrated buoyancy (equilibrium level) on fire plume chart.
     pub fire_plume_lmib_color: Rgba,
-    /// Line color of max height on fire plume chart.
-    pub fire_plume_maxh_color: Rgba,
     /// Line color of the LCL on the fire plume chart.
     pub fire_plume_lcl_color: Rgba,
     /// Line color of percent wet cape on fire plume chart.
@@ -497,7 +495,6 @@ impl Default for Config {
             //
             fire_plume_line_color: (1.0, 0.6, 0.0, 1.0),
             fire_plume_lmib_color: (1.0, 0.5, 0.0, 1.0),
-            fire_plume_maxh_color: (0.0, 0.0, 0.8, 1.0),
             fire_plume_pct_wet_cape_color: (0.0, 0.0, 0.0, 1.0),
             fire_plume_lcl_color: (0.0, 0.7, 0.8, 1.0),
             show_pft: false,

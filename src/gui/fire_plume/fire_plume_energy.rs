@@ -269,14 +269,16 @@ impl Drawable for FirePlumeEnergyContext {
     fn build_legend_strings(ac: &AppContext) -> Vec<(String, Rgba)> {
         let config = ac.config.borrow();
 
-        let mut lines = Vec::with_capacity(2);
-
-        lines.push((
+        vec![
+            (
             "Percent Wet Integrated Bouyancy".to_owned(),
             config.fire_plume_pct_wet_cape_color,
-        ));
-
-        lines
+            ),
+            (
+                "PFT (GW)".to_owned(),
+                config.pft_sp_curve_color,
+            ),
+        ]
     }
 
     /***********************************************************************************************
