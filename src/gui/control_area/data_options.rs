@@ -21,11 +21,11 @@ pub fn make_data_option_frame(ac: &AppContextPointer) -> ScrolledWindow {
     build_config_color!(skewt_box, "Dew Point", ac, dew_point_rgba);
     build_config_color!(skewt_box, "Wind", ac, wind_rgba);
 
+    /* NOTE: wind line color in the hodograph is the same as the wind color for the skew-t set above.
     let hodo_frame = gtk::Frame::new(Some("Hodograph"));
     let hodo_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);
     hodo_frame.set_child(Some(&hodo_box));
-
-    // TODO: Add Hodo configuration items - then uncomment to add it below.
+    */
 
     let profiles_frame = gtk::Frame::new(Some("Profiles"));
     let profiles_box = gtk::Box::new(gtk::Orientation::Vertical, BOX_SPACING);

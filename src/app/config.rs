@@ -300,6 +300,7 @@ pub struct Config {
     pub helicity_storm_motion: StormMotionType,
     /// Storm motion points color for the hodograph
     pub storm_motion_rgba: Rgba,
+    // Wind speed / direction data line uses the same color as the wind barbs from the skew-t
 
     //
     // Fire plume related settings.
