@@ -39,6 +39,9 @@ pub use self::text_area::update_text_highlight;
 
 use self::utility::{plot_curve_from_points, DrawingArgs};
 
+#[allow(unused)]
+pub enum Corner { UpperLeft, UpperRight, LowerLeft, LowerRight, }
+
 pub fn initialize(app: &AppContextPointer) -> Result<(), SondeError> {
     sounding::SkewTContext::set_up_drawing_area(app)?;
     hodograph::HodoContext::set_up_drawing_area(app)?;
@@ -213,6 +216,11 @@ trait Drawable: PlotContext + PlotContextExt {
         vec![]
     }
 
+    /// Override to get the legend in a different corner
+    fn get_legend_corner(&self) -> Corner {
+        Corner::UpperLeft
+    }
+
     /// Not recommended to override.
     fn draw_legend(&self, args: DrawingArgs<'_, '_>) {
         let (ac, cr, config) = (args.ac, args.cr, args.ac.config.borrow());
@@ -221,47 +229,115 @@ trait Drawable: PlotContext + PlotContextExt {
             return;
         }
 
-        let mut upper_left = self.convert_device_to_screen(self.get_device_rect().upper_left);
+        let padding = cr.device_to_user_distance(config.edge_padding, 0.0).unwrap().0;
 
-        let padding = cr
-            .device_to_user_distance(config.edge_padding, 0.0)
-            .unwrap()
-            .0;
-        upper_left.x += padding;
-        upper_left.y -= padding;
-
-        // Make sure we stay on the x-y coords domain
-        let ScreenCoords { x: xmin, y: ymax } =
-            self.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
-        let edge_offset = upper_left.x;
-        if ymax - edge_offset < upper_left.y {
-            upper_left.y = ymax - edge_offset;
-        }
-
-        if xmin + edge_offset > upper_left.x {
-            upper_left.x = xmin + edge_offset;
-        }
+        let ScreenCoords { x: xmin, y: ymax } = self.convert_xy_to_screen(XYCoords { x: 0.0, y: 1.0 });
+        let ScreenCoords { x: xmax, y: ymin } = self.convert_xy_to_screen(XYCoords { x: 1.0, y: 0.0 });
 
         let font_extents = cr.font_extents().unwrap();
-
         let legend_text = Self::build_legend_strings(ac);
+        let (box_width, box_height) = Self::calculate_legend_box_size(args, &font_extents, &legend_text);
 
-        let (box_width, box_height) =
-            Self::calculate_legend_box_size(args, &font_extents, &legend_text);
+        let (legend_rect, upper_left) = match self.get_legend_corner()
+        {
+            Corner::UpperLeft => {
+                let mut ul = self.convert_device_to_screen(self.get_device_rect().upper_left);
 
-        let legend_rect = ScreenRect {
-            lower_left: ScreenCoords {
-                x: upper_left.x,
-                y: upper_left.y - box_height,
+                ul.x += padding;
+                ul.y -= padding;
+
+                // Make sure we stay on the x-y coords domain
+                let edge_offset = ul.x;
+                if ymax - edge_offset < ul.y {
+                    ul.y = ymax - edge_offset;
+                }
+
+                if xmin + edge_offset > ul.x {
+                    ul.x = xmin + edge_offset;
+                }
+
+                (
+                    ScreenRect {
+                        lower_left: ScreenCoords { x: ul.x, y: ul.y - box_height, },
+                        upper_right: ScreenCoords { x: ul.x + box_width, y: ul.y, },
+                    },
+                    ul,
+                )
+
             },
-            upper_right: ScreenCoords {
-                x: upper_left.x + box_width,
-                y: upper_left.y,
+            Corner::UpperRight => {
+                let max_x = self.get_device_rect().max_x();
+                let min_y = self.get_device_rect().min_y();
+                let ur = DeviceCoords { col: max_x, row: min_y };
+                let mut ur = self.convert_device_to_screen(ur);
+
+                ur.x -= padding;
+                ur.y -= padding;
+
+                // Make sure we stay on the x-y coords domain
+                let edge_offset = padding;
+                if ymax - edge_offset < ur.y {
+                    ur.y = ymax - edge_offset;
+                }
+
+                if xmax - edge_offset < ur.x {
+                    ur.x = xmax - edge_offset;
+                }
+
+                /* Get the upper left coord for drawing - if legend to big anchor to the left side. */
+                let mut ul = ScreenCoords {x: ur.x - box_width, y: ur.y };
+                if xmin + edge_offset > ul.x {
+                    ul.x = xmin + edge_offset;
+                }
+
+                (
+                    ScreenRect {
+                        lower_left: ScreenCoords { x: ur.x - box_width, y: ur.y - box_height, },
+                        upper_right: ScreenCoords { x: ur.x, y: ur.y, },
+                    },
+                    ul,
+                )
+            },
+            Corner::LowerRight => {
+                let max_x = self.get_device_rect().max_x();
+                let max_y = self.get_device_rect().max_y();
+                let lr = DeviceCoords { col: max_x, row: max_y };
+                let mut lr = self.convert_device_to_screen(lr);
+
+                lr.x -= padding;
+                lr.y += padding;
+                lr.y += 1.5 * font_extents.height(); // Don't cover x-axis labels
+
+                // Make sure we stay on the x-y coords domain
+                let edge_offset = padding;
+                if ymin + edge_offset > lr.y {
+                    lr.y = ymin + edge_offset;
+                }
+
+                if xmax - edge_offset < lr.x {
+                    lr.x = xmax - edge_offset;
+                }
+
+                /* Get the upper left coord for drawing - if legend to big anchor to the left side. */
+                let mut ul = ScreenCoords {x: lr.x - box_width, y: lr.y + box_height };
+                if xmin + edge_offset > ul.x {
+                    ul.x = xmin + edge_offset;
+                }
+
+                (
+                    ScreenRect {
+                        lower_left: ScreenCoords { x: lr.x - box_width, y: lr.y, },
+                        upper_right: ScreenCoords { x: lr.x, y: lr.y + box_height, },
+                    },
+                    ul,
+                )
+            },
+            Corner::LowerLeft => {
+                unimplemented!()
             },
         };
 
         Self::draw_legend_rectangle(args, &legend_rect);
-
         Self::draw_legend_text(args, &upper_left, &font_extents, &legend_text);
     }
 

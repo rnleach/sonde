@@ -9,7 +9,7 @@ use crate::{
     gui::{
         plot_context::{GenericContext, HasGenericContext, PlotContext, PlotContextExt},
         utility::{check_overlap_then_add, draw_filled_polygon, plot_curve_from_points},
-        Drawable, DrawingArgs, MasterDrawable,
+        Drawable, DrawingArgs, MasterDrawable, Corner
     },
 };
 use gtk::{
@@ -378,6 +378,10 @@ impl Drawable for FirePlumeContext {
     /***********************************************************************************************
      * Overlays Drawing.
      **********************************************************************************************/
+    fn get_legend_corner(&self) -> Corner {
+        Corner::LowerRight
+    }
+
     fn draw_active_sample(&self, args: DrawingArgs<'_, '_>) {
         if !self.has_data() {
             return;
