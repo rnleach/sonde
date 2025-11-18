@@ -8,10 +8,9 @@ use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
     experimental::fire_briggs::{briggs_plume_heating_analysis, BriggsPlumeHeatingAnalysis},
-    haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
-    mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
-    sr_helicity, surface_parcel, Layer, PFTAnalysis, ParcelAscentAnalysis, ParcelProfile,
-    PrecipType, Sounding,
+    hot_dry_windy, lift_parcel, mean_wind, mixed_layer_parcel, most_unstable_parcel,
+    precipitable_water, robust_convective_parcel_ascent, sr_helicity, surface_parcel, 
+    Layer, PFTAnalysis, ParcelAscentAnalysis, ParcelProfile, PrecipType, Sounding,
 };
 use std::collections::HashMap;
 
@@ -36,10 +35,6 @@ pub struct Analysis {
     sr_helicity_eff_lm: Optioned<IntHelicityM2pS2>,
 
     // Fire weather indicies
-    haines: Optioned<u8>,
-    haines_low: Optioned<u8>,
-    haines_mid: Optioned<u8>,
-    haines_high: Optioned<u8>,
     hdw: Optioned<f64>,
     pft: Option<PFTAnalysis>,
     briggs_plume_heating_low: Option<BriggsPlumeHeatingAnalysis>,
@@ -89,10 +84,6 @@ impl Analysis {
             sr_helicity_eff_rm: none(),
             sr_helicity_eff_lm: none(),
 
-            haines: none(),
-            haines_low: none(),
-            haines_mid: none(),
-            haines_high: none(),
             hdw: none(),
             pft: None,
             briggs_plume_heating_low: None,
@@ -214,27 +205,6 @@ impl Analysis {
         self.nssl_wx_code
     }
 
-    /// Get the Haines Index.
-    #[allow(dead_code)]
-    pub fn haines(&self) -> Optioned<u8> {
-        self.haines
-    }
-
-    /// Get the low level Haines Index.
-    pub fn haines_low(&self) -> Optioned<u8> {
-        self.haines_low
-    }
-
-    /// Get the mid level Haines Index.
-    pub fn haines_mid(&self) -> Optioned<u8> {
-        self.haines_mid
-    }
-
-    /// Get the high level Haines Index.
-    pub fn haines_high(&self) -> Optioned<u8> {
-        self.haines_high
-    }
-
     /// Get the hot-dry-windy index.
     pub fn hdw(&self) -> Optioned<f64> {
         self.hdw
@@ -322,18 +292,6 @@ impl Analysis {
             .precipitable_water
             .or_else(|| Optioned::from(precipitable_water(&self.sounding).ok()));
 
-        self.haines = self
-            .haines
-            .or_else(|| Optioned::from(haines(&self.sounding).ok()));
-        self.haines_low = self
-            .haines_low
-            .or_else(|| Optioned::from(haines_low(&self.sounding).ok()));
-        self.haines_mid = self
-            .haines_mid
-            .or_else(|| Optioned::from(haines_mid(&self.sounding).ok()));
-        self.haines_high = self
-            .haines_high
-            .or_else(|| Optioned::from(haines_high(&self.sounding).ok()));
         self.hdw = self
             .hdw
             .or_else(|| Optioned::from(hot_dry_windy(&self.sounding).ok()));
