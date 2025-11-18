@@ -2,7 +2,7 @@
 name = "sonde"
 version = "0.6.1"
 authors = ["Ryan <rnleach@users.noreply.github.com>"]
-edition = "2021"
+edition = "2024"
 publish = false
 
 [dependencies]

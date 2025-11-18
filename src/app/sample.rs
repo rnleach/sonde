@@ -36,7 +36,7 @@ pub fn create_sample_plume(fire_power: GigaWatts, anal: &Analysis) -> Sample {
     ) {
         let plume_anal_low = izip!(bfpa_low.fire_power.iter(), bfpa_low.betas.iter())
             .tuple_windows::<(_, _)>()
-            .filter(|((&fp0, _beta0), (&fp1, _beta1))| fp0 <= fire_power && fp1 >= fire_power)
+            .filter(|&((&fp0, &_beta0), (&fp1, &_beta1))| fp0 <= fire_power && fp1 >= fire_power)
             .fold(None, |_acc, ((fp0, beta0), (fp1, beta1))| {
                 let rise = beta1 - beta0;
                 let run = fp1.unpack() - fp0.unpack();
@@ -56,7 +56,7 @@ pub fn create_sample_plume(fire_power: GigaWatts, anal: &Analysis) -> Sample {
 
         let plume_anal_high = izip!(bfpa_high.fire_power.iter(), bfpa_high.betas.iter())
             .tuple_windows::<(_, _)>()
-            .filter(|((&fp0, _beta0), (&fp1, _beta1))| fp0 <= fire_power && fp1 >= fire_power)
+            .filter(|&((&fp0, &_beta0), (&fp1, &_beta1))| fp0 <= fire_power && fp1 >= fire_power)
             .fold(None, |_acc, ((fp0, beta0), (fp1, beta1))| {
                 let rise = beta1 - beta0;
                 let run = fp1.unpack() - fp0.unpack();

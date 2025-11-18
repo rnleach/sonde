@@ -128,7 +128,7 @@ impl SkewTContext {
         }
 
         if config.show_sample_parcel_profile {
-            if let Some(ref pcl_anal) = pcl_anal {
+            if let Some(pcl_anal) = pcl_anal {
                 let mut line = String::with_capacity(32);
                 let color = config.parcel_positive_rgba;
                 if let Some(cape) = pcl_anal.cape().into_option() {
@@ -283,7 +283,7 @@ impl SkewTContext {
         args: DrawingArgs<'_, '_>,
         parcel_analysis: &Option<ParcelAscentAnalysis>,
     ) {
-        if let Some(ref parcel_analysis) = parcel_analysis {
+        if let Some(parcel_analysis) = parcel_analysis {
             let config = args.ac.config.borrow();
 
             // build the parcel profile

@@ -471,8 +471,8 @@ impl Drawable for SkewTContext {
 
         match vals {
             Sample::Sounding {
-                ref data,
-                ref pcl_anal,
+                data,
+                pcl_anal,
             } => {
                 Self::create_active_readout_text_sounding(
                     data,
@@ -483,8 +483,8 @@ impl Drawable for SkewTContext {
                 );
             }
             Sample::FirePlume {
-                ref plume_anal_low,
-                ref plume_anal_high,
+                plume_anal_low,
+                plume_anal_high,
                 fire_power,
                 ..
             } => Self::create_active_readout_text_plume(
