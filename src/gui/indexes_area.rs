@@ -326,19 +326,6 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     buffer.push_str("Fire Weather\n");
     buffer.push_str(HEADER_LINE);
 
-    buffer.push_str("Haines     Low   Mid  High\n");
-    buffer.push_str("         ");
-
-    let empty = "  -   ";
-    for &hns in [anal.haines_low(), anal.haines_mid(), anal.haines_high()].iter() {
-        if let Some(val) = hns.into_option() {
-            buffer.push_str(&format!("{:>5.0} ", val));
-        } else {
-            buffer.push_str(empty);
-        }
-    }
-    buffer.push('\n');
-
     let empty = "  -   \n";
     push_fire_index!(buffer, "HDW           ", anal, hdw, "{:>12.0}\n", empty);
     buffer.push_str("PFT           ");
@@ -349,15 +336,6 @@ fn push_fire_indexes(buffer: &mut String, anal: &Analysis) {
     } else {
         buffer.push_str(empty);
     }
-
-    let empty = " - \n";
-
-    buffer.push_str("\nExperimental\n");
-    buffer.push_str(HEADER_LINE);
-    push_fire_index!(buffer, "Cloud ∆T         ", anal, lcl_dt_low,                                                    "{:>5.1}\u{00b0}C\n\n",                  empty);
-    push_fire_index!(buffer, "Blow Up ∆T (LMIB)  ", anal, el_blow_up_dt_low, el_blow_up_dt_high,                       "{:>5.1}\u{00b0}C - {:>4.1}\u{00b0}C\n", empty);
-    push_fire_index!(buffer, "Blow Up Hgt (LMIB) ", anal, el_blow_up_height_change_low, el_blow_up_height_change_high, "{:>6.0}m - {:>4.0}m\n",                 empty);
-
 }
 
 fn highlight_parcel(tb: &TextBuffer, ac: &AppContext) {

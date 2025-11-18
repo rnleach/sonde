@@ -2,16 +2,15 @@
 //!
 //! Not every possible analysis is in this data.
 use metfor::{
-    Celsius, CelsiusDiff, HectoPascal, IntHelicityM2pS2, JpKg, Km, Meters, MetersPSec, Mm, WindUV,
+    Celsius, HectoPascal, IntHelicityM2pS2, JpKg, Km, Meters, MetersPSec, Mm, WindUV,
 };
 use optional::{none, some, Optioned};
 use sounding_analysis::{
     average_parcel, bunkers_storm_motion, dcape, effective_inflow_layer,
-    experimental::fire::{blow_up, plume_heating_analysis, PlumeHeatingAnalysis},
     experimental::fire_briggs::{briggs_plume_heating_analysis, BriggsPlumeHeatingAnalysis},
     haines, haines_high, haines_low, haines_mid, hot_dry_windy, lift_parcel, mean_wind,
     mixed_layer_parcel, most_unstable_parcel, precipitable_water, robust_convective_parcel_ascent,
-    sr_helicity, surface_parcel, Layer, PFTAnalysis, Parcel, ParcelAscentAnalysis, ParcelProfile,
+    sr_helicity, surface_parcel, Layer, PFTAnalysis, ParcelAscentAnalysis, ParcelProfile,
     PrecipType, Sounding,
 };
 use std::collections::HashMap;
@@ -42,15 +41,6 @@ pub struct Analysis {
     haines_mid: Optioned<u8>,
     haines_high: Optioned<u8>,
     hdw: Optioned<f64>,
-    blow_up_anal_start_parcel: Option<Parcel>,
-    el_blow_up_dt_low: Optioned<CelsiusDiff>,
-    el_blow_up_height_low: Optioned<Meters>,
-    el_blow_up_dt_high: Optioned<CelsiusDiff>,
-    el_blow_up_height_high: Optioned<Meters>,
-    lcl_dt_low: Optioned<CelsiusDiff>,
-    lcl_dt_high: Optioned<CelsiusDiff>,
-    plume_heating_low: Option<PlumeHeatingAnalysis>,
-    plume_heating_high: Option<PlumeHeatingAnalysis>,
     pft: Option<PFTAnalysis>,
     briggs_plume_heating_low: Option<BriggsPlumeHeatingAnalysis>,
     briggs_plume_heating_high: Option<BriggsPlumeHeatingAnalysis>,
@@ -104,15 +94,6 @@ impl Analysis {
             haines_mid: none(),
             haines_high: none(),
             hdw: none(),
-            blow_up_anal_start_parcel: None,
-            el_blow_up_dt_low: none(),
-            el_blow_up_height_low: none(),
-            el_blow_up_dt_high: none(),
-            el_blow_up_height_high: none(),
-            lcl_dt_low: none(),
-            lcl_dt_high: none(),
-            plume_heating_low: None,
-            plume_heating_high: None,
             pft: None,
             briggs_plume_heating_low: None,
             briggs_plume_heating_high: None,
@@ -257,46 +238,6 @@ impl Analysis {
     /// Get the hot-dry-windy index.
     pub fn hdw(&self) -> Optioned<f64> {
         self.hdw
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn el_blow_up_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.el_blow_up_dt_low
-    }
-
-    /// Get the change in temperature required for a blow up. EXPERIMENTAL.
-    pub fn el_blow_up_dt_high(&self) -> Optioned<CelsiusDiff> {
-        self.el_blow_up_dt_high
-    }
-
-    /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn el_blow_up_height_change_low(&self) -> Optioned<Meters> {
-        self.el_blow_up_height_low
-    }
-
-    /// Get the height change of the level of maximum integrated buoyancy if the blow up dt is met. EXPERIMENTAL.
-    pub fn el_blow_up_height_change_high(&self) -> Optioned<Meters> {
-        self.el_blow_up_height_high
-    }
-
-    /// Get the amount of heating necessary to create a cloud on the plume top.
-    pub fn lcl_dt_low(&self) -> Optioned<CelsiusDiff> {
-        self.lcl_dt_low
-    }
-
-    /// Get the starting parcel for a blow up analysis.
-    pub fn starting_parcel_for_blow_up_anal(&self) -> Option<Parcel> {
-        self.blow_up_anal_start_parcel
-    }
-
-    /// Get the plumes analysis
-    pub fn plume_heating_low(&self) -> &Option<PlumeHeatingAnalysis> {
-        &self.plume_heating_low
-    }
-
-    /// Get the plumes analysis
-    pub fn plume_heating_high(&self) -> &Option<PlumeHeatingAnalysis> {
-        &self.plume_heating_high
     }
 
     /// Get the PFT.
@@ -560,66 +501,13 @@ impl Analysis {
                 };
         }
 
-        // Fill in the experimental fire weather parameters.
-        if self.el_blow_up_dt_low.is_none()
-            || self.el_blow_up_height_low.is_none()
-            || self.blow_up_anal_start_parcel.is_none()
-            || self.lcl_dt_low.is_none()
-        {
-            let blow_up_anal = blow_up(self.sounding(), Some(8.0)).ok();
-            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
-                .map(|bu_anal| {
-                    (
-                        Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_el),
-                        some(bu_anal.delta_z_el),
-                        some(bu_anal.delta_t_cloud),
-                    )
-                })
-                .unwrap_or((None, none(), none(), none()));
-
-            self.el_blow_up_dt_low = dt_el;
-            self.el_blow_up_height_low = height_el;
-            self.lcl_dt_low = lcl_dt;
-            self.blow_up_anal_start_parcel = starting_pcl;
-        }
-
-        if self.el_blow_up_dt_high.is_none()
-            || self.el_blow_up_height_high.is_none()
-            || self.blow_up_anal_start_parcel.is_none()
-            || self.lcl_dt_high.is_none()
-        {
-            let blow_up_anal = blow_up(self.sounding(), Some(15.0)).ok();
-            let (starting_pcl, dt_el, height_el, lcl_dt) = blow_up_anal
-                .map(|bu_anal| {
-                    (
-                        Some(bu_anal.starting_parcel),
-                        some(bu_anal.delta_t_el),
-                        some(bu_anal.delta_z_el),
-                        some(bu_anal.delta_t_cloud),
-                    )
-                })
-                .unwrap_or((None, none(), none(), none()));
-
-            self.el_blow_up_dt_high = dt_el;
-            self.el_blow_up_height_high = height_el;
-            self.lcl_dt_high = lcl_dt;
-            self.blow_up_anal_start_parcel = starting_pcl;
-        }
-
-        if self.plume_heating_low.is_none() {
-            self.plume_heating_low = plume_heating_analysis(self.sounding(), Some(8.0)).ok()
-        }
-
-        if self.plume_heating_high.is_none() {
-            self.plume_heating_high = plume_heating_analysis(self.sounding(), Some(15.0)).ok()
-        }
-
+        // Fill in the PFT.
         if self.pft.is_none() {
             // 15 because that is the ratio used in the paper.
             self.pft = sounding_analysis::pft_analysis(self.sounding(), 15.0).ok();
         }
 
+        // Fill in the experimental fire weather parameters.
         if self.briggs_plume_heating_low.is_none() {
             self.briggs_plume_heating_low =
                 briggs_plume_heating_analysis(self.sounding(), Some(8.0)).ok()
