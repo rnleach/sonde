@@ -6,7 +6,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-bufr-read = { git = "https://github.com/rnleach/bufr-read.git", tag = "v0.2.6" }
+sonde-bufr = { git = "https://github.com/rnleach/rubufr.git", tag = "v0.2.0" }
 chrono = "^0.4.23"
 crossbeam-channel = "^0.5"
 dirs = "^6.0.0"
