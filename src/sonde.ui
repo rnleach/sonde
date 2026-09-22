@@ -200,68 +200,68 @@
         <property name="show-title-buttons">False</property>
 
         <child type="start">
-            <object id="file-open-button" class="GtkButton">
-                <property name="icon-name">document-open</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
+            <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">6</property>
 
-        <child type="start">
-            <object id="save-image-button" class="GtkButton">
-                <property name="icon-name">insert-image</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
+                <child>
+                    <object id="file-open-button" class="GtkButton">
+                        <property name="icon-name">document-open</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="go-first-button" class="GtkButton">
-                <property name="icon-name">go-first</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-                <property name="margin-start">26</property>
-            </object>
-        </child>
+                <child>
+                    <object id="save-image-button" class="GtkButton">
+                        <property name="icon-name">insert-image</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="go-previous-button" class="GtkButton">
-                <property name="icon-name">go-previous</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
+                <child>
+                    <object id="go-first-button" class="GtkButton">
+                        <property name="icon-name">go-first</property>
+                        <property name="halign">start</property>
+                        <property name="margin-start">26</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="go-next-button" class="GtkButton">
-                <property name="icon-name">go-next</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
+                <child>
+                    <object id="go-previous-button" class="GtkButton">
+                        <property name="icon-name">go-previous</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="go-last-button" class="GtkButton">
-                <property name="icon-name">go-last</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-            </object>
-        </child>
+                <child>
+                    <object id="go-next-button" class="GtkButton">
+                        <property name="icon-name">go-next</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="zoom-in-button" class="GtkButton">
-                <property name="icon-name">zoom-in</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
-                <property name="margin-start">26</property>
-            </object>
-        </child>
+                <child>
+                    <object id="go-last-button" class="GtkButton">
+                        <property name="icon-name">go-last</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
 
-        <child type="start">
-            <object id="zoom-out-button" class="GtkButton">
-                <property name="icon-name">zoom-out</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_START</property>
+                <child>
+                    <object id="zoom-in-button" class="GtkButton">
+                        <property name="icon-name">zoom-in</property>
+                        <property name="halign">start</property>
+                        <property name="margin-start">26</property>
+                    </object>
+                </child>
+
+                <child>
+                    <object id="zoom-out-button" class="GtkButton">
+                        <property name="icon-name">zoom-out</property>
+                        <property name="halign">start</property>
+                    </object>
+                </child>
+
             </object>
         </child>
 
@@ -275,19 +275,25 @@
         </property>
 
         <child type="end">
-            <object id="quit-button" class="GtkButton">
-                <property name="icon-name">window-close</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_END</property>
-            </object>
-        </child>
+            <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">6</property>
 
-        <child type="end">
-            <object id="hamburger-menu_button" class="GtkMenuButton">
-                <property name="icon-name">open-menu</property>
-                <property name="menu-model">hamburger-menu</property>
-                <property name="hexpand">True</property>
-                <property name="halign">GTK_ALIGN_END</property>
+                <child>
+                    <object id="hamburger-menu_button" class="GtkMenuButton">
+                        <property name="icon-name">open-menu</property>
+                        <property name="menu-model">hamburger-menu</property>
+                        <property name="halign">end</property>
+                    </object>
+                </child>
+
+                <child>
+                    <object id="quit-button" class="GtkButton">
+                        <property name="icon-name">window-close</property>
+                        <property name="halign">end</property>
+                    </object>
+                </child>
+
             </object>
         </child>
 
@@ -312,9 +318,13 @@
                         <property name="resize-start-child">True</property>
                         <property name="resize-end-child">True</property>
                         <property name="wide-handle">True</property>
+                        <property name="resize-start-child">True</property>
+                        <property name="shrink-start-child">True</property>
+                        <property name="resize-end-child">True</property>
+                        <property name="shrink-end-child">True</property>
 
                         <!-- ***********************  Left Notebook  ************************** -->
-                        <child>
+                        <property name="start-child">
                             <object id="left-notebook" class="GtkNotebook">
                                 <property name="enable-popup">False</property>
                                 <property name="group-name">all-notebook-tabs</property>
@@ -383,10 +393,10 @@
                                 </child>
 
                             </object>
-                        </child>
+                        </property>
 
                         <!-- ***********************  Right Notebook  ************************* -->
-                        <child>
+                        <property name="end-child">
                             <object id="right-notebook" class="GtkNotebook">
                                 <property name="enable-popup">False</property>
                                 <property name="group-name">all-notebook-tabs</property>
@@ -650,7 +660,7 @@
                                 </child>
 
                             </object> <!-- GtkNotebook - righ-notebook -->
-                        </child> 
+                        </property> 
                     </object> <!-- GtkPaned -->
                 </child>
             </object> <!-- GtkBox -->

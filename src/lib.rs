@@ -36,6 +36,12 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     {
         let app = app.clone();
         gtk_app.connect_activate(move |gtk_app| {
+
+            // Fetch the default GTK settings context and request the dark theme variant
+            if let Some(settings) = gtk::Settings::default() {
+                settings.set_gtk_application_prefer_dark_theme(true);
+            }
+
             let gui = gtk::Builder::from_string(include_str!("./sonde.ui"));
 
             let window: gtk::Window = gui.object("main_window").unwrap();
