@@ -17,7 +17,7 @@ use gtk::{
     glib::Propagation,
     prelude::*,
     DrawingArea, EventControllerKey, EventControllerMotion, EventControllerScroll,
-    EventControllerScrollFlags, GestureClick, Window,
+    EventControllerScrollFlags, GestureClick, PopoverMenu, Window,
 };
 use itertools::izip;
 use metfor::{Knots, Meters, Quantity, WindSpdDir, WindUV};
@@ -64,6 +64,9 @@ impl Drawable for HodoContext {
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("hodograph_area")?;
+
+        let pm: PopoverMenu = acp.fetch_widget("hodo_popover")?;
+        pm.set_parent(&da);
 
         // Set up the drawing function.
         let ac = Rc::clone(acp);

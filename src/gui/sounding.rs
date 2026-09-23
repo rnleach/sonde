@@ -17,7 +17,7 @@ use crate::{
 };
 use gtk::{
     glib::Propagation, prelude::*, DrawingArea, EventControllerKey, EventControllerMotion,
-    EventControllerScroll, EventControllerScrollFlags, GestureClick,
+    EventControllerScroll, EventControllerScrollFlags, GestureClick, PopoverMenu,
 };
 use itertools::izip;
 use metfor::{Celsius, Feet, Quantity};
@@ -88,6 +88,9 @@ impl Drawable for SkewTContext {
      **********************************************************************************************/
     fn set_up_drawing_area(acp: &AppContextPointer) -> Result<(), SondeError> {
         let da: DrawingArea = acp.fetch_widget("skew_t")?;
+
+        let pm: PopoverMenu = acp.fetch_widget("skew_t_popover")?;
+        pm.set_parent(&da);
 
         // Set up the drawing function.
         let ac = Rc::clone(acp);

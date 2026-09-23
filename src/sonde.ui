@@ -125,6 +125,11 @@
 
     </menu>
 
+    <object class="GtkPopoverMenu" id="skew_t_popover">
+        <property name="menu-model">sounding_context_menu</property>
+        <property name="has-arrow">True</property>
+    </object>
+
     <!-- ***************************  Hodograph Popup Menu  *********************************** -->
     <menu id="hodo_context_menu">
         <section>
@@ -170,6 +175,11 @@
         </section>
 
     </menu>
+
+    <object class="GtkPopoverMenu" id="hodo_popover">
+        <property name="menu-model">hodo_context_menu</property>
+        <property name="has-arrow">True</property>
+    </object>
 
     <!-- ****************************  Hamburger Menu  **************************************** -->
     <menu id="hamburger-menu">
@@ -268,7 +278,7 @@
         <property name="title-widget">
             <object id="window-title" class="GtkLabel">
                 <property name="label">Sonde</property>
-                <property name="single-line-mode">True</property>
+                <property name="lines">1</property>
                 <property name="ellipsize">end</property>
                 <property name="width-chars">5</property>
             </object>
@@ -337,61 +347,60 @@
 
                                 <!-- *********************  Skew-T Area  ********************** -->
                                 <child>
-                                    <object id="skew_t" class="GtkDrawingArea">
-                                        <property name="hexpand">True</property>
-                                        <property name="vexpand">True</property>
-                                        <property name="can-focus">True</property>
-                                        <property name="can-target">True</property>
-                                        <property name="focus-on-click">True</property>
-                                        <property name="focusable">True</property>
-                                        
-                                        <child>
-                                            <object id="skew_t_popover" class="GtkPopoverMenu">
-                                                <property name="menu-model">sounding_context_menu</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="skew_t" class="GtkDrawingArea">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focusable">True</property>
+                                                
                                             </object>
-                                        </child>
-
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Skew-T</property>
+                                        </property>
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Skew-T</property>
+                                            </object>
+                                        </property>
                                     </object>
                                 </child>
 
                                 <!-- *****************  Provider Text Area  ******************* -->
                                 <child>
-                                    <object id="provider_data_text_container" class="GtkScrolledWindow">
-                                        <child>
-                                            <object id="provider_data_text" class="GtkTextView">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="provider_data_text_container" class="GtkScrolledWindow">
+                                                <child>
+                                                    <object id="provider_data_text" class="GtkTextView">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
 
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">6</property>
-                                                <property name="margin-start">6</property>
-                                                <property name="margin-end">6</property>
+                                                        <property name="margin-top">6</property>
+                                                        <property name="margin-bottom">6</property>
+                                                        <property name="margin-start">6</property>
+                                                        <property name="margin-end">6</property>
 
-                                                <property name="cursor-visible">False</property>
-                                                <property name="editable">False</property>
-                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
-                                                <property name="monospace">True</property>
-                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
+                                                        <property name="cursor-visible">False</property>
+                                                        <property name="editable">False</property>
+                                                        <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                        <property name="monospace">True</property>
+                                                        <property name="wrap-mode">GTK_WRAP_NONE</property>
 
+                                                    </object>
+                                                </child>
                                             </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Provider Data</property>
-                                    </object>
-                                </child>
+                                        </property>
 
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Provider Data</property>
+                                            </object>
+                                        </property>
+
+                                    </object>
+                                </child>
                             </object>
                         </property>
 
@@ -409,175 +418,210 @@
 
                                 <!-- *******************  Hodograph Area  ********************* -->
                                 <child>
-                                    <object id="hodograph_area" class="GtkDrawingArea">
-                                        <property name="hexpand">True</property>
-                                        <property name="vexpand">True</property>
-                                        <property name="can-focus">True</property>
-                                        <property name="can-target">True</property>
-                                        <property name="focus-on-click">True</property>
-                                        <property name="focusable">True</property>
-                                        
-                                        <child>
-                                            <object id="hodo_popover" class="GtkPopoverMenu">
-                                                <property name="menu-model">hodo_context_menu</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="hodograph_area" class="GtkDrawingArea">
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="can-target">True</property>
+                                                <property name="focusable">True</property>
+                                                
                                             </object>
-                                        </child>
+                                        </property>
 
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Hodograph</property>
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Hodograph</property>
+                                            </object>
+                                        </property>
                                     </object>
                                 </child>
 
                                 <!-- *******************  Profiles Area  ********************** -->
                                 <child>
-                                    <object id="profiles_area_container" class="GtkBox">
-                                    <property name="orientation">horizontal</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="profiles_area_container" class="GtkBox">
+                                            <property name="orientation">horizontal</property>
 
-                                        <child>
-                                            <object id="rh_omega_area" class="GtkDrawingArea">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
+                                                <child>
+                                                    <object id="rh_omega_area" class="GtkDrawingArea">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
 
-                                                <property name="margin-top">0</property>
-                                                <property name="margin-bottom">0</property>
-                                                <property name="margin-start">0</property>
-                                                <property name="margin-end">4</property>
+                                                        <property name="margin-top">0</property>
+                                                        <property name="margin-bottom">0</property>
+                                                        <property name="margin-start">0</property>
+                                                        <property name="margin-end">4</property>
+
+                                                    </object>
+                                                </child>
+
+                                                <child>
+                                                    <object id="cloud_area" class="GtkDrawingArea">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
+
+                                                        <property name="margin-top">0</property>
+                                                        <property name="margin-bottom">0</property>
+                                                        <property name="margin-start">2</property>
+                                                        <property name="margin-end">2</property>
+
+                                                    </object>
+                                                </child>
+
+                                                <child>
+                                                    <object id="wind_speed_area" class="GtkDrawingArea">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
+
+                                                        <property name="margin-top">0</property>
+                                                        <property name="margin-bottom">0</property>
+                                                        <property name="margin-start">4</property>
+                                                        <property name="margin-end">0</property>
+
+                                                    </object>
+                                                </child>
 
                                             </object>
-                                        </child>
-
-                                        <child>
-                                            <object id="cloud_area" class="GtkDrawingArea">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
-
-                                                <property name="margin-top">0</property>
-                                                <property name="margin-bottom">0</property>
-                                                <property name="margin-start">2</property>
-                                                <property name="margin-end">2</property>
-
+                                        </property>
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Profiles</property>
                                             </object>
-                                        </child>
-
-                                        <child>
-                                            <object id="wind_speed_area" class="GtkDrawingArea">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
-
-                                                <property name="margin-top">0</property>
-                                                <property name="margin-bottom">0</property>
-                                                <property name="margin-start">4</property>
-                                                <property name="margin-end">0</property>
-
-                                            </object>
-                                        </child>
+                                        </property>
 
                                     </object>
                                 </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Profiles</property>
-                                    </object>
-                                </child>
-
                                 <!-- *********************  Fire Area  ************************ -->
                                 <child>
-                                    <object id="fire_plume_container" class="GtkBox">
-                                        <property name="orientation">vertical</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="fire_plume_container" class="GtkBox">
+                                                <property name="orientation">vertical</property>
 
-                                        <child>
-                                            <object id="fire_plume_height_area" class="GtkDrawingArea">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
+                                                <child>
+                                                    <object id="fire_plume_height_area" class="GtkDrawingArea">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
 
-                                                <property name="margin-top">12</property>
-                                                <property name="margin-bottom">6</property>
-                                                <property name="margin-start">12</property>
-                                                <property name="margin-end">12</property>
+                                                        <property name="margin-top">12</property>
+                                                        <property name="margin-bottom">6</property>
+                                                        <property name="margin-start">12</property>
+                                                        <property name="margin-end">12</property>
+
+                                                    </object>
+                                                </child>
+
+                                                <child>
+                                                    <object id="fire_plume_energy_area" class="GtkDrawingArea">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
+
+                                                        <property name="margin-top">6</property>
+                                                        <property name="margin-bottom">12</property>
+                                                        <property name="margin-start">12</property>
+                                                        <property name="margin-end">12</property>
+
+                                                    </object>
+                                                </child>
 
                                             </object>
-                                        </child>
+                                        </property>
 
-                                        <child>
-                                            <object id="fire_plume_energy_area" class="GtkDrawingArea">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
-
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">12</property>
-                                                <property name="margin-start">12</property>
-                                                <property name="margin-end">12</property>
-
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Fire</property>
                                             </object>
-                                        </child>
+                                        </property>
 
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Fire</property>
                                     </object>
                                 </child>
 
                                 <!-- *********************  Text Area  ************************ -->
                                 <child>
-                                    <object id="text_area_container" class="GtkBox">
-                                        <property name="orientation">vertical</property>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="text_area_container" class="GtkBox">
+                                                <property name="orientation">vertical</property>
 
-                                        <child>
-                                            <object id="text_header" class="GtkTextView">
-                                                <property name="hexpand">True</property>
-                                                <property name="vexpand">False</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
-                                                <property name="focusable">True</property>
-
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">6</property>
-                                                <property name="margin-start">6</property>
-                                                <property name="margin-end">6</property>
-
-                                                <property name="cursor-visible">False</property>
-                                                <property name="editable">False</property>
-                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
-                                                <property name="monospace">True</property>
-                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
-
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkScrolledWindow">
                                                 <child>
-                                                    <object id="text_area" class="GtkTextView">
+                                                    <object id="text_header" class="GtkTextView">
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">False</property>
+                                                        <property name="can-target">True</property>
+                                                        <property name="focusable">True</property>
+
+                                                        <property name="margin-top">6</property>
+                                                        <property name="margin-bottom">6</property>
+                                                        <property name="margin-start">6</property>
+                                                        <property name="margin-end">6</property>
+
+                                                        <property name="cursor-visible">False</property>
+                                                        <property name="editable">False</property>
+                                                        <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                        <property name="monospace">True</property>
+                                                        <property name="wrap-mode">GTK_WRAP_NONE</property>
+
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkScrolledWindow">
+                                                        <child>
+                                                            <object id="text_area" class="GtkTextView">
+                                                                <property name="hexpand">True</property>
+                                                                <property name="vexpand">True</property>
+                                                                <property name="can-target">True</property>
+                                                                <property name="focusable">True</property>
+
+                                                                <property name="margin-top">6</property>
+                                                                <property name="margin-bottom">6</property>
+                                                                <property name="margin-start">6</property>
+                                                                <property name="margin-end">6</property>
+
+                                                                <property name="cursor-visible">False</property>
+                                                                <property name="editable">False</property>
+                                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
+                                                                <property name="monospace">True</property>
+                                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
+
+                                                            </object>
+                                                        </child>
+                                                    </object>
+                                                </child>
+                                            </object>
+
+                                        </property>
+
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Text</property>
+                                            </object>
+                                        </property>
+
+                                    </object>
+                                </child>
+
+                                <!-- ********************  Indexes Area  ********************** -->
+                                <child>
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="indexes_scrolled_window" class="GtkScrolledWindow">
+                                                <child>
+                                                    <object id="indexes_text_area" class="GtkTextView">
                                                         <property name="hexpand">True</property>
                                                         <property name="vexpand">True</property>
-                                                        <property name="can-focus">True</property>
                                                         <property name="can-target">True</property>
-                                                        <property name="focus-on-click">True</property>
                                                         <property name="focusable">True</property>
 
                                                         <property name="margin-top">6</property>
@@ -594,25 +638,25 @@
                                                     </object>
                                                 </child>
                                             </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Text</property>
+                                        </property>
+
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Indexes</property>
+                                            </object>
+                                        </property>
+
                                     </object>
                                 </child>
 
-                                <!-- ********************  Indexes Area  ********************** -->
+                                <!-- ********************  Control Area  ********************** -->
                                 <child>
-                                    <object id="indexes_scrolled_window" class="GtkScrolledWindow">
-                                        <child>
-                                            <object id="indexes_text_area" class="GtkTextView">
+                                    <object class="GtkNotebookPage">
+                                        <property name="child">
+                                            <object id="control_area" class="GtkNotebook">
                                                 <property name="hexpand">True</property>
                                                 <property name="vexpand">True</property>
-                                                <property name="can-focus">True</property>
                                                 <property name="can-target">True</property>
-                                                <property name="focus-on-click">True</property>
                                                 <property name="focusable">True</property>
 
                                                 <property name="margin-top">6</property>
@@ -620,42 +664,15 @@
                                                 <property name="margin-start">6</property>
                                                 <property name="margin-end">6</property>
 
-                                                <property name="cursor-visible">False</property>
-                                                <property name="editable">False</property>
-                                                <property name="justification">GTK_JUSTIFY_LEFT</property>
-                                                <property name="monospace">True</property>
-                                                <property name="wrap-mode">GTK_WRAP_NONE</property>
-
                                             </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Indexes</property>
-                                    </object>
-                                </child>
+                                        </property>
 
-                                <!-- ********************  Control Area  ********************** -->
-                                <child>
-                                    <object id="control_area" class="GtkNotebook">
-                                        <property name="hexpand">True</property>
-                                        <property name="vexpand">True</property>
-                                        <property name="can-focus">True</property>
-                                        <property name="can-target">True</property>
-                                        <property name="focus-on-click">True</property>
-                                        <property name="focusable">True</property>
+                                        <property name="tab">
+                                            <object class="GtkLabel">
+                                                <property name="label">Config</property>
+                                            </object>
+                                        </property>
 
-                                        <property name="margin-top">6</property>
-                                        <property name="margin-bottom">6</property>
-                                        <property name="margin-start">6</property>
-                                        <property name="margin-end">6</property>
-
-                                    </object>
-                                </child>
-                                <child type="tab">
-                                    <object class="GtkLabel">
-                                        <property name="label">Config</property>
                                     </object>
                                 </child>
 

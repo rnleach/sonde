@@ -37,36 +37,11 @@ impl SkewTContext {
         window.insert_action_group("skew-t", Some(&skew_t_group));
 
         // Set some options for the active readout.
-        make_check_item!(
-            skew_t_group,
-            "show_active_readout",
-            acp,
-            show_active_readout
-        );
-        make_check_item!(
-            skew_t_group,
-            "show_active_readout_text",
-            acp,
-            show_active_readout_text
-        );
-        make_check_item!(
-            skew_t_group,
-            "show_active_readout_line",
-            acp,
-            show_active_readout_line
-        );
-        make_check_item!(
-            skew_t_group,
-            "show_sample_parcel_profile",
-            acp,
-            show_sample_parcel_profile
-        );
-        make_check_item!(
-            skew_t_group,
-            "show_sample_mix_down",
-            acp,
-            show_sample_mix_down
-        );
+        make_check_item!(skew_t_group, "show_active_readout", acp, show_active_readout);
+        make_check_item!(skew_t_group, "show_active_readout_text", acp, show_active_readout_text);
+        make_check_item!(skew_t_group, "show_active_readout_line", acp, show_active_readout_line);
+        make_check_item!(skew_t_group, "show_sample_parcel_profile", acp, show_sample_parcel_profile);
+        make_check_item!(skew_t_group, "show_sample_mix_down", acp, show_sample_mix_down);
 
         // Set the parcel type
         let current_parcel = match acp.config.borrow().parcel_type {
